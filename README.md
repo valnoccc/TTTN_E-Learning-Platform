@@ -23,7 +23,45 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**E-Learning Platform for Programming Courses** is a robust, full-stack web application designed to provide a seamless online learning experience. Built with modern technologies, this platform empowers instructors to manage high-quality programming content and enables students to browse, enroll, and track their learning progress effectively.
+
+### Key Features
+* **Course Management**: Comprehensive tools for creating, updating, and managing programming courses with multiple lessons.
+* **Role-based Access Control**: Secured authentication system with distinct permissions for Students, Instructors, and Administrators.
+* **Intuitive Dashboard**: User-friendly interface for students to track enrolled courses and instructors to manage their curriculum.
+* **Responsive Design**: Optimized for various devices to ensure a consistent learning experience.
+
+---
+
+### Technical Stack
+
+| Category | Technologies |
+| :--- | :--- |
+| **Frontend** | React.js, Vite, Tailwind CSS |
+| **Backend** | Node.js, NestJS |
+| **Database** | MySQL |
+| **Tools** | Git, GitHub, Antigravity |
+
+---
+
+### Project Team - Students
+
+| No. | Full Name | Student ID | Class | Role |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | **Chu Van Loc** | DH52200992 | D22_TH14 | Project Manager / Full-stack Developer |
+| 2 | **Le Duc Anh** | DH52200322 | D22_TH15 | Full-stack Developer |
+
+**University**: Saigon Technology University  
+**Major**: Information Technology
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+* **Node.js** (v18.0 or higher)
+* **MySQL** (v8.0 or higher)
+* **NPM** or **Yarn**
 
 ## Project setup
 
