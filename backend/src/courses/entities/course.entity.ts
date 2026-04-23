@@ -18,6 +18,13 @@ export class KhoaHoc {
     @Column({ type: 'varchar', length: 255, nullable: true })
     hinh_anh!: string;
 
+    @Column({
+        type: 'enum',
+        enum: ['DRAFT', 'PENDING', 'PUBLISHED', 'HIDDEN'],
+        default: 'DRAFT',
+    })
+    trang_thai: string;
+
     @Column({ nullable: true })
     id_danh_muc!: number;
 
