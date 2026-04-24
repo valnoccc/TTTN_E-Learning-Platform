@@ -45,28 +45,33 @@ export default function InstructorCourses() {
         try {
             const response = await axiosClient.delete(`/courses/${id}`);
 
-            // Nếu Backend trả về thông báo đã ẩn (vì có người mua)
-            if (response.data.message.includes('ẨN')) {
+            if (response.data?.message?.includes('ẨN')) {
                 toast.success('Khóa học đã có người mua nên hệ thống đã thực hiện ẨN.');
-                // Cập nhật lại state để giao diện đổi icon sang "Đã ẩn"
                 setCourses(prev => prev.map(c => c.id === id ? { ...c, trang_thai: 'HIDDEN' } : c));
             } else {
                 toast.success('Đã xóa thành công!');
                 setCourses(prev => prev.filter(c => c.id !== id));
             }
         } catch (error) {
-            toast.error('Lỗi khi thực hiện yêu cầu!');
+            // Bắt và hiển thị thông báo lỗi thực sự từ Backend gửi về
+            const errorMessage = error.response?.data?.message || 'Lỗi hệ thống khi xóa khóa học!';
+            toast.error(`Thất bại: ${errorMessage}`);
+            console.error("Chi tiết lỗi:", error.response || error);
         }
     };
 
     const handleToggleStatus = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'AN' ? 'CON_KHAI' : 'AN';
+        // Sửa giá trị cho khớp với ENUM trong Database
+        const newStatus = currentStatus === 'HIDDEN' ? 'PUBLISHED' : 'HIDDEN';
+
         try {
-            // Giả sử API của bạn hỗ trợ cập nhật trạng thái
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
-            toast.success(newStatus === 'AN' ? 'Đã ẩn khóa học' : 'Đã hiện khóa học');
-            setCourses(courses.map(c => c.id === id ? { ...c, trang_thai: newStatus } : c));
+            toast.success(newStatus === 'HIDDEN' ? 'Đã ẩn khóa học' : 'Đã hiện khóa học');
+
+            // Dùng prev để đảm bảo cập nhật state an toàn
+            setCourses(prev => prev.map(c => c.id === id ? { ...c, trang_thai: newStatus } : c));
         } catch (error) {
+            console.error("Lỗi:", error.response); // In ra để xem lỗi thực sự
             toast.error('Lỗi khi thay đổi trạng thái!');
         }
     };
