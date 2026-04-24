@@ -8,7 +8,7 @@ export class CoursesService {
   constructor(
     @InjectRepository(KhoaHoc)
     private khoaHocRepository: Repository<KhoaHoc>,
-    private dataSource: DataSource, 
+    private dataSource: DataSource,
   ) { }
 
   async getCoursesByInstructor(instructorId: number) {

@@ -1,18 +1,17 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Bật tính năng CORS để cho phép Frontend (Vite) gọi API
-  app.enableCors({
-    origin: true, // Cho phép tất cả các nguồn gọi tới
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+  // Cho phép truy cập folder public từ backend
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+  // Cho phép truy cập folder images từ frontend/public
+  app.useStaticAssets(join(__dirname, '..', '..', 'frontend', 'public'), { prefix: '/' });
 
-  // Nếu trước đó bạn có cài đặt Global Prefix như app.setGlobalPrefix('api'); thì giữ nguyên nhé
-
+  app.enableCors();
   await app.listen(3000);
 }
 bootstrap();

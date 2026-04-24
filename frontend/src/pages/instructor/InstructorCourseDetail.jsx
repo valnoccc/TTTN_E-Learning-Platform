@@ -32,7 +32,12 @@ export default function InstructorCourseDetail() {
                         description: courseData.mo_ta || '',
                         price: courseData.gia || 0,
                         category: courseData.id_danh_muc === 1 ? 'Web Development' : 'Data Science',
+                        hinh_anh: courseData.hinh_anh || '',
                     });
+                    // Nếu có hình ảnh cũ, hiển thị làm preview
+                    if (courseData.hinh_anh) {
+                        setImagePreview(courseData.hinh_anh);
+                    }
                 } catch (error) {
                     console.error('Lỗi khi tải thông tin:', error);
                 }
@@ -52,24 +57,34 @@ export default function InstructorCourseDetail() {
             setErrorText('Tên khóa học không được để trống!');
             return;
         }
+
         try {
-            const payload = {
-                ten_khoa_hoc: formData.title,
-                mo_ta: formData.description,
-                gia: parseFloat(parseFloat(formData.price).toFixed(2)),
-                id_danh_muc: formData.category === 'Web Development' ? 1 : 2,
-            };
+            // Sử dụng FormData để gửi file
+            const data = new FormData();
+            data.append('ten_khoa_hoc', formData.title);
+            data.append('mo_ta', formData.description);
+            data.append('gia', formData.price);
+            data.append('id_danh_muc', formData.category === 'Web Development' ? 1 : 2);
+
+            // 'file_anh_that' là File object lấy từ input type="file"
+            if (formData.file_anh_that) {
+                data.append('image', formData.file_anh_that);
+            }
 
             if (isNewCourse) {
-                await axiosClient.post('/courses', payload);
+                await axiosClient.post('/courses', data, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
                 alert('Tạo khóa học mới thành công!');
             } else {
-                await axiosClient.put(`/courses/${id}`, payload);
+                await axiosClient.put(`/courses/${id}`, data, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
                 alert('Cập nhật thành công!');
             }
             navigate('/instructor/courses');
         } catch (error) {
-            alert('Backend báo lỗi! Hãy kiểm tra Server NestJS.');
+            alert('Lỗi khi lưu khóa học! Hãy kiểm tra dữ liệu.');
         }
     };
 
