@@ -1,6 +1,6 @@
 import {
   Controller, Post, Body, UseInterceptors, UploadedFile,
-  UseGuards, Request, InternalServerErrorException
+  UseGuards, Request, InternalServerErrorException, Get, Query
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LessonsService } from './lessons.service';
@@ -51,4 +51,18 @@ export class LessonsController {
       throw new InternalServerErrorException('Lỗi khi thêm bài học: ' + error.message);
     }
   }
+
+  @Get()
+  async findByCourse(@Query('id_khoa_hoc') courseId: number) {
+    try {
+      const lessons = await this.lessonsService.findAllByCourse(courseId);
+      return {
+        message: 'Lấy danh sách bài học thành công',
+        data: lessons,
+      };
+    } catch (error: any) {
+      throw new InternalServerErrorException('Lỗi khi lấy danh sách bài học: ' + error.message);
+    }
+  }
+
 }

@@ -20,6 +20,7 @@ export default function InstructorCourseDetail() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [errorText, setErrorText] = useState('');
     const [imagePreview, setImagePreview] = useState(null);
+    const [lessons, setLessons] = useState([]);
 
     useEffect(() => {
         const fetchCourseDetail = async () => {
@@ -44,6 +45,21 @@ export default function InstructorCourseDetail() {
             }
         };
         fetchCourseDetail();
+    }, [id, isNewCourse]);
+
+    useEffect(() => {
+        const fetchLessons = async () => {
+            if (!isNewCourse) {
+                try {
+                    const response = await axiosClient.get(`/lessons?id_khoa_hoc=${id}`);
+                    const lessonsData = Array.isArray(response.data.data) ? response.data.data : response.data;
+                    setLessons(lessonsData.sort((a, b) => a.thu_tu - b.thu_tu));
+                } catch (error) {
+                    console.error('Lỗi khi tải bài học:', error);
+                }
+            }
+        };
+        fetchLessons();
     }, [id, isNewCourse]);
 
     const handleChange = (e) => {
@@ -173,7 +189,7 @@ export default function InstructorCourseDetail() {
                         {!isNewCourse && (
                             <section className="bg-white dark:bg-[#1E2329] border border-[#DFE1E6] dark:border-slate-800 rounded-xl p-6 shadow-sm">
                                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#F4F5F7] dark:border-slate-800">
-                                    <h3 className="text-[20px] font-semibold text-[#172B4D] dark:text-white">Chương trình học</h3>
+                                    <h3 className="text-[20px] font-semibold text-[#172B4D] dark:text-white">Chương trình học ({lessons.length})</h3>
                                     <button
                                         onClick={() => navigate(`/instructor/lessons/${id}`)}
                                         className="text-[#0052CC] text-[14px] font-semibold flex items-center gap-1 hover:underline">
@@ -182,15 +198,25 @@ export default function InstructorCourseDetail() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-4 p-4 border border-[#DFE1E6] dark:border-slate-700 rounded-lg bg-white dark:bg-[#14181D] hover:bg-[#F0F5FF] dark:hover:bg-slate-800 transition-colors group cursor-move">
-                                        <GripVertical className="text-[#6B778C] dark:text-slate-500" size={20} />
-                                        <span className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold text-slate-500">01</span>
-                                        <div className="flex-1">
-                                            <p className="text-[14px] font-semibold text-[#172B4D] dark:text-slate-200">Introduction to Advanced Patterns</p>
-                                            <p className="text-[10px] text-[#6B778C] mt-0.5">4 Videos • 2 Quizzes</p>
+                                    {lessons.length > 0 ? (
+                                        lessons.map((lesson, index) => (
+                                            <div key={lesson.id} className="flex items-center gap-4 p-4 border border-[#DFE1E6] dark:border-slate-700 rounded-lg bg-white dark:bg-[#14181D] hover:bg-[#F0F5FF] dark:hover:bg-slate-800 transition-colors group cursor-move">
+                                                <GripVertical className="text-[#6B778C] dark:text-slate-500" size={20} />
+                                                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold text-slate-500">
+                                                    {String(index + 1).padStart(2, '0')}
+                                                </span>
+                                                <div className="flex-1">
+                                                    <p className="text-[14px] font-semibold text-[#172B4D] dark:text-slate-200">{lesson.tieu_de}</p>
+                                                    <p className="text-[10px] text-[#6B778C] mt-0.5">{lesson.video_url ? '1 Video' : 'Chưa có video'}</p>
+                                                </div>
+                                                <FileEdit className="text-[#6B778C] opacity-0 group-hover:opacity-100 cursor-pointer" size={18} />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <p className="text-[#6B778C] dark:text-slate-400">Chưa có bài học. Hãy thêm bài học đầu tiên!</p>
                                         </div>
-                                        <FileEdit className="text-[#6B778C] opacity-0 group-hover:opacity-100" size={18} />
-                                    </div>
+                                    )}
                                 </div>
                             </section>
                         )}
