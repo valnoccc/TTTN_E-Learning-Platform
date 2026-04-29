@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import axiosClient from '../../api/axios';
 import { FileEdit, UploadCloud, ChevronDown, AlertTriangle, Bold, Italic, List, Link as LinkIcon, Code, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'react-hot-toast'; // <--- Thêm dòng này vào đây
+
 
 export default function InstructorCourseDetail() {
     const { id } = useParams();

@@ -3,7 +3,8 @@ import {
   UseGuards, Request, InternalServerErrorException, Get, Param,
   ParseIntPipe, NotFoundException, // <-- Thêm 2 cái này vào đây
   Query,
-  Put
+  Put,
+  Delete
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LessonsService } from './lessons.service';
@@ -106,5 +107,15 @@ export class LessonsController {
 
     // 3. Gọi Service để thực hiện cập nhật vào MySQL
     return this.lessonsService.update(id, updateData);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    try {
+      await this.lessonsService.remove(id);
+      return { message: 'Xóa bài học thành công!' };
+    } catch (error: any) {
+      throw new InternalServerErrorException('Lỗi khi xóa bài học: ' + error.message);
+    }
   }
 }

@@ -20,4 +20,14 @@ export class CloudinaryService {
             Readable.from(file.buffer).pipe(upload);
         });
     }
+
+    async deleteFile(publicId: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            // Rất quan trọng: Phải có { resource_type: 'video' }
+            cloudinary.uploader.destroy(publicId, { resource_type: 'video' }, (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            });
+        });
+    }
 }
