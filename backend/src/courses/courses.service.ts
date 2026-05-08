@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { KhoaHoc } from './entities/course.entity';
+
 
 @Injectable()
 export class CoursesService {
@@ -51,6 +52,18 @@ export class CoursesService {
 
     if (!course) throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
 
+    // --- BỔ SUNG RÀNG BUỘC KIỂM DUYỆT Ở ĐÂY ---
+    if (trang_thai === 'PENDING') {
+      // Đếm số lượng bài học của khóa học này trong bảng baihoc
+      const lessonCount = await this.dataSource.query(
+        `SELECT COUNT(*) as count FROM baihoc WHERE id_khoa_hoc = ?`,
+        [courseId]
+      );
+
+      if (Number(lessonCount[0].count) === 0) {
+        throw new BadRequestException('Khóa học chưa hoàn thiện. Cần ít nhất 1 bài học để gửi duyệt!');
+      }
+    }
     await this.khoaHocRepository.update(courseId, { trang_thai });
     return { message: 'Cập nhật trạng thái thành công' };
   }

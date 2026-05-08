@@ -125,6 +125,16 @@ export default function InstructorCourseDetail() {
     };
 
     const handleStatusChange = async (newStatus) => {
+        if (newStatus === 'PENDING') {
+            // Kiểm tra số lượng bài học
+            if (lessons.length === 0) {
+                toast.error("Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.");
+                return;
+            }
+            // Có thể thêm các ràng buộc khác ở đây sau này
+        }
+        // ------------------------------------------
+
         const confirmMsg = newStatus === 'PENDING'
             ? "Gửi yêu cầu duyệt? Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi."
             : "Tạm ngưng xuất bản? Khóa học sẽ bị ẩn khỏi trang chủ để bạn chỉnh sửa.";
@@ -136,7 +146,7 @@ export default function InstructorCourseDetail() {
             toast.success("Đã cập nhật trạng thái!");
             setFormData(prev => ({ ...prev, trang_thai: newStatus }));
         } catch (error) {
-            toast.error("Lỗi khi cập nhật trạng thái");
+            toast.error(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
         }
     };
 
