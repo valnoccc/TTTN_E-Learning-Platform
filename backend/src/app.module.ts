@@ -20,6 +20,13 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
       // Tự động quét tất cả các file entity trong project
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false, // Giữ false để tránh NestJS tự ý sửa cấu trúc DB hiện tại của bạn
+
+      // --- PHẦN SỬA ĐỔI NẰM Ở ĐÂY ---
+      ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true,
+      },
+      // ------------------------------
     }),
     UsersModule,
     AuthModule,
