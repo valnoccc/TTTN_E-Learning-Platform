@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
 const axiosClient = axios.create({
     // Nếu không dùng biến môi trường, hãy để tạm string nhưng phải chính xác
-    baseURL: 'http://localhost:3000',
+    baseURL: 'https://tttn-e-learning-platform.onrender.com',
 });
 
 axiosClient.interceptors.request.use(
