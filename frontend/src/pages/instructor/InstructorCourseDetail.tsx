@@ -1,34 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import axiosClient from '../../api/axios';
 import { FileEdit, UploadCloud, ChevronDown, AlertTriangle, Bold, Italic, List, Link as LinkIcon, Code, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
+interface CourseForm {
+    title: string;
+    description: string;
+    price: number | string;
+    category: string | number;
+    hinh_anh: string;
+    trang_thai: string;
+    file_anh_that?: File | null;
+}
+
+interface Lesson {
+    id: string | number;
+    tieu_de: string;
+    thu_tu: number;
+    video_url?: string;
+}
+
 export default function InstructorCourseDetail() {
-    const { id } = useParams();
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const isNewCourse = id === 'new';
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CourseForm>({
         title: '',
         description: '',
         price: 0,
         category: 'Web Development',
-        image: '',
-        trang_thai: 'DRAFT', // Mặc định là DRAFT cho khóa học mới
+        hinh_anh: '',
+        trang_thai: 'DRAFT',
     });
 
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [errorText, setErrorText] = useState('');
-    const [imagePreview, setImagePreview] = useState(null);
-    const [lessons, setLessons] = useState([]);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+    const [errorText, setErrorText] = useState<string>('');
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [lessons, setLessons] = useState<Lesson[]>([]);
 
     useEffect(() => {
         const fetchCourseDetail = async () => {
             if (!isNewCourse) {
                 try {
-                    const response = await axiosClient.get(`/courses/${id}`);
+                    const response: any = await axiosClient.get(`/courses/${id}`);
                     const courseData = response.data.data || response.data;
                     setFormData({
                         title: courseData.ten_khoa_hoc || '',
@@ -51,9 +68,9 @@ export default function InstructorCourseDetail() {
         const fetchLessons = async () => {
             if (!isNewCourse) {
                 try {
-                    const response = await axiosClient.get(`/lessons?id_khoa_hoc=${id}`);
+                    const response: any = await axiosClient.get(`/lessons?id_khoa_hoc=${id}`);
                     const lessonsData = Array.isArray(response.data.data) ? response.data.data : response.data;
-                    setLessons(lessonsData.sort((a, b) => a.thu_tu - b.thu_tu));
+                    setLessons(lessonsData.sort((a: Lesson, b: Lesson) => a.thu_tu - b.thu_tu));
                 } catch (error) {
                     console.error('Lỗi khi tải bài học:', error);
                 }
@@ -62,7 +79,7 @@ export default function InstructorCourseDetail() {
         fetchLessons();
     }, [id, isNewCourse]);
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         if (name === 'title') setErrorText('');
@@ -78,8 +95,8 @@ export default function InstructorCourseDetail() {
             const data = new FormData();
             data.append('ten_khoa_hoc', formData.title);
             data.append('mo_ta', formData.description);
-            data.append('gia', formData.price);
-            data.append('id_danh_muc', formData.category === 'Web Development' ? 1 : 2);
+            data.append('gia', formData.price.toString());
+            data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
 
             if (formData.file_anh_that) {
                 data.append('image', formData.file_anh_that);
@@ -113,7 +130,7 @@ export default function InstructorCourseDetail() {
         }
     };
 
-    const handleDeleteLesson = async (lessonId) => {
+    const handleDeleteLesson = async (lessonId: string | number) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa bài học này?")) return;
         try {
             await axiosClient.delete(`/lessons/${lessonId}`);
@@ -124,16 +141,13 @@ export default function InstructorCourseDetail() {
         }
     };
 
-    const handleStatusChange = async (newStatus) => {
+    const handleStatusChange = async (newStatus: string) => {
         if (newStatus === 'PENDING') {
-            // Kiểm tra số lượng bài học
             if (lessons.length === 0) {
                 toast.error("Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.");
                 return;
             }
-            // Có thể thêm các ràng buộc khác ở đây sau này
         }
-        // ------------------------------------------
 
         const confirmMsg = newStatus === 'PENDING'
             ? "Gửi yêu cầu duyệt? Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi."
@@ -145,12 +159,11 @@ export default function InstructorCourseDetail() {
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
             toast.success("Đã cập nhật trạng thái!");
             setFormData(prev => ({ ...prev, trang_thai: newStatus }));
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
         }
     };
 
-    // BIẾN KIỂM TRA KHÓA FORM
     const isLocked = ['PENDING', 'PUBLISHED'].includes(formData.trang_thai);
 
     return (
@@ -260,7 +273,7 @@ export default function InstructorCourseDetail() {
                                             onChange={handleChange}
                                             disabled={isLocked}
                                             className={`w-full px-4 py-3 bg-white dark:bg-[#14181D] border-none focus:ring-0 text-[#172B4D] dark:text-slate-300 text-[14px] leading-relaxed outline-none resize-none ${isLocked ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800' : ''}`}
-                                            rows="8"
+                                            rows={8}
                                             placeholder="Viết mô tả chi tiết cho khóa học của bạn..."
                                         />
                                     </div>
@@ -280,11 +293,11 @@ export default function InstructorCourseDetail() {
                                 id="fileInput"
                                 className="hidden"
                                 accept="image/*"
-                                onChange={(e) => {
-                                    const file = e.target.files[0];
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                    const file = e.target.files?.[0];
                                     if (file) {
                                         const reader = new FileReader();
-                                        reader.onloadend = () => setImagePreview(reader.result);
+                                        reader.onloadend = () => setImagePreview(reader.result as string);
                                         reader.readAsDataURL(file);
                                         setFormData({ ...formData, file_anh_that: file });
                                     }
@@ -298,7 +311,7 @@ export default function InstructorCourseDetail() {
                                             src={imagePreview || formData.hinh_anh}
                                             alt="Preview"
                                             className="w-full h-full object-cover opacity-90"
-                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         />
                                     </div>
                                     <div className="flex justify-between items-center pt-2">
@@ -306,7 +319,7 @@ export default function InstructorCourseDetail() {
                                             {formData.file_anh_that ? `Đã chọn: ${formData.file_anh_that.name}` : "Ảnh hiện tại của khóa học"}
                                         </p>
                                         <button
-                                            onClick={() => !isLocked && document.getElementById('fileInput').click()}
+                                            onClick={() => !isLocked && document.getElementById('fileInput')?.click()}
                                             disabled={isLocked}
                                             className={`flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1E2329] text-[#172B4D] dark:text-white rounded-lg text-sm font-semibold transition-colors border border-[#DFE1E6] dark:border-slate-700 shadow-sm ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50 hover:text-blue-600'}`}
                                         >
@@ -316,7 +329,7 @@ export default function InstructorCourseDetail() {
                                 </div>
                             ) : (
                                 <div
-                                    onClick={() => !isLocked && document.getElementById('fileInput').click()}
+                                    onClick={() => !isLocked && document.getElementById('fileInput')?.click()}
                                     className={`group relative border-2 border-dashed border-[#DFE1E6] dark:border-slate-700 rounded-2xl p-10 text-center transition-all aspect-[21/9] flex flex-col items-center justify-center bg-[#F4F5F7] dark:bg-[#14181D] ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-blue-400 hover:bg-blue-50/30'}`}
                                 >
                                     <UploadCloud className="text-[#0052CC] mx-auto mb-4" size={32} />

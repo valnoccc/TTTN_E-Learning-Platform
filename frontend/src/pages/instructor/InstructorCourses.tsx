@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import CourseCard from '../../components/ui/CourseCard';
@@ -6,9 +6,17 @@ import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import { BookOpen, PlusCircle, Eye, EyeOff, Trash2 } from 'lucide-react';
 
+interface Course {
+    id: string | number;
+    ten_khoa_hoc: string;
+    gia: number;
+    hinh_anh: string;
+    trang_thai: string;
+}
+
 export default function InstructorCourses() {
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         fetchMyCourses();
@@ -16,25 +24,25 @@ export default function InstructorCourses() {
 
     const fetchMyCourses = async () => {
         try {
-            const response = await axiosClient.get('/courses/my-courses');
+            const response: any = await axiosClient.get('/courses/my-courses');
             let courseList = [];
             if (response?.data?.data && Array.isArray(response.data.data)) {
                 courseList = response.data.data;
             } else if (Array.isArray(response?.data)) {
-                courseList = response.data; 
+                courseList = response.data;
             }
             setCourses(courseList);
         } catch (error) {
             toast.error('Không thể tải danh sách khóa học!');
-            setCourses([]); 
+            setCourses([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string | number) => {
         try {
-            const response = await axiosClient.delete(`/courses/${id}`);
+            const response: any = await axiosClient.delete(`/courses/${id}`);
             if (response.data?.message?.includes('ẨN')) {
                 toast.success('Khóa học đã có người mua nên hệ thống đã chuyển sang ẨN.');
                 setCourses(prev => prev.map(c => c.id === id ? { ...c, trang_thai: 'HIDDEN' } : c));
@@ -42,13 +50,13 @@ export default function InstructorCourses() {
                 toast.success('Đã xóa thành công!');
                 setCourses(prev => prev.filter(c => c.id !== id));
             }
-        } catch (error) {
+        } catch (error: any) {
             const errorMessage = error.response?.data?.message || 'Lỗi hệ thống khi xóa khóa học!';
             toast.error(`Thất bại: ${errorMessage}`);
         }
     };
 
-    const handleToggleStatus = async (id, currentStatus) => {
+    const handleToggleStatus = async (id: string | number, currentStatus: string) => {
         const newStatus = currentStatus === 'HIDDEN' ? 'PUBLISHED' : 'HIDDEN';
         try {
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });

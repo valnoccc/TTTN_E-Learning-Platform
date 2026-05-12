@@ -1,7 +1,7 @@
 import { LogOut, Book, PlayCircle, Clock } from 'lucide-react';
 
 export default function StudentDashboard() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
 
     const handleLogout = () => {
         localStorage.clear();

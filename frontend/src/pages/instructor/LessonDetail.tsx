@@ -1,68 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    Save, ChevronLeft, FileText, Video,
-    Upload, Layout, PlayCircle, Loader2
-} from 'lucide-react';
+import { Save, ChevronLeft, FileText, Video, Upload, Loader2, Layout, PlayCircle } from 'lucide-react';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import axiosClient from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
+interface LessonForm {
+    tieu_de: string;
+    noi_dung: string;
+    thu_tu: number | string;
+    id_khoa_hoc: string | number | null;
+    video_url: string;
+    video_file: File | null;
+}
+
 export default function LessonDetail() {
-    const { lessonId } = useParams(); // Lấy ID bài học từ URL
+    // 1. SỬA LỖI PARAMS: Lấy cả lessonId và id để chống lỗi cấu hình Router
+    const { lessonId, id } = useParams<{ lessonId?: string, id?: string }>();
+    const targetId = lessonId || id;
+
     const navigate = useNavigate();
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [videoPreview, setVideoPreview] = useState(null);
-
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<LessonForm>({
         tieu_de: '',
         noi_dung: '',
         thu_tu: 1,
         id_khoa_hoc: null,
         video_url: '',
-        video_file: null // Dùng để lưu file video mới nếu giảng viên chọn thay đổi
+        video_file: null
     });
 
-    // 1. Tải dữ liệu bài học hiện tại khi vào trang
     useEffect(() => {
-        const fetchLesson = async () => {
-            try {
-                const response = await axiosClient.get(`/lessons/${lessonId}`);
-                const data = response.data.data;
+        if (targetId) {
+            fetchLesson();
+        } else {
+            toast.error("Không tìm thấy mã bài học");
+            navigate(-1);
+        }
+    }, [targetId]);
 
-                setFormData({
-                    tieu_de: data.tieu_de || '',
-                    noi_dung: data.noi_dung || '',
-                    thu_tu: data.thu_tu || 1,
-                    id_khoa_hoc: data.id_khoa_hoc,
-                    video_url: data.video_url || '',
-                    video_file: null
-                });
+    const fetchLesson = async () => {
+        try {
+            const response: any = await axiosClient.get(`/lessons/${targetId}`);
 
-                if (data.video_url) {
-                    setVideoPreview(data.video_url);
-                }
-            } catch (error) {
-                toast.error("Không thể tải thông tin bài học");
-                navigate(-1);
-            } finally {
-                setLoading(false);
+            // 2. SỬA LỖI AXIOS: Bóc tách dữ liệu an toàn dựa theo cấu hình interceptor
+            const data = response?.data?.data || response?.data || response;
+
+            if (!data) throw new Error("Dữ liệu bài học trống");
+
+            setFormData({
+                tieu_de: data.tieu_de || '',
+                noi_dung: data.noi_dung || '',
+                thu_tu: data.thu_tu || 1,
+                id_khoa_hoc: data.id_khoa_hoc || null,
+                video_url: data.video_url || '',
+                video_file: null
+            });
+
+            // 3. SỬA LỖI VIDEO CỦA NESTJS: Ghép URL tuyệt đối nếu backend trả về đường dẫn tương đối
+            if (data.video_url) {
+                const fullVideoUrl = data.video_url.startsWith('/')
+                    ? `http://localhost:3000${data.video_url}`
+                    : data.video_url;
+                setVideoPreview(fullVideoUrl);
             }
-        };
-        fetchLesson();
-    }, [lessonId, navigate]);
+        } catch (error) {
+            console.error(error);
+            toast.error("Không thể tải thông tin bài học");
+            navigate(-1);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setFormData({ ...formData, video_file: file });
             setVideoPreview(URL.createObjectURL(file));
         }
     };
 
-    // 2. Logic Lưu thay đổi (Gửi FormData lên Backend)
     const handleUpdate = async () => {
         if (!formData.tieu_de.trim()) return toast.error("Tiêu đề không được để trống");
 
@@ -70,20 +91,15 @@ export default function LessonDetail() {
         const data = new FormData();
         data.append('tieu_de', formData.tieu_de);
         data.append('noi_dung', formData.noi_dung);
-        data.append('thu_tu', formData.thu_tu);
-        data.append('id_khoa_hoc', formData.id_khoa_hoc);
+        data.append('thu_tu', formData.thu_tu.toString());
+        if (formData.id_khoa_hoc) data.append('id_khoa_hoc', formData.id_khoa_hoc.toString());
 
-        // Chỉ gửi file video nếu người dùng chọn file mới
         if (formData.video_file) {
             data.append('video', formData.video_file);
         }
 
         try {
-            // Sử dụng PUT hoặc POST tùy theo API của bạn (thường là PUT cho cập nhật)
-            await axiosClient.put(`/lessons/${lessonId}`, data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
+            await axiosClient.put(`/lessons/${targetId}`, data);
             toast.success("Cập nhật bài học thành công!");
             navigate(`/instructor/courses/${formData.id_khoa_hoc}`);
         } catch (error) {
@@ -177,7 +193,6 @@ export default function LessonDetail() {
 
                             {videoPreview ? (
                                 <div className="space-y-4 border border-gray-200 rounded-xl p-4 bg-gray-50">
-                                    {/* 1. Trình phát video độc lập */}
                                     <div className="bg-black rounded-lg overflow-hidden flex justify-center w-full shadow-inner">
                                         <video
                                             src={videoPreview}
@@ -187,13 +202,12 @@ export default function LessonDetail() {
                                         />
                                     </div>
 
-                                    {/* 2. Nút tải video khác tách biệt hoàn toàn */}
                                     <div className="flex justify-between items-center pt-2">
                                         <p className="text-xs text-gray-500 italic">
                                             {formData.video_file ? `Đã chọn file: ${formData.video_file.name}` : "Đang hiển thị video hiện tại trên hệ thống"}
                                         </p>
                                         <button
-                                            onClick={() => document.getElementById('video-upload').click()}
+                                            onClick={() => document.getElementById('video-upload')?.click()}
                                             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 hover:text-blue-600 rounded-lg text-sm font-semibold transition-colors border border-gray-300 shadow-sm"
                                         >
                                             <Upload size={16} /> Thay đổi video
@@ -202,7 +216,7 @@ export default function LessonDetail() {
                                 </div>
                             ) : (
                                 <div
-                                    onClick={() => document.getElementById('video-upload').click()}
+                                    onClick={() => document.getElementById('video-upload')?.click()}
                                     className="group relative border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer"
                                 >
                                     <Upload className="text-blue-600 mx-auto mb-4" size={28} />
@@ -235,7 +249,7 @@ export default function LessonDetail() {
                                 <PlayCircle size={16} /> Hướng dẫn
                             </h4>
                             <p className="text-xs text-blue-700 leading-relaxed">
-                                Bạn có thể giữ nguyên nội dung cũ hoặc tải lên video mới để thay thế video hiện tại trên Cloudinary.
+                                Bạn có thể giữ nguyên nội dung cũ hoặc tải lên video mới để thay thế video hiện tại trên hệ thống.
                             </p>
                         </div>
                     </div>

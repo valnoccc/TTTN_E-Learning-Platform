@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axiosClient from '../api/axios';
+import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -8,24 +8,24 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { data } = await axiosClient.post('/auth/login', { email, password });
+            // Sửa ở đây: Loại bỏ bóc tách { data } vì axiosClient đã trả về data rồi
+            const response: any = await axiosClient.post('/auth/login', { email, password });
 
-            // Lưu thông tin vào LocalStorage
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            // Lưu thông tin vào LocalStorage (truy cập trực tiếp vào response)
+            localStorage.setItem('access_token', response.access_token);
+            localStorage.setItem('user', JSON.stringify(response.user));
 
             toast.success('Đăng nhập thành công');
 
-            // Điều hướng dựa trên Role
-            const role = data.user.role;
+            const role = response.user?.role;
             if (role === 'ADMIN') navigate('/admin');
             else if (role === 'GIANG_VIEN') navigate('/instructor');
             else navigate('/');
 
-        } catch (err) {
+        } catch (err: any) {
             toast.error(err.response?.data?.message || 'Tài khoản hoặc mật khẩu không đúng');
         }
     };

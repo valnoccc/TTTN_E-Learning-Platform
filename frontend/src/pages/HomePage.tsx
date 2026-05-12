@@ -9,7 +9,7 @@ import CourseCard from '../components/ui/CourseCard';
 
 export default function HomePage() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
 
     useEffect(() => {
         if (user?.role === 'ADMIN') navigate('/admin');
@@ -160,7 +160,12 @@ export default function HomePage() {
 
 // --- CÁC COMPONENT PHỤ TRỢ (Để code gọn gàng) ---
 
-function StatBlock({ number, label }) {
+interface StatBlockProps {
+    number: string | number;
+    label: string;
+}
+
+function StatBlock({ number, label }: StatBlockProps) {
     return (
         <div className="px-4">
             <div className="text-3xl font-bold tracking-tight text-[#1D1D1F] mb-1">{number}</div>
@@ -169,7 +174,13 @@ function StatBlock({ number, label }) {
     );
 }
 
-function FeatureCard({ icon, title, desc }) {
+interface FeatureCardProps {
+    icon: React.ReactNode;
+    title: string;
+    desc: string;
+}
+
+function FeatureCard({ icon, title, desc }: FeatureCardProps) {
     return (
         <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-6 border border-gray-100">
@@ -181,7 +192,13 @@ function FeatureCard({ icon, title, desc }) {
     );
 }
 
-function TestimonialCard({ name, role, text }) {
+interface TestimonialCardProps {
+    name: string;
+    role: string;
+    text: string;
+}
+
+function TestimonialCard({ name, role, text }: TestimonialCardProps) {
     return (
         <div className="bg-white p-8 rounded-2xl border border-gray-200 relative">
             <Quote size={40} className="text-gray-100 absolute top-6 right-6" />

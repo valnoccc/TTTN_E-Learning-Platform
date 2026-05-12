@@ -1,19 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InstructorSidebar from '../components/common/InstructorSidebar';
 import { User, Bell, Search, LogOut } from 'lucide-react';
 
-export default function InstructorLayout({ children }) {
-    // 1. Khai báo các biến và hook ở ĐẦU hàm
-    const user = JSON.parse(localStorage.getItem('user'));
+// Định nghĩa interface cho Props
+interface InstructorLayoutProps {
+    children: ReactNode;
+}
+
+export default function InstructorLayout({ children }: InstructorLayoutProps) {
+    // 1. Khai báo các biến và hook
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
     const navigate = useNavigate();
-    const [showUserMenu, setShowUserMenu] = useState(false);
-    const menuRef = useRef(null);
+    const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
+
+    // Sửa lỗi: Cung cấp kiểu dữ liệu cho useRef thay vì mặc định là 'never'
+    const menuRef = useRef<HTMLDivElement>(null);
 
     // 2. Logic xử lý click ra ngoài để đóng menu
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
+        // Sửa lỗi: Định nghĩa kiểu cho event là MouseEvent
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setShowUserMenu(false);
             }
         }
@@ -28,7 +36,6 @@ export default function InstructorLayout({ children }) {
         window.location.reload();
     };
 
-    // 4. Lệnh return duy nhất chứa toàn bộ giao diện
     return (
         <div className="flex min-h-screen bg-[#F5F5F7]">
             <InstructorSidebar />
@@ -60,7 +67,7 @@ export default function InstructorLayout({ children }) {
                                 <User size={16} />
                             </div>
 
-                            {/* Box xổ xuống */}
+                            {/* Dropdown Menu */}
                             {showUserMenu && (
                                 <div className="absolute right-0 top-full mt-3 w-44 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 overflow-hidden">
                                     <div className="px-4 py-2 text-[11px] font-bold text-gray-400 border-b border-gray-50 uppercase">Tài khoản</div>
@@ -76,11 +83,9 @@ export default function InstructorLayout({ children }) {
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </header>
 
-                {/* Nội dung chính của trang sẽ render ở đây */}
                 <main className="p-8 flex-grow">
                     <div className="max-w-7xl mx-auto">
                         {children}

@@ -1,25 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Upload, Video, FileText, Save, ChevronLeft, Layout } from 'lucide-react';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import axiosClient from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
-export default function AddLesson() {
-    const { id } = useParams(); // Lấy id_khoa_hoc từ URL
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [videoPreview, setVideoPreview] = useState(null);
+interface LessonForm {
+    tieu_de: string;
+    noi_dung: string;
+    thu_tu: number | string;
+    video_file: File | null;
+}
 
-    const [formData, setFormData] = useState({
+export default function AddLesson() {
+    const { id } = useParams<{ id: string }>(); // Lấy id_khoa_hoc từ URL
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [videoPreview, setVideoPreview] = useState<string | null>(null);
+
+    const [formData, setFormData] = useState<LessonForm>({
         tieu_de: '',
         noi_dung: '',
         thu_tu: 1,
         video_file: null
     });
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setFormData({ ...formData, video_file: file });
             setVideoPreview(URL.createObjectURL(file));
@@ -31,10 +38,10 @@ export default function AddLesson() {
 
         setLoading(true);
         const data = new FormData();
-        data.append('id_khoa_hoc', id);
+        if (id) data.append('id_khoa_hoc', id);
         data.append('tieu_de', formData.tieu_de);
         data.append('noi_dung', formData.noi_dung);
-        data.append('thu_tu', formData.thu_tu);
+        data.append('thu_tu', formData.thu_tu.toString());
         if (formData.video_file) {
             data.append('video', formData.video_file); // 'video' khớp với FileInterceptor ở Backend
         }
@@ -45,7 +52,7 @@ export default function AddLesson() {
             });
             toast.success("Thêm bài học thành công!");
             navigate(`/instructor/courses/${id}`);
-        } catch (error) {
+        } catch (error: any) {
             const errorMessage = error.response?.data?.message || "Lỗi khi tải bài học lên hệ thống";
             toast.error(errorMessage);
         } finally {
@@ -113,7 +120,7 @@ export default function AddLesson() {
                                 <Video size={18} className="text-blue-600" /> Nội dung Video
                             </h3>
                             <div
-                                onClick={() => document.getElementById('video-upload').click()}
+                                onClick={() => document.getElementById('video-upload')?.click()}
                                 className="group relative border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer"
                             >
                                 <input id="video-upload" type="file" accept="video/*" hidden onChange={handleFileChange} />

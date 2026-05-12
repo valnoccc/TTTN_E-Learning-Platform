@@ -1,7 +1,7 @@
 import { LogOut, Users, DollarSign, BookCheck, ShieldCheck } from 'lucide-react';
 
 export default function AdminDashboard() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F]">

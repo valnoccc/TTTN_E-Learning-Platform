@@ -1,5 +1,13 @@
+import React, { ReactNode } from 'react';
 import InstructorLayout from '../../layouts/InstructorLayout';
 import { BookOpen, Users, DollarSign, TrendingUp } from 'lucide-react';
+
+interface StatCardProps {
+    icon: ReactNode;
+    label: string;
+    value: string;
+    growth: string;
+}
 
 export default function InstructorDashboard() {
     return (
@@ -30,7 +38,7 @@ export default function InstructorDashboard() {
     );
 }
 
-function StatCard({ icon, label, value, growth }) {
+function StatCard({ icon, label, value, growth }: StatCardProps) {
     return (
         <div className="bg-white border border-gray-200 rounded-md p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">

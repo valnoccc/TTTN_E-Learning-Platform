@@ -4,14 +4,15 @@ import { BookOpen, User, LogOut, ChevronDown, Bell } from 'lucide-react';
 
 export default function Navbar() {
     const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const userString = localStorage.getItem('user');
+    const user = userString ? JSON.parse(userString) : null;
 
     // Đóng dropdown khi click ra ngoài
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowDropdown(false);
             }
         }

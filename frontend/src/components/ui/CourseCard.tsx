@@ -1,6 +1,17 @@
-export default function CourseCard({ title, instructor, price, image }) {
+import React from 'react';
+
+interface CourseCardProps {
+    title: string;
+    instructor: string;
+    price: string | number;
+    image?: string;
+    tag?: string;
+    rating?: string | number;
+}
+
+export default function CourseCard({ title, instructor, price, image, tag, rating }: CourseCardProps) {
     // Xây dựng URL ảnh đầy đủ
-    const getImageUrl = (imageUrl) => {
+    const getImageUrl = (imageUrl?: string) => {
         if (!imageUrl) return null;
         // Nếu là đường dẫn tương đối, thêm base URL
         if (imageUrl.startsWith('/')) {
@@ -20,7 +31,9 @@ export default function CourseCard({ title, instructor, price, image }) {
                         src={imageUrl}
                         alt={title}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => { 
+                            (e.target as HTMLImageElement).style.display = 'none'; 
+                        }}
                     />
                 ) : null}
                 {/* Gradient overlay chỉ hiển thị khi không có ảnh hoặc ảnh lỗi */}

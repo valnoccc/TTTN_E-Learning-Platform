@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axiosClient from '../api/axios';
+import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({ email: '', password: '', fullName: '' });
     const navigate = useNavigate();
 
-    const handleRegister = async (e) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await axiosClient.post('/auth/register', formData);
             toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
             navigate('/login');
-        } catch (err) {
+        } catch (err: any) {
             toast.error(err.response?.data?.message || 'Đăng ký thất bại, vui lòng thử lại');
         }
     };

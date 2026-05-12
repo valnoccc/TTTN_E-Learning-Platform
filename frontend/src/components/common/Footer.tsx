@@ -18,11 +18,20 @@ export default function Footer() {
                             Nền tảng học tập trực tuyến hàng đầu dành cho sinh viên công nghệ. Chúng tôi tập trung vào việc mang lại kiến thức thực chiến và trải nghiệm mượt mà nhất.
                         </p>
                         {/* Đã thay đổi các icon brand thành các icon generic */}
+                        {/* Cột 1: Thông tin thương hiệu */}
                         <div className="flex gap-4 text-gray-400">
-                            <Globe size={18} className="hover:text-[#0071E3] cursor-pointer transition-colors" title="Website" />
-                            <PlaySquare size={18} className="hover:text-red-500 cursor-pointer transition-colors" title="Video Channel" />
-                            <Hash size={18} className="hover:text-black cursor-pointer transition-colors" title="Social Tag" />
-                            <MessageCircle size={18} className="hover:text-blue-400 cursor-pointer transition-colors" title="Community" />
+                            <span title="Website">
+                                <Globe size={18} className="hover:text-[#0071E3] cursor-pointer transition-colors" />
+                            </span>
+                            <span title="Video Channel">
+                                <PlaySquare size={18} className="hover:text-red-500 cursor-pointer transition-colors" />
+                            </span>
+                            <span title="Social Tag">
+                                <Hash size={18} className="hover:text-black cursor-pointer transition-colors" />
+                            </span>
+                            <span title="Community">
+                                <MessageCircle size={18} className="hover:text-blue-400 cursor-pointer transition-colors" />
+                            </span>
                         </div>
                     </div>
 
