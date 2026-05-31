@@ -11,6 +11,7 @@ frontend/.env
 frontend/dist/
 frontend/build/
 backend/dist/
+.codegraph/
 
 # Logs
 npm-debug.log*

@@ -1,9 +1,16 @@
-import axios, { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+
+type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> & {
+    get<T = unknown>(...args: Parameters<AxiosInstance['get']>): Promise<T>;
+    post<T = unknown>(...args: Parameters<AxiosInstance['post']>): Promise<T>;
+    put<T = unknown>(...args: Parameters<AxiosInstance['put']>): Promise<T>;
+    patch<T = unknown>(...args: Parameters<AxiosInstance['patch']>): Promise<T>;
+    delete<T = unknown>(...args: Parameters<AxiosInstance['delete']>): Promise<T>;
+};
 
 const axiosClient = axios.create({
-    // Nếu không dùng biến môi trường, hãy để tạm string nhưng phải chính xác
-    baseURL: 'https://tttn-e-learning-platform.onrender.com',
-});
+    baseURL: 'http://localhost:3000',
+}) as ApiClient;
 
 axiosClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {

@@ -49,7 +49,9 @@ export default function Navbar() {
                                 <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-[#0071E3]">
                                     <User size={14} />
                                 </div>
-                                <span className="text-gray-700 font-semibold">{user.fullName.split(' ').pop()}</span>
+                                <span className="text-gray-700 font-semibold">
+                                    {user?.fullName?.split(' ').pop() || user?.name || 'User'}
+                                </span>
                                 <ChevronDown size={12} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                             </div>
 

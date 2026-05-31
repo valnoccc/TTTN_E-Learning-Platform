@@ -4,6 +4,7 @@ import InstructorCourses from '../pages/instructor/InstructorCourses';
 import InstructorCourseDetail from '../pages/instructor/InstructorCourseDetail';
 import AddLesson from '../pages/instructor/AddLesson';
 import LessonDetail from '../pages/instructor/LessonDetail'; // Trang sửa bài học ở bước trước
+import InstructorStudents from '../pages/instructor/InstructorStudents';
 
 export default function InstructorRoutes() {
     return (
@@ -22,6 +23,9 @@ export default function InstructorRoutes() {
 
             {/* Đường dẫn thực tế sẽ là: /instructor/lesson-detail/:lessonId */}
             <Route path="lesson-detail/:lessonId" element={<LessonDetail />} />
+
+            {/* Đường dẫn thực tế sẽ là: /instructor/students */}
+            <Route path="students" element={<InstructorStudents />} />
         </Routes>
     );
 }

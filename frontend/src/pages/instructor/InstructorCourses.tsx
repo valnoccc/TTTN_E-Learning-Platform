@@ -69,74 +69,121 @@ export default function InstructorCourses() {
 
     return (
         <InstructorLayout>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">Khóa học của tôi.</h1>
-                    <p className="text-gray-500 text-sm mt-1 font-medium">Quản lý nội dung giảng dạy và tiến độ học viên.</p>
-                </div>
-                <Link to="/instructor/courses/new"
-                    className="flex items-center gap-2 bg-[#0071E3] text-white px-4 py-2 rounded-md text-[13px] font-medium hover:bg-[#0077ED] transition-colors shadow-sm whitespace-nowrap">
-                    <PlusCircle size={16} /> Tạo khóa học mới
-                </Link>
-            </div>
+            <div className="relative space-y-8 overflow-hidden">
+                <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-[radial-gradient(circle_at_top_left,_rgba(0,113,227,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(29,29,31,0.06),_transparent_30%),linear-gradient(to_bottom,_rgba(255,255,255,0.95),_transparent)]" />
 
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map((n) => (
-                        <div key={n} className="bg-white border border-gray-200 rounded-md p-4 animate-pulse">
-                            <div className="w-full h-36 bg-gray-100 rounded-md mb-4"></div>
-                        </div>
-                    ))}
-                </div>
-            ) : courses?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map((course) => (
-                        <div key={course.id} className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
-                            <Link to={`/instructor/courses/${course.id}`}>
-                                <CourseCard
-                                    title={course.ten_khoa_hoc}
-                                    instructor="Bạn"
-                                    price={course.gia > 0 ? `${Number(course.gia).toLocaleString('vi-VN')} đ` : 'Miễn phí'}
-                                    image={course.hinh_anh}
-                                />
-                            </Link>
+                <section className="relative overflow-hidden rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                    <div className="absolute inset-y-0 right-0 hidden w-72 bg-[radial-gradient(circle,_rgba(0,113,227,0.12),_transparent_70%)] lg:block" />
 
-                            <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <button
-                                    onClick={(e) => { e.preventDefault(); handleToggleStatus(course.id, course.trang_thai); }}
-                                    className="p-2 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 transition-all"
-                                >
-                                    {course.trang_thai === 'HIDDEN' ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-
-                                <button
-                                    onClick={(e) => { e.preventDefault(); handleDelete(course.id); }}
-                                    className="p-2 bg-white shadow-md rounded-full text-gray-600 hover:text-red-600 transition-all"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+                    <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm">
+                                <BookOpen size={12} className="text-[#0071E3]" />
+                                Khóa học của tôi
                             </div>
-
-                            {course.trang_thai === 'HIDDEN' && (
-                                <div className="absolute top-3 left-3 bg-red-500/90 text-white text-[10px] px-2 py-1 rounded-md font-bold uppercase shadow-sm">
-                                    Đang ẩn
-                                </div>
-                            )}
+                            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#1D1D1F] sm:text-4xl">
+                                Quản lý khóa học
+                            </h1>
+                            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-[15px]">
+                                Theo dõi nội dung giảng dạy, kiểm soát trạng thái hiển thị và truy cập nhanh vào từng khóa học.
+                            </p>
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center flex flex-col items-center">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                        <BookOpen size={24} />
+
+                        <Link
+                            to="/instructor/courses/new"
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0071E3] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_rgba(0,113,227,0.22)] transition hover:bg-[#0077ED]"
+                        >
+                            <PlusCircle size={16} />
+                            Tạo khóa học mới
+                        </Link>
                     </div>
-                    <h3 className="text-lg font-semibold text-[#1D1D1F] mb-2">Chưa có khóa học nào</h3>
-                    <p className="text-gray-500 text-[13px] font-medium max-w-sm mb-6">Bạn chưa tạo khóa học nào trên hệ thống. Hãy bắt đầu chia sẻ kiến thức ngay.</p>
-                    <Link to="/instructor/courses/new" className="bg-white border border-gray-300 text-[#1D1D1F] px-4 py-2 rounded-md text-[13px] font-medium hover:bg-gray-50 transition-colors">
-                        Khởi tạo ngay
-                    </Link>
-                </div>
-            )}
+                </section>
+
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        {[1, 2, 3, 4].map((n) => (
+                            <div
+                                key={n}
+                                className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl"
+                            >
+                                <div className="aspect-[16/10] animate-pulse bg-slate-200/70" />
+                                <div className="space-y-3 p-5">
+                                    <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-200/80" />
+                                    <div className="h-3 w-1/2 animate-pulse rounded-full bg-slate-200/70" />
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <div className="h-8 w-20 animate-pulse rounded-full bg-slate-200/70" />
+                                        <div className="h-8 w-24 animate-pulse rounded-full bg-slate-200/70" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : courses?.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        {courses.map((course) => (
+                            <div
+                                key={course.id}
+                                className="group relative overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(15,23,42,0.08)]"
+                            >
+                                <Link to={`/instructor/courses/${course.id}`} className="block">
+                                    <div className="relative">
+                                        <CourseCard
+                                            title={course.ten_khoa_hoc}
+                                            instructor="Bạn"
+                                            price={course.gia > 0 ? `${Number(course.gia).toLocaleString('vi-VN')} đ` : 'Miễn phí'}
+                                            image={course.hinh_anh}
+                                        />
+                                    </div>
+                                </Link>
+
+                                <div className="absolute right-4 top-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleToggleStatus(course.id, course.trang_thai);
+                                        }}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-600 shadow-[0_8px_20px_rgba(15,23,42,0.12)] transition hover:text-[#0071E3]"
+                                    >
+                                        {course.trang_thai === 'HIDDEN' ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleDelete(course.id);
+                                        }}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-600 shadow-[0_8px_20px_rgba(15,23,42,0.12)] transition hover:text-red-600"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+
+                                {course.trang_thai === 'HIDDEN' && (
+                                    <div className="absolute left-4 top-4 rounded-full border border-red-200 bg-red-500/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white shadow-sm">
+                                        Đang ẩn
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[28px] border border-white/70 bg-white/90 px-6 text-center shadow-[0_16px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                            <BookOpen size={24} />
+                        </div>
+                        <h3 className="mt-5 text-lg font-semibold text-[#1D1D1F]">Chưa có khóa học nào</h3>
+                        <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                            Bạn chưa tạo khóa học nào trên hệ thống. Hãy bắt đầu chia sẻ kiến thức ngay.
+                        </p>
+                        <Link
+                            to="/instructor/courses/new"
+                            className="mt-6 inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#1D1D1F] shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                        >
+                            Khởi tạo ngay
+                        </Link>
+                    </div>
+                )}
+            </div>
         </InstructorLayout>
     );
 }

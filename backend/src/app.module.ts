@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { InstructorsModule } from './instructors/instructors.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CoursesModule,
     LessonsModule,
     CloudinaryModule,
+    InstructorsModule,
   ],
 })
 export class AppModule { }
