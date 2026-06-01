@@ -9,7 +9,8 @@ type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'
 };
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:3000',
+    // baseURL: 'http://localhost:3000',
+    baseURL: import.meta.env.VITE_API_URL || 'https://tttn-e-learning-platform.onrender.com',
 }) as ApiClient;
 
 axiosClient.interceptors.request.use(
