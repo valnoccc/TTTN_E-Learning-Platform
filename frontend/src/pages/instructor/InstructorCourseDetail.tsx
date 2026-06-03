@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+﻿import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     AlertTriangle,
@@ -190,24 +190,20 @@ export default function InstructorCourseDetail() {
 
     return (
         <InstructorLayout>
-            <div className="relative mx-auto w-full max-w-[1320px] space-y-8 px-6 py-8">
-                <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-[radial-gradient(circle_at_top_left,_rgba(0,113,227,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(29,29,31,0.06),_transparent_30%),linear-gradient(to_bottom,_rgba(255,255,255,0.96),_transparent)]" />
-
-                <section className="relative overflow-hidden rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-                    <div className="absolute inset-y-0 right-0 hidden w-72 bg-[radial-gradient(circle,_rgba(0,113,227,0.12),_transparent_70%)] lg:block" />
-
+            <div className="relative mx-auto w-full max-w-[1320px] space-y-6 px-4 py-6 lg:px-6">
+                <section className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="relative flex flex-col gap-6">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div className="max-w-2xl">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm">
-                                    <BookOpen size={12} className="text-[#0071E3]" />
+                                <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 shadow-sm">
+                                    <BookOpen size={12} className="text-emerald-600" />
                                     Chi tiết khóa học
                                 </div>
-                                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#1D1D1F] sm:text-4xl">
+                                <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl">
                                     {isNewCourse ? 'Tạo khóa học mới' : formData.title || 'Đang tải...'}
                                 </h1>
                                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-[15px]">
-                                    Thiết lập nội dung, hình ảnh, giá bán và chương trình học theo cùng phong cách với khu vực quản lý khác.
+                                    Thiết lập nội dung, hình ảnh, giá bán và chương trình học theo phong cách Edulyn.
                                 </p>
                             </div>
 
@@ -219,12 +215,12 @@ export default function InstructorCourseDetail() {
                                     }
                                 />
 
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap items-center gap-3">
                                     <button
                                         onClick={() => navigate('/instructor/courses')}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-[#1D1D1F] shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                                        className="group inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                                     >
-                                        <ArrowLeft size={16} />
+                                        <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
                                         Quay lại
                                     </button>
 
@@ -232,7 +228,7 @@ export default function InstructorCourseDetail() {
                                         <>
                                             <button
                                                 onClick={handleSave}
-                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#0071E3] bg-white px-5 py-3 text-sm font-medium text-[#0071E3] shadow-[0_10px_30px_rgba(0,113,227,0.12)] transition hover:bg-blue-50"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-100 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 hover:text-emerald-800"
                                             >
                                                 <Sparkles size={16} />
                                                 Lưu bản nháp
@@ -241,9 +237,9 @@ export default function InstructorCourseDetail() {
                                             {!isNewCourse && (
                                                 <button
                                                     onClick={() => handleStatusChange('PENDING')}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0071E3] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_rgba(0,113,227,0.22)] transition hover:bg-[#0077ED]"
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md"
                                                 >
-                                                    <BadgeInfo size={16} />
+                                                    <BadgeInfo size={18} />
                                                     Gửi yêu cầu duyệt
                                                 </button>
                                             )}
@@ -252,27 +248,15 @@ export default function InstructorCourseDetail() {
                                 </div>
                             </div>
                         </div>
-
-                        {false && (
-                            <div className="grid gap-3">
-                                <InlineAlert
-                                    tone="warning"
-                                    title="Đang chờ Admin duyệt"
-                                    message="Khóa học tạm thời bị khóa chỉnh sửa cho đến khi có phản hồi."
-                                    actionLabel="Hủy yêu cầu"
-                                    onAction={() => handleStatusChange('DRAFT')}
-                                />
-                            </div>
-                        )}
                     </div>
                 </section>
 
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)]">
                     <div className="space-y-6">
-                        <AppleCard title="Thông tin cơ bản" icon={<FileEdit size={18} className="text-[#0071E3]" />}>
+                        <EdulynCard title="Thông tin cơ bản" icon={<FileEdit size={18} className="text-emerald-600" />}>
                             <div className="space-y-6">
                                 <div>
-                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-slate-500">
                                         Tên khóa học <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -280,9 +264,8 @@ export default function InstructorCourseDetail() {
                                         value={formData.title}
                                         onChange={handleChange}
                                         disabled={isLocked}
-                                        className={`w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-[15px] text-[#1D1D1F] outline-none transition placeholder:text-slate-400 focus:border-[#0071E3] focus:bg-white ${
-                                            isLocked ? 'cursor-not-allowed opacity-60' : ''
-                                        }`}
+                                        className={`w-full rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white ${isLocked ? 'cursor-not-allowed opacity-60' : ''
+                                            }`}
                                         type="text"
                                         placeholder="Nhập tên khóa học"
                                     />
@@ -290,10 +273,10 @@ export default function InstructorCourseDetail() {
                                 </div>
 
                                 <div>
-                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-slate-500">
                                         Mô tả khóa học
                                     </label>
-                                    <div className={`overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50/90 ${isLocked ? 'opacity-60' : ''}`}>
+                                    <div className={`overflow-hidden rounded-md border border-slate-200 bg-slate-50 ${isLocked ? 'opacity-60' : ''}`}>
                                         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3">
                                             <ToolbarIcon icon={<Bold size={16} />} />
                                             <ToolbarIcon icon={<Italic size={16} />} />
@@ -306,17 +289,16 @@ export default function InstructorCourseDetail() {
                                             value={formData.description}
                                             onChange={handleChange}
                                             disabled={isLocked}
-                                            className={`min-h-[240px] w-full resize-none bg-transparent px-4 py-4 text-[15px] leading-7 text-[#1D1D1F] outline-none placeholder:text-slate-400 ${
-                                                isLocked ? 'cursor-not-allowed' : ''
-                                            }`}
+                                            className={`min-h-[240px] w-full resize-none bg-transparent px-4 py-4 text-[15px] leading-7 text-slate-800 outline-none placeholder:text-slate-400 ${isLocked ? 'cursor-not-allowed' : ''
+                                                }`}
                                             placeholder="Viết mô tả chi tiết cho khóa học của bạn..."
                                         />
                                     </div>
                                 </div>
                             </div>
-                        </AppleCard>
+                        </EdulynCard>
 
-                        <AppleCard title="Hình ảnh minh họa" icon={<ImageIcon size={18} className="text-[#0071E3]" />}>
+                        <EdulynCard title="Hình ảnh minh họa" icon={<ImageIcon size={18} className="text-emerald-600" />}>
                             <input
                                 type="file"
                                 id="fileInput"
@@ -334,15 +316,12 @@ export default function InstructorCourseDetail() {
                             />
 
                             {imagePreview || formData.hinh_anh ? (
-                                <div className="space-y-4 rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
-                                    <div className="relative aspect-[21/9] overflow-hidden rounded-[20px] bg-black shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+                                <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+                                    <div className="relative aspect-[21/9] overflow-hidden rounded-md bg-black shadow-sm">
                                         <img
                                             src={imagePreview || formData.hinh_anh}
                                             alt="Preview"
                                             className="h-full w-full object-cover opacity-95"
-                                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
                                         />
                                     </div>
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -352,9 +331,8 @@ export default function InstructorCourseDetail() {
                                         <button
                                             onClick={() => !isLocked && document.getElementById('fileInput')?.click()}
                                             disabled={isLocked}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-[#1D1D1F] shadow-sm transition hover:border-slate-300 hover:bg-slate-50 ${
-                                                isLocked ? 'cursor-not-allowed opacity-50' : ''
-                                            }`}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 ${isLocked ? 'cursor-not-allowed opacity-50' : ''
+                                                }`}
                                         >
                                             <UploadCloud size={16} />
                                             Thay đổi ảnh
@@ -365,42 +343,40 @@ export default function InstructorCourseDetail() {
                                 <button
                                     type="button"
                                     onClick={() => !isLocked && document.getElementById('fileInput')?.click()}
-                                    className={`flex min-h-[320px] w-full flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-slate-50/90 px-6 text-center transition hover:border-[#0071E3] hover:bg-blue-50/30 ${
-                                        isLocked ? 'cursor-not-allowed opacity-60' : ''
-                                    }`}
+                                    className={`flex min-h-[320px] w-full flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 px-6 text-center transition hover:border-emerald-500 hover:bg-emerald-50/30 ${isLocked ? 'cursor-not-allowed opacity-60' : ''
+                                        }`}
                                 >
-                                    <UploadCloud className="mb-4 text-[#0071E3]" size={34} />
-                                    <p className="text-base font-semibold text-[#1D1D1F]">Nhấn để tải ảnh khóa học lên</p>
+                                    <UploadCloud className="mb-4 text-emerald-600" size={34} />
+                                    <p className="text-base font-semibold text-slate-800">Nhấn để tải ảnh khóa học lên</p>
                                     <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Định dạng hỗ trợ: JPG, PNG. Tối đa 5MB.</p>
                                 </button>
                             )}
-                        </AppleCard>
+                        </EdulynCard>
                     </div>
 
                     <div className="space-y-6">
-                        <AppleCard title="Thiết lập" icon={<Layers3 size={18} className="text-[#0071E3]" />}>
+                        <EdulynCard title="Thiết lập" icon={<Layers3 size={18} className="text-emerald-600" />}>
                             <div className="space-y-6">
                                 <div>
-                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-slate-500">
                                         Giá khóa học
                                     </label>
                                     <div className="relative">
-                                        <DollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0071E3]" size={16} />
+                                        <DollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600" size={16} />
                                         <input
                                             name="price"
                                             type="number"
                                             value={formData.price}
                                             onChange={handleChange}
                                             disabled={isLocked}
-                                            className={`w-full rounded-2xl border border-slate-200 bg-slate-50/90 py-3 pl-11 pr-4 text-[15px] font-semibold text-[#1D1D1F] outline-none transition placeholder:text-slate-400 focus:border-[#0071E3] focus:bg-white ${
-                                                isLocked ? 'cursor-not-allowed opacity-60' : ''
-                                            }`}
+                                            className={`w-full rounded-md border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-[15px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white ${isLocked ? 'cursor-not-allowed opacity-60' : ''
+                                                }`}
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wider text-slate-500">
                                         Danh mục
                                     </label>
                                     <div className="relative">
@@ -409,9 +385,8 @@ export default function InstructorCourseDetail() {
                                             value={formData.category}
                                             onChange={handleChange}
                                             disabled={isLocked}
-                                            className={`w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-[15px] text-[#1D1D1F] outline-none transition focus:border-[#0071E3] focus:bg-white ${
-                                                isLocked ? 'cursor-not-allowed opacity-60' : ''
-                                            }`}
+                                            className={`w-full appearance-none rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white ${isLocked ? 'cursor-not-allowed opacity-60' : ''
+                                                }`}
                                         >
                                             <option>Web Development</option>
                                             <option>Data Science</option>
@@ -420,17 +395,17 @@ export default function InstructorCourseDetail() {
                                     </div>
                                 </div>
                             </div>
-                        </AppleCard>
+                        </EdulynCard>
 
                         {!isNewCourse && (
-                            <AppleCard title={`Chương trình học (${lessons.length})`} icon={<BookOpen size={18} className="text-[#0071E3]" />} sticky>
+                            <EdulynCard title={`Chương trình học (${lessons.length})`} icon={<BookOpen size={18} className="text-emerald-600" />} sticky>
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3">
-                                        <div className="text-sm text-slate-500">Quản lý bài học theo thứ tự học tập.</div>
+                                    <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+                                        <div className="text-sm text-slate-500">Quản lý bài học theo thứ tự.</div>
                                         {!isLocked && (
                                             <button
                                                 onClick={() => navigate(`/instructor/lessons/${id}`)}
-                                                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-[0_10px_25px_rgba(0,113,227,0.18)] transition hover:bg-[#0077ED]"
+                                                className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700"
                                                 title="Thêm bài học mới"
                                             >
                                                 <Plus size={16} />
@@ -441,13 +416,13 @@ export default function InstructorCourseDetail() {
                                     <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
                                         {lessons.length > 0 ? (
                                             lessons.map((lesson, index) => (
-                                                <div key={lesson.id} className="rounded-[24px] border border-slate-200 bg-white p-4 transition hover:bg-slate-50/70">
+                                                <div key={lesson.id} className="rounded-md border border-slate-200 bg-white p-4 transition hover:bg-slate-50/70">
                                                     <div className="flex items-start gap-3">
                                                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-[11px] font-semibold text-slate-500">
                                                             {String(index + 1).padStart(2, '0')}
                                                         </div>
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="truncate text-[15px] font-semibold text-[#1D1D1F]" title={lesson.tieu_de}>
+                                                            <p className="truncate text-[15px] font-semibold text-slate-800" title={lesson.tieu_de}>
                                                                 {lesson.tieu_de}
                                                             </p>
                                                             <p className="mt-1 text-xs text-slate-500">{lesson.video_url ? 'Có video' : 'Bài viết'}</p>
@@ -458,7 +433,7 @@ export default function InstructorCourseDetail() {
                                                         <div className="mt-4 flex gap-2">
                                                             <button
                                                                 onClick={() => navigate(`/instructor/lesson-detail/${lesson.id}`)}
-                                                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-[#1D1D1F] transition hover:border-slate-300 hover:bg-white"
+                                                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white"
                                                             >
                                                                 <FileEdit size={14} />
                                                                 Sửa
@@ -466,7 +441,7 @@ export default function InstructorCourseDetail() {
 
                                                             <button
                                                                 onClick={() => handleDeleteLesson(lesson.id)}
-                                                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white"
+                                                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white"
                                                             >
                                                                 <Trash2 size={14} />
                                                                 Xóa
@@ -476,19 +451,19 @@ export default function InstructorCourseDetail() {
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
+                                            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
                                                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm">
                                                     <BookOpen size={22} />
                                                 </div>
-                                                <p className="mt-4 text-sm font-medium text-[#1D1D1F]">Chưa có bài học nào</p>
+                                                <p className="mt-4 text-sm font-medium text-slate-800">Chưa có bài học nào</p>
                                                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                    Thêm bài học để hoàn thiện chương trình trước khi gửi duyệt.
+                                                    Thêm bài học trước khi gửi duyệt.
                                                 </p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                            </AppleCard>
+                            </EdulynCard>
                         )}
                     </div>
                 </div>
@@ -496,22 +471,22 @@ export default function InstructorCourseDetail() {
 
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#091E42]/50 backdrop-blur-sm">
-                    <div className="mx-4 w-full max-w-md rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
+                    <div className="mx-4 w-full max-w-md rounded-md border border-slate-200 bg-white p-6 shadow-lg">
                         <div className="mb-4 flex items-center gap-3 text-red-600">
                             <AlertTriangle size={28} />
-                            <h3 className="text-xl font-semibold tracking-tight text-[#1D1D1F]">Cảnh báo xóa khóa học</h3>
+                            <h3 className="text-xl font-bold tracking-tight text-slate-800">Cảnh báo xóa khóa học</h3>
                         </div>
                         <p className="mb-6 text-sm leading-6 text-slate-500">Bạn có chắc chắn muốn xóa khóa học này không?</p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-[#1D1D1F] transition hover:bg-slate-50"
+                                className="rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                             >
                                 Hủy bỏ
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                className="rounded-2xl bg-red-600 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_rgba(220,38,38,0.18)] transition hover:bg-red-700"
+                                className="rounded-md bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
                             >
                                 Tiếp tục xóa
                             </button>
@@ -523,7 +498,7 @@ export default function InstructorCourseDetail() {
     );
 }
 
-function AppleCard({
+function EdulynCard({
     title,
     icon,
     children,
@@ -536,13 +511,12 @@ function AppleCard({
 }) {
     return (
         <section
-            className={`overflow-hidden rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl ${
-                sticky ? 'lg:sticky lg:top-6' : ''
-            }`}
+            className={`overflow-hidden rounded-md border border-slate-200 bg-white p-5 shadow-sm ${sticky ? 'lg:sticky lg:top-6' : ''
+                }`}
         >
             <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-[#0071E3]">{icon}</div>
-                <h2 className="text-[15px] font-semibold tracking-tight text-[#1D1D1F]">{title}</h2>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">{icon}</div>
+                <h2 className="text-[15px] font-bold tracking-tight text-slate-800">{title}</h2>
             </div>
             {children}
         </section>
@@ -551,57 +525,21 @@ function AppleCard({
 
 function ToolbarIcon({ icon }: { icon: ReactNode }) {
     return (
-        <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-[#0071E3]">
+        <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-emerald-600">
             {icon}
         </button>
-    );
-}
-
-function InlineAlert({
-    tone,
-    title,
-    message,
-    actionLabel,
-    onAction,
-}: {
-    tone: 'warning' | 'success';
-    title: string;
-    message: string;
-    actionLabel: string;
-    onAction: () => void;
-}) {
-    const styles =
-        tone === 'warning'
-            ? 'border-yellow-200 bg-yellow-50 text-yellow-900'
-            : 'border-green-200 bg-green-50 text-green-900';
-
-    return (
-        <div className={`rounded-[24px] border px-4 py-4 shadow-sm ${styles}`}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 className="text-sm font-semibold">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 opacity-90">{message}</p>
-                </div>
-                <button
-                    onClick={onAction}
-                    className="inline-flex items-center justify-center rounded-2xl border border-white/70 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#1D1D1F] shadow-sm transition hover:bg-slate-50"
-                >
-                    {actionLabel}
-                </button>
-            </div>
-        </div>
     );
 }
 
 function StatusBanner({ status, onAction }: { status: string; onAction: () => void }) {
     if (status === 'PENDING') {
         return (
-            <div className="inline-flex items-center gap-3 rounded-[24px] border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 shadow-sm">
+            <div className="inline-flex items-center gap-3 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 shadow-sm">
                 <Info size={16} />
-                <span>Đang chờ Admin duyệt. Khóa học tạm thời bị khóa chỉnh sửa.</span>
+                <span>Đang chờ duyệt.</span>
                 <button
                     onClick={onAction}
-                    className="rounded-full border border-yellow-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#1D1D1F] transition hover:bg-yellow-100"
+                    className="rounded-md border border-yellow-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-yellow-100"
                 >
                     Hủy yêu cầu
                 </button>
@@ -611,14 +549,14 @@ function StatusBanner({ status, onAction }: { status: string; onAction: () => vo
 
     if (status === 'PUBLISHED') {
         return (
-            <div className="inline-flex items-center gap-3 rounded-[24px] border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 shadow-sm">
+            <div className="inline-flex items-center gap-3 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 shadow-sm">
                 <Info size={16} />
-                <span>Khóa học đã được xuất bản trên hệ thống.</span>
+                <span>Khóa học đã xuất bản.</span>
                 <button
                     onClick={onAction}
-                    className="rounded-full border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#1D1D1F] transition hover:bg-green-100"
+                    className="rounded-md border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-green-100"
                 >
-                    Tạm ẩn để sửa
+                    Tạm ẩn
                 </button>
             </div>
         );
