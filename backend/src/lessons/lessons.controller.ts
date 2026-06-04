@@ -1,15 +1,18 @@
 import {
   Controller, Post, Body, UseInterceptors, UploadedFile,
   UseGuards, Request, InternalServerErrorException, Get, Param,
-  ParseIntPipe, NotFoundException, // <-- Thêm 2 cái này vào đây
+  ParseIntPipe, NotFoundException,
   Query,
   Put,
-  Delete
+  Delete,
+  BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LessonsService } from './lessons.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { serializeLesson } from './lesson-response.util';
 
 @Controller('lessons')
 @UseGuards(JwtAuthGuard)
@@ -37,11 +40,11 @@ export class LessonsController {
 
       // 2. Chuẩn bị dữ liệu để lưu vào Database
       const payload = {
-        id_khoa_hoc: Number(lessonData.id_khoa_hoc),
-        tieu_de: lessonData.tieu_de,
+        maKH: Number(lessonData.maKH ?? lessonData.id_khoa_hoc),
+        tenBaiHoc: lessonData.tenBaiHoc ?? lessonData.tieu_de,
         noi_dung: lessonData.noi_dung || '',
-        thu_tu: Number(lessonData.thu_tu || 0),
-        video_url: videoUrl,
+        thuTu: Number(lessonData.thuTu ?? lessonData.thu_tu ?? 0),
+        videoURL: videoUrl,
       };
 
       // 3. Gọi service để lưu bài học
@@ -49,7 +52,7 @@ export class LessonsController {
 
       return {
         message: 'Thêm bài học thành công',
-        data: newLesson,
+        data: serializeLesson(newLesson),
       };
     } catch (error: any) {
       throw new InternalServerErrorException('Lỗi khi thêm bài học: ' + error.message);
@@ -57,14 +60,24 @@ export class LessonsController {
   }
 
   @Get()
-  async findByCourse(@Query('id_khoa_hoc') courseId: number) {
+  async findByCourse(@Query('maKH') maKH?: number, @Query('id_khoa_hoc') courseId?: number) {
+    const rawCourseId = maKH ?? courseId;
+    const parsedCourseId = Number(rawCourseId);
+
+    if (rawCourseId === undefined || Number.isNaN(parsedCourseId)) {
+      throw new BadRequestException('Thiếu hoặc sai id khóa học');
+    }
+
     try {
-      const lessons = await this.lessonsService.findAllByCourse(courseId);
+      const lessons = await this.lessonsService.findAllByCourse(parsedCourseId);
       return {
         message: 'Lấy danh sách bài học thành công',
-        data: lessons,
+        data: lessons.map(serializeLesson),
       };
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Lỗi khi lấy danh sách bài học: ' + error.message);
     }
   }
@@ -78,7 +91,7 @@ export class LessonsController {
     }
     return {
       message: 'Lấy chi tiết bài học thành công',
-      data: lesson,
+      data: serializeLesson(lesson),
     };
   }
 
@@ -91,10 +104,16 @@ export class LessonsController {
   ) {
     // 1. Chuẩn bị dữ liệu cập nhật
     const updateData = {
-      tieu_de: body.tieu_de,
+      tenBaiHoc: body.tenBaiHoc ?? body.tieu_de,
       noi_dung: body.noi_dung,
-      thu_tu: body.thu_tu ? Number(body.thu_tu) : undefined,
-      id_khoa_hoc: body.id_khoa_hoc ? Number(body.id_khoa_hoc) : undefined,
+      thuTu:
+        body.thuTu !== undefined || body.thu_tu !== undefined
+          ? Number(body.thuTu ?? body.thu_tu)
+          : undefined,
+      maKH:
+        body.maKH !== undefined || body.id_khoa_hoc !== undefined
+          ? Number(body.maKH ?? body.id_khoa_hoc)
+          : undefined,
     };
 
     // 2. Xử lý video mới (nếu có)
@@ -102,11 +121,12 @@ export class LessonsController {
       // Tải video mới lên Cloudinary
       const uploadResult = await this.cloudinaryService.uploadFile(file, 'video');
       // Thêm link video mới vào payload cập nhật
-      updateData['video_url'] = uploadResult.secure_url;
+      updateData['videoURL'] = uploadResult.secure_url;
     }
 
     // 3. Gọi Service để thực hiện cập nhật vào MySQL
-    return this.lessonsService.update(id, updateData);
+    const lesson = await this.lessonsService.update(id, updateData);
+    return serializeLesson(lesson);
   }
 
   @Delete(':id')

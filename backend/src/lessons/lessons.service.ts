@@ -23,16 +23,16 @@ export class LessonsService {
 
   async findAllByCourse(courseId: number): Promise<Lesson[]> {
     return await this.lessonRepository.find({
-      where: { id_khoa_hoc: courseId },
+      where: { maKH: courseId },
       order: {
-        thu_tu: 'ASC'
+        thuTu: 'ASC'
       },
     });
   }
 
   async findOne(id: number): Promise<Lesson | null> {
     return await this.lessonRepository.findOne({
-      where: { id },
+      where: { maBH: id },
       relations: ['khoaHoc'], // Nếu bạn muốn lấy thêm thông tin khóa học để làm Breadcrumb
     });
   }
@@ -41,7 +41,7 @@ export class LessonsService {
     // 1. Kiểm tra xem bài học có tồn tại không và nạp dữ liệu cũ
     // 'preload' sẽ tạo một entity mới dựa trên ID và các trường trong payload
     const lesson = await this.lessonRepository.preload({
-      id: id,
+      maBH: id,
       ...payload,
     });
 
@@ -59,18 +59,18 @@ export class LessonsService {
   }
 
   async remove(id: number): Promise<void> {
-    const lesson = await this.lessonRepository.findOne({ where: { id } });
+    const lesson = await this.lessonRepository.findOne({ where: { maBH: id } });
     if (!lesson) {
       throw new NotFoundException(`Không tìm thấy bài học có ID #${id}`);
     }
 
     // 1. Nếu có video, tiến hành xóa trên Cloudinary
-    if (lesson.video_url) {
+    if (lesson.videoURL) {
       try {
         // Trích xuất public_id từ URL
         // Ví dụ URL: https://res.cloudinary.com/demo/video/upload/v12345/lesson_123.mp4
         // Sẽ lấy ra được chữ: "lesson_123"
-        const urlParts = lesson.video_url.split('/');
+        const urlParts = lesson.videoURL.split('/');
         const fileNameWithExt = urlParts[urlParts.length - 1]; // "lesson_123.mp4"
         const publicId = fileNameWithExt.split('.')[0]; // "lesson_123"
 

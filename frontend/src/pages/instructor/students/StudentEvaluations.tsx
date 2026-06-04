@@ -108,40 +108,26 @@ export default function InstructorStudents() {
     return (
         <InstructorLayout>
             <div className="space-y-6">
-                <section className="border border-[#d1d7dc] bg-white p-5 sm:p-6">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                                Quản lý học viên
-                            </p>
-                            <h1 className="mt-2 text-2xl font-bold text-slate-900">Danh sách học viên</h1>
-                            <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                                Giữ nguyên bộ lọc khóa học và tìm kiếm hiện tại, chuyển phần hiển thị sang cấu trúc panel và danh sách có đường kẻ phân tách.
-                            </p>
-                        </div>
+                {/* Header trang */}
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Danh sách học viên</h1>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Quản lý và xem danh sách học viên đã đăng ký các khóa học của bạn.
+                    </p>
+                </div>
 
-                        <div className="border border-[#d1d7dc] bg-[#f8fafb] px-4 py-3 text-sm text-slate-600">
-                            Bộ lọc hiện tại: <span className="font-semibold text-slate-900">{selectedCourseName}</span>
-                        </div>
-                    </div>
-                </section>
-
+                {/* Các thẻ thống kê nhanh */}
                 <section className="grid gap-4 md:grid-cols-3">
                     <SummaryCard icon={<Users size={16} />} label="Tổng học viên" value={board.totalStudents} />
                     <SummaryCard icon={<BookOpen size={16} />} label="Lượt mua" value={board.totalPurchases} />
                     <SummaryCard icon={<Wallet size={16} />} label="Doanh thu" value={formatCurrency(board.totalRevenue)} />
                 </section>
 
+                {/* Thanh lọc dữ liệu */}
                 <ClassicFilterBar
                     searchValue={searchInput}
                     onSearchChange={(event) => setSearchInput(event.target.value)}
-                    onSearchKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            setAppliedSearch(searchInput);
-                            void loadStudents(courseId, searchInput);
-                        }
-                    }}
-                    searchPlaceholder="Tìm theo tên hoặc email học viên"
+                    searchPlaceholder="Tìm kiếm học viên..."
                     selectValue={courseId}
                     onSelectChange={(event) => setCourseId(event.target.value)}
                     options={[
@@ -158,76 +144,36 @@ export default function InstructorStudents() {
                                 setAppliedSearch(searchInput);
                                 void loadStudents(courseId, searchInput);
                             }}
-                            className="inline-flex w-full items-center justify-center gap-2 border border-slate-900 bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black lg:w-auto"
+                            className="bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                         >
-                            <RefreshCw size={16} />
-                            Lọc dữ liệu
+                            Lọc
                         </button>
                     }
                 />
 
-                <section className="border border-[#d1d7dc] bg-white">
-                    <div className="border-b border-slate-200 px-5 py-4">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Kết quả</p>
-                        <h2 className="mt-2 text-lg font-bold text-slate-900">
-                            {board.students.length} học viên đang hiển thị
-                        </h2>
-                    </div>
-
-                    {loading ? (
-                        <div className="divide-y divide-slate-200">
-                            {[1, 2, 3].map((row) => (
-                                <div key={row} className="space-y-3 px-5 py-5 animate-pulse">
-                                    <div className="h-4 w-48 bg-slate-200" />
-                                    <div className="h-3 w-64 bg-slate-100" />
-                                    <div className="h-3 w-full bg-slate-100" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : board.students.length === 0 ? (
-                        <div className="flex min-h-[260px] flex-col items-center justify-center px-6 text-center">
-                            <div className="flex h-14 w-14 items-center justify-center border border-[#d1d7dc] bg-slate-50 text-slate-400">
-                                <Users size={22} />
-                            </div>
-                            <h3 className="mt-4 text-lg font-bold text-slate-900">Không có học viên phù hợp</h3>
-                            <p className="mt-2 text-sm text-slate-500">
-                                Thử thay đổi từ khóa tìm kiếm hoặc chọn khóa học khác.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-slate-200">
+                {/* Danh sách học viên - Dạng bảng truyền thống dễ nhìn */}
+                <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th className="p-4 text-sm font-bold text-slate-700">Học viên</th>
+                                <th className="p-4 text-sm font-bold text-slate-700">Số khóa học</th>
+                                <th className="p-4 text-sm font-bold text-slate-700">Tổng chi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
                             {board.students.map((student) => (
-                                <article key={student.studentId} className="px-5 py-5">
-                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                        <div className="min-w-0 space-y-3">
-                                            <div>
-                                                <h3 className="text-base font-bold text-slate-900">{student.studentName}</h3>
-                                                <p className="text-sm text-slate-500">{student.studentEmail}</p>
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-2">
-                                                {student.courses.map((course) => (
-                                                    <span
-                                                        key={course.courseId}
-                                                        className="inline-flex items-center gap-2 border border-[#d1d7dc] bg-[#f8fafb] px-3 py-1.5 text-xs text-slate-700"
-                                                    >
-                                                        <BookOpen size={12} className="text-emerald-600" />
-                                                        {course.courseName}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <dl className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                                            <MetaBox label="Số khóa" value={student.totalCourses} />
-                                            <MetaBox label="Tổng chi" value={formatCurrency(student.totalSpent)} />
-                                            <MetaBox label="Mua gần nhất" value={formatDate(student.lastPurchasedAt)} />
-                                        </dl>
-                                    </div>
-                                </article>
+                                <tr key={student.studentId} className="hover:bg-slate-50">
+                                    <td className="p-4">
+                                        <p className="font-bold text-slate-900">{student.studentName}</p>
+                                        <p className="text-xs text-slate-500">{student.studentEmail}</p>
+                                    </td>
+                                    <td className="p-4 text-sm text-slate-600">{student.totalCourses}</td>
+                                    <td className="p-4 text-sm font-semibold text-slate-900">{formatCurrency(student.totalSpent)}</td>
+                                </tr>
                             ))}
-                        </div>
-                    )}
+                        </tbody>
+                    </table>
                 </section>
             </div>
         </InstructorLayout>

@@ -1,28 +1,24 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 
-@Entity('baihoc')
+@Entity('BaiHoc')
 export class Lesson {
-    @PrimaryGeneratedColumn()
-    id!: number;
+    @PrimaryGeneratedColumn({ name: 'MaBH' })
+    maBH!: number;
 
-    @Column({ name: 'id_khoa_hoc', nullable: true })
-    id_khoa_hoc!: number;
+    @Column({ name: 'MaKH' })
+    maKH!: number;
 
-    @Column({ type: 'varchar', length: 255 })
-    tieu_de!: string;
+    @Column({ name: 'TenBaiHoc', type: 'varchar', length: 255 })
+    tenBaiHoc!: string;
 
-    @Column({ type: 'text', nullable: true })
-    noi_dung!: string;
+    @Column({ name: 'VideoURL', type: 'varchar', length: 255, nullable: true })
+    videoURL?: string;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    video_url!: string;
+    @Column({ name: 'ThuTu', type: 'int' })
+    thuTu!: number;
 
-    @Column({ type: 'int', nullable: true })
-    thu_tu!: number;
-
-    // Quan hệ: Nhiều bài học thuộc về một khóa học
     @ManyToOne(() => KhoaHoc)
-    @JoinColumn({ name: 'id_khoa_hoc' })
+    @JoinColumn({ name: 'MaKH' })
     khoaHoc!: KhoaHoc;
 }

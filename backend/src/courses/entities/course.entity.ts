@@ -1,42 +1,38 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-@Entity('khoahoc')
+@Entity('KhoaHoc')
 export class KhoaHoc {
-    @PrimaryGeneratedColumn()
-    id!: number;
+    @PrimaryGeneratedColumn({ name: 'MaKH' })
+    maKH!: number;
 
-    @Column({ type: 'varchar', length: 255 })
-    ten_khoa_hoc!: string;
+    @Column({ name: 'MaDM' })
+    maDM!: number;
 
-    @Column({ type: 'text', nullable: true })
-    mo_ta!: string;
+    @Column({ name: 'MaND_GiangVien' })
+    maND_GiangVien!: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-    gia!: number;
+    @Column({ name: 'TenKhoaHoc', type: 'varchar', length: 255 })
+    tenKhoaHoc!: string;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    hinh_anh!: string;
+    @Column({ name: 'MoTa', type: 'text', nullable: true })
+    moTa?: string;
+
+    @Column({ name: 'GiaBan', type: 'decimal', precision: 10, scale: 2, default: 0 })
+    giaBan!: number;
 
     @Column({
         type: 'enum',
-        enum: ['DRAFT', 'PENDING', 'PUBLISHED', 'HIDDEN'],
+        enum: ['DRAFT', 'PUBLISHED', 'BANNED'],
         default: 'DRAFT',
+        name: 'TrangThai'
     })
-    trang_thai!: string;
+    trangThai!: string;
 
-    @Column({ nullable: true })
-    id_danh_muc!: number;
+    @Column({ name: 'HinhThuNho', type: 'varchar', length: 255, nullable: true })
+    hinhThuNho?: string;
 
-    // Cột này dùng để truy vấn ID trực tiếp
-    @Column({ nullable: true })
-    id_giang_vien!: number;
-
-    @CreateDateColumn()
-    ngay_tao!: Date;
-
-    // Quan hệ ManyToOne với bảng nguoi_dung
     @ManyToOne(() => User)
-    @JoinColumn({ name: 'id_giang_vien' })
+    @JoinColumn({ name: 'MaND_GiangVien' })
     giangVien!: User;
 }

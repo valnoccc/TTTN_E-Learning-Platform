@@ -7,6 +7,7 @@ import {
     Plus,
     Settings,
     Trash2,
+    FilePlusCorner
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ interface Course {
     ten_khoa_hoc: string;
     gia: number;
     trang_thai: string;
+    hinh_thu_nho?: string;
 }
 
 export default function InstructorCourses() {
@@ -88,23 +90,23 @@ export default function InstructorCourses() {
         <InstructorLayout>
             <div className="space-y-6">
 
-                {/* Header & Nút thêm khóa học góc trên cùng */}
+                {/* Header & Nút thêm khóa học */}
                 <div className="flex items-center justify-between mb-5">
                     <h1 className="text-[1.8rem] font-bold text-slate-800 m-0">Khóa học của tôi</h1>
                     <Link
                         to="/instructor/courses/new"
-                        className="inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                        className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
                         style={{ backgroundColor: '#1dbf73' }}
                         onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#169b5c')}
                         onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#1dbf73')}
                     >
-                        <Plus size={16} />
+                        <FilePlusCorner size={18} />
                         Thêm khóa học mới
                     </Link>
                 </div>
 
-                {/* Card chứa Table danh sách */}
-                <div className="rounded-sm border border-slate-300 bg-white p-6">
+                {/* Card chứa Table */}
+                <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
                     {loading ? (
                         <div className="animate-pulse space-y-4">
                             <div className="h-10 bg-slate-100 rounded"></div>
@@ -116,56 +118,53 @@ export default function InstructorCourses() {
                             <table className="w-full border-collapse text-left mt-2">
                                 <thead>
                                     <tr>
-                                        <th className="border-b border-slate-300 bg-slate-50 p-3 font-bold text-slate-800">Tên khóa học</th>
-                                        <th className="border-b border-slate-300 bg-slate-50 p-3 font-bold text-slate-800">Giá bán</th>
-                                        <th className="border-b border-slate-300 bg-slate-50 p-3 font-bold text-slate-800">Trạng thái</th>
-                                        <th className="border-b border-slate-300 bg-slate-50 p-3 font-bold text-slate-800">Thao tác</th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Tên khóa học</th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Giá bán</th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Trạng thái</th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700 text-right">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {courses.map((course) => (
-                                        <tr key={course.id} className="hover:bg-[#f9fbfb] transition-colors">
-                                            <td className="border-b border-slate-200 p-3">
+                                        <tr key={course.id} className="group transition-colors hover:bg-slate-50/70">
+                                            <td className="border-b border-slate-100 p-4">
                                                 <Link
                                                     to={`/instructor/courses/${course.id}/overview`}
-                                                    className="font-bold text-[#1dbf73] hover:text-[#169b5c] cursor-pointer"
+                                                    className="font-bold text-slate-800 transition-colors hover:text-[#1dbf73]"
                                                 >
                                                     {course.ten_khoa_hoc}
                                                 </Link>
                                             </td>
-                                            <td className="border-b border-slate-200 p-3 text-sm text-slate-700">
+                                            <td className="border-b border-slate-100 p-4 text-sm font-medium text-slate-600">
                                                 {course.gia > 0 ? `${Number(course.gia).toLocaleString('vi-VN')} đ` : 'Miễn phí'}
                                             </td>
-                                            <td className="border-b border-slate-200 p-3">
+                                            <td className="border-b border-slate-100 p-4">
                                                 <StatusBadge status={course.trang_thai} />
                                             </td>
-                                            <td className="border-b border-slate-200 p-3">
-                                                <td className="border-b border-slate-200 p-3">
-                                                    <div className="flex gap-2">
-                                                        <Link
-                                                            to={`/instructor/courses/${course.id}/overview`}
-                                                            className="inline-flex items-center gap-1.5 rounded-sm border border-slate-800 bg-transparent px-3 py-1.5 text-sm font-bold !text-slate-800 hover:bg-slate-50 transition"
-                                                        >
-                                                            <Settings size={14} /> Quản lý
-                                                        </Link>
+                                            <td className="border-b border-slate-100 p-4">
+                                                <div className="flex justify-end gap-2 opacity-90 transition-opacity group-hover:opacity-100">
+                                                    <Link
+                                                        to={`/instructor/courses/${course.id}/overview`}
+                                                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#1dbf73] hover:bg-[#ebf8f2] hover:text-[#169b5c]"
+                                                    >
+                                                        <Settings size={14} /> Quản lý
+                                                    </Link>
 
-                                                        <button
-                                                            onClick={() => void handleToggleStatus(course.id, course.trang_thai)}
-                                                            className="inline-flex items-center gap-1.5 rounded-sm border border-slate-800 bg-transparent px-3 py-1.5 text-sm font-bold !text-slate-800 hover:bg-slate-50 transition"
-                                                        >
-                                                            {course.trang_thai === 'HIDDEN' ? <Eye size={14} /> : <EyeOff size={14} />}
-                                                            {course.trang_thai === 'HIDDEN' ? 'Hiện' : 'Ẩn'}
-                                                        </button>
+                                                    <button
+                                                        onClick={() => void handleToggleStatus(course.id, course.trang_thai)}
+                                                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
+                                                    >
+                                                        {course.trang_thai === 'HIDDEN' ? <Eye size={14} /> : <EyeOff size={14} />}
+                                                        {course.trang_thai === 'HIDDEN' ? 'Hiện' : 'Ẩn'}
+                                                    </button>
 
-                                                        {/* NÚT XÓA: ÉP MÀU ĐỎ BẰNG ! */}
-                                                        <button
-                                                            onClick={() => void handleDelete(course.id)}
-                                                            className="inline-flex items-center gap-1.5 rounded-sm border !border-red-600 bg-transparent px-3 py-1.5 text-sm font-bold !text-red-600 hover:!bg-red-50 transition"
-                                                        >
-                                                            <Trash2 size={14} /> Xóa
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                    <button
+                                                        onClick={() => void handleDelete(course.id)}
+                                                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                                    >
+                                                        <Trash2 size={14} /> Xóa
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -173,24 +172,23 @@ export default function InstructorCourses() {
                             </table>
                         </div>
                     ) : (
-                        <div className="py-14 text-center">
-                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-                                <BookOpen size={22} />
+                        <div className="py-16 text-center">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                                <BookOpen size={28} />
                             </div>
                             <h2 className="mt-4 text-lg font-bold text-slate-800">Chưa có khóa học nào</h2>
-                            <p className="mt-2 text-sm text-slate-500 mb-5">
+                            <p className="mt-2 text-sm text-slate-500 mb-6">
                                 Bạn chưa tạo khóa học nào trên hệ thống. Hãy bắt đầu với một bản nháp mới.
                             </p>
 
-                            {/* Nút thêm khóa học khi danh sách trống */}
                             <Link
                                 to="/instructor/courses/new"
-                                className="inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                                className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-colors"
                                 style={{ backgroundColor: '#1dbf73' }}
                                 onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#169b5c')}
                                 onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#1dbf73')}
                             >
-                                <Plus size={16} />
+                                <Plus size={18} />
                                 Thêm khóa học mới
                             </Link>
                         </div>
@@ -202,16 +200,16 @@ export default function InstructorCourses() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const baseClass = "inline-flex rounded-sm px-2 py-1 text-xs font-bold border";
+    const baseClass = "inline-flex rounded-md px-2.5 py-1 text-xs font-bold border";
 
     switch (status) {
         case 'PUBLISHED':
-            return <span className={`${baseClass} border-green-300 bg-green-50 text-green-700`}>Đã xuất bản</span>;
+            return <span className={`${baseClass} border-emerald-200 bg-emerald-50 text-emerald-700`}>Đã xuất bản</span>;
         case 'PENDING':
-            return <span className={`${baseClass} border-yellow-300 bg-yellow-50 text-yellow-700`}>Chờ duyệt</span>;
+            return <span className={`${baseClass} border-amber-200 bg-amber-50 text-amber-700`}>Chờ duyệt</span>;
         case 'HIDDEN':
-            return <span className={`${baseClass} border-slate-300 bg-slate-100 text-slate-600`}>Đang ẩn</span>;
+            return <span className={`${baseClass} border-slate-200 bg-slate-100 text-slate-600`}>Đang ẩn</span>;
         default:
-            return <span className={`${baseClass} border-blue-300 bg-blue-50 text-blue-700`}>Bản nháp</span>;
+            return <span className={`${baseClass} border-blue-200 bg-blue-50 text-blue-700`}>Bản nháp</span>;
     }
 }

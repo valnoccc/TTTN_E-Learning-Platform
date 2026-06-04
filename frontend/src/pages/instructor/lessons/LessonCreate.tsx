@@ -64,31 +64,27 @@ export default function LessonCreate() {
     <InstructorLayout>
       <div className="mx-auto max-w-[1100px] px-2 py-4 lg:px-4">
 
-        {/* Nút quay lại đồng nhất */}
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Quay lại khóa học
-        </button>
+        {/* XÓA NÚT QUAY LẠI RỜI RẠC Ở ĐÂY, CHUYỂN VÀO HEADER */}
 
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Thêm bài học mới</h1>
-            <p className="text-sm text-slate-500 italic">Thiết lập nội dung bài giảng cho học viên</p>
+            <p className="mt-1 text-sm text-slate-500">Thiết lập nội dung bài giảng cho học viên</p>
           </div>
-          <div className="flex gap-3">
+
+          {/* CỤM NÚT ĐỒNG BỘ VỚI TRANG QUẢN LÝ */}
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="rounded-sm border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900"
             >
-              Hủy
+              <ArrowLeft size={16} />
+              Quay lại
             </button>
             <button
               onClick={handleSave}
               disabled={loading}
-              className="flex items-center gap-2 rounded-sm bg-[#1dbf73] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#169b5c] disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-6 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow disabled:opacity-50"
             >
               <Save size={16} /> {loading ? 'Đang xử lý...' : 'Lưu bài học'}
             </button>

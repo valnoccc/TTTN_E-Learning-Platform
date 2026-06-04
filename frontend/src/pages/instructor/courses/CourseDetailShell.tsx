@@ -15,9 +15,9 @@ import {
     FileEdit,
     Layers3,
     MessageSquare,
-    Sparkles,
     Star,
     Trash2,
+    Bookmark
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -31,7 +31,7 @@ export interface CourseForm {
     category: string | number;
     hinh_anh: string;
     trang_thai: string;
-    file_anh_that?: File | null;
+    hinh_thu_nho?: string;
 }
 
 export interface Lesson {
@@ -91,6 +91,7 @@ export default function InstructorCourseDetail({
         hinh_anh: '',
         trang_thai: 'DRAFT',
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [errorText, setErrorText] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -111,10 +112,12 @@ export default function InstructorCourseDetail({
                     description: courseData.mo_ta || '',
                     price: courseData.gia || 0,
                     category: courseData.id_danh_muc === 1 ? 'Web Development' : 'Data Science',
-                    hinh_anh: courseData.hinh_anh || '',
+                    hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
+                    hinh_thu_nho: courseData.hinh_thu_nho || null,
                 });
-                setImagePreview(courseData.hinh_anh || null);
+                setImagePreview(courseData.hinh_thu_nho || courseData.hinh_anh || null);
+                setImageFile(null);
             } catch (error) {
                 toast.error('Không thể tải thông tin khóa học.');
             }
@@ -157,7 +160,7 @@ export default function InstructorCourseDetail({
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result as string);
         reader.readAsDataURL(file);
-        setFormData((current) => ({ ...current, file_anh_that: file }));
+        setImageFile(file);
     };
 
     const handleSave = async () => {
@@ -173,8 +176,8 @@ export default function InstructorCourseDetail({
             data.append('gia', formData.price.toString());
             data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
 
-            if (formData.file_anh_that) {
-                data.append('image', formData.file_anh_that);
+            if (imageFile) {
+                data.append('image', imageFile);
             }
 
             if (isNewCourse) {
@@ -290,72 +293,74 @@ export default function InstructorCourseDetail({
         <InstructorLayout>
             <InstructorCourseContext.Provider value={contextValue}>
                 <div className="space-y-6">
-                    <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                    <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
 
-                        <div className="px-5 py-4 sm:px-6">
-                            {/* Nút quay lại gọn gàng ở góc trên */}
-                            <button
-                                onClick={() => navigate('/instructor/courses')}
-                                className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                            >
-                                <ArrowLeft size={16} />
-                                Quay lại danh sách
-                            </button>
-
-                            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        {/* KHU VỰC HEADER */}
+                        <div className="border-b border-slate-200 px-6 py-5 sm:px-8">
+                            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="min-w-0">
-                                    <div className="inline-flex items-center gap-2 rounded-sm border border-[#1dbf73] bg-[#ebf8f2] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-[#169b5c]">
-                                        <Layers3 size={12} />
+                                    <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">
+                                        <Layers3 size={14} />
                                         Quản lý khóa học
                                     </div>
-                                    <h1 className="mt-3 text-2xl font-bold text-slate-900">
-                                        {isNewCourse ? 'Tạo khóa học mới' : formData.title || 'Đang tải khóa học'}
+                                    <h1 className="mt-4 text-3xl font-extrabold text-slate-900 tracking-tight">
+                                        {isNewCourse ? 'Tạo khóa học mới' : formData.title || 'Đang tải...'}
                                     </h1>
+                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
+                                        Cập nhật nội dung, chương trình học và điều phối xuất bản cho học viên.
+                                    </p>
                                 </div>
 
-                                <div className="flex flex-col items-start gap-3 xl:items-end">
-                                    {/* Trạng thái Badge */}
+                                <div className="flex flex-col items-start gap-4 xl:items-end">
                                     {!isNewCourse && (
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm font-semibold text-slate-500">Trạng thái:</span>
-                                            <BadgeStatus status={formData.trang_thai} />
-                                        </div>
+                                        <StatusActions
+                                            status={formData.trang_thai}
+                                            onAction={() =>
+                                                void handleStatusChange(
+                                                    formData.trang_thai === 'PENDING' ? 'DRAFT' : 'HIDDEN',
+                                                )
+                                            }
+                                        />
                                     )}
 
-                                    {/* Nhóm các nút hành động được thiết kế lại */}
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-3 mt-1">
+                                        <button
+                                            onClick={() => navigate('/instructor/courses')}
+                                            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900"
+                                        >
+                                            <ArrowLeft size={16} />
+                                            Quay lại
+                                        </button>
+
                                         {!isLocked && !isNewCourse ? (
                                             <button
                                                 onClick={handleDeleteCourse}
-                                                className="inline-flex items-center gap-2 rounded-sm border border-red-500 bg-transparent px-4 py-2 text-sm font-bold text-red-500 transition hover:bg-red-50"
+                                                className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                             >
                                                 <Trash2 size={16} />
-                                                Xóa
+                                                Xóa khóa học
                                             </button>
                                         ) : null}
 
                                         {!isLocked ? (
                                             <button
                                                 onClick={() => void handleSave()}
-                                                className="inline-flex items-center gap-2 rounded-sm border border-[#1dbf73] bg-transparent px-4 py-2 text-sm font-bold text-[#1dbf73] transition hover:bg-[#ebf8f2]"
+                                                className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-bold text-emerald-700 transition-all hover:bg-emerald-100 hover:border-emerald-300"
                                             >
-                                                <Sparkles size={16} />
-                                                {isNewCourse ? 'Tạo bản nháp' : 'Lưu bản nháp'}
+                                                <Bookmark size={16} />
+                                                {isNewCourse ? 'Tạo bản nháp' : 'Lưu thay đổi'}
                                             </button>
                                         ) : null}
 
                                         {!isLocked && !isNewCourse ? (
                                             <button
                                                 onClick={() => void handleStatusChange('PENDING')}
-                                                className="inline-flex items-center gap-2 rounded-sm border border-transparent bg-[#1dbf73] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#169b5c]"
+                                                className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-5 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow"
                                             >
                                                 <BadgeInfo size={16} />
                                                 Gửi yêu cầu duyệt
                                             </button>
                                         ) : null}
-
-                                        {/* Nút hành động phụ dựa trên trạng thái */}
-                                        <StatusActions status={formData.trang_thai} onAction={() => void handleStatusChange(formData.trang_thai === 'PENDING' ? 'DRAFT' : 'HIDDEN')} />
                                     </div>
                                 </div>
                             </div>
@@ -363,22 +368,20 @@ export default function InstructorCourseDetail({
 
                         {!isNewCourse ? (
                             <>
-
-                                {/* SỬA LẠI TABS: Nổi bật hơn, to hơn và viền dày đè lên nét đứt */}
-                                <div className="border-b border-slate-200 px-6 bg-white">
+                                {/* KHU VỰC TABS (Chống nhiễu màu xanh dương) */}
+                                <div className="border-b border-slate-200 bg-white px-6 sm:px-8">
                                     <div className="-mb-px flex flex-wrap gap-8">
                                         {detailTabs.map((tab) => (
                                             <NavLink
                                                 key={tab.key}
                                                 to={tab.to}
                                                 className={({ isActive }) =>
-                                                    `flex items-center gap-2.5 py-4 px-1 text-base font-bold border-b-[4px] transition-all duration-200 ${isActive
-                                                        ? 'border-[#1dbf73] !text-[#1dbf73]' // Tab đang chọn: Viền xanh lục dày, Chữ xanh lục
-                                                        : 'border-transparent !text-slate-600 hover:!text-[#169b5c] hover:border-[#169b5c]/40' // Tab bình thường: Chữ xám đậm, Hover hiện viền mờ
+                                                    `flex items-center gap-2.5 py-4 px-1 text-[15px] font-bold border-b-[3px] transition-all duration-200 ${isActive
+                                                        ? 'border-[#1dbf73] text-[#1dbf73]' // Tab đang chọn: Viền xanh, chữ xanh
+                                                        : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300' // Tab bình thường: Chữ xám, hover đậm lên
                                                     }`
                                                 }
                                             >
-                                                {/* Thay vì dùng kích thước cố định, để icon kế thừa kích thước (tự động cân đối) */}
                                                 <span className="[&>svg]:h-5 [&>svg]:w-5">
                                                     {tab.icon}
                                                 </span>
@@ -388,7 +391,7 @@ export default function InstructorCourseDetail({
                                     </div>
                                 </div>
 
-                                <div className="grid gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4 sm:grid-cols-3 sm:px-6">
+                                <div className="grid gap-4 border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:grid-cols-3 sm:px-8">
                                     <CourseMetric label="Trạng thái" value={getStatusLabel(formData.trang_thai)} />
                                     <CourseMetric label="Số bài học" value={String(lessons.length)} />
                                     <CourseMetric
@@ -403,7 +406,7 @@ export default function InstructorCourseDetail({
                             </>
                         ) : null}
 
-                        <div className="px-4 py-5 sm:px-6">
+                        <div className="px-6 py-6 sm:px-8 bg-slate-50/30">
                             {isNewCourse ? children : <Outlet />}
                         </div>
                     </section>

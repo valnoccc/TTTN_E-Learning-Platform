@@ -14,8 +14,8 @@ export class CoursesService {
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
-      where: { id_giang_vien: instructorId },
-      order: { ngay_tao: 'DESC' }
+      where: { maND_GiangVien: instructorId },
+      order: { maKH: 'DESC' }
     });
   }
 
@@ -26,18 +26,18 @@ export class CoursesService {
 
   async remove(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
-      where: { id: courseId, id_giang_vien: instructorId }
+      where: { maKH: courseId, maND_GiangVien: instructorId }
     });
 
     if (!course) throw new ForbiddenException('Bạn không có quyền xóa khóa học này');
 
     const hasBuyers = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM chitiethoadon WHERE id_khoa_hoc = ?`,
+      `SELECT COUNT(*) as count FROM ChiTietHoaDon WHERE MaKH = ?`,
       [courseId]
     );
 
     if (hasBuyers[0].count > 0) {
-      await this.khoaHocRepository.update(courseId, { trang_thai: 'HIDDEN' });
+      await this.khoaHocRepository.update(courseId, { trangThai: 'HIDDEN' });
       return { message: 'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẨN.' };
     }
 
@@ -45,18 +45,18 @@ export class CoursesService {
     return { message: 'Đã xóa khóa học thành công.' };
   }
 
-  async updateCourseStatus(courseId: number, instructorId: number, trang_thai: string) {
+  async updateCourseStatus(courseId: number, instructorId: number, trangThai: string) {
     const course = await this.khoaHocRepository.findOne({
-      where: { id: courseId, id_giang_vien: instructorId }
+      where: { maKH: courseId, maND_GiangVien: instructorId }
     });
 
     if (!course) throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
 
     // --- BỔ SUNG RÀNG BUỘC KIỂM DUYỆT Ở ĐÂY ---
-    if (trang_thai === 'PENDING') {
+    if (trangThai === 'PENDING') {
       // Đếm số lượng bài học của khóa học này trong bảng baihoc
       const lessonCount = await this.dataSource.query(
-        `SELECT COUNT(*) as count FROM baihoc WHERE id_khoa_hoc = ?`,
+        `SELECT COUNT(*) as count FROM BaiHoc WHERE MaKH = ?`,
         [courseId]
       );
 
@@ -64,7 +64,7 @@ export class CoursesService {
         throw new BadRequestException('Khóa học chưa hoàn thiện. Cần ít nhất 1 bài học để gửi duyệt!');
       }
     }
-    await this.khoaHocRepository.update(courseId, { trang_thai });
+    await this.khoaHocRepository.update(courseId, { trangThai });
     return { message: 'Cập nhật trạng thái thành công' };
   }
 
@@ -73,7 +73,7 @@ export class CoursesService {
   // ========================================================
   async getCourseById(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
-      where: { id: courseId, id_giang_vien: instructorId }
+      where: { maKH: courseId, maND_GiangVien: instructorId }
     });
 
     if (!course) {
@@ -87,19 +87,14 @@ export class CoursesService {
   // ========================================================
   async updateCourse(courseId: number, instructorId: number, payload: any) {
     const course = await this.khoaHocRepository.findOne({
-      where: { id: courseId, id_giang_vien: instructorId }
+      where: { maKH: courseId, maND_GiangVien: instructorId }
     });
 
-    if (!course) {
-      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
-    }
+    if (!course) throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
 
-    // THÊM ĐOẠN NÀY: Chặn cập nhật nếu đang chờ duyệt hoặc đã xuất bản
-    if (course.trang_thai === 'PENDING' || course.trang_thai === 'PUBLISHED') {
-      throw new ForbiddenException('Không thể chỉnh sửa khóa học đang chờ duyệt hoặc đã xuất bản.');
-    }
+    // Cập nhật các trường, bao gồm hinhThuNho
+    Object.assign(course, payload);
 
-    await this.khoaHocRepository.update(courseId, payload);
-    return await this.khoaHocRepository.findOne({ where: { id: courseId } });
+    return await this.khoaHocRepository.save(course);
   }
 }

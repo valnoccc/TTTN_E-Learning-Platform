@@ -1,6 +1,7 @@
 import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, User } from 'lucide-react';
+import { normalizeRole } from '../../../../utils/roles';
 
 type StoredUser = {
   fullName?: string;
@@ -14,8 +15,9 @@ type StoredUser = {
 };
 
 function getDashboardPath(role?: string) {
-  if (role === 'ADMIN') return '/admin';
-  if (role === 'GIANG_VIEN') return '/instructor';
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === 'ADMIN') return '/admin';
+  if (normalizedRole === 'INSTRUCTOR') return '/instructor';
   return '/student';
 }
 
@@ -31,7 +33,16 @@ function getAvatarUrl(user: StoredUser | null) {
 export default function AuthControls() {
   const navigate = useNavigate();
   const userString = localStorage.getItem('user');
-  const user: StoredUser | null = userString ? JSON.parse(userString) : null;
+  let user: StoredUser | null = null;
+
+  if (userString) {
+    try {
+      const parsedUser = JSON.parse(userString) as StoredUser;
+      user = { ...parsedUser, role: normalizeRole(parsedUser.role) };
+    } catch {
+      user = null;
+    }
+  }
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');

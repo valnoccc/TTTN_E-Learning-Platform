@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
+import { normalizeRole } from '../../utils/roles';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -15,14 +16,18 @@ export default function LoginPage() {
             const response: any = await axiosClient.post('/auth/login', { email, password });
 
             // Lưu thông tin vào LocalStorage (truy cập trực tiếp vào response)
+            const role = normalizeRole(response.user?.role);
+            const user = response.user ? { ...response.user, role } : null;
+
             localStorage.setItem('access_token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
+            if (user) {
+                localStorage.setItem('user', JSON.stringify(user));
+            }
 
             toast.success('Đăng nhập thành công');
 
-            const role = response.user?.role;
             if (role === 'ADMIN') navigate('/admin');
-            else if (role === 'GIANG_VIEN') navigate('/instructor');
+            else if (role === 'INSTRUCTOR') navigate('/instructor');
             else navigate('/');
 
         } catch (err: any) {

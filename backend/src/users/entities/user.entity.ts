@@ -2,32 +2,35 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeor
 
 export enum UserRole {
     ADMIN = 'ADMIN',
-    INSTRUCTOR = 'GIANG_VIEN',
-    STUDENT = 'HOC_VIEN',
+    INSTRUCTOR = 'INSTRUCTOR',
+    STUDENT = 'STUDENT',
 }
 
-@Entity('nguoi_dung')
+@Entity('NguoiDung')
 export class User {
-    @PrimaryGeneratedColumn()
-    id!: number; // <-- Thêm dấu ! ở đây
+    @PrimaryGeneratedColumn({ name: 'MaND' })
+    maND!: number;
 
-    @Column({ name: 'ho_ten' })
-    fullName!: string; // <-- Thêm dấu ! ở đây
+    @Column({ name: 'HoTen', type: 'varchar', length: 255 })
+    hoTen!: string;
 
-    @Column({ unique: true })
-    email!: string; // <-- Thêm dấu ! ở đây
+    @Column({ name: 'Email', type: 'varchar', length: 191, unique: true })
+    email!: string;
 
-    @Column({ name: 'mat_khau' })
-    password!: string; // <-- Thêm dấu ! ở đây
+    @Column({ name: 'MatKhau', type: 'varchar', length: 255 })
+    matKhau!: string;
 
     @Column({
         type: 'enum',
         enum: UserRole,
         default: UserRole.STUDENT,
-        name: 'vai_tro'
+        name: 'VaiTro'
     })
-    role!: UserRole; // <-- Thêm dấu ! ở đây
+    vaiTro!: UserRole;
 
-    @CreateDateColumn({ name: 'ngay_tao' })
-    createdAt!: Date; // <-- Thêm dấu ! ở đây
+    @Column({ name: 'AnhDaiDien', type: 'varchar', length: 255, nullable: true })
+    anhDaiDien?: string;
+
+    @CreateDateColumn({ name: 'NgayTao', type: 'timestamp' })
+    ngayTao!: Date;
 }

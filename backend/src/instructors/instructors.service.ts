@@ -3,9 +3,10 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { UserRole } from '../users/entities/user.entity';
 
 export interface InstructorPrincipal {
-  id?: number;
+  maND?: number;
   sub?: number;
-  role: UserRole;
+  vaiTro?: UserRole;
+  role?: UserRole;
 }
 
 export interface InstructorStudentFilters {
@@ -57,7 +58,7 @@ type RawStudentRow = {
 
 @Injectable()
 export class InstructorsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource) { }
 
   async getMyCourses(principal: InstructorPrincipal): Promise<InstructorCourseOption[]> {
     this.assertInstructor(principal);
@@ -67,14 +68,14 @@ export class InstructorsService {
       const rows = await this.dataSource.query(
         `
           SELECT
-            id AS courseId,
-            ten_khoa_hoc AS courseName,
-            gia AS coursePrice,
-            trang_thai AS status,
-            ngay_tao AS createdAt
-          FROM khoahoc
-          WHERE id_giang_vien = ?
-          ORDER BY ngay_tao DESC
+            MaKH AS courseId,
+            TenKhoaHoc AS courseName,
+            GiaBan AS coursePrice,
+            TrangThai AS status,
+            MaKH AS createdAt
+          FROM KhoaHoc
+          WHERE MaND_GiangVien = ?
+          ORDER BY MaKH DESC
         `,
         [instructorId],
       );
@@ -174,16 +175,16 @@ export class InstructorsService {
   }
 
   private buildStudentQuery(instructorId: number, filters: InstructorStudentFilters) {
-    const clauses = ['kh.id_giang_vien = ?'];
+    const clauses = ['kh.MaND_GiangVien = ?'];
     const params: Array<number | string> = [instructorId];
 
     if (filters.courseId) {
-      clauses.push('kh.id = ?');
+      clauses.push('kh.MaKH = ?');
       params.push(filters.courseId);
     }
 
     if (filters.search) {
-      clauses.push('(u.ho_ten LIKE ? OR u.email LIKE ?)');
+      clauses.push('(u.HoTen LIKE ? OR u.Email LIKE ?)');
       const keyword = `%${filters.search}%`;
       params.push(keyword, keyword);
     }
@@ -191,32 +192,33 @@ export class InstructorsService {
     return {
       sql: `
         SELECT
-          u.id AS studentId,
-          u.ho_ten AS studentName,
-          u.email AS studentEmail,
-          kh.id AS courseId,
-          kh.ten_khoa_hoc AS courseName,
-          COALESCE(ct.gia_tai_thoi_diem, kh.gia, 0) AS coursePrice,
-          hd.ngay_tao AS purchasedAt
-        FROM chitiethoadon ct
-        INNER JOIN khoahoc kh ON kh.id = ct.id_khoa_hoc
-        INNER JOIN hoadon hd ON hd.id = ct.id_hoa_don
-        INNER JOIN nguoi_dung u ON u.id = hd.id_hoc_vien
+          u.MaND AS studentId,
+          u.HoTen AS studentName,
+          u.Email AS studentEmail,
+          kh.MaKH AS courseId,
+          kh.TenKhoaHoc AS courseName,
+          COALESCE(ct.GiaGhiNhan, kh.GiaBan, 0) AS coursePrice,
+          hd.NgayLap AS purchasedAt
+        FROM ChiTietHoaDon ct
+        INNER JOIN KhoaHoc kh ON kh.MaKH = ct.MaKH
+        INNER JOIN HoaDon hd ON hd.MaHD = ct.MaHD
+        INNER JOIN NguoiDung u ON u.MaND = hd.MaND
         WHERE ${clauses.join(' AND ')}
-        ORDER BY purchasedAt DESC, u.ho_ten ASC
+        ORDER BY purchasedAt DESC, u.HoTen ASC
       `,
       params,
     };
   }
 
   private assertInstructor(principal: InstructorPrincipal) {
-    if (principal.role !== UserRole.INSTRUCTOR) {
+    const role = principal.vaiTro ?? principal.role;
+    if (role !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException('Chỉ giảng viên mới có quyền quản lý học viên.');
     }
   }
 
   private getInstructorId(principal: InstructorPrincipal) {
-    const instructorId = principal.id ?? principal.sub;
+    const instructorId = principal.maND ?? principal.sub;
     if (!instructorId) {
       throw new ForbiddenException('Không xác định được giảng viên hiện tại.');
     }

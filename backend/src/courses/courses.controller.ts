@@ -7,85 +7,91 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { CoursesService } from './courses.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { serializeCourse } from './course-response.util';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+
+
 
 @Controller('courses')
 @UseGuards(JwtAuthGuard)
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) { }
+  constructor
+    (
+      private readonly coursesService: CoursesService,
+      private readonly cloudinaryService: CloudinaryService
+    ) { }
 
   @Get('my-courses')
   async getMyCourses(@Request() req) {
     const instructorId = req.user.sub;
     const courses = await this.coursesService.getCoursesByInstructor(instructorId);
-    return { message: 'Lấy danh sách khóa học thành công', data: courses };
+    return { message: 'Lấy danh sách khóa học thành công', data: courses.map(serializeCourse) };
   }
 
   @Get(':id')
   async getCourseById(@Param('id') id: string, @Request() req) {
     const course = await this.coursesService.getCourseById(Number(id), req.user.sub);
-    return { message: 'Lấy thông tin khóa học thành công', data: course };
+    return { message: 'Lấy thông tin khóa học thành công', data: serializeCourse(course) };
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: join(__dirname, '..', '..', '..', 'frontend', 'public', 'images'),
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('image')) // Bỏ cấu hình diskStorage ở đây
   async createCourse(@Request() req, @Body() courseData: any, @UploadedFile() file: Express.Multer.File) {
-    try {
-      const payloadToSave = {
-        ...courseData,
-        id_giang_vien: req.user.sub,
-        hinh_anh: file ? `/images/${file.filename}` : null
-      };
-      // Lưu ý: @Body nhận dữ liệu từ FormData luôn là String, cần ép kiểu nếu cần trong Service
-      const newCourse = await this.coursesService.createCourse(payloadToSave);
-      return { message: 'Tạo khóa học thành công', data: newCourse };
-    } catch (error) {
-      throw new InternalServerErrorException('Lỗi khi tạo khóa học');
+    let imageUrl = null;
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadFile(file, 'image');
+      imageUrl = uploadResult.secure_url;
     }
+
+    const payload = {
+      maDM: Number(courseData.maDM ?? 0),
+      maND_GiangVien: req.user.sub,
+      tenKhoaHoc: courseData.tenKhoaHoc,
+      moTa: courseData.moTa,
+      giaBan: Number(courseData.giaBan ?? 0),
+      trangThai: courseData.trangThai ?? 'DRAFT',
+      hinhThuNho: imageUrl // Dùng trường này
+    };
+
+    const newCourse = await this.coursesService.createCourse(payload);
+    return { message: 'Tạo khóa học thành công', data: serializeCourse(newCourse) };
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: join(__dirname, '..', '..', '..', 'frontend', 'public', 'images'),
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('image')) // Bỏ cấu hình diskStorage ở đây
   async updateCourse(
     @Param('id') courseId: string,
     @Request() req,
     @Body() courseData: any,
     @UploadedFile() file: Express.Multer.File
   ) {
-    try {
-      const payload = {
-        ...courseData,
-        gia: courseData.gia ? Number(courseData.gia) : 0,
-        id_danh_muc: courseData.id_danh_muc ? Number(courseData.id_danh_muc) : null,
-      };
-      if (file) {
-        payload.hinh_anh = `/images/${file.filename}`;
-      }
-      const updatedCourse = await this.coursesService.updateCourse(Number(courseId), req.user.sub, payload);
-      return { message: 'Cập nhật khóa học thành công', data: updatedCourse };
-    } catch (error) {
-      throw new InternalServerErrorException('Lỗi khi cập nhật khóa học');
+    let imageUrl = courseData.hinhThuNho; // Giữ URL cũ nếu không upload ảnh mới
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadFile(file, 'image');
+      imageUrl = uploadResult.secure_url;
     }
+
+    const payload: any = {
+      maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
+      tenKhoaHoc: courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc,
+      moTa: courseData.moTa ?? courseData.mo_ta,
+      giaBan: Number(courseData.giaBan ?? courseData.gia ?? 0),
+      trangThai: courseData.trangThai ?? courseData.trang_thai,
+      hinhThuNho: imageUrl // Cập nhật URL mới
+    };
+
+    const updatedCourse = await this.coursesService.updateCourse(Number(courseId), req.user.sub, payload);
+    return { message: 'Cập nhật khóa học thành công', data: serializeCourse(updatedCourse) };
   }
 
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Request() req, @Body() statusData: any) {
-    const updatedCourse = await this.coursesService.updateCourseStatus(Number(id), req.user.sub, statusData.trang_thai);
+    const updatedCourse = await this.coursesService.updateCourseStatus(
+      Number(id),
+      req.user.sub,
+      statusData.trangThai ?? statusData.trang_thai,
+    );
     return { message: 'Cập nhật trạng thái thành công', data: updatedCourse };
   }
 

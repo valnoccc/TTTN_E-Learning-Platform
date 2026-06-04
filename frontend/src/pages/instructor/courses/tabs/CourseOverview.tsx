@@ -105,9 +105,6 @@ export default function InstructorCourseOverview() {
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-sm text-slate-500">
-                                    {formData.file_anh_that
-                                        ? `Đã chọn: ${formData.file_anh_that.name}`
-                                        : 'Ảnh hiện tại của khóa học'}
                                 </p>
                                 <button
                                     onClick={handleImagePickerOpen}

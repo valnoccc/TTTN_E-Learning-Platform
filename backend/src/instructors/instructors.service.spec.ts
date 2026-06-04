@@ -45,12 +45,12 @@ describe('InstructorsService', () => {
     ]);
 
     const result = await service.getMyStudents(
-      { id: 7, role: UserRole.INSTRUCTOR },
+      { maND: 7, vaiTro: UserRole.INSTRUCTOR },
       {},
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('hd.id_hoc_vien'),
+      expect.stringContaining('hd.MaND_HocVien'),
       [7],
     );
     expect(result.totalStudents).toBe(2);
@@ -76,12 +76,12 @@ describe('InstructorsService', () => {
     dataSource.query.mockResolvedValue([]);
 
     await service.getMyStudents(
-      { id: 9, role: UserRole.INSTRUCTOR },
+      { maND: 9, vaiTro: UserRole.INSTRUCTOR },
       { courseId: 77, search: 'lan' },
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('kh.id = ?'),
+      expect.stringContaining('kh.MaKH = ?'),
       [9, 77, '%lan%', '%lan%'],
     );
   });
@@ -95,7 +95,7 @@ describe('InstructorsService', () => {
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('kh.id_giang_vien = ?'),
+      expect.stringContaining('kh.MaND_GiangVien = ?'),
       [5],
     );
   });
@@ -103,7 +103,7 @@ describe('InstructorsService', () => {
   it('rejects non instructor users', async () => {
     await expect(
       service.getMyStudents(
-        { id: 1, role: UserRole.STUDENT },
+        { maND: 1, vaiTro: UserRole.STUDENT },
         {},
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
@@ -120,10 +120,10 @@ describe('InstructorsService', () => {
       },
     ]);
 
-    const result = await service.getMyCourses({ id: 7, role: UserRole.INSTRUCTOR });
+    const result = await service.getMyCourses({ maND: 7, vaiTro: UserRole.INSTRUCTOR });
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('FROM khoahoc'),
+      expect.stringContaining('FROM KhoaHoc'),
       [7],
     );
     expect(result).toEqual([
