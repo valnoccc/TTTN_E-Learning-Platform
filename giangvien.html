@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Panel - Edulyn Theme</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ĐÃ CẬP NHẬT MÀU SẮC THEO THEME EDULYN CỦA HỌC VIÊN */
+        :root {
+            --primary: #1dbf73;
+            /* Xanh lục của thanh Nav/Button */
+            --primary-dark: #169b5c;
+            /* Xanh lục đậm khi hover */
+            --sidebar-bg: #112132;
+            /* Xanh Navy đậm của Topbar */
+            --sidebar-hover: #1a324b;
+            /* Navy nhạt hơn khi hover */
+            --dropdown-bg: #1a324b;
+            /* Màu nền cho dropdown menu */
+            --bg-color: #f4f7f6;
+            /* Nền xám rất nhạt cho trang */
+            --text-dark: #2c3e50;
+            /* Màu chữ chính */
+            --border-color: #d1d7dc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .nav-list {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+            padding-top: 10px;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 4px solid transparent;
+            transition: 0.2s;
+            color: #d0d6e2;
+        }
+
+        .nav-item:hover {
+            background-color: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background-color: var(--sidebar-hover);
+            border-left-color: var(--primary);
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* TiDB Style User Profile Dropdown (Bottom Left) */
+        .sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            background-color: var(--sidebar-bg);
+        }
+
+        .user-dropdown-container {
+            position: relative;
+        }
+
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 10px;
+            transition: 0.2s;
+            border-radius: 2px;
+        }
+
+        .user-dropdown-toggle:hover {
+            background-color: var(--sidebar-hover);
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            background-color: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 2px;
+        }
+
+        .user-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        .drop-icon {
+            font-size: 12px;
+            color: #a0aec0;
+            transition: transform 0.2s;
+        }
+
+        /* Menu bung lên trên */
+        .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 5px);
+            left: 0;
+            width: 100%;
+            background-color: var(--dropdown-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            list-style: none;
+            padding: 5px 0;
+            border-radius: 2px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-dropdown-menu.show {
+            display: block;
+            animation: slideUp 0.2s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-dropdown-menu li {
+            padding: 12px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            color: #fff;
+        }
+
+        .user-dropdown-menu li:hover {
+            background-color: var(--sidebar-bg);
+            color: var(--primary);
+        }
+
+        .user-dropdown-menu li.logout:hover {
+            background-color: #e53e3e;
+            color: #fff;
+        }
+
+        /* Main Content */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-header {
+            height: 60px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .content-area {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Views */
+        .view-page {
+            display: none;
+        }
+
+        .view-page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Classic UI Components (Vuông vức) */
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 20px;
+            border-radius: 2px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            background: var(--text-dark);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--sidebar-hover);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-dark);
+            border: 1px solid var(--text-dark);
+        }
+
+        .btn-outline:hover {
+            background: #f7f9fa;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #f7f9fa;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        tr:hover {
+            background-color: #f9fbfb;
+        }
+
+        /* Sub-Navbar for Course Detail */
+        .sub-nav {
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 0 20px;
+        }
+
+        .sub-nav-item {
+            padding: 15px 0;
+            cursor: pointer;
+            font-weight: bold;
+            color: #7a828a;
+            border-bottom: 3px solid transparent;
+        }
+
+        .sub-nav-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .sub-content {
+            display: none;
+        }
+
+        .sub-content.active {
+            display: block;
+        }
+
+        /* Custom Box */
+        .lesson-box {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--primary);
+        }
+
+        .question-box {
+            background: #f9fbfb;
+            border: 1px dashed #7a828a;
+            padding: 15px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-graduation-cap"></i> EDULYN INSTRUCTOR
+        </div>
+
+        <ul class="nav-list">
+            <li class="nav-item active" onclick="navigateSidebar('page-courses', this)">
+                <i class="fas fa-video"></i> Khóa học của tôi
+            </li>
+            <li class="nav-item" onclick="navigateSidebar('page-students', this)">
+                <i class="fas fa-user-graduate"></i> Đánh giá học viên
+            </li>
+            <li class="nav-item" onclick="navigateSidebar('page-reports', this)">
+                <i class="fas fa-chart-line"></i> Báo cáo & Thống kê
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-dropdown-container">
+                <div class="user-dropdown-toggle" onclick="toggleUserMenu(event)">
+                    <div class="avatar">A</div>
+                    <div class="user-info">
+                        <span class="user-name">Nguyễn Văn A</span>
+                        <span class="user-role">Giảng viên</span>
+                    </div>
+                    <i class="fas fa-chevron-up drop-icon" id="dropIcon"></i>
+                </div>
+
+                <ul class="user-dropdown-menu" id="userMenu">
+                    <li><i class="fas fa-user-circle"></i> Hồ sơ chuyên môn</li>
+                    <li><i class="fas fa-cog"></i> Cài đặt tài khoản</li>
+                    <li class="logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-wrapper">
+        <header class="top-header">
+            <div style="font-weight: bold; font-size: 1.2rem; color: var(--text-dark);">Bảng điều khiển Giảng viên</div>
+        </header>
+
+        <div class="content-area">
+
+            <div id="page-courses" class="view-page active">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h1 class="page-title" style="margin: 0;">Khóa học của tôi</h1>
+                    <button class="btn btn-primary" onclick="goToPage('page-add-course')">
+                        <i class="fas fa-plus"></i> Thêm khóa học mới
+                    </button>
+                </div>
+
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tên khóa học</th>
+                                <th>Trạng thái</th>
+                                <th>Học viên</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: bold; cursor: pointer; color: var(--primary);"
+                                    onclick="goToPage('page-course-detail')">
+                                    Lập trình Web với React & NestJS
+                                </td>
+                                <td>Đã xuất bản</td>
+                                <td>340</td>
+                                <td>
+                                    <button class="btn btn-outline" onclick="goToPage('page-course-detail')">Quản lý chi
+                                        tiết</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; cursor: pointer; color: var(--primary);"
+                                    onclick="goToPage('page-course-detail')">
+                                    Khoá học AI căn bản với YOLOv8
+                                </td>
+                                <td>Bản nháp</td>
+                                <td>0</td>
+                                <td>
+                                    <button class="btn btn-outline" onclick="goToPage('page-course-detail')">Quản lý chi
+                                        tiết</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-add-course" class="view-page">
+                <button class="btn btn-outline" style="margin-bottom: 20px;" onclick="goToPage('page-courses')">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </button>
+                <h1 class="page-title">Tạo khóa học mới</h1>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label>Tên khóa học</label>
+                        <input type="text" class="form-control" placeholder="Nhập tên khóa học...">
+                    </div>
+                    <div style="display: flex; gap: 20px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Giá bán (VND)</label>
+                            <input type="number" class="form-control" placeholder="Để trống nếu miễn phí">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Danh mục</label>
+                            <select class="form-control">
+                                <option>Lập trình Web</option>
+                                <option>Trí tuệ nhân tạo</option>
+                                <option>Kỹ năng mềm</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả ngắn</label>
+                        <textarea class="form-control" rows="3"></textarea>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                    <button class="btn btn-primary" onclick="goToPage('page-add-lesson')">Lưu & Thêm bài học đầu
+                        tiên</button>
+                </div>
+            </div>
+
+            <div id="page-add-lesson" class="view-page">
+                <button class="btn btn-outline" style="margin-bottom: 20px;" onclick="goToPage('page-course-detail')">
+                    <i class="fas fa-arrow-left"></i> Quay lại quản lý khóa học
+                </button>
+                <h1 class="page-title">Thêm Bài học & Câu hỏi trắc nghiệm</h1>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 15px;">Thông tin bài học</h3>
+                    <div class="form-group">
+                        <label>Tiêu đề bài học</label>
+                        <input type="text" class="form-control" placeholder="Ví dụ: Bài 1 - Cài đặt môi trường">
+                    </div>
+                    <div class="form-group">
+                        <label>Link Video</label>
+                        <input type="text" class="form-control" placeholder="https://...">
+                    </div>
+
+                    <div class="question-box">
+                        <h4 style="margin-bottom: 10px;">Thêm câu hỏi kiểm tra cho bài này</h4>
+                        <div class="form-group">
+                            <input type="text" class="form-control" placeholder="Nội dung câu hỏi">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="text" class="form-control" placeholder="Đáp án A">
+                            <input type="text" class="form-control" placeholder="Đáp án B">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" class="form-control" placeholder="Đáp án C">
+                            <input type="text" class="form-control" placeholder="Đáp án D">
+                        </div>
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label>Đáp án đúng:</label>
+                            <select class="form-control" style="width: 150px;">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                                <option>D</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary">Lưu bài học</button>
+                        <button class="btn btn-outline" onclick="goToPage('page-course-detail')">Hoàn tất</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-course-detail" class="view-page">
+                <button class="btn btn-outline" style="margin-bottom: 20px;" onclick="goToPage('page-courses')">
+                    <i class="fas fa-arrow-left"></i> Danh sách khóa học
+                </button>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h1 class="page-title" style="margin-bottom: 5px;">Lập trình Web với React & NestJS</h1>
+                        <p style="color: #7a828a;">Trạng thái: Đã xuất bản | Học viên: 340</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="goToPage('page-add-lesson')">
+                        <i class="fas fa-plus"></i> Thêm bài học mới
+                    </button>
+                </div>
+
+                <div class="sub-nav">
+                    <div class="sub-nav-item active" onclick="switchSubTab('tab-mota', this)">Chi tiết & Mô tả</div>
+                    <div class="sub-nav-item" onclick="switchSubTab('tab-baihoc', this)">Danh sách Bài học</div>
+                    <div class="sub-nav-item" onclick="switchSubTab('tab-danhgia', this)">Đánh giá của HV</div>
+                    <div class="sub-nav-item" onclick="switchSubTab('tab-thaoluan', this)">Thảo luận / Bình luận</div>
+                </div>
+
+                <div id="tab-mota" class="sub-content active">
+                    <div class="card">
+                        <h3>Mô tả khóa học</h3>
+                        <p style="margin-top: 10px; line-height: 1.6;">Khóa học này cung cấp kiến thức nền tảng và nâng
+                            cao về cách kết hợp Frontend ReactJS với Backend NestJS...</p>
+                        <button class="btn btn-outline" style="margin-top: 15px;">Chỉnh sửa</button>
+                    </div>
+                </div>
+
+                <div id="tab-baihoc" class="sub-content">
+                    <div class="card">
+                        <div class="lesson-box">
+                            <div>
+                                <h4 style="margin-bottom: 5px;">Chương 1: Khởi tạo</h4>
+                                <p style="font-size: 13px; color: #7a828a;">Video: 15 phút</p>
+                            </div>
+                            <div><button class="btn btn-outline">Sửa</button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-danhgia" class="sub-content">
+                    <div class="card">
+                        <div
+                            style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
+                            <h4 style="margin-bottom: 5px;">Trần Văn B <span style="color: #e59819;">★★★★★</span></h4>
+                            <p style="font-size: 14px;">Khóa học đi vào trọng tâm, ERD giảng viên vẽ rất dễ hiểu.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-thaoluan" class="sub-content">
+                    <div class="card">
+                        <div style="background: #f9fbfb; padding: 15px; border-radius: 2px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Lỗi kết nối CSDL PostgreSQL với
+                                Prisma</h4>
+                            <p style="font-size: 14px; margin-bottom: 10px;">Em bị lỗi khi chạy lệnh prisma migrate,
+                                thầy xem giúp em với ạ.</p>
+                            <button class="btn btn-outline" style="font-size: 13px;"><i class="fas fa-reply"></i> Phản
+                                hồi bình luận</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="page-students" class="view-page">
+                <h1 class="page-title">Đánh giá học viên</h1>
+                <div class="card">Nội dung...</div>
+            </div>
+            <div id="page-reports" class="view-page">
+                <h1 class="page-title">Báo cáo & Thống kê</h1>
+                <div class="card">Nội dung...</div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Xử lý ẩn hiện Dropdown User Menu
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('userMenu');
+            const icon = document.getElementById('dropIcon');
+
+            menu.classList.toggle('show');
+            if (menu.classList.contains('show')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        document.addEventListener('click', function (event) {
+            const menu = document.getElementById('userMenu');
+            const toggleBtn = document.querySelector('.user-dropdown-toggle');
+            const icon = document.getElementById('dropIcon');
+
+            if (menu.classList.contains('show') && !toggleBtn.contains(event.target)) {
+                menu.classList.remove('show');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Điều hướng từ Sidebar
+        function navigateSidebar(pageId, element) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            element.classList.add('active');
+            goToPage(pageId);
+        }
+
+        // Chuyển đổi giữa các trang chính
+        function goToPage(pageId) {
+            document.querySelectorAll('.view-page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Chuyển đổi các Tab trong trang chi tiết khóa học
+        function switchSubTab(tabId, element) {
+            document.querySelectorAll('.sub-nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.sub-content').forEach(content => content.classList.remove('active'));
+
+            element.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

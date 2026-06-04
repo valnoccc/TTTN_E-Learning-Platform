@@ -73,6 +73,7 @@ The instructor area should be split into explicit routes so each view is indepen
 - The route structure must preserve the current role guard on `/instructor/*`.
 - Existing API calls should continue to be made from the same logical features.
 - `course detail` tabs should be route-backed rather than purely hidden DOM state, so direct links and refreshes work.
+- **Default Redirects:** - Visiting `/instructor/courses/:id` must automatically redirect to `/instructor/courses/:id/overview` to ensure the course detail shell always mounts with an active tab.
 
 ## Page Decomposition
 
@@ -134,15 +135,16 @@ UI notes:
 ### Lesson create/edit
 
 Purpose:
-
 - preserve existing lesson mutation logic
 - keep video upload and preview behavior intact
+- **manage inline quiz questions (multiple-choice) attached to the lesson**
 
 UI notes:
-
 - bordered form sections
 - plain file upload affordance
 - compact helper panel on the side
+- **a dedicated, bordered block at the bottom of the form for adding/editing/deleting quiz options dynamically**
+
 
 ### Student management
 
@@ -215,6 +217,16 @@ Create reusable low-level UI pieces for consistency:
 
 These primitives should be visually conservative and map closely to the HTML template.
 
+### Responsive Behavior
+
+Responsibilities:
+- adapt the strict desktop layout for smaller screens without changing the design language.
+
+Constraints:
+- **Mobile Header:** Below 768px, display a hamburger menu icon in the top header.
+- **Sidebar Canvas:** The left sidebar should slide out of view and behave as an overlay (off-canvas) when toggled on mobile.
+- **Tables:** Use basic horizontal scrolling (`overflow-x-auto`) for data tables on small screens to maintain the classic look without complex card-stacking transformations.
+
 ## Data Flow
 
 No backend flow changes are required.
@@ -237,6 +249,17 @@ The redesign should preserve the current state model.
 - Do not duplicate server state into a new global store just for the redesign.
 
 ## Visual Rules
+
+### Theme Configuration (EDULYN Palette)
+
+The `tailwind.config.js` or `tailwind.config.ts` must define the following core brand colors to prevent hardcoding arbitrary hex values in components:
+- `primary`: `#1dbf73` (Brand green, used for primary buttons and active states)
+- `primary-dark`: `#169b5c` (Hover states)
+- `sidebar-bg`: `#112132` (Dark navy for the left sidebar)
+- `sidebar-hover`: `#1a324b` (Subtle highlight in sidebar navigation)
+- `canvas-bg`: `#f4f7f6` (Light grey/off-white for the main app background)
+
+### Styling Constraints
 
 The new instructor UI must intentionally stay close to the HTML template.
 
