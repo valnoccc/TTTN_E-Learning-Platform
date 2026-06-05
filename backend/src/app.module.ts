@@ -1,40 +1,44 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { CoursesModule } from './courses/courses.module';
-import { LessonsModule } from './lessons/lessons.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
-import { InstructorsModule } from './instructors/instructors.module';
+import { join } from 'path';
+import { appConfig } from './config/app.config';
+import {
+  buildTypeOrmOptions,
+  databaseConfig,
+  DatabaseConfig,
+} from './config/database.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { CoursesModule } from './modules/courses/courses.module';
+import { LessonsModule } from './modules/lessons/lessons.module';
+import { InstructorsModule } from './modules/instructors/instructors.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // Đọc file .env
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      username: process.env.DB_USER,
-      password: process.env.DB_PASS,
-      database: process.env.DB_NAME,
-      // Tự động quét tất cả các file entity trong project
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: false, // Giữ false để tránh NestJS tự ý sửa cấu trúc DB hiện tại của bạn
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig, databaseConfig],
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const database = configService.get<DatabaseConfig>('database');
+        if (!database) {
+          throw new Error('Database configuration is missing');
+        }
 
-      // --- PHẦN SỬA ĐỔI NẰM Ở ĐÂY ---
-      ssl: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: true,
+        return buildTypeOrmOptions(database, {
+          entities: [join(__dirname, '**', '*.entity{.ts,.js}')],
+        });
       },
-      // ------------------------------
     }),
     UsersModule,
     AuthModule,
     CoursesModule,
     LessonsModule,
-    CloudinaryModule,
     InstructorsModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

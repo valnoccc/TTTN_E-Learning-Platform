@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -9,9 +10,19 @@ async function bootstrap() {
   // Cho phép truy cập folder public từ backend
   app.useStaticAssets(join(__dirname, '..', 'public'));
   // Cho phép truy cập folder images từ frontend/public
-  app.useStaticAssets(join(__dirname, '..', '..', 'frontend', 'public'), { prefix: '/' });
+  app.useStaticAssets(join(__dirname, '..', '..', 'frontend', 'public'), {
+    prefix: '/',
+  });
 
   app.enableCors();
-  await app.listen(3000);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('app.port') ?? 3000;
+
+  await app.listen(port);
+
+  // ---> THÊM ĐOẠN NÀY VÀO CUỐI HÀM <---
+  console.log(`\n======================================================`);
+  console.log(`🚀 Backend đang chạy ổn định tại: http://localhost:${port}`);
+  console.log(`======================================================\n`);
 }
 bootstrap();

@@ -34,8 +34,10 @@ axiosClient.interceptors.response.use(
     (response: AxiosResponse) => response.data,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.clear();
-            window.location.href = '/';
+            // console.error("Lỗi 401 phát hiện tại:", error.config.url);
+            // console.error("Chi tiết lỗi:", error.response.data);
+            localStorage.clear(); // Tạm comment lại
+            window.location.href = '/'; // Tạm comment lại
         }
         return Promise.reject(error);
     }

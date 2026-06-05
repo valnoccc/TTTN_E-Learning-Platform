@@ -1,31 +1,36 @@
-import { Routes, Route } from 'react-router-dom';
-import InstructorDashboard from '../pages/instructor/InstructorDashboard';
-import InstructorCourses from '../pages/instructor/InstructorCourses';
-import InstructorCourseDetail from '../pages/instructor/InstructorCourseDetail';
-import AddLesson from '../pages/instructor/AddLesson';
-import LessonDetail from '../pages/instructor/LessonDetail'; // Trang sửa bài học ở bước trước
-import InstructorStudents from '../pages/instructor/InstructorStudents';
+import { Navigate, Route, Routes } from 'react-router-dom';
+
+import InstructorDashboard from '../pages/instructor/dashboard/Dashboard';
+import InstructorCourses from '../pages/instructor/courses/CourseList';
+import InstructorCourseCreate from '../pages/instructor/courses/CourseCreate';
+import InstructorCourseDetail from '../pages/instructor/courses/CourseDetailShell';
+import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
+import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
+import InstructorCourseReviews from '../pages/instructor/courses/tabs/CourseReviews';
+import InstructorCourseDiscussions from '../pages/instructor/courses/tabs/CourseDiscussions';
+import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
+import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
+import InstructorStudents from '../pages/instructor/students/StudentEvaluations';
+import InstructorReports from '../pages/instructor/reports/RevenueReports';
 
 export default function InstructorRoutes() {
-    return (
-        <Routes>
-            {/* Đường dẫn thực tế sẽ là: /instructor/ */}
-            <Route path="/" element={<InstructorDashboard />} />
-
-            {/* Đường dẫn thực tế sẽ là: /instructor/courses */}
-            <Route path="courses" element={<InstructorCourses />} />
-
-            {/* Đường dẫn thực tế sẽ là: /instructor/courses/:id */}
-            <Route path="courses/:id" element={<InstructorCourseDetail />} />
-
-            {/* Đường dẫn thực tế sẽ là: /instructor/lessons/:id */}
-            <Route path="lessons/:id" element={<AddLesson />} />
-
-            {/* Đường dẫn thực tế sẽ là: /instructor/lesson-detail/:lessonId */}
-            <Route path="lesson-detail/:lessonId" element={<LessonDetail />} />
-
-            {/* Đường dẫn thực tế sẽ là: /instructor/students */}
-            <Route path="students" element={<InstructorStudents />} />
-        </Routes>
-    );
+  return (
+    <Routes>
+      <Route path="/" element={<InstructorDashboard />} />
+      <Route path="courses" element={<InstructorCourses />} />
+      <Route path="courses/new" element={<InstructorCourseCreate />} />
+      <Route path="courses/:id" element={<InstructorCourseDetail />}>
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<InstructorCourseOverview />} />
+        <Route path="lessons" element={<InstructorCourseLessons />} />
+        <Route path="reviews" element={<InstructorCourseReviews />} />
+        <Route path="discussions" element={<InstructorCourseDiscussions />} />
+        <Route path="*" element={<Navigate to="overview" replace />} />
+      </Route>
+      <Route path="courses/:id/lessons/new" element={<InstructorLessonCreate />} />
+      <Route path="lessons/:lessonId/edit" element={<InstructorLessonEdit />} />
+      <Route path="students" element={<InstructorStudents />} />
+      <Route path="reports" element={<InstructorReports />} />
+    </Routes>
+  );
 }
