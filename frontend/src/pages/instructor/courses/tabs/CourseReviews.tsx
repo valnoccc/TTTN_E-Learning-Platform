@@ -1,120 +1,39 @@
-import { useEffect, useState } from 'react';
-import { Star, MessageSquareOff, CornerDownRight, Send, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-
-import axiosClient from '../../../../api/axios';
+import { Star, MessageSquareOff, CornerDownRight, Send, X, ChevronDown, ChevronUp, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCourseReviews } from '../hooks/useCourseReviews'; // Import hook mới
 import {
     CourseSectionCard,
     CourseSidebarCard,
-    useInstructorCourseContext,
 } from '../CourseDetailShell';
 
-interface Review {
-    reviewId: number;
-    rating: number;
-    content: string;
-    createdAt: string;
-    parentId: number | null;
-    studentId: number;
-    studentName: string;
-    studentAvatar: string | null;
-}
-
 export default function CourseReviews() {
-    const { id, isNewCourse } = useInstructorCourseContext();
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    // State cho chức năng Reply
-    const [replyingTo, setReplyingTo] = useState<number | null>(null);
-    const [replyContent, setReplyContent] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        if (isNewCourse || !id) {
-            setLoading(false);
-            return;
-        }
-
-        const fetchReviews = async () => {
-            try {
-                const response = await axiosClient.get<{ message?: string; data: Review[] }>(`/courses/${id}/reviews`);
-                const payload = response.data || response;
-                setReviews(Array.isArray(payload) ? payload : []);
-            } catch (error) {
-                console.error("Lỗi fetch reviews:", error);
-                toast.error('Không thể tải danh sách đánh giá');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void fetchReviews();
-    }, [id, isNewCourse]);
-
-    // Phân tách đánh giá gốc và phản hồi
-    const topLevelReviews = reviews.filter(r => r.parentId === null);
-    const getReplies = (parentId: number) => {
-        return reviews
-            .filter(r => r.parentId === parentId)
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    };
-
-    // Tính toán thống kê (Chỉ tính số sao của đánh giá gốc)
-    const totalReviews = topLevelReviews.length;
-    const averageRating = totalReviews > 0
-        ? (topLevelReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
-        : '0.0';
-
-    const starCounts = [5, 4, 3, 2, 1].map(star => ({
-        star,
-        count: topLevelReviews.filter(r => r.rating === star).length,
-        percentage: totalReviews > 0
-            ? Math.round((topLevelReviews.filter(r => r.rating === star).length / totalReviews) * 100)
-            : 0
-    }));
+    const {
+        isNewCourse,
+        loading,
+        currentTopLevelReviews,
+        replyingTo,
+        replyContent,
+        isSubmitting,
+        expandedReplies,
+        currentPage,
+        totalPages,
+        totalReviews,
+        averageRating,
+        starCounts,
+        indexOfFirstReview,
+        indexOfLastReview,
+        setReplyingTo,
+        setReplyContent,
+        setCurrentPage,
+        getReplies,
+        toggleReplies,
+        handleSubmitReply
+    } = useCourseReviews(); // Gọi hook tại đây
 
     const formatDate = (dateString: string) => {
         return new Intl.DateTimeFormat('vi-VN', {
             day: '2-digit', month: '2-digit', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         }).format(new Date(dateString));
-    };
-
-    const handleSubmitReply = async (parentId: number) => {
-        if (!replyContent.trim()) {
-            toast.error('Vui lòng nhập nội dung phản hồi!');
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const response = await axiosClient.post(`/courses/${id}/reviews`, {
-                noiDung: replyContent,
-                parentId: parentId
-            });
-
-            // Giả lập thêm phản hồi vào UI tạm thời (Xóa đoạn này khi có API thực tế)
-            const mockReply: Review = {
-                reviewId: Date.now(),
-                rating: 0,
-                content: replyContent,
-                createdAt: new Date().toISOString(),
-                parentId: parentId,
-                studentId: 0,
-                studentName: "Bạn (Giảng viên)", // Sẽ lấy từ API sau
-                studentAvatar: null
-            };
-            setReviews([...reviews, mockReply]);
-
-            toast.success('Đã gửi phản hồi!');
-            setReplyingTo(null);
-            setReplyContent('');
-        } catch (error) {
-            toast.error('Lỗi khi gửi phản hồi');
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     if (isNewCourse) {
@@ -129,7 +48,7 @@ export default function CourseReviews() {
 
     return (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_320px]">
-            {/* CỘT TRÁI */}
+            {/* CỘT TRÁI: DANH SÁCH ĐÁNH GIÁ */}
             <div className="space-y-5">
                 <CourseSectionCard
                     title="Đánh giá khóa học"
@@ -147,15 +66,16 @@ export default function CourseReviews() {
                                 </div>
                             ))}
                         </div>
-                    ) : topLevelReviews.length > 0 ? (
+                    ) : currentTopLevelReviews.length > 0 ? (
                         <div className="space-y-8 divide-y divide-slate-100">
-                            {topLevelReviews.map((review, index) => {
+                            {currentTopLevelReviews.map((review, index) => {
                                 const replies = getReplies(review.reviewId);
+                                const hasReplied = replies.length > 0;
+                                const isRepliesOpen = expandedReplies[review.reviewId] || false;
 
                                 return (
                                     <div key={review.reviewId} className={`${index > 0 ? 'pt-8' : ''}`}>
-                                        {/* 1. ĐÁNH GIÁ GỐC CỦA HỌC VIÊN */}
-                                        <div className="flex items-start gap-4">
+                                        <div className="flex items-start gap-4 relative">
                                             {review.studentAvatar ? (
                                                 <img
                                                     src={review.studentAvatar}
@@ -169,32 +89,40 @@ export default function CourseReviews() {
                                             )}
 
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                                    <h4 className="font-semibold text-slate-800 truncate">
-                                                        {review.studentName}
-                                                    </h4>
+                                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h4 className="font-semibold text-slate-800 truncate">
+                                                                {review.studentName}
+                                                            </h4>
+                                                            {hasReplied && (
+                                                                <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-100 shadow-sm">
+                                                                    <CheckCircle2 size={12} className="text-emerald-500" />
+                                                                    Đã phản hồi
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1 mt-1 mb-2">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    size={14}
+                                                                    fill={i < review.rating ? "currentColor" : "none"}
+                                                                    className={i < review.rating ? "text-amber-400" : "text-slate-300"}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                     <span className="text-xs text-slate-400">
                                                         {formatDate(review.createdAt)}
                                                     </span>
-                                                </div>
-
-                                                <div className="flex items-center gap-1 mt-1 mb-3">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            size={14}
-                                                            fill={i < review.rating ? "currentColor" : "none"}
-                                                            className={i < review.rating ? "text-amber-400" : "text-slate-300"}
-                                                        />
-                                                    ))}
                                                 </div>
 
                                                 <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100">
                                                     {review.content || <span className="italic text-slate-400">Không có nội dung.</span>}
                                                 </p>
 
-                                                {/* Nút hành động */}
-                                                <div className="mt-3 flex items-center gap-4">
+                                                <div className="mt-3 flex items-center gap-4 flex-wrap">
                                                     <button
                                                         onClick={() => {
                                                             setReplyingTo(replyingTo === review.reviewId ? null : review.reviewId);
@@ -203,11 +131,24 @@ export default function CourseReviews() {
                                                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors"
                                                     >
                                                         <CornerDownRight size={14} />
-                                                        {replyingTo === review.reviewId ? 'Hủy phản hồi' : 'Phản hồi'}
+                                                        {replyingTo === review.reviewId ? 'Hủy' : 'Phản hồi'}
                                                     </button>
+
+                                                    {hasReplied && (
+                                                        <button
+                                                            onClick={() => toggleReplies(review.reviewId)}
+                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors bg-emerald-50/50 hover:bg-emerald-50 px-2 py-1 rounded"
+                                                        >
+                                                            {isRepliesOpen ? (
+                                                                <><ChevronUp size={14} /> Thu gọn phản hồi</>
+                                                            ) : (
+                                                                <><ChevronDown size={14} /> Xem {replies.length} phản hồi</>
+                                                            )}
+                                                        </button>
+                                                    )}
                                                 </div>
 
-                                                {/* 2. KHUNG NHẬP PHẢN HỒI */}
+                                                {/* KHUNG NHẬP PHẢN HỒI */}
                                                 {replyingTo === review.reviewId && (
                                                     <div className="mt-4 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                                         <div className="flex-1">
@@ -238,12 +179,11 @@ export default function CourseReviews() {
                                                     </div>
                                                 )}
 
-                                                {/* 3. HIỂN THỊ DANH SÁCH CÁC PHẢN HỒI (Con) */}
-                                                {replies.length > 0 && (
-                                                    <div className="mt-5 space-y-4 border-l-2 border-emerald-100 pl-4 sm:pl-5 ml-2">
+                                                {/* HIỂN THỊ PHẢN HỒI CON */}
+                                                {hasReplied && isRepliesOpen && (
+                                                    <div className="mt-5 space-y-4 border-l-2 border-emerald-100 pl-4 sm:pl-5 ml-2 animate-in fade-in duration-200">
                                                         {replies.map(reply => (
                                                             <div key={reply.reviewId} className="flex items-start gap-3 relative">
-                                                                {/* Đường nối nhánh */}
                                                                 <div className="absolute -left-5 top-4 w-4 h-px bg-emerald-100 sm:-left-6 sm:w-5"></div>
 
                                                                 {reply.studentAvatar ? (
@@ -272,12 +212,52 @@ export default function CourseReviews() {
                                                         ))}
                                                     </div>
                                                 )}
-
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })}
+
+                            {/* CỤM THANH PHÂN TRANG */}
+                            {totalPages > 1 && (
+                                <div className="pt-6 flex items-center justify-between border-t border-slate-100">
+                                    <p className="text-xs font-medium text-slate-500">
+                                        Hiển thị từ <span className="font-semibold text-slate-700">{indexOfFirstReview + 1}</span> đến{' '}
+                                        <span className="font-semibold text-slate-700">
+                                            {indexOfLastReview > totalReviews ? totalReviews : indexOfLastReview}
+                                        </span>{' '}
+                                        trong tổng số <span className="font-semibold text-slate-700">{totalReviews}</span> đánh giá gốc
+                                    </p>
+                                    <div className="inline-flex gap-1">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="p-1.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        {[...Array(totalPages)].map((_, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setCurrentPage(index + 1)}
+                                                className={`px-3 py-1 text-xs font-bold rounded border transition ${currentPage === index + 1
+                                                        ? 'bg-[#1dbf73] border-[#1dbf73] text-white shadow-sm'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                    }`}
+                                            >
+                                                {index + 1}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className="p-1.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-md bg-slate-50/50">
