@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
+
 type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> & {
     get<T = unknown>(...args: Parameters<AxiosInstance['get']>): Promise<T>;
     post<T = unknown>(...args: Parameters<AxiosInstance['post']>): Promise<T>;
@@ -10,7 +11,7 @@ type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'
 
 const axiosClient = axios.create({
     // baseURL: 'http://localhost:3000',
-    baseURL: import.meta.env.VITE_API_URL || 'https://tttn-e-learning-platform.onrender.com',
+    baseURL: import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com',
 }) as ApiClient;
 
 axiosClient.interceptors.request.use(
@@ -34,8 +35,6 @@ axiosClient.interceptors.response.use(
     (response: AxiosResponse) => response.data,
     (error) => {
         if (error.response?.status === 401) {
-            // console.error("Lỗi 401 phát hiện tại:", error.config.url);
-            // console.error("Chi tiết lỗi:", error.response.data);
             localStorage.clear(); // Tạm comment lại
             window.location.href = '/'; // Tạm comment lại
         }

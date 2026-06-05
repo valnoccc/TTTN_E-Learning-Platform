@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 import axiosClient from '../../../../api/axios';
+import { toAbsoluteApiUrl } from '../../../../config/api';
 
 const LESSON_TITLE_MAX_LENGTH = 60;
 
@@ -149,10 +150,7 @@ export function useLessonDetailForm() {
                 });
 
                 if (lesson.video_url) {
-                    const fullVideoUrl = lesson.video_url.startsWith('/')
-                        ? `http://localhost:3000${lesson.video_url}`
-                        : lesson.video_url;
-                    setVideoPreview(fullVideoUrl);
+                    setVideoPreview(toAbsoluteApiUrl(lesson.video_url));
                 }
             } catch {
                 toast.error('Không thể tải thông tin bài học');

@@ -1,4 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
+
+import { toAbsoluteApiUrl } from '../../config/api';
 
 interface CourseCardProps {
     title: string;
@@ -10,15 +12,7 @@ interface CourseCardProps {
 }
 
 export default function CourseCard({ title, instructor, price, image }: CourseCardProps) {
-    const getImageUrl = (imageUrl?: string) => {
-        if (!imageUrl) return null;
-        if (imageUrl.startsWith('/')) {
-            return `http://localhost:3000${imageUrl}`;
-        }
-        return imageUrl;
-    };
-
-    const imageUrl = getImageUrl(image);
+    const imageUrl = toAbsoluteApiUrl(image);
 
     return (
         <div className="group cursor-pointer overflow-hidden rounded-md border border-slate-200 bg-white transition-shadow hover:shadow-md">
