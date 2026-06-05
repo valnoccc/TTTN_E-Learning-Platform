@@ -1,4 +1,7 @@
-import { BarChart3, FileBarChart, Wallet, type ReactNode } from 'lucide-react';
+
+import { ReactNode } from 'react';
+import { BarChart3, FileBarChart, Wallet } from 'lucide-react';
+
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 

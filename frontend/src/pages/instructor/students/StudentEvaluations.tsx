@@ -1,41 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { BookOpen, RefreshCw, Users, Wallet } from 'lucide-react';
+import { BookOpen, Users, Wallet, type ReactNode } from 'lucide-react';
 
-import axiosClient from '../../../api/axios';
 import ClassicFilterBar from '../../../components/instructor/ClassicFilterBar';
 import InstructorLayout from '../../../layouts/InstructorLayout';
-
-type InstructorCourseOption = {
-    courseId: number;
-    courseName: string;
-    coursePrice: number;
-    status: string;
-    createdAt: string;
-};
-
-type InstructorStudentCourse = {
-    courseId: number;
-    courseName: string;
-    coursePrice: number;
-    purchasedAt: string;
-};
-
-type InstructorStudentSummary = {
-    studentId: number;
-    studentName: string;
-    studentEmail: string;
-    totalCourses: number;
-    totalSpent: number;
-    lastPurchasedAt: string;
-    courses: InstructorStudentCourse[];
-};
-
-type InstructorStudentBoard = {
-    totalStudents: number;
-    totalPurchases: number;
-    totalRevenue: number;
-    students: InstructorStudentSummary[];
-};
+import { useStudentBoard } from './hooks/useStudentBoard';
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('vi-VN', {
@@ -45,70 +12,22 @@ function formatCurrency(value: number) {
     }).format(value);
 }
 
-function formatDate(value: string) {
-    if (!value) return 'Chưa cập nhật';
-    return new Date(value).toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
-}
-
 export default function InstructorStudents() {
-    const [courses, setCourses] = useState<InstructorCourseOption[]>([]);
-    const [board, setBoard] = useState<InstructorStudentBoard>({
-        totalStudents: 0,
-        totalPurchases: 0,
-        totalRevenue: 0,
-        students: [],
-    });
-    const [loading, setLoading] = useState(true);
-    const [searchInput, setSearchInput] = useState('');
-    const [appliedSearch, setAppliedSearch] = useState('');
-    const [courseId, setCourseId] = useState('');
-
-    useEffect(() => {
-        const loadInitialData = async () => {
-            setLoading(true);
-            try {
-                const [courseList, studentBoard] = await Promise.all([
-                    axiosClient.get<InstructorCourseOption[]>('/instructors/me/courses'),
-                    axiosClient.get<InstructorStudentBoard>('/instructors/me/students'),
-                ]);
-
-                setCourses(courseList);
-                setBoard(studentBoard);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void loadInitialData();
-    }, []);
-
-    const loadStudents = async (nextCourseId = courseId, nextSearch = appliedSearch) => {
-        setLoading(true);
-        try {
-            const params: Record<string, string> = {};
-            if (nextCourseId) params.courseId = nextCourseId;
-            if (nextSearch.trim()) params.search = nextSearch.trim();
-
-            const studentBoard = await axiosClient.get<InstructorStudentBoard>('/instructors/me/students', { params });
-            setBoard(studentBoard);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const selectedCourseName = useMemo(() => {
-        if (!courseId) return 'Tất cả khóa học';
-        return courses.find((course) => String(course.courseId) === courseId)?.courseName ?? 'Khóa học đã chọn';
-    }, [courseId, courses]);
+    const {
+        applyFilters,
+        board,
+        courseId,
+        courses,
+        loading,
+        searchInput,
+        selectedCourseName,
+        setCourseId,
+        setSearchInput,
+    } = useStudentBoard();
 
     return (
         <InstructorLayout>
             <div className="space-y-6">
-                {/* Header trang */}
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Danh sách học viên</h1>
                     <p className="mt-1 text-sm text-slate-500">
@@ -116,18 +35,16 @@ export default function InstructorStudents() {
                     </p>
                 </div>
 
-                {/* Các thẻ thống kê nhanh */}
                 <section className="grid gap-4 md:grid-cols-3">
                     <SummaryCard icon={<Users size={16} />} label="Tổng học viên" value={board.totalStudents} />
                     <SummaryCard icon={<BookOpen size={16} />} label="Lượt mua" value={board.totalPurchases} />
                     <SummaryCard icon={<Wallet size={16} />} label="Doanh thu" value={formatCurrency(board.totalRevenue)} />
                 </section>
 
-                {/* Thanh lọc dữ liệu */}
                 <ClassicFilterBar
                     searchValue={searchInput}
                     onSearchChange={(event) => setSearchInput(event.target.value)}
-                    searchPlaceholder="Tìm kiếm học viên..."
+                    searchPlaceholder={`Tìm kiếm học viên trong ${selectedCourseName.toLowerCase()}...`}
                     selectValue={courseId}
                     onSelectChange={(event) => setCourseId(event.target.value)}
                     options={[
@@ -140,21 +57,18 @@ export default function InstructorStudents() {
                     action={
                         <button
                             type="button"
-                            onClick={() => {
-                                setAppliedSearch(searchInput);
-                                void loadStudents(courseId, searchInput);
-                            }}
-                            className="bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                            onClick={applyFilters}
+                            disabled={loading}
+                            className="bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                         >
-                            Lọc
+                            {loading ? 'Đang lọc...' : 'Lọc'}
                         </button>
                     }
                 />
 
-                {/* Danh sách học viên - Dạng bảng truyền thống dễ nhìn */}
                 <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
                     <table className="w-full text-left">
-                        <thead className="bg-slate-50 border-b border-slate-200">
+                        <thead className="border-b border-slate-200 bg-slate-50">
                             <tr>
                                 <th className="p-4 text-sm font-bold text-slate-700">Học viên</th>
                                 <th className="p-4 text-sm font-bold text-slate-700">Số khóa học</th>
@@ -169,7 +83,9 @@ export default function InstructorStudents() {
                                         <p className="text-xs text-slate-500">{student.studentEmail}</p>
                                     </td>
                                     <td className="p-4 text-sm text-slate-600">{student.totalCourses}</td>
-                                    <td className="p-4 text-sm font-semibold text-slate-900">{formatCurrency(student.totalSpent)}</td>
+                                    <td className="p-4 text-sm font-semibold text-slate-900">
+                                        {formatCurrency(student.totalSpent)}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -190,15 +106,6 @@ function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; v
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
             </div>
             <p className="mt-4 text-2xl font-bold text-slate-900">{value}</p>
-        </div>
-    );
-}
-
-function MetaBox({ label, value }: { label: string; value: string | number }) {
-    return (
-        <div className="border border-[#d1d7dc] bg-[#f8fafb] px-4 py-3">
-            <dt className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</dt>
-            <dd className="mt-2 text-sm font-semibold text-slate-900">{value}</dd>
         </div>
     );
 }

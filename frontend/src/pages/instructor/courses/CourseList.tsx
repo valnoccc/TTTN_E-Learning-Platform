@@ -1,4 +1,3 @@
-﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     BookOpen,
@@ -7,92 +6,20 @@ import {
     Plus,
     Settings,
     Trash2,
-    FilePlusCorner
+    FilePlusCorner,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
-import axiosClient from '../../../api/axios';
 import InstructorLayout from '../../../layouts/InstructorLayout';
-
-interface Course {
-    id: string | number;
-    ten_khoa_hoc: string;
-    gia: number;
-    trang_thai: string;
-    hinh_thu_nho?: string;
-}
+import { useCourseList } from './hooks/useCourseList';
 
 export default function InstructorCourses() {
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        void fetchMyCourses();
-    }, []);
-
-    const fetchMyCourses = async () => {
-        try {
-            const response: any = await axiosClient.get('/courses/my-courses');
-            let courseList: Course[] = [];
-            if (response?.data?.data && Array.isArray(response.data.data)) {
-                courseList = response.data.data;
-            } else if (Array.isArray(response?.data)) {
-                courseList = response.data;
-            }
-            setCourses(courseList);
-        } catch {
-            toast.error('Không thể tải danh sách khóa học!');
-            setCourses([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = async (courseId: string | number) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
-            return;
-        }
-
-        try {
-            await axiosClient.delete(`/courses/${courseId}`);
-            setCourses((current) => current.filter((course) => course.id !== courseId));
-            toast.success('Đã xử lý thành công!');
-        } catch {
-            toast.error('Lỗi: Không thể thực hiện yêu cầu!');
-        }
-    };
-
-    const handleToggleStatus = async (courseId: string | number, currentStatus: string) => {
-        const nextStatus = currentStatus === 'HIDDEN' ? 'DRAFT' : 'HIDDEN';
-        const confirmMessage =
-            nextStatus === 'HIDDEN'
-                ? 'Ẩn khóa học này khỏi giao diện học viên?'
-                : 'Hiển thị lại khóa học trong danh sách quản lý?';
-
-        if (!window.confirm(confirmMessage)) {
-            return;
-        }
-
-        try {
-            await axiosClient.patch(`/courses/${courseId}/status`, { trang_thai: nextStatus });
-            setCourses((current) =>
-                current.map((course) =>
-                    course.id === courseId ? { ...course, trang_thai: nextStatus } : course,
-                ),
-            );
-            toast.success('Đã cập nhật trạng thái!');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Lỗi khi cập nhật trạng thái');
-        }
-    };
+    const { courses, loading, handleDelete, handleToggleStatus } = useCourseList();
 
     return (
         <InstructorLayout>
             <div className="space-y-6">
-
-                {/* Header & Nút thêm khóa học */}
-                <div className="flex items-center justify-between mb-5">
-                    <h1 className="text-[1.8rem] font-bold text-slate-800 m-0">Khóa học của tôi</h1>
+                <div className="mb-5 flex items-center justify-between">
+                    <h1 className="m-0 text-[1.8rem] font-bold text-slate-800">Khóa học của tôi</h1>
                     <Link
                         to="/instructor/courses/new"
                         className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
@@ -105,23 +32,30 @@ export default function InstructorCourses() {
                     </Link>
                 </div>
 
-                {/* Card chứa Table */}
                 <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
                     {loading ? (
                         <div className="animate-pulse space-y-4">
-                            <div className="h-10 bg-slate-100 rounded"></div>
-                            <div className="h-10 bg-slate-50 rounded"></div>
-                            <div className="h-10 bg-slate-50 rounded"></div>
+                            <div className="h-10 rounded bg-slate-100"></div>
+                            <div className="h-10 rounded bg-slate-50"></div>
+                            <div className="h-10 rounded bg-slate-50"></div>
                         </div>
                     ) : courses.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left mt-2">
+                            <table className="mt-2 w-full border-collapse text-left">
                                 <thead>
                                     <tr>
-                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Tên khóa học</th>
-                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Giá bán</th>
-                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">Trạng thái</th>
-                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700 text-right">Thao tác</th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">
+                                            Tên khóa học
+                                        </th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">
+                                            Giá bán
+                                        </th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700">
+                                            Trạng thái
+                                        </th>
+                                        <th className="border-b border-slate-200 bg-slate-50/50 p-4 font-bold text-slate-700 text-right">
+                                            Thao tác
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -136,7 +70,9 @@ export default function InstructorCourses() {
                                                 </Link>
                                             </td>
                                             <td className="border-b border-slate-100 p-4 text-sm font-medium text-slate-600">
-                                                {course.gia > 0 ? `${Number(course.gia).toLocaleString('vi-VN')} đ` : 'Miễn phí'}
+                                                {course.gia > 0
+                                                    ? `${Number(course.gia).toLocaleString('vi-VN')} đ`
+                                                    : 'Miễn phí'}
                                             </td>
                                             <td className="border-b border-slate-100 p-4">
                                                 <StatusBadge status={course.trang_thai} />
@@ -177,7 +113,7 @@ export default function InstructorCourses() {
                                 <BookOpen size={28} />
                             </div>
                             <h2 className="mt-4 text-lg font-bold text-slate-800">Chưa có khóa học nào</h2>
-                            <p className="mt-2 text-sm text-slate-500 mb-6">
+                            <p className="mb-6 mt-2 text-sm text-slate-500">
                                 Bạn chưa tạo khóa học nào trên hệ thống. Hãy bắt đầu với một bản nháp mới.
                             </p>
 
@@ -200,16 +136,32 @@ export default function InstructorCourses() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const baseClass = "inline-flex rounded-md px-2.5 py-1 text-xs font-bold border";
+    const baseClass = 'inline-flex rounded-md border px-2.5 py-1 text-xs font-bold';
 
     switch (status) {
         case 'PUBLISHED':
-            return <span className={`${baseClass} border-emerald-200 bg-emerald-50 text-emerald-700`}>Đã xuất bản</span>;
+            return (
+                <span className={`${baseClass} border-emerald-200 bg-emerald-50 text-emerald-700`}>
+                    Đã xuất bản
+                </span>
+            );
         case 'PENDING':
-            return <span className={`${baseClass} border-amber-200 bg-amber-50 text-amber-700`}>Chờ duyệt</span>;
+            return (
+                <span className={`${baseClass} border-amber-200 bg-amber-50 text-amber-700`}>
+                    Chờ duyệt
+                </span>
+            );
         case 'HIDDEN':
-            return <span className={`${baseClass} border-slate-200 bg-slate-100 text-slate-600`}>Đang ẩn</span>;
+            return (
+                <span className={`${baseClass} border-slate-200 bg-slate-100 text-slate-600`}>
+                    Đang ẩn
+                </span>
+            );
         default:
-            return <span className={`${baseClass} border-blue-200 bg-blue-50 text-blue-700`}>Bản nháp</span>;
+            return (
+                <span className={`${baseClass} border-blue-200 bg-blue-50 text-blue-700`}>
+                    Bản nháp
+                </span>
+            );
     }
 }
