@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 
 import axiosClient from '../../../../api/axios';
 
+const LESSON_TITLE_MAX_LENGTH = 60;
+
 export interface LessonForm {
     tieu_de: string;
     noi_dung: string;
@@ -55,6 +57,10 @@ export function useLessonCreateForm() {
     const handleSave = async () => {
         if (!formData.tieu_de.trim()) {
             toast.error('Vui lòng nhập tiêu đề bài học');
+            return;
+        }
+        if (formData.tieu_de.trim().length > LESSON_TITLE_MAX_LENGTH) {
+            toast.error(`Tiêu đề bài học không được vượt quá ${LESSON_TITLE_MAX_LENGTH} ký tự`);
             return;
         }
 
@@ -176,6 +182,10 @@ export function useLessonDetailForm() {
     const handleUpdate = async () => {
         if (!formData.tieu_de.trim()) {
             toast.error('Tiêu đề không được để trống');
+            return;
+        }
+        if (formData.tieu_de.trim().length > LESSON_TITLE_MAX_LENGTH) {
+            toast.error(`Tiêu đề bài học không được vượt quá ${LESSON_TITLE_MAX_LENGTH} ký tự`);
             return;
         }
 

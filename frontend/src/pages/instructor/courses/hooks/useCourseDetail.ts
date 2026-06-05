@@ -66,6 +66,8 @@ interface UseCourseDetailOptions {
     mode?: 'create' | 'edit';
 }
 
+const COURSE_TITLE_MAX_LENGTH = 60;
+
 export function useCourseDetail(
     { mode = 'edit' }: UseCourseDetailOptions = {},
 ): InstructorCourseContextValue {
@@ -160,14 +162,20 @@ export function useCourseDetail(
     };
 
     const handleSave = async () => {
-        if (!formData.title.trim()) {
+        const trimmedTitle = formData.title.trim();
+
+        if (!trimmedTitle) {
             setErrorText('Tên khóa học không được để trống!');
+            return;
+        }
+        if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
+            setErrorText(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
             return;
         }
 
         try {
             const data = new FormData();
-            data.append('ten_khoa_hoc', formData.title);
+            data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
             data.append('gia', formData.price.toString());
             data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');

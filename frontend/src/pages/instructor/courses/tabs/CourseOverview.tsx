@@ -18,6 +18,7 @@ import {
 
 export default function InstructorCourseOverview() {
     const {
+        isNewCourse,
         isLocked,
         formData,
         errorText,
@@ -43,11 +44,19 @@ export default function InstructorCourseOverview() {
                                 name="title"
                                 value={formData.title}
                                 onChange={handleChange}
+                                maxLength={60}
                                 disabled={isLocked}
                                 placeholder="Nhập tên khóa học"
                                 className={`w-full rounded-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                     }`}
                             />
+                            {isNewCourse ? (
+                                <p className="mt-2 text-xs text-slate-400">
+                                    Còn lại {60 - Math.min(formData.title.length, 60)} ký tự.
+                                </p>
+                            ) : (
+                                <p className="mt-2 text-xs text-slate-400">Tối đa 60 ký tự.</p>
+                            )}
                             {errorText ? (
                                 <p className="mt-2 text-sm text-red-500">{errorText}</p>
                             ) : null}

@@ -64,7 +64,8 @@ export default function InstructorCourses() {
                                             <td className="border-b border-slate-100 p-4">
                                                 <Link
                                                     to={`/instructor/courses/${course.id}/overview`}
-                                                    className="font-bold text-slate-800 transition-colors hover:text-[#1dbf73]"
+                                                    title={course.ten_khoa_hoc}
+                                                    className="block max-w-[360px] truncate font-bold text-slate-800 transition-colors hover:text-[#1dbf73]"
                                                 >
                                                     {course.ten_khoa_hoc}
                                                 </Link>

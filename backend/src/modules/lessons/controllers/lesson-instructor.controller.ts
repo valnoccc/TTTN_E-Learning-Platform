@@ -26,6 +26,8 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { serializeLesson } from '../services/lesson-response.util';
 import { LessonsService } from '../services/lessons.service';
 
+const LESSON_TITLE_MAX_LENGTH = 60;
+
 @Controller('lessons')
 @UseGuards(JwtAuthGuard)
 export class LessonsController {
@@ -60,6 +62,15 @@ export class LessonsController {
         videoURL: videoUrl,
       };
 
+      if (!payload.tenBaiHoc || !String(payload.tenBaiHoc).trim()) {
+        throw new BadRequestException('Tên bài học không được để trống');
+      }
+      if (String(payload.tenBaiHoc).trim().length > LESSON_TITLE_MAX_LENGTH) {
+        throw new BadRequestException(
+          `Tên bài học không được vượt quá ${LESSON_TITLE_MAX_LENGTH} ký tự`,
+        );
+      }
+
       const newLesson = await this.lessonsService.create(payload);
 
       return {
@@ -67,6 +78,9 @@ export class LessonsController {
         data: serializeLesson(newLesson),
       };
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Lỗi khi thêm bài học: ' + error.message,
       );
@@ -132,6 +146,19 @@ export class LessonsController {
           ? Number(body.maKH ?? body.id_khoa_hoc)
           : undefined,
     };
+
+    if (typeof updateData.tenBaiHoc === 'string') {
+      const trimmed = updateData.tenBaiHoc.trim();
+      if (!trimmed) {
+        throw new BadRequestException('Tên bài học không được để trống');
+      }
+      if (trimmed.length > LESSON_TITLE_MAX_LENGTH) {
+        throw new BadRequestException(
+          `Tên bài học không được vượt quá ${LESSON_TITLE_MAX_LENGTH} ký tự`,
+        );
+      }
+      updateData.tenBaiHoc = trimmed;
+    }
 
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadFile(

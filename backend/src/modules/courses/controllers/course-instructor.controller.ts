@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -21,6 +22,8 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { serializeCourse } from '../services/course-response.util';
 import { CoursesService } from '../services/course-instructor.service';
 import { CreateReplyDto } from '../dto/create-reply.dto';
+
+const COURSE_TITLE_MAX_LENGTH = 60;
 
 
 
@@ -62,6 +65,16 @@ export class CoursesController {
     @Body() courseData: any,
     @UploadedFile() file: UploadedAsset,
   ) {
+    const tenKhoaHoc = courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc;
+    if (typeof tenKhoaHoc !== 'string' || !tenKhoaHoc.trim()) {
+      throw new BadRequestException('Tên khóa học không được để trống');
+    }
+    if (tenKhoaHoc.trim().length > COURSE_TITLE_MAX_LENGTH) {
+      throw new BadRequestException(
+        `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
+      );
+    }
+
     let imageUrl = null;
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadFile(
@@ -72,10 +85,10 @@ export class CoursesController {
     }
 
     const payload = {
-      maDM: Number(courseData.maDM ?? 0),
+      maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
       maND_GiangVien: req.user.sub,
-      tenKhoaHoc: courseData.tenKhoaHoc,
-      moTa: courseData.moTa,
+      tenKhoaHoc: tenKhoaHoc.trim(),
+      moTa: courseData.moTa ?? courseData.mo_ta,
       giaBan: Number(courseData.giaBan ?? 0),
       trangThai: courseData.trangThai ?? 'DRAFT',
       hinhThuNho: imageUrl,
@@ -96,6 +109,19 @@ export class CoursesController {
     @Body() courseData: any,
     @UploadedFile() file: UploadedAsset,
   ) {
+    const tenKhoaHoc = courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc;
+    if (typeof tenKhoaHoc === 'string') {
+      const trimmed = tenKhoaHoc.trim();
+      if (!trimmed) {
+        throw new BadRequestException('Tên khóa học không được để trống');
+      }
+      if (trimmed.length > COURSE_TITLE_MAX_LENGTH) {
+        throw new BadRequestException(
+          `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
+        );
+      }
+    }
+
     let imageUrl = courseData.hinhThuNho;
 
     if (file) {
@@ -108,7 +134,7 @@ export class CoursesController {
 
     const payload: any = {
       maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
-      tenKhoaHoc: courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc,
+      tenKhoaHoc: typeof tenKhoaHoc === 'string' ? tenKhoaHoc.trim() : tenKhoaHoc,
       moTa: courseData.moTa ?? courseData.mo_ta,
       giaBan: Number(courseData.giaBan ?? courseData.gia ?? 0),
       trangThai: courseData.trangThai ?? courseData.trang_thai,

@@ -1,4 +1,6 @@
-import { BookOpen, FileEdit, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { BookOpen, ChevronLeft, ChevronRight, FileEdit, Plus, Trash2 } from 'lucide-react';
 
 import {
     CourseSectionCard,
@@ -8,6 +10,20 @@ import {
 
 export default function InstructorCourseLessons() {
     const { id, isLocked, lessons, handleDeleteLesson, navigate } = useInstructorCourseContext();
+    const [currentPage, setCurrentPage] = useState(1);
+    const lessonsPerPage = 5;
+
+    const totalPages = Math.max(1, Math.ceil(lessons.length / lessonsPerPage));
+    const paginatedLessons = useMemo(() => {
+        const start = (currentPage - 1) * lessonsPerPage;
+        return lessons.slice(start, start + lessonsPerPage);
+    }, [currentPage, lessons]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     return (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_320px]">
@@ -27,8 +43,8 @@ export default function InstructorCourseLessons() {
                 }
             >
                 <div className="space-y-3">
-                    {lessons.length > 0 ? (
-                        lessons.map((lesson, index) => (
+                    {paginatedLessons.length > 0 ? (
+                        paginatedLessons.map((lesson, index) => (
                             <div
                                 key={lesson.id}
                                 className="rounded-sm border border-slate-200 bg-white px-4 py-4"
@@ -36,7 +52,7 @@ export default function InstructorCourseLessons() {
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="flex min-w-0 gap-3">
                                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500">
-                                            {String(index + 1).padStart(2, '0')}
+                                            {String((currentPage - 1) * lessonsPerPage + index + 1).padStart(2, '0')}
                                         </div>
                                         <div className="min-w-0">
                                             <p
@@ -86,6 +102,34 @@ export default function InstructorCourseLessons() {
                         </div>
                     )}
                 </div>
+
+                {lessons.length > lessonsPerPage ? (
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3">
+                        <p className="text-sm text-slate-500">
+                            Trang {currentPage} / {totalPages} - {lessons.length} bài học
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
+                                disabled={currentPage === 1}
+                                className="inline-flex items-center gap-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <ChevronLeft size={14} />
+                                Trước
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((current) => Math.min(totalPages, current + 1))}
+                                disabled={currentPage === totalPages}
+                                className="inline-flex items-center gap-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Sau
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
             </CourseSectionCard>
 
             <div className="space-y-5">

@@ -3,8 +3,8 @@ import CourseOverview from './tabs/CourseOverview';
 
 export default function CourseCreate() {
   return (
-    <CourseDetailShell mode="create">
-      <CourseOverview />
-    </CourseDetailShell>
+            <CourseDetailShell mode="create">
+                <CourseOverview />
+            </CourseDetailShell>
   );
 }

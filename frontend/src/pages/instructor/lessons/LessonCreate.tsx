@@ -6,6 +6,7 @@ import { useLessonCreateForm } from './hooks/useLessonForm';
 export default function LessonCreate() {
     const { formData, loading, navigate, videoPreview, handleChange, handleFileChange, handleSave } =
         useLessonCreateForm();
+    const remainingTitleChars = 60 - Math.min(formData.tieu_de.length, 60);
 
     return (
         <InstructorLayout>
@@ -53,8 +54,12 @@ export default function LessonCreate() {
                                         className="w-full rounded-md border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-[#1dbf73] focus:bg-white focus:ring-1 focus:ring-[#ebf8f2]"
                                         placeholder="Ví dụ: Giới thiệu về hệ thống"
                                         value={formData.tieu_de}
+                                        maxLength={60}
                                         onChange={(e) => handleChange('tieu_de', e.target.value)}
                                     />
+                                    <p className="mt-2 text-xs text-slate-400">
+                                        Còn lại {remainingTitleChars} ký tự.
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
