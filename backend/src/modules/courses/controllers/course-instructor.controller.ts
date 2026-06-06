@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { serializeCourse } from '../services/course-response.util';
 import { CoursesService } from '../services/course-instructor.service';
 import { CreateReplyDto } from '../dto/create-reply.dto';
+import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
 
@@ -202,6 +203,37 @@ export class CoursesController {
     return {
       message: 'Đã gửi phản hồi thành công',
       data: replyData
+    };
+  }
+
+  @Get(':id/discussions')
+  async getCourseDiscussions(@Param('id') id: string, @Request() req) {
+    const discussions = await this.coursesService.getCourseDiscussions(
+      Number(id),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy danh sách thảo luận khóa học thành công',
+      data: discussions,
+    };
+  }
+
+  @Post(':id/discussions')
+  async replyToDiscussion(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() body: CreateDiscussionReplyDto
+  ) {
+    const replyData = await this.coursesService.replyToDiscussion(
+      Number(id),
+      req.user.sub,
+      body
+    );
+
+    return {
+      message: 'Gửi phản hồi thảo luận thành công',
+      data: replyData,
     };
   }
 }

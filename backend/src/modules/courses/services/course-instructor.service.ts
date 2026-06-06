@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { KhoaHoc } from '../entities/course.entity';
 import { CreateReplyDto } from '../dto/create-reply.dto';
+import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
 
 @Injectable()
 export class CoursesService {
@@ -182,6 +183,81 @@ export class CoursesService {
       studentId: instructorId,
       studentName: course.giangVien?.hoTen || 'Giảng viên',
       studentAvatar: course.giangVien?.anhDaiDien || null
+    };
+  }
+
+  // Chức năng mới: Lấy thảo luận của khóa học cho giảng viên
+  async getCourseDiscussions(courseId: number, instructorId: number) {
+    // 1. Kiểm tra xem giảng viên có sở hữu khóa học này không
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId, maND_GiangVien: instructorId },
+    });
+
+    if (!course) {
+      throw new ForbiddenException(
+        'Bạn không có quyền xem thảo luận của khóa học này',
+      );
+    }
+
+    // 2. Truy vấn danh sách thảo luận kèm thông tin người gửi
+    const discussions = await this.dataSource.query(
+      `
+      SELECT 
+        tl.MaThaoLuan AS discussionId,
+        tl.NoiDung AS content,
+        tl.ThoiGian AS createdAt,
+        tl.MaThaoLuanCha AS parentId,
+        u.MaND AS userId,
+        u.HoTen AS userName,
+        u.AnhDaiDien AS userAvatar
+      FROM ThaoLuanKhoaHoc tl
+      INNER JOIN NguoiDung u ON tl.MaND = u.MaND
+      WHERE tl.MaKH = ?
+      ORDER BY tl.ThoiGian DESC
+      `,
+      [courseId],
+    );
+
+    return discussions;
+  }
+
+  async replyToDiscussion(courseId: number, instructorId: number, payload: CreateDiscussionReplyDto) {
+    // 1. Kiểm tra xem giảng viên có sở hữu khóa học này không
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId, maND_GiangVien: instructorId },
+      relations: ['giangVien'] // Kéo theo thông tin Profile giảng viên để map data trả về Frontend
+    });
+
+    if (!course) {
+      throw new ForbiddenException('Bạn không có quyền thao tác trên khóa học này');
+    }
+
+    // 2. Kiểm tra cuộc thảo luận gốc (câu hỏi của học viên) có tồn tại thực tế không
+    const parentDiscussion = await this.dataSource.query(
+      `SELECT MaThaoLuan FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ? AND MaKH = ?`,
+      [payload.parentId, courseId]
+    );
+
+    if (parentDiscussion.length === 0) {
+      throw new BadRequestException('Không tìm thấy cuộc thảo luận gốc hợp lệ');
+    }
+
+    // 3. Thực hiện chèn câu trả lời của Giảng viên vào bảng dữ liệu ThaoLuanKhoaHoc
+    const result = await this.dataSource.query(
+      `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha) 
+       VALUES (?, ?, ?, NOW(), ? Alvarado)`,
+      [courseId, instructorId, payload.noiDung, payload.parentId]
+    );
+
+    // 4. Trả về cấu trúc JSON tương đương với Interface Discussion ở Frontend nhằm cập nhật State tức thì
+    return {
+      discussionId: result.insertId,
+      content: payload.noiDung,
+      createdAt: new Date().toISOString(),
+      parentId: payload.parentId,
+      userId: instructorId,
+      userName: course.giangVien?.hoTen || 'Giảng viên',
+      userAvatar: course.giangVien?.anhDaiDien || null
     };
   }
 }
