@@ -180,8 +180,7 @@ export default function InstructorCourseDiscussions() {
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="font-semibold text-sm text-slate-800">{reply.userName}</span>
 
-                                                                        {/* Cách xử lý thông minh: Nếu ID người trả lời trùng với ID người đăng câu hỏi gốc thì là Học viên, ngược lại là Giảng viên */}
-                                                                        {Number(reply.userId) !== Number(discussion.userId) ? (
+                                                                        {reply.userRole === 'INSTRUCTOR' ? (
                                                                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
                                                                                 Giảng viên
                                                                             </span>

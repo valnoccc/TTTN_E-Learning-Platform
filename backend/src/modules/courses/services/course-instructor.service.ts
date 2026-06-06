@@ -215,7 +215,8 @@ export class CoursesService {
         tl.MaThaoLuanCha AS parentId,
         u.MaND AS userId,
         u.HoTen AS userName,
-        u.AnhDaiDien AS userAvatar
+        u.AnhDaiDien AS userAvatar,
+        u.VaiTro AS userRole
       FROM ThaoLuanKhoaHoc tl
       INNER JOIN NguoiDung u ON tl.MaND = u.MaND
       WHERE tl.MaKH = ?
@@ -270,6 +271,7 @@ export class CoursesService {
       userId: instructorId,
       userName: course.giangVien?.hoTen || 'Giảng viên',
       userAvatar: course.giangVien?.anhDaiDien || null,
+      userRole: 'INSTRUCTOR',
     };
   }
 

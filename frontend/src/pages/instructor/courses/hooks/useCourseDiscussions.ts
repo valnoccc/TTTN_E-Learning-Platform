@@ -11,6 +11,7 @@ export interface Discussion {
     userId: number;
     userName: string;
     userAvatar: string | null;
+    userRole?: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
 }
 
 export interface UseCourseDiscussionsResult {
