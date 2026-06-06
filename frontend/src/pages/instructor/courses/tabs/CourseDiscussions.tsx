@@ -254,10 +254,7 @@ export default function InstructorCourseDiscussions() {
                             <MessageSquare size={20} />
                         </div>
                         <p className="mt-4 text-sm font-semibold text-slate-900">
-                            Chưa có chủ đề thảo luận nào
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                            Khi dữ liệu thảo luận được nối vào màn instructor, tab này đã có sẵn vùng hiển thị độc lập theo route mà không cần thay đổi cấu trúc chi tiết khóa học.
+                            Chưa có nội dung thảo luận nào
                         </p>
                     </div>
                 )}

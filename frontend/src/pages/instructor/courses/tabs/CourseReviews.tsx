@@ -234,10 +234,7 @@ export default function CourseReviews() {
                             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm text-slate-300 mb-3">
                                 <Star size={24} />
                             </div>
-                            <h3 className="text-sm font-bold text-slate-700">Chưa có dữ liệu đánh giá</h3>
-                            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                                Tab này đã sẵn sàng. Dữ liệu sẽ xuất hiện khi học viên bắt đầu gửi phản hồi.
-                            </p>
+                            <h3 className="text-sm font-bold text-slate-700">Chưa có lượt đánh giá</h3>
                         </div>
                     )}
                 </CourseSectionCard>

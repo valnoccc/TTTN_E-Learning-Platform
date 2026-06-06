@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Plus, GripVertical, PlayCircle, FileText, Trash2, Edit3 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, GripVertical, PlayCircle, FileText, Trash2, Edit3, FolderX } from 'lucide-react';
 
 import { useCourseCurriculum } from '../hooks/useCourseCurriculum';
 import { CourseSectionCard, useInstructorCourseContext } from '../CourseDetailShell';
@@ -27,7 +27,7 @@ export default function InstructorCourseLessons() {
         <div className="space-y-6">
             <CourseSectionCard
                 title="Chương trình học"
-                description="Quản lý chương và bài học của khóa học. Sau khi tạo xong, bạn có thể thêm bài học vào từng chương để xây dựng nội dung giảng dạy."
+                description="Quản lý chương và bài học của khóa học."
                 action={
                     !isLocked && !showAddChapterForm ? (
                         <button
@@ -75,11 +75,11 @@ export default function InstructorCourseLessons() {
                         ))}
                     </div>
                 ) : chapters.length === 0 ? (
-                    <div className="rounded-sm border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                        <p className="text-sm font-semibold text-slate-700">Chua co noi dung giang day</p>
-                        <p className="mt-1 text-xs text-slate-400">
-                            Bam nut "Them chuong moi" o goc phai de bat dau xay dung bai giang.
-                        </p>
+                    <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-md bg-slate-50/50">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm text-slate-300 mb-3">
+                            <FolderX size={24} />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-700">Chưa có chương trình học</h3>
                     </div>
                 ) : (
                     <div className="space-y-4">
