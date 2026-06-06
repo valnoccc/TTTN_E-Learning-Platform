@@ -77,9 +77,8 @@ export default function InstructorCourseDetail({
                                         <StatusActions
                                             status={formData.trang_thai}
                                             onAction={() =>
-                                                void handleStatusChange(
-                                                    formData.trang_thai === 'PENDING' ? 'DRAFT' : 'HIDDEN',
-                                                )
+                                                // Luôn trả về DRAFT (Nháp) dù là Hủy duyệt hay Tạm ẩn xuất bản
+                                                void handleStatusChange('DRAFT')
                                             }
                                         />
                                     )}
