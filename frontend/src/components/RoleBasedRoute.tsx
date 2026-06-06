@@ -9,21 +9,31 @@ interface RoleBasedRouteProps {
 
 export default function RoleBasedRoute({ children, allowedRoles }: RoleBasedRouteProps) {
     const userString = localStorage.getItem('user');
-    let user: { role?: string } | null = null;
+    const token = localStorage.getItem('access_token');
 
+    // 1. Kiểm tra token trước
+    if (!token) return <Navigate to="/login" replace />;
+
+    // 2. Parse an toàn
+    let userRole = '';
     if (userString) {
         try {
-            const parsedUser = JSON.parse(userString) as { role?: string };
-            user = { ...parsedUser, role: normalizeRole(parsedUser.role) };
+            const parsedUser = JSON.parse(userString);
+            userRole = (normalizeRole(parsedUser.role) as string) || '';
         } catch {
-            user = null;
+            userRole = '';
         }
     }
-    const token = localStorage.getItem('access_token');
-    const normalizedRole = normalizeRole(user?.role);
 
-    if (!token) return <Navigate to="/login" replace />;
-    if (!normalizedRole || !allowedRoles.includes(normalizedRole)) return <Navigate to="/" replace />;
+    // 3. Kiểm tra quyền và ngăn chặn vòng lặp
+    // Nếu role không khớp và KHÔNG PHẢI đang ở trang chủ, thì mới chuyển về '/'
+    if (!userRole || !allowedRoles.includes(userRole)) {
+        if (window.location.pathname !== '/') {
+            return <Navigate to="/" replace />;
+        }
+        // Nếu đã ở '/' mà vẫn không có quyền, hiển thị thông báo lỗi thay vì Navigate
+        return <div>Bạn không có quyền truy cập trang này.</div>;
+    }
 
     return <>{children}</>;
 }

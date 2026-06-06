@@ -26,15 +26,13 @@ import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
 
-
-
 @Controller('courses')
 @UseGuards(JwtAuthGuard)
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   @Get('my-courses')
   async getMyCourses(@Request() req) {
@@ -135,7 +133,8 @@ export class CoursesController {
 
     const payload: any = {
       maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
-      tenKhoaHoc: typeof tenKhoaHoc === 'string' ? tenKhoaHoc.trim() : tenKhoaHoc,
+      tenKhoaHoc:
+        typeof tenKhoaHoc === 'string' ? tenKhoaHoc.trim() : tenKhoaHoc,
       moTa: courseData.moTa ?? courseData.mo_ta,
       giaBan: Number(courseData.giaBan ?? courseData.gia ?? 0),
       trangThai: courseData.trangThai ?? courseData.trang_thai,
@@ -192,17 +191,17 @@ export class CoursesController {
   async replyToReview(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: CreateReplyDto // Sử dụng DTO đã tạo
+    @Body() body: CreateReplyDto, // Sử dụng DTO đã tạo
   ) {
     const replyData = await this.coursesService.replyToReview(
       Number(id),
       req.user.sub,
-      body
+      body,
     );
 
     return {
       message: 'Đã gửi phản hồi thành công',
-      data: replyData
+      data: replyData,
     };
   }
 
@@ -223,17 +222,46 @@ export class CoursesController {
   async replyToDiscussion(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: CreateDiscussionReplyDto
+    @Body() body: CreateDiscussionReplyDto,
   ) {
     const replyData = await this.coursesService.replyToDiscussion(
       Number(id),
       req.user.sub,
-      body
+      body,
     );
 
     return {
       message: 'Gửi phản hồi thảo luận thành công',
       data: replyData,
     };
+  }
+
+  @Get(':id/curriculum')
+  async getCourseCurriculum(@Param('id') id: string, @Request() req) {
+    const data = await this.coursesService.getCourseCurriculum(
+      Number(id),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy chương trình học thành công',
+      data: data, // Frontend sẽ bóc lớp data này nhờ axios interceptor
+    };
+  }
+
+  @Post(':id/chapters')
+  async addChapter(@Param('id') id: string, @Request() req, @Body() body: any) {
+    const data = await this.coursesService.addChapter(
+      Number(id),
+      req.user.sub,
+      body,
+    );
+    return { message: 'Tạo chương thành công', data };
+  }
+
+  @Post('chapters/:chapterId/lessons')
+  async addLesson(@Param('chapterId') chapterId: string, @Body() body: any) {
+    const data = await this.coursesService.addLesson(Number(chapterId), body);
+    return { message: 'Tạo bài học thành công', data };
   }
 }

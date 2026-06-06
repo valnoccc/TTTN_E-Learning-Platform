@@ -15,7 +15,7 @@ export class CoursesService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
@@ -43,7 +43,7 @@ export class CoursesService {
     );
 
     if (hasBuyers[0].count > 0) {
-      await this.khoaHocRepository.update(courseId, { trangThai: 'HIDDEN' });
+      await this.khoaHocRepository.update(courseId, { trangThai: 'DRAFT' });
       return {
         message:
           'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẨN.',
@@ -145,21 +145,27 @@ export class CoursesService {
   }
 
   // Thêm vào class CoursesService
-  async replyToReview(courseId: number, instructorId: number, payload: CreateReplyDto) {
+  async replyToReview(
+    courseId: number,
+    instructorId: number,
+    payload: CreateReplyDto,
+  ) {
     // 1. Xác thực quyền giảng viên đối với khóa học
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
-      relations: ['giangVien'] // Nạp thêm thông tin giảng viên để trả về cho FE
+      relations: ['giangVien'], // Nạp thêm thông tin giảng viên để trả về cho FE
     });
 
     if (!course) {
-      throw new ForbiddenException('Bạn không có quyền thao tác trên khóa học này');
+      throw new ForbiddenException(
+        'Bạn không có quyền thao tác trên khóa học này',
+      );
     }
 
     // 2. Kiểm tra đánh giá gốc có tồn tại và thuộc khóa học này không
     const parentReview = await this.dataSource.query(
       `SELECT MaDanhGia FROM DanhGiaKhoaHoc WHERE MaDanhGia = ? AND MaKH = ?`,
-      [payload.parentId, courseId]
+      [payload.parentId, courseId],
     );
 
     if (parentReview.length === 0) {
@@ -170,7 +176,7 @@ export class CoursesService {
     const result = await this.dataSource.query(
       `INSERT INTO DanhGiaKhoaHoc (MaKH, MaND, SoSao, NoiDung, ThoiGian, MaDanhGiaCha) 
        VALUES (?, ?, ?, ?, NOW(), ?)`,
-      [courseId, instructorId, 0, payload.noiDung, payload.parentId]
+      [courseId, instructorId, 0, payload.noiDung, payload.parentId],
     );
 
     // 4. Trả về cấu trúc giống Review interface trên Frontend để UI cập nhật ngay lập tức
@@ -182,7 +188,7 @@ export class CoursesService {
       parentId: payload.parentId,
       studentId: instructorId,
       studentName: course.giangVien?.hoTen || 'Giảng viên',
-      studentAvatar: course.giangVien?.anhDaiDien || null
+      studentAvatar: course.giangVien?.anhDaiDien || null,
     };
   }
 
@@ -221,21 +227,27 @@ export class CoursesService {
     return discussions;
   }
 
-  async replyToDiscussion(courseId: number, instructorId: number, payload: CreateDiscussionReplyDto) {
+  async replyToDiscussion(
+    courseId: number,
+    instructorId: number,
+    payload: CreateDiscussionReplyDto,
+  ) {
     // 1. Kiểm tra xem giảng viên có sở hữu khóa học này không
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
-      relations: ['giangVien'] // Kéo theo thông tin Profile giảng viên để map data trả về Frontend
+      relations: ['giangVien'], // Kéo theo thông tin Profile giảng viên để map data trả về Frontend
     });
 
     if (!course) {
-      throw new ForbiddenException('Bạn không có quyền thao tác trên khóa học này');
+      throw new ForbiddenException(
+        'Bạn không có quyền thao tác trên khóa học này',
+      );
     }
 
     // 2. Kiểm tra cuộc thảo luận gốc (câu hỏi của học viên) có tồn tại thực tế không
     const parentDiscussion = await this.dataSource.query(
       `SELECT MaThaoLuan FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ? AND MaKH = ?`,
-      [payload.parentId, courseId]
+      [payload.parentId, courseId],
     );
 
     if (parentDiscussion.length === 0) {
@@ -246,7 +258,7 @@ export class CoursesService {
     const result = await this.dataSource.query(
       `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha) 
        VALUES (?, ?, ?, NOW(), ? Alvarado)`,
-      [courseId, instructorId, payload.noiDung, payload.parentId]
+      [courseId, instructorId, payload.noiDung, payload.parentId],
     );
 
     // 4. Trả về cấu trúc JSON tương đương với Interface Discussion ở Frontend nhằm cập nhật State tức thì
@@ -257,8 +269,100 @@ export class CoursesService {
       parentId: payload.parentId,
       userId: instructorId,
       userName: course.giangVien?.hoTen || 'Giảng viên',
-      userAvatar: course.giangVien?.anhDaiDien || null
+      userAvatar: course.giangVien?.anhDaiDien || null,
+    };
+  }
+
+  async getCourseCurriculum(courseId: number, instructorId: number) {
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId, maND_GiangVien: instructorId },
+    });
+
+    if (!course) {
+      throw new ForbiddenException('Bạn không có quyền xem khóa học này');
+    }
+
+    const chapters = await this.dataSource.query(
+      `SELECT MaChuong AS maChuong, MaKH AS maKH, TenChuong AS tenChuong, ThuTu AS thuTu
+       FROM ChuongHoc WHERE MaKH = ? ORDER BY ThuTu ASC`,
+      [courseId],
+    );
+
+    if (chapters.length === 0) return [];
+
+    // TẠO DẤU CHẤM HỎI ĐỘNG CHO TRUY VẤN IN (...) ĐỂ CHỐNG LỖI TYPEORM
+    const chapterIds = chapters.map((c: any) => c.maChuong);
+    const placeholders = chapterIds.map(() => '?').join(',');
+
+    const lessons = await this.dataSource.query(
+      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc, 
+              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong
+       FROM BaiHoc
+       WHERE MaChuong IN (${placeholders}) AND TrangThai = 'ACTIVE'
+       ORDER BY ThuTu ASC`,
+      [...chapterIds], // Trải phẳng mảng ID ra
+    );
+
+    return chapters.map((chapter: any) => ({
+      ...chapter,
+      baiHocs: lessons.filter(
+        (lesson: any) => lesson.maChuong === chapter.maChuong,
+      ),
+    }));
+  }
+
+  // ========================================================
+  // THÊM CHƯƠNG MỚI
+  // ========================================================
+  async addChapter(
+    courseId: number,
+    instructorId: number,
+    payload: { tenChuong: string; thuTu: number },
+  ) {
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId, maND_GiangVien: instructorId },
+    });
+
+    if (!course)
+      throw new ForbiddenException(
+        'Bạn không có quyền thêm chương cho khóa học này',
+      );
+
+    const result = await this.dataSource.query(
+      `INSERT INTO ChuongHoc (MaKH, TenChuong, ThuTu) VALUES (?, ?, ?)`,
+      [courseId, payload.tenChuong, payload.thuTu],
+    );
+
+    return {
+      maChuong: result.insertId,
+      maKH: courseId,
+      tenChuong: payload.tenChuong,
+      thuTu: payload.thuTu,
+      baiHocs: [],
+    };
+  }
+
+  // ========================================================
+  // THÊM BÀI HỌC MỚI VÀO CHƯƠNG
+  // ========================================================
+  async addLesson(
+    chapterId: number,
+    payload: { maKH: number; tenBaiHoc: string; thuTu: number },
+  ) {
+    const result = await this.dataSource.query(
+      `INSERT INTO BaiHoc (MaKH, MaChuong, TenBaiHoc, ThuTu, TrangThai) VALUES (?, ?, ?, ?, 'ACTIVE')`,
+      [payload.maKH, chapterId, payload.tenBaiHoc, payload.thuTu],
+    );
+
+    return {
+      maBH: result.insertId,
+      maKH: payload.maKH,
+      maChuong: chapterId,
+      tenBaiHoc: payload.tenBaiHoc,
+      thuTu: payload.thuTu,
+      videoUrl: null,
+      noiDung: null,
+      thoiLuong: 0,
     };
   }
 }
-
