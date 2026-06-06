@@ -1,6 +1,6 @@
 import {
-  Body,
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
@@ -14,15 +14,19 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   CloudinaryService,
   type UploadedAsset,
 } from '../../cloudinary/cloudinary.service';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { serializeCourse } from '../services/course-response.util';
-import { CoursesService } from '../services/course-instructor.service';
-import { CreateReplyDto } from '../dto/create-reply.dto';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
+import { CreateReplyDto } from '../dto/create-reply.dto';
+import { serializeCourse } from '../services/course-response.util';
+import { CourseInstructorCurriculumService } from '../services/course-instructor-curriculum.service';
+import { CourseInstructorDiscussionsService } from '../services/course-instructor-discussions.service';
+import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
+import { CoursesService } from '../services/course-instructor.service';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
 
@@ -31,6 +35,9 @@ const COURSE_TITLE_MAX_LENGTH = 60;
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
+    private readonly reviewsService: CourseInstructorReviewsService,
+    private readonly discussionsService: CourseInstructorDiscussionsService,
+    private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -40,7 +47,7 @@ export class CoursesController {
     const courses =
       await this.coursesService.getCoursesByInstructor(instructorId);
     return {
-      message: 'Lấy danh sách khóa học thành công',
+      message: 'Láº¥y danh sÃ¡ch khÃ³a há»c thÃ nh cÃ´ng',
       data: courses.map(serializeCourse),
     };
   }
@@ -52,7 +59,7 @@ export class CoursesController {
       req.user.sub,
     );
     return {
-      message: 'Lấy thông tin khóa học thành công',
+      message: 'Láº¥y thÃ´ng tin khÃ³a há»c thÃ nh cÃ´ng',
       data: serializeCourse(course),
     };
   }
@@ -66,11 +73,11 @@ export class CoursesController {
   ) {
     const tenKhoaHoc = courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc;
     if (typeof tenKhoaHoc !== 'string' || !tenKhoaHoc.trim()) {
-      throw new BadRequestException('Tên khóa học không được để trống');
+      throw new BadRequestException('TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng');
     }
     if (tenKhoaHoc.trim().length > COURSE_TITLE_MAX_LENGTH) {
       throw new BadRequestException(
-        `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
+        `TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ ${COURSE_TITLE_MAX_LENGTH} kÃ½ tá»±`,
       );
     }
 
@@ -95,7 +102,7 @@ export class CoursesController {
 
     const newCourse = await this.coursesService.createCourse(payload);
     return {
-      message: 'Tạo khóa học thành công',
+      message: 'Táº¡o khÃ³a há»c thÃ nh cÃ´ng',
       data: serializeCourse(newCourse),
     };
   }
@@ -112,11 +119,11 @@ export class CoursesController {
     if (typeof tenKhoaHoc === 'string') {
       const trimmed = tenKhoaHoc.trim();
       if (!trimmed) {
-        throw new BadRequestException('Tên khóa học không được để trống');
+        throw new BadRequestException('TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng');
       }
       if (trimmed.length > COURSE_TITLE_MAX_LENGTH) {
         throw new BadRequestException(
-          `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
+          `TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ ${COURSE_TITLE_MAX_LENGTH} kÃ½ tá»±`,
         );
       }
     }
@@ -147,7 +154,7 @@ export class CoursesController {
       payload,
     );
     return {
-      message: 'Cập nhật khóa học thành công',
+      message: 'Cáº­p nháº­t khÃ³a há»c thÃ nh cÃ´ng',
       data: serializeCourse(updatedCourse),
     };
   }
@@ -163,7 +170,7 @@ export class CoursesController {
       req.user.sub,
       statusData.trangThai ?? statusData.trang_thai,
     );
-    return { message: 'Cập nhật trạng thái thành công', data: updatedCourse };
+    return { message: 'Cáº­p nháº­t tráº¡ng thÃ¡i thÃ nh cÃ´ng', data: updatedCourse };
   }
 
   @Delete(':id')
@@ -171,49 +178,46 @@ export class CoursesController {
     return this.coursesService.remove(Number(id), req.user.sub);
   }
 
-  // Thêm đoạn này vào trong class CoursesController, file course-instructor.controller.ts
-
   @Get(':id/reviews')
   async getCourseReviews(@Param('id') id: string, @Request() req) {
-    const reviews = await this.coursesService.getCourseReviews(
+    const reviews = await this.reviewsService.getCourseReviews(
       Number(id),
       req.user.sub,
     );
 
     return {
-      message: 'Lấy danh sách đánh giá thành công',
+      message: 'Láº¥y danh sÃ¡ch Ä‘Ã¡nh giÃ¡ thÃ nh cÃ´ng',
       data: reviews,
     };
   }
 
-  // Thêm vào class CoursesController
   @Post(':id/reviews')
   async replyToReview(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: CreateReplyDto, // Sử dụng DTO đã tạo
+    @Body() body: CreateReplyDto,
   ) {
-    const replyData = await this.coursesService.replyToReview(
+    const replyData = await this.reviewsService.replyToReview(
       Number(id),
       req.user.sub,
       body,
     );
 
     return {
-      message: 'Đã gửi phản hồi thành công',
+      message: 'ÄÃ£ gá»­i pháº£n há»“i thÃ nh cÃ´ng',
       data: replyData,
     };
   }
 
   @Get(':id/discussions')
   async getCourseDiscussions(@Param('id') id: string, @Request() req) {
-    const discussions = await this.coursesService.getCourseDiscussions(
+    const discussions = await this.discussionsService.getCourseDiscussions(
       Number(id),
       req.user.sub,
     );
 
     return {
-      message: 'Lấy danh sách thảo luận khóa học thành công',
+      message: 'Láº¥y danh sÃ¡ch tháº£o luáº­n khÃ³a há»c thÃ nh cÃ´ng',
       data: discussions,
     };
   }
@@ -224,44 +228,44 @@ export class CoursesController {
     @Request() req,
     @Body() body: CreateDiscussionReplyDto,
   ) {
-    const replyData = await this.coursesService.replyToDiscussion(
+    const replyData = await this.discussionsService.replyToDiscussion(
       Number(id),
       req.user.sub,
       body,
     );
 
     return {
-      message: 'Gửi phản hồi thảo luận thành công',
+      message: 'Gá»­i pháº£n há»“i tháº£o luáº­n thÃ nh cÃ´ng',
       data: replyData,
     };
   }
 
   @Get(':id/curriculum')
   async getCourseCurriculum(@Param('id') id: string, @Request() req) {
-    const data = await this.coursesService.getCourseCurriculum(
+    const data = await this.curriculumService.getCourseCurriculum(
       Number(id),
       req.user.sub,
     );
 
     return {
-      message: 'Lấy chương trình học thành công',
-      data: data, // Frontend sẽ bóc lớp data này nhờ axios interceptor
+      message: 'Láº¥y chÆ°Æ¡ng trÃ¬nh há»c thÃ nh cÃ´ng',
+      data,
     };
   }
 
   @Post(':id/chapters')
   async addChapter(@Param('id') id: string, @Request() req, @Body() body: any) {
-    const data = await this.coursesService.addChapter(
+    const data = await this.curriculumService.addChapter(
       Number(id),
       req.user.sub,
       body,
     );
-    return { message: 'Tạo chương thành công', data };
+    return { message: 'Táº¡o chÆ°Æ¡ng thÃ nh cÃ´ng', data };
   }
 
   @Post('chapters/:chapterId/lessons')
   async addLesson(@Param('chapterId') chapterId: string, @Body() body: any) {
-    const data = await this.coursesService.addLesson(Number(chapterId), body);
-    return { message: 'Tạo bài học thành công', data };
+    const data = await this.curriculumService.addLesson(Number(chapterId), body);
+    return { message: 'Táº¡o bÃ i há»c thÃ nh cÃ´ng', data };
   }
 }
