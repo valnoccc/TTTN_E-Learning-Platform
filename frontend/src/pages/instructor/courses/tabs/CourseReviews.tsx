@@ -4,6 +4,7 @@ import {
     CourseSectionCard,
     CourseSidebarCard,
 } from '../CourseDetailShell';
+import Pagination from '../../../../components/Pagination'
 
 export default function CourseReviews() {
     const {
@@ -218,46 +219,15 @@ export default function CourseReviews() {
                                 );
                             })}
 
-                            {/* CỤM THANH PHÂN TRANG */}
-                            {totalPages > 1 && (
-                                <div className="pt-6 flex items-center justify-between border-t border-slate-100">
-                                    <p className="text-xs font-medium text-slate-500">
-                                        Hiển thị từ <span className="font-semibold text-slate-700">{indexOfFirstReview + 1}</span> đến{' '}
-                                        <span className="font-semibold text-slate-700">
-                                            {indexOfLastReview > totalReviews ? totalReviews : indexOfLastReview}
-                                        </span>{' '}
-                                        trong tổng số <span className="font-semibold text-slate-700">{totalReviews}</span> đánh giá gốc
-                                    </p>
-                                    <div className="inline-flex gap-1">
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="p-1.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <ChevronLeft size={16} />
-                                        </button>
-                                        {[...Array(totalPages)].map((_, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => setCurrentPage(index + 1)}
-                                                className={`px-3 py-1 text-xs font-bold rounded border transition ${currentPage === index + 1
-                                                        ? 'bg-[#1dbf73] border-[#1dbf73] text-white shadow-sm'
-                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                    }`}
-                                            >
-                                                {index + 1}
-                                            </button>
-                                        ))}
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className="p-1.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <ChevronRight size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                totalItems={totalReviews}
+                                indexOfFirst={indexOfFirstReview}
+                                indexOfLast={indexOfLastReview}
+                                variant="numbers" // Hiển thị kiểu số 1, 2, 3 giống hình mẫu
+                            />
                         </div>
                     ) : (
                         <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-md bg-slate-50/50">
