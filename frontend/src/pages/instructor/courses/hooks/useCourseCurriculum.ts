@@ -5,6 +5,27 @@ import axiosClient from '../../../../api/axios';
 import { useInstructorCourseContext } from '../CourseDetailShell';
 import { ChapterData, LessonData } from '../types/curriculum';
 
+interface CurriculumApiResponse<T> {
+    data?: T;
+}
+
+function sortLessons(lessons: LessonData[]) {
+    return [...lessons].sort((a, b) => a.thuTu - b.thuTu);
+}
+
+function normalizeChapter(chapter: ChapterData): ChapterData {
+    return {
+        ...chapter,
+        baiHocs: Array.isArray(chapter.baiHocs) ? sortLessons(chapter.baiHocs) : [],
+    };
+}
+
+function unwrapPayload<T>(payload: T | CurriculumApiResponse<T>): T {
+    return typeof payload === 'object' && payload !== null && 'data' in payload
+        ? (payload.data as T)
+        : (payload as T);
+}
+
 export function useCourseCurriculum() {
     const { id, isNewCourse } = useInstructorCourseContext();
     const [chapters, setChapters] = useState<ChapterData[]>([]);
@@ -23,19 +44,12 @@ export function useCourseCurriculum() {
 
         const fetchCurriculum = async () => {
             try {
-                const response = await axiosClient.get<ChapterData[] | { data?: ChapterData[] }>(
+                const response = await axiosClient.get<ChapterData[] | CurriculumApiResponse<ChapterData[]>>(
                     `/courses/${id}/curriculum`,
                 );
-                const data = Array.isArray(response) ? response : response.data ?? [];
+                const data = unwrapPayload(response) ?? [];
 
-                const sortedData = [...data]
-                    .sort((a, b) => a.thuTu - b.thuTu)
-                    .map((chapter) => ({
-                        ...chapter,
-                        baiHocs: Array.isArray(chapter.baiHocs)
-                            ? [...chapter.baiHocs].sort((a, b) => a.thuTu - b.thuTu)
-                            : [],
-                    }));
+                const sortedData = [...data].sort((a, b) => a.thuTu - b.thuTu).map(normalizeChapter);
 
                 setChapters(sortedData);
 
@@ -65,13 +79,13 @@ export function useCourseCurriculum() {
 
         try {
             const nextOrder = chapters.length + 1;
-            const response = await axiosClient.post<ChapterData | { data?: ChapterData }>(
+            const response = await axiosClient.post<ChapterData | CurriculumApiResponse<ChapterData>>(
                 `/courses/${id}/chapters`,
                 { tenChuong: newChapterTitle, thuTu: nextOrder },
             );
-            const createdChapter = 'data' in response ? (response.data ?? response) : response;
+            const createdChapter = normalizeChapter(unwrapPayload(response));
 
-            setChapters((prev) => [...prev, { ...createdChapter, baiHocs: createdChapter.baiHocs ?? [] }]);
+            setChapters((prev) => [...prev, createdChapter]);
             setNewChapterTitle('');
             setShowAddChapterForm(false);
             setExpandedChapterId(createdChapter.maChuong);
@@ -90,18 +104,18 @@ export function useCourseCurriculum() {
         try {
             const currentChapter = chapters.find((chapter) => chapter.maChuong === chapterId);
             const nextOrder = currentChapter ? currentChapter.baiHocs.length + 1 : 1;
-            const response = await axiosClient.post<LessonData | { data?: LessonData }>(
+            const response = await axiosClient.post<LessonData | CurriculumApiResponse<LessonData>>(
                 `/courses/chapters/${chapterId}/lessons`,
                 { maKH: Number(id), tenBaiHoc: newLessonTitle, thuTu: nextOrder },
             );
-            const createdLesson = 'data' in response ? (response.data ?? response) : response;
+            const createdLesson = unwrapPayload(response);
 
             setChapters((prev) =>
                 prev.map((chapter) =>
                     chapter.maChuong === chapterId
                         ? {
                             ...chapter,
-                            baiHocs: [...chapter.baiHocs, createdLesson].sort((a, b) => a.thuTu - b.thuTu),
+                            baiHocs: sortLessons([...chapter.baiHocs, createdLesson]),
                         }
                         : chapter,
                 ),
