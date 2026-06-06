@@ -257,7 +257,7 @@ export class CoursesService {
     // 3. Thực hiện chèn câu trả lời của Giảng viên vào bảng dữ liệu ThaoLuanKhoaHoc
     const result = await this.dataSource.query(
       `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha) 
-       VALUES (?, ?, ?, NOW(), ? Alvarado)`,
+       VALUES (?, ?, ?, NOW(), ?)`,
       [courseId, instructorId, payload.noiDung, payload.parentId],
     );
 
