@@ -2,6 +2,11 @@ import styled from "styled-components";
 import { colors } from "../common/element/elements";
 
 export const Styles = styled.div`
+    position: sticky;
+    top: -41px;
+    z-index: 9999;
+    background: #ffffff;
+
     .top-bar2 {
         height       : 40px;
         border-bottom: 1px solid ${colors.border1};
@@ -65,6 +70,9 @@ export const Styles = styled.div`
                             border    : none;
                             padding   : 0;
                             box-shadow: none;
+                            display   : flex;
+                            align-items: center;
+                            white-space: nowrap;
 
                             img {
                                 margin-right: 5px;
@@ -187,12 +195,13 @@ export const Styles = styled.div`
     }
 
     .logo-area2 {
-        height     : 82px;
-        padding-top: 20px;
+        padding: 15px 0;
+        box-shadow: 0 0 20px -10px #222222;
 
         .logo {
             a {
                 img {
+                    max-height: 50px;
                     @media(max-width: 991px) {
                         max-width: 100%;
                     }

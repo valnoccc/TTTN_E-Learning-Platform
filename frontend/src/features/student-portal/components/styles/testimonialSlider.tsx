@@ -23,9 +23,10 @@ export const Styles = styled.div`
         .sec-title {
             h4 {
                 color        : #ffffff;
-                line-height  : 35px;
-                font-weight  : 600;
-                max-width    : 550px;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
+                max-width    : 700px;
                 margin       : auto;
                 margin-bottom: 43px;
 
@@ -60,15 +61,15 @@ export const Styles = styled.div`
                     }
 
                     h5 {
-                        font-size    : 18px;
+                        font-size    : 20px;
                         color        : ${colors.border1};
                         margin-bottom: 15px;
                     }
 
                     p {
-                        font-size  : 13px;
+                        font-size  : 16px;
                         color      : ${colors.border3};
-                        line-height: 25px;
+                        line-height: 26px;
                     }
                 }
 
@@ -84,12 +85,14 @@ export const Styles = styled.div`
                     }
 
                     h6 {
+                        font-size    : 18px;
                         color        : ${colors.border1};
                         padding-top  : 10px;
                         margin-bottom: 3px;
                     }
 
                     p {
+                        font-size: 15px;
                         color: ${colors.border3};
                     }
                 }

@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Dropdown } from 'react-bootstrap';
 import Search from './common/Search';
 import Sidebar from './common/Sidebar';
-import StickyMenu from './common/StickyMenu';
+
 import MobileMenu from './common/MobileMenu';
-import AuthControls from './common/AuthControls';
 import { Styles } from "./styles/headerTwo";
 
 class HeaderTwo extends Component {
@@ -34,10 +33,7 @@ class HeaderTwo extends Component {
                                                 <Dropdown.Toggle><img src={process.env.PUBLIC_URL + "/assets/images/us.png"} alt="" />English<i className="las la-angle-down"></i></Dropdown.Toggle>
                                                 <Dropdown.Menu as="ul">
                                                     <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/us.png"} alt="" /> English</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/fra.png"} alt="" /> French</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/ger.png"} alt="" /> German</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/spa.png"} alt="" /> Spanish</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/bra.png"} alt="" /> Brazilian</Dropdown.Item>
+                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/vietnam.png"} alt="" /> Việt Nam</Dropdown.Item>
                                                 </Dropdown.Menu>
                                             </Dropdown>
                                         </li>
@@ -63,7 +59,7 @@ class HeaderTwo extends Component {
                 {/* Logo Area 2 */}
                 <section className="logo-area2">
                     <Container>
-                        <Row>
+                        <Row className="align-items-center">
                             <Col md="3">
                                 <div className="logo">
                                     <Link to={process.env.PUBLIC_URL + "/"}><img src={process.env.PUBLIC_URL + "/assets/images/logo.png"} alt="" /></Link>
@@ -134,8 +130,8 @@ class HeaderTwo extends Component {
                                     <div className="search-box">
                                         <Search />
                                     </div>
-                                    <div className="nav-auth-box">
-                                        <AuthControls />
+                                    <div className="apply-btn">
+                                        <Link to={process.env.PUBLIC_URL + "/registration"}><i className="las la-clipboard-list"></i>Apply Now</Link>
                                     </div>
                                 </div>
                             </Col>
@@ -143,8 +139,7 @@ class HeaderTwo extends Component {
                     </Container>
                 </section>
 
-                {/* Sticky Menu */}
-                <StickyMenu />
+                {/* Sticky Menu removed in favor of native CSS position: sticky on logo-area2 */}
 
                 {/* Mobile Menu */}
                 <MobileMenu />

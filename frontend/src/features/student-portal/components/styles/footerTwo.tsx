@@ -31,7 +31,7 @@ export const Styles = styled.div`
             }
 
             p {
-                font-size    : 14px;
+                font-size    : 16px;
                 color        : ${colors.text3};
                 line-height  : 28px;
                 margin-bottom: 20px;
@@ -74,6 +74,8 @@ export const Styles = styled.div`
 
             h5 {
                 color         : ${colors.border1};
+                font-size     : 20px;
+                font-weight   : 700;
                 text-transform: uppercase;
                 margin-top    : 8px;
                 margin-bottom : 35px;
@@ -91,7 +93,7 @@ export const Styles = styled.div`
             ul {
                 li {
                     a {
-                        font-size  : 14px;
+                        font-size  : 16px;
                         color      : ${colors.text3};
                         line-height: 39px;
 
@@ -124,6 +126,8 @@ export const Styles = styled.div`
         .f-post {
             h5 {
                 color         : ${colors.border1};
+                font-size     : 20px;
+                font-weight   : 700;
                 text-transform: uppercase;
                 margin-top    : 8px;
                 margin-bottom : 42px;
@@ -152,7 +156,7 @@ export const Styles = styled.div`
 
                 .po-content {
                     a {
-                        font-size    : 14px;
+                        font-size    : 16px;
                         color        : ${colors.text3};
                         display      : inline-block;
                         margin-bottom: 3px;
@@ -185,6 +189,8 @@ export const Styles = styled.div`
         .f-newsletter {
             h5 {
                 color         : ${colors.border1};
+                font-size     : 20px;
+                font-weight   : 700;
                 text-transform: uppercase;
                 margin-top    : 8px;
                 margin-bottom : 38px;
@@ -200,7 +206,7 @@ export const Styles = styled.div`
             }
 
             p {
-                font-size    : 14px;
+                font-size    : 16px;
                 color        : ${colors.text3};
                 line-height  : 25px;
                 margin-bottom: 22px;

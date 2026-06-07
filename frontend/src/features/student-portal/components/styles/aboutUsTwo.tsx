@@ -9,8 +9,9 @@ export const Styles = styled.div`
         .about-content {
             h4.about-title {
                 color        : ${colors.black1};
-                line-height  : 35px;
-                font-weight  : 600;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
                 margin-bottom: 25px;
 
                 @media(max-width: 575px) {
@@ -20,9 +21,9 @@ export const Styles = styled.div`
             }
 
             p.about-para {
-                font-size    : 15px;
+                font-size    : 18px;
                 color        : ${colors.text3};
-                line-height  : 28px;
+                line-height  : 32px;
                 margin-bottom: 30px;
 
                 @media(max-width: 991px) {
@@ -50,14 +51,16 @@ export const Styles = styled.div`
                 .cta-content {
                     h6 {
                         color        : ${colors.black1};
+                        font-size    : 18px;
+                        font-weight  : 700;
                         margin-top   : 5px;
                         margin-bottom: 5px;
                     }
 
                     p {
-                        font-size  : 14px;
+                        font-size  : 16px;
                         color      : ${colors.text3};
-                        line-height: 25px;
+                        line-height: 26px;
 
                         @media(max-width: 991px) {
                             font-size    : 13px;

@@ -1,10 +1,38 @@
 import React, { Component } from 'react';
 import Datas from '../data/testimonial/testimonial-slider.json';
 import { Container, Row, Col } from 'react-bootstrap';
+import Swiper from 'react-id-swiper';
 import { Styles } from "./styles/testimonialSlider";
 
 class TestimonialSlider extends Component {
     render() {
+        // Fix for Vite CommonJS interop with react-id-swiper
+        const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
+
+        const settings = {
+            slidesPerView: 2,
+            loop: true,
+            speed: 1000,
+            autoplay: {
+                delay: 3000,
+                disableOnInteraction: false
+            },
+            spaceBetween: 30,
+            watchSlidesVisibility: true,
+            pagination: {
+                el: '.slider-dot.text-center',
+                clickable: true
+            },
+            breakpoints: {
+                0: {
+                    slidesPerView: 1
+                },
+                768: {
+                    slidesPerView: 2
+                }
+            }
+        };
+
         return (
             <Styles>
                 <section className="testimonial-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.backgroundImage})` }}>
@@ -15,23 +43,27 @@ class TestimonialSlider extends Component {
                                     <h4>{Datas.secTitle}</h4>
                                 </div>
                             </Col>
-                            {
-                                Datas.dataList.map((data, i) => (
-                                    <Col md="6" key={i}>
-                                        <div className="slider-item">
-                                            <div className="desc">
-                                                <h5>{data.testimonialTitle}</h5>
-                                                <p>{data.testimonialDesc}</p>
-                                            </div>
-                                            <div className="writer">
-                                                <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} className="slider-image" alt={data.authorImg} />
-                                                <h6>{data.authorName}</h6>
-                                                <p>{data.authorTitle}</p>
-                                            </div>
-                                        </div>
-                                    </Col>
-                                ))
-                            }
+                            <Col md="12">
+                                <div className="testimonial-slider">
+                                    <SwiperComponent {...settings}>
+                                        {
+                                            Datas.dataList.map((data, i) => (
+                                                <div className="slider-item" key={i}>
+                                                    <div className="desc">
+                                                        <h5>{data.testimonialTitle}</h5>
+                                                        <p>{data.testimonialDesc}</p>
+                                                    </div>
+                                                    <div className="writer">
+                                                        <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} className="slider-image" alt={data.authorImg} />
+                                                        <h6>{data.authorName}</h6>
+                                                        <p>{data.authorTitle}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        }
+                                    </SwiperComponent>
+                                </div>
+                            </Col>
                         </Row>
                     </Container>
                 </section>

@@ -8,9 +8,10 @@ export const Styles = styled.div`
         .sec-title {
             h4 {
                 color        : ${colors.black1};
-                line-height  : 35px;
-                font-weight  : 600;
-                max-width    : 550px;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
+                max-width    : 700px;
                 margin       : auto;
                 margin-bottom: 48px;
 
@@ -22,7 +23,7 @@ export const Styles = styled.div`
         }
 
         .blog-post {
-            margin-bottom: 30px;
+            margin-bottom: 70px;
 
             .blog-img {
                 a {
@@ -79,9 +80,10 @@ export const Styles = styled.div`
                             h6 {
                                 a {
                                     color      : ${colors.black1};
-                                    font-weight: 600;
+                                    font-size  : 18px;
+                                    font-weight: 700;
                                     display: inline-block;
-                                    line-height: 23px;
+                                    line-height: 28px;
                                     padding-top: 5px;
 
                                     &:hover {
@@ -94,8 +96,9 @@ export const Styles = styled.div`
 
                     .blog-desk {
                         p {
-                            font-size     : 14px;
+                            font-size     : 16px;
                             color         : ${colors.text3};
+                            line-height   : 26px;
                             border-bottom : 1px solid ${colors.border1};
                             padding-bottom: 10px;
                             margin-bottom : 10px;

@@ -8,15 +8,17 @@ export const Styles = styled.div`
         .sec-title {
             h4 {
                 color        : ${colors.black1};
-                line-height  : 35px;
-                font-weight  : 600;
-                max-width    : 550px;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
+                max-width    : 700px;
                 margin       : auto;
                 margin-bottom: 40px;
 
                 @media(max-width: 575px) {
                     margin-bottom: 15px;
-                    font-size: 20px;
+                    font-size: 24px;
+                    line-height: 34px;
                 }
             }
         }
@@ -119,16 +121,17 @@ export const Styles = styled.div`
                 h6 {
                     color         : ${colors.black1};
                     text-transform: uppercase;
-                    font-weight   : 600;
-                    margin-bottom : 6px;
+                    font-weight   : 700;
+                    font-size     : 18px;
+                    margin-bottom : 8px;
 
                     @media(max-width: 991px) {
-                        font-size: 13px;
+                        font-size: 15px;
                         letter-spacing: 0;
                     }
 
                     @media(max-width: 767px) {
-                        font-size: 16px;
+                        font-size: 18px;
                         letter-spacing: 0.3px;
                     }
 
@@ -138,11 +141,12 @@ export const Styles = styled.div`
                 }
 
                 p {
-                    font-size: 14px;
+                    font-size: 16px;
                     color    : ${colors.text3};
+                    line-height: 24px;
 
                     @media(max-width: 991px) {
-                        font-size: 13px;
+                        font-size: 14px;
                         letter-spacing: 0;
                     }
 

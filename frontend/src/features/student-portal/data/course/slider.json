@@ -8,8 +8,8 @@
             "authorName": "John Doe",
             "authorCourses": "13 Courses",
             "price": "$20",
-            "courseTitle": "Php & mySql Programming",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseTitle": "PHP & MySQL Programming",
+            "courseDesc": "The course provides foundational and in-depth knowledge of web programming with PHP & MySQL, helping you confidently apply it in practice.",
             "courseLink": "/course-details"
         },
         {
@@ -19,8 +19,8 @@
             "authorName": "Jara Sen",
             "authorCourses": "21 Courses",
             "price": "$13",
-            "courseTitle": "Microsoft Excel for Beginner",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseTitle": "Basic Microsoft Excel",
+            "courseDesc": "Master Excel skills from basic to advanced, effectively applied in office work and data management.",
             "courseLink": "/course-details"
         },
         {
@@ -31,7 +31,7 @@
             "authorCourses": "26 Courses",
             "price": "$19",
             "courseTitle": "Digital Marketing Course",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Comprehensive digital marketing strategy, helping you build and grow your brand on online platforms.",
             "courseLink": "/course-details"
         },
         {
@@ -41,8 +41,8 @@
             "authorName": "Jim Hunt",
             "authorCourses": "09 Courses",
             "price": "$15",
-            "courseTitle": "Zero to Hero in Python 3",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseTitle": "Python 3 From Scratch",
+            "courseDesc": "Learn Python programming from the very first steps. Confidently build applications and master the most popular programming tools.",
             "courseLink": "/course-details"
         }
     ]
