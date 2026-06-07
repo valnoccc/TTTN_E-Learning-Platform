@@ -2,10 +2,44 @@ import React, { Component } from 'react';
 import Datas from '../data/course/slider.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
+import Swiper from 'react-id-swiper';
 import { Styles } from "./styles/courseSlider";
 
 class CourseSlider extends Component {
     render() {
+        // Fix for Vite CommonJS interop with react-id-swiper
+        const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
+
+        const settings = {
+            slidesPerView: 3,
+            loop: true,
+            speed: 1000,
+            autoplay: {
+                delay: 3000,
+                disableOnInteraction: false
+            },
+            spaceBetween: 30,
+            watchSlidesVisibility: true,
+            pagination: {
+                el: '.slider-dot.text-center',
+                clickable: true
+            },
+            breakpoints: {
+                0: {
+                    slidesPerView: 1
+                },
+                576: {
+                    slidesPerView: 1
+                },
+                768: {
+                    slidesPerView: 2
+                },
+                992: {
+                    slidesPerView: 3
+                }
+            }
+        };
+
         return (
             <Styles>
                 <section className="course-slider-area">
@@ -17,11 +51,11 @@ class CourseSlider extends Component {
                                 </div>
                             </Col>
                             <Col md="12">
-                                <Row>
-                                    {
-                                        Datas.dataList.map((data, i) => (
-                                            <Col md="4" sm="6" key={i}>
-                                                <div className="course-item">
+                                <div className="course-slider">
+                                    <SwiperComponent {...settings}>
+                                        {
+                                            Datas.dataList.map((data, i) => (
+                                                <div className="course-item" key={i}>
                                                     <Link to={process.env.PUBLIC_URL + data.courseLink}>
                                                         <div className="course-image" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${data.imgUrl})` }}>
                                                             <div className="author-img d-flex">
@@ -61,10 +95,10 @@ class CourseSlider extends Component {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </Col>
-                                        ))
-                                    }
-                                </Row>
+                                            ))
+                                        }
+                                    </SwiperComponent>
+                                </div>
                             </Col>
                         </Row>
                     </Container>

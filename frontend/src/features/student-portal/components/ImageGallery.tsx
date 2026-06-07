@@ -12,9 +12,9 @@ class ImageGallery extends Component {
                         <Row>
                             {
                                 Datas.map((data, i) => (
-                                    <Col md="3" sm="6" className="padding-fix" key={i}>
-                                        <div className="gallery-box">
-                                            <img src={process.env.PUBLIC_URL + `/assets/images/${data.galleryImage}`} alt="" />
+                                    <Col md="3" sm="6" key={i}>
+                                        <div className="gallery-box" style={{ marginBottom: '30px' }}>
+                                            <img src={process.env.PUBLIC_URL + `/assets/images/${data.galleryImage}`} alt="" className="img-fluid" />
                                         </div>
                                     </Col>
                                 ))

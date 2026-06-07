@@ -1,39 +1,42 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
-import AuthControls from './AuthControls';
+import Search from './Search';
 import { Styles } from "./styles/stickyMenu";
 
-class StickyMenu extends Component {
-    componentDidMount() {
-        const onScroll = () => {
-            const stickyMenu = document.querySelector(".sticky-menu");
-            if (!stickyMenu) {
-                return;
-            }
-            if (window.scrollY > 160) {
-                stickyMenu.classList.add("sticky");
-            } else {
-                stickyMenu.classList.remove("sticky");
-            }
+class StickyMenu extends Component<{}, { isSticky: boolean }> {
+    constructor(props: any) {
+        super(props);
+        this.state = {
+            isSticky: false
         };
+    }
 
-        window.addEventListener("scroll", onScroll);
-        onScroll();
+    onScroll = () => {
+        if (window.scrollY > 160) {
+            if (!this.state.isSticky) {
+                this.setState({ isSticky: true });
+            }
+        } else {
+            if (this.state.isSticky) {
+                this.setState({ isSticky: false });
+            }
+        }
+    };
 
-        (this as any).cleanup = () => window.removeEventListener("scroll", onScroll);
+    componentDidMount() {
+        window.addEventListener("scroll", this.onScroll);
+        this.onScroll();
     }
 
     componentWillUnmount() {
-        if ((this as any).cleanup) {
-            (this as any).cleanup();
-        }
+        window.removeEventListener("scroll", this.onScroll);
     }
 
     render() {
         return (
             <Styles>
-                <section className="sticky-menu">
+                <section className={`sticky-menu ${this.state.isSticky ? 'sticky' : ''}`}>
                     <Container>
                         <Row>
                             <Col md="3">
@@ -103,8 +106,11 @@ class StickyMenu extends Component {
                                             </ul>
                                         </li>
                                     </ul>
-                                    <div className="nav-auth-box">
-                                        <AuthControls />
+                                    <div className="search-box">
+                                        <Search />
+                                    </div>
+                                    <div className="apply-btn">
+                                        <Link to={process.env.PUBLIC_URL + "/registration"}><i className="las la-clipboard-list"></i>Apply Now</Link>
                                     </div>
                                 </div>
                             </Col>

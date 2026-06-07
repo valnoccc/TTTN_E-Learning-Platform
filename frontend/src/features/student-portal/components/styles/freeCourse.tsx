@@ -11,8 +11,9 @@ export const Styles = styled.div`
 
             h4 {
                 color        : ${colors.black1};
-                line-height  : 35px;
-                font-weight  : 600;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
                 margin-bottom: 25px;
 
                 @media(max-width: 575px) {
@@ -22,9 +23,9 @@ export const Styles = styled.div`
             }
 
             p {
-                font-size    : 15px;
+                font-size    : 18px;
                 color        : ${colors.text3};
-                line-height  : 28px;
+                line-height  : 32px;
                 margin-bottom: 45px;
 
                 @media(max-width: 575px) {
@@ -101,8 +102,9 @@ export const Styles = styled.div`
 
                 h4.title {
                     color         : #ffffff;
+                    font-size     : 24px;
                     text-transform: uppercase;
-                    font-weight   : 500;
+                    font-weight   : 700;
                     margin-bottom : 6px;
 
                     @media(max-width: 575px) {
@@ -111,7 +113,7 @@ export const Styles = styled.div`
                 }
 
                 p.desc {
-                    font-size    : 14px;
+                    font-size    : 16px;
                     color        : #ffffff;
                     margin-bottom: 20px;
 

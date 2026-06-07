@@ -45,31 +45,32 @@ export const Styles = styled.div`
                 .hero-box {
 
                     h1 {
-                        font-size    : 46px;
+                        font-size    : 60px;
                         color        : #ffffff;
-                        max-width    : 700px;
+                        max-width    : 900px;
                         margin       : auto;
                         margin-bottom: 20px;
-                        font-weight  : 600;
+                        font-weight  : 700;
+                        line-height  : 1.2;
 
                         @media(max-width: 767px) {
-                            font-size: 26px;
-                            font-weight: 500;
+                            font-size: 32px;
+                            font-weight: 600;
                             max-width: 100%;
                         }
                     }
 
                     p {
-                        font-size    : 16px;
+                        font-size    : 20px;
                         color        : ${colors.border3};
-                        max-width    : 600px;
-                        line-height  : 30px;
+                        max-width    : 800px;
+                        line-height  : 32px;
                         margin       : auto;
                         margin-bottom: 60px;
 
                         @media(max-width: 575px) {
-                            font-size : 15px;
-                            line-height : 25px;
+                            font-size : 16px;
+                            line-height : 26px;
                         }
                     }
 

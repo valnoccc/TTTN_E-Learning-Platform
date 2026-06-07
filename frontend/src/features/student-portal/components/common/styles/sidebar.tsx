@@ -26,6 +26,10 @@ export const Styles = styled.div`
         .side-logo {
             margin-bottom: 40px;
 
+            img {
+                max-width: 150px;
+            }
+
             a {
                 i {
                     font-size: 18px;
@@ -139,11 +143,16 @@ export const Styles = styled.div`
                 }
             }
 
-            img {
-                max-width: 96px;
-                border-radius : 5px;
-                margin-right : 5px;
-                margin-bottom: 6px;
+            .gallery-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5px;
+
+                img {
+                    width: 100%;
+                    height: auto;
+                    border-radius : 5px;
+                }
             }
         }
 

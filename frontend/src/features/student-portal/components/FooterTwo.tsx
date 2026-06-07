@@ -63,8 +63,8 @@ function FooterTwo() {
                     <Row>
                         <Col md="3">
                             <div className="footer-logo-info">
-                                <img src={process.env.PUBLIC_URL + "/assets/images/f-logo.png"} alt="" className="img-fluid" />
-                                <p>Lorem ipsum dolor sit amet, consectet adipisicing elit. Saepe porro neque a nam null quos.</p>
+                                <img src={process.env.PUBLIC_URL + "/assets/images/logo.png"} alt="" className="img-fluid" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px' }} />
+                                <p>We provide high-quality courses to help you improve your skills and advance in your career.</p>
                                 <ul className="list-unstyled">
                                     <li><i className="las la-map-marker"></i>795 South Park Avenue, CA 94107</li>
                                     <li><i className="las la-envelope"></i>enquery@domain.com</li>
@@ -92,7 +92,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Lorem ipsum dolor sit ...</Link>
+                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Discover new technology trends...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -101,7 +101,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Lorem ipsum dolor sit ...</Link>
+                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>The most effective programming study guide...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -110,7 +110,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Lorem ipsum dolor sit ...</Link>
+                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Secrets to building a successful career...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -119,7 +119,7 @@ function FooterTwo() {
                         <Col md="3">
                             <div className="f-newsletter">
                                 <h5>Newsletter</h5>
-                                <p>Lorem ipsum dolor sit amet, consectet adipisicing elit.</p>
+                                <p>Subscribe to our newsletter to receive the latest offers and courses from us.</p>
 
                                 <form id="form4" className="form">
                                     <p className="form-control">

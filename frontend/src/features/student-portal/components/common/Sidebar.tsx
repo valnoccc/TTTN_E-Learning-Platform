@@ -93,12 +93,14 @@ class Sidebar extends Component {
                     </div>
                     <div className="side-gallery">
                         <h5>Gallery</h5>
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-01.jpg"} alt="" />
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-02.jpg"} alt="" />
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-03.jpg"} alt="" />
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-04.jpg"} alt="" />
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-05.jpg"} alt="" />
-                        <img src={process.env.PUBLIC_URL + "/assets/images/gallery-06.jpg"} alt="" />
+                        <div className="gallery-grid">
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-01.jpg"} alt="" />
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-02.jpg"} alt="" />
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-03.jpg"} alt="" />
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-04.jpg"} alt="" />
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-05.jpg"} alt="" />
+                            <img src={process.env.PUBLIC_URL + "/assets/images/gallery-06.jpg"} alt="" />
+                        </div>
                     </div>
                     <div className="side-contact">
                         <h5>Contact Us</h5>

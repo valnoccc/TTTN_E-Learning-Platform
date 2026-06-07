@@ -7,6 +7,9 @@ import { Styles } from "./styles/heroSlider";
 
 class HeroSlider extends Component {
     render() {
+        // Fix for Vite CommonJS interop with react-id-swiper
+        const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
+
         const settings = {
             slidesPerView: 1,
             loop: true,
@@ -33,7 +36,7 @@ class HeroSlider extends Component {
             <Styles>
                 {/* Hero Slider */}
                 <section className="hero-slider-area">
-                    <Swiper {...settings}>
+                    <SwiperComponent {...settings}>
                         {
                             Datas.map((data, i) => (
                                 <div className="slider-item" key={i}>
@@ -41,20 +44,23 @@ class HeroSlider extends Component {
                                         <img src={process.env.PUBLIC_URL + `/assets/images/${data.backgroundImage}`} className="slider-image" alt={data.backgroundImage} />
                                     </div>
                                     <div className="slider-table">
-                                        <div className="slider-tablecell">
+                                        <div className="slider-tablecell" style={{ display: 'table-cell', verticalAlign: 'middle' }}>
                                             <Container>
                                                 <Row>
                                                     <Col md="12">
-                                                        <div className={data.uniqClass}>
-                                                            <div className="slider-title">
-                                                                <p>{data.title}</p>
-                                                            </div>
-                                                            <div className="slider-desc">
-                                                                <h1>{data.desc}</h1>
-                                                            </div>
-                                                            <div className="slider-btn">
-                                                                <Link className="slider-btn1" to={process.env.PUBLIC_URL + `/${data.btnOneLink}`}>Our Courses</Link>
-                                                                <Link className="slider-btn2" to={process.env.PUBLIC_URL + `/${data.btnTwoLink}`}>Contact Us</Link>
+                                                        <div className="hero-box text-center">
+                                                            <h1 style={{ fontSize: '46px', color: '#fff', maxWidth: '700px', margin: 'auto', marginBottom: '20px', fontWeight: 600 }}>{data.desc}</h1>
+                                                            <p style={{ fontSize: '16px', color: '#e5e5e5', maxWidth: '600px', lineHeight: '30px', margin: 'auto', marginBottom: '60px' }}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Laboriosam tempore laudantium pariatur ipsa delectus odit sequi dolor.</p>
+                                                            <div className="video-player">
+                                                                <a
+                                                                    href="https://www.youtube.com/watch?v=uXFUl0KcIkA"
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="play-button"
+                                                                    style={{ display: 'inline-block', width: '32px', height: '44px', color: '#fff', fontSize: '40px', position: 'relative', zIndex: 11 }}
+                                                                >
+                                                                    <i className="las la-play"></i>
+                                                                </a>
                                                             </div>
                                                         </div>
                                                     </Col>
@@ -65,7 +71,8 @@ class HeroSlider extends Component {
                                 </div>
                             ))
                         }
-                    </Swiper>
+                    </SwiperComponent>
+                    <div className="round-shape" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/r-shape.png)` }}></div>
                 </section>
             </Styles>
         )
