@@ -120,7 +120,7 @@ export default function InstructorCourseLessons() {
                                                     {chapter.tenChuong}
                                                 </h3>
                                                 <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                                    {chapter.baiHocs.length} Bai hoc
+                                                    {chapter.baiHocs.length} Bài học
                                                 </p>
                                             </div>
                                         </div>

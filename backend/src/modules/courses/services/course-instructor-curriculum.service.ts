@@ -10,7 +10,7 @@ export class CourseInstructorCurriculumService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getCourseCurriculum(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
@@ -18,7 +18,7 @@ export class CourseInstructorCurriculumService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Báº¡n khÃ´ng cÃ³ quyá»n xem khÃ³a há»c nÃ y');
+      throw new ForbiddenException('Bạn không có quyền xem chương trình giảng dạy của khóa học này');
     }
 
     const chapters = await this.dataSource.query(
@@ -62,7 +62,7 @@ export class CourseInstructorCurriculumService {
 
     if (!course) {
       throw new ForbiddenException(
-        'Báº¡n khÃ´ng cÃ³ quyá»n thÃªm chÆ°Æ¡ng cho khÃ³a há»c nÃ y',
+        'Bạn không có quyền thêm chương cho khóa học này',
       );
     }
 

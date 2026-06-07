@@ -12,6 +12,8 @@ export interface CourseForm {
     hinh_anh: string;
     trang_thai: string;
     hinh_thu_nho?: string | null;
+    muc_tieu: string[]; // ĐÃ THÊM
+    yeu_cau: string[];  // ĐÃ THÊM
 }
 
 export interface Lesson {
@@ -29,6 +31,8 @@ interface CourseDetailApiData {
     hinh_thu_nho?: string | null;
     hinh_anh?: string | null;
     trang_thai?: string;
+    muc_tieu?: string[]; // ĐÃ THÊM
+    yeu_cau?: string[];  // ĐÃ THÊM
 }
 
 interface CourseDetailApiResponse {
@@ -60,6 +64,14 @@ export interface InstructorCourseContextValue {
     handleDeleteLesson: (lessonId: string | number) => Promise<void>;
     handleStatusChange: (newStatus: string) => Promise<void>;
     navigate: ReturnType<typeof useNavigate>;
+
+    // CÁC HÀM XỬ LÝ MỤC TIÊU/YÊU CẦU ĐƯỢC XUẤT RA GIAO DIỆN
+    updateObjective: (index: number, value: string) => void;
+    removeObjective: (index: number) => void;
+    addObjective: () => void;
+    updateRequirement: (index: number, value: string) => void;
+    removeRequirement: (index: number) => void;
+    addRequirement: () => void;
 }
 
 interface UseCourseDetailOptions {
@@ -82,7 +94,11 @@ export function useCourseDetail(
         category: 'Web Development',
         hinh_anh: '',
         trang_thai: 'DRAFT',
+        // ĐÃ KHỞI TẠO MẢNG MẶC ĐỊNH ĐỂ GIAO DIỆN KHÔNG BỊ TRỐNG
+        muc_tieu: ['', '', '', ''],
+        yeu_cau: [''],
     });
+
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [errorText, setErrorText] = useState('');
@@ -110,6 +126,9 @@ export function useCourseDetail(
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
+                    // ĐỒNG BỘ DỮ LIỆU MỤC TIÊU & YÊU CẦU TỪ DATABASE
+                    muc_tieu: courseData.muc_tieu?.length ? courseData.muc_tieu : ['', '', '', ''],
+                    yeu_cau: courseData.yeu_cau?.length ? courseData.yeu_cau : [''],
                 });
                 setImagePreview(courseData.hinh_thu_nho || courseData.hinh_anh || null);
                 setImageFile(null);
@@ -139,6 +158,53 @@ export function useCourseDetail(
         void fetchLessons();
     }, [id, isNewCourse]);
 
+    // ==========================================
+    // LOGIC THAO TÁC MỤC TIÊU KHÓA HỌC
+    // ==========================================
+    const updateObjective = (index: number, value: string) => {
+        setFormData(prev => {
+            const newObj = [...(prev.muc_tieu || [])];
+            newObj[index] = value;
+            return { ...prev, muc_tieu: newObj };
+        });
+    };
+
+    const removeObjective = (index: number) => {
+        setFormData(prev => {
+            const currentObj = prev.muc_tieu || [];
+            if (currentObj.length <= 1) return prev;
+            return { ...prev, muc_tieu: currentObj.filter((_, i) => i !== index) };
+        });
+    };
+
+    const addObjective = () => {
+        setFormData(prev => ({ ...prev, muc_tieu: [...(prev.muc_tieu || []), ''] }));
+    };
+
+    // ==========================================
+    // LOGIC THAO TÁC YÊU CẦU KHÓA HỌC
+    // ==========================================
+    const updateRequirement = (index: number, value: string) => {
+        setFormData(prev => {
+            const newReq = [...(prev.yeu_cau || [])];
+            newReq[index] = value;
+            return { ...prev, yeu_cau: newReq };
+        });
+    };
+
+    const removeRequirement = (index: number) => {
+        setFormData(prev => {
+            const currentReq = prev.yeu_cau || [];
+            if (currentReq.length <= 1) return prev;
+            return { ...prev, yeu_cau: currentReq.filter((_, i) => i !== index) };
+        });
+    };
+
+    const addRequirement = () => {
+        setFormData(prev => ({ ...prev, yeu_cau: [...(prev.yeu_cau || []), ''] }));
+    };
+
+
     const handleChange = (
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     ) => {
@@ -151,9 +217,7 @@ export function useCourseDetail(
 
     const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
+        if (!file) return;
 
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result as string);
@@ -180,6 +244,10 @@ export function useCourseDetail(
             data.append('gia', formData.price.toString());
             data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
 
+            // Gắn mảng Mục tiêu và Yêu cầu vào request dưới dạng JSON string
+            data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
+            data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
+
             if (imageFile) {
                 data.append('image', imageFile);
             }
@@ -203,10 +271,7 @@ export function useCourseDetail(
     };
 
     const confirmDelete = async () => {
-        if (!id) {
-            return;
-        }
-
+        if (!id) return;
         setIsDeleteModalOpen(false);
         try {
             await axiosClient.delete(`/courses/${id}`);
@@ -218,10 +283,7 @@ export function useCourseDetail(
     };
 
     const handleDeleteLesson = async (lessonId: string | number) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa bài học này?')) {
-            return;
-        }
-
+        if (!window.confirm('Bạn có chắc chắn muốn xóa bài học này?')) return;
         try {
             await axiosClient.delete(`/lessons/${lessonId}`);
             toast.success('Đã xóa bài học thành công!');
@@ -232,52 +294,70 @@ export function useCourseDetail(
     };
 
     const handleStatusChange = async (newStatus: string) => {
-        if (!id) {
+        if (!id) return;
+
+        // 1. KIỂM TRA RÀNG BUỘC DỮ LIỆU TRƯỚC KHI LƯU VÀ GỬI DUYỆT
+        const trimmedTitle = formData.title.trim();
+        if (!trimmedTitle) {
+            toast.error('Tên khóa học không được để trống!');
+            return;
+        }
+        if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
+            toast.error(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
             return;
         }
 
         if (newStatus === 'PENDING' && lessons.length === 0) {
-            toast.error(
-                'Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.',
-            );
+            toast.error('Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.');
             return;
         }
 
+        // Cập nhật câu thông báo xác nhận cho rõ ràng hơn
         const confirmMessage =
             newStatus === 'PENDING'
-                ? 'Gửi yêu cầu duyệt? Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi.'
+                ? 'Nội dung hiện tại sẽ được tự động lưu lại và gửi yêu cầu duyệt. Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi. Tiếp tục?'
                 : newStatus === 'DRAFT'
                     ? 'Hủy yêu cầu duyệt và quay lại bản nháp?'
                     : 'Tạm ngưng xuất bản? Khóa học sẽ bị ẩn khỏi trang chủ để bạn chỉnh sửa.';
 
-        if (!window.confirm(confirmMessage)) {
-            return;
-        }
+        if (!window.confirm(confirmMessage)) return;
 
         try {
+            // 2. AUTO-SAVE: TỰ ĐỘNG LƯU TOÀN BỘ NỘI DUNG MỚI TRƯỚC KHI ĐỔI TRẠNG THÁI
+            const data = new FormData();
+            data.append('ten_khoa_hoc', trimmedTitle);
+            data.append('mo_ta', formData.description);
+            data.append('gia', formData.price.toString());
+            data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
+            data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
+            data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
+            if (imageFile) {
+                data.append('image', imageFile);
+            }
+
+            // Gọi API lưu dữ liệu (PUT)
+            await axiosClient.put(`/courses/${id}`, data, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            // 3. NẾU LƯU DỮ LIỆU THÀNH CÔNG -> GỌI API CẬP NHẬT TRẠNG THÁI (PATCH)
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
-            toast.success('Đã cập nhật trạng thái!');
+
+            toast.success('Đã lưu lại nội dung và cập nhật trạng thái mới!');
             setFormData((current) => ({ ...current, trang_thai: newStatus }));
+
         } catch (error: unknown) {
-            const message =
-                typeof error === 'object' &&
-                error !== null &&
-                'response' in error &&
-                typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message ===
-                    'string'
-                    ? (error as { response: { data: { message: string } } }).response.data.message
-                    : 'Lỗi khi cập nhật trạng thái';
+            // Bắt lỗi nếu quá trình lưu hoặc đổi trạng thái thất bại
+            const message = typeof error === 'object' && error !== null && 'response' in error &&
+                typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+                ? (error as { response: { data: { message: string } } }).response.data.message
+                : 'Lỗi khi xử lý yêu cầu. Vui lòng kiểm tra lại!';
             toast.error(message);
         }
     };
 
-    const handleDeleteCourse = () => {
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleImagePickerOpen = () => {
-        document.getElementById('course-image-input')?.click();
-    };
+    const handleDeleteCourse = () => setIsDeleteModalOpen(true);
+    const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
     const isLocked = ['PENDING', 'PUBLISHED'].includes(formData.trang_thai);
 
@@ -300,5 +380,13 @@ export function useCourseDetail(
         handleDeleteLesson,
         handleStatusChange,
         navigate,
+
+        // XUẤT CÁC HÀM NÀY RA ĐỂ GIAO DIỆN CÓ THỂ SỬ DỤNG
+        updateObjective,
+        removeObjective,
+        addObjective,
+        updateRequirement,
+        removeRequirement,
+        addRequirement
     };
 }
