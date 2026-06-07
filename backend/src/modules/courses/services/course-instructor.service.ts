@@ -10,7 +10,7 @@ export class CoursesService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
@@ -19,9 +19,37 @@ export class CoursesService {
     });
   }
 
-  async createCourse(payload: any) {
+  async createCourse(payload: any, mucTieu: string[], yeuCau: string[]) {
+    // 1. Lưu thông tin cơ bản của khóa học
     const newCourse = this.khoaHocRepository.create(payload);
-    return await this.khoaHocRepository.save(newCourse);
+    const savedCourse = await this.khoaHocRepository.save(newCourse);
+    const courseId = (savedCourse as any).maKH;
+
+    // 2. Chèn danh sách Mục tiêu khóa học
+    if (mucTieu && mucTieu.length > 0) {
+      for (const noiDung of mucTieu) {
+        if (noiDung.trim()) {
+          await this.dataSource.query(
+            `INSERT INTO MucTieuKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
+            [courseId, noiDung.trim()]
+          );
+        }
+      }
+    }
+
+    // 3. Chèn danh sách Yêu cầu khóa học
+    if (yeuCau && yeuCau.length > 0) {
+      for (const noiDung of yeuCau) {
+        if (noiDung.trim()) {
+          await this.dataSource.query(
+            `INSERT INTO YeuCauKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
+            [courseId, noiDung.trim()]
+          );
+        }
+      }
+    }
+
+    return savedCourse;
   }
 
   async remove(courseId: number, instructorId: number) {
@@ -30,7 +58,7 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a khÃ³a há»c nÃ y');
+      throw new ForbiddenException('Bạn không có quyền xóa khóa học này');
     }
 
     const hasBuyers = await this.dataSource.query(
@@ -42,12 +70,12 @@ export class CoursesService {
       await this.khoaHocRepository.update(courseId, { trangThai: 'DRAFT' });
       return {
         message:
-          'KhÃ³a há»c Ä‘Ã£ cÃ³ há»c viÃªn mua, há»‡ thá»‘ng Ä‘Ã£ chuyá»ƒn sang tráº¡ng thÃ¡i áº¨N.',
+          'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẩn.',
       };
     }
 
     await this.khoaHocRepository.delete(courseId);
-    return { message: 'ÄÃ£ xÃ³a khÃ³a há»c thÃ nh cÃ´ng.' };
+    return { message: 'Đã xóa khóa học thành công.' };
   }
 
   async updateCourseStatus(
@@ -60,7 +88,7 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Báº¡n khÃ´ng cÃ³ quyá»n sá»­a khÃ³a há»c nÃ y');
+      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
     }
 
     if (trangThai === 'PENDING') {
@@ -71,13 +99,13 @@ export class CoursesService {
 
       if (Number(lessonCount[0].count) === 0) {
         throw new BadRequestException(
-          'KhÃ³a há»c chÆ°a hoÃ n thiá»‡n. Cáº§n Ã­t nháº¥t 1 bÃ i há»c Ä‘á»ƒ gá»­i duyá»‡t!',
+          'Khóa học chưa hoàn thiện. Cần ít nhất 1 bài học để gửi duyệt!',
         );
       }
     }
 
     await this.khoaHocRepository.update(courseId, { trangThai });
-    return { message: 'Cáº­p nháº­t tráº¡ng thÃ¡i thÃ nh cÃ´ng' };
+    return { message: 'Cập nhật trạng thái thành công' };
   }
 
   async getCourseById(courseId: number, instructorId: number) {
@@ -87,23 +115,63 @@ export class CoursesService {
 
     if (!course) {
       throw new ForbiddenException(
-        'KhÃ´ng tÃ¬m tháº¥y khÃ³a há»c hoáº·c báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p',
+        'Không tìm thấy khóa học hoặc bạn không có quyền truy cập',
       );
     }
 
-    return course;
+    // 1. LẤY THÊM MỤC TIÊU VÀ YÊU CẦU TỪ DATABASE
+    const mucTieuData = await this.dataSource.query(
+      `SELECT NoiDung FROM MucTieuKhoaHoc WHERE MaKH = ?`, [courseId]
+    );
+    const yeuCauData = await this.dataSource.query(
+      `SELECT NoiDung FROM YeuCauKhoaHoc WHERE MaKH = ?`, [courseId]
+    );
+
+    // 2. GỘP VÀO OBJECT TRẢ VỀ
+    return {
+      ...course,
+      muc_tieu: mucTieuData.map((item: any) => item.NoiDung),
+      yeu_cau: yeuCauData.map((item: any) => item.NoiDung),
+    };
   }
 
-  async updateCourse(courseId: number, instructorId: number, payload: any) {
+  async updateCourse(courseId: number, instructorId: number, payload: any, mucTieu: string[], yeuCau: string[]) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
     });
 
-    if (!course) {
-      throw new ForbiddenException('Báº¡n khÃ´ng cÃ³ quyá»n sá»­a khÃ³a há»c nÃ y');
+    if (!course) throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+
+    // 1. Cập nhật thông tin cơ bản
+    Object.assign(course, payload);
+    const updatedCourse = await this.khoaHocRepository.save(course);
+
+    // 2. Xóa dữ liệu cũ và chèn dữ liệu mới cho Mục tiêu
+    if (mucTieu !== undefined) {
+      await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [courseId]);
+      for (const noiDung of mucTieu) {
+        if (noiDung.trim()) {
+          await this.dataSource.query(
+            `INSERT INTO MucTieuKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
+            [courseId, noiDung.trim()]
+          );
+        }
+      }
     }
 
-    Object.assign(course, payload);
-    return await this.khoaHocRepository.save(course);
+    // 3. Xóa dữ liệu cũ và chèn dữ liệu mới cho Yêu cầu
+    if (yeuCau !== undefined) {
+      await this.dataSource.query(`DELETE FROM YeuCauKhoaHoc WHERE MaKH = ?`, [courseId]);
+      for (const noiDung of yeuCau) {
+        if (noiDung.trim()) {
+          await this.dataSource.query(
+            `INSERT INTO YeuCauKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
+            [courseId, noiDung.trim()]
+          );
+        }
+      }
+    }
+
+    return updatedCourse;
   }
 }

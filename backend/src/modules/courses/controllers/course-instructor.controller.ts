@@ -28,7 +28,21 @@ import { CourseInstructorDiscussionsService } from '../services/course-instructo
 import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
 import { CoursesService } from '../services/course-instructor.service';
 
+
+
 const COURSE_TITLE_MAX_LENGTH = 60;
+
+const parseArrayData = (data: any): string[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [data];
+  }
+};
+
 
 @Controller('courses')
 @UseGuards(JwtAuthGuard)
@@ -39,7 +53,8 @@ export class CoursesController {
     private readonly discussionsService: CourseInstructorDiscussionsService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
+
 
   @Get('my-courses')
   async getMyCourses(@Request() req) {
@@ -54,13 +69,19 @@ export class CoursesController {
 
   @Get(':id')
   async getCourseById(@Param('id') id: string, @Request() req) {
+    // Thêm `as any` ở cuối dòng này để vượt qua kiểm duyệt của TypeScript
     const course = await this.coursesService.getCourseById(
       Number(id),
       req.user.sub,
     );
+
     return {
-      message: 'Láº¥y thÃ´ng tin khÃ³a há»c thÃ nh cÃ´ng',
-      data: serializeCourse(course),
+      message: 'Lấy thông tin khóa học thành công',
+      data: {
+        ...serializeCourse(course),
+        muc_tieu: course.muc_tieu,
+        yeu_cau: course.yeu_cau,
+      },
     };
   }
 
@@ -100,7 +121,10 @@ export class CoursesController {
       hinhThuNho: imageUrl,
     };
 
-    const newCourse = await this.coursesService.createCourse(payload);
+    const mucTieu = parseArrayData(courseData.muc_tieu);
+    const yeuCau = parseArrayData(courseData.yeu_cau);
+
+    const newCourse = await this.coursesService.createCourse(payload, mucTieu, yeuCau);
     return {
       message: 'Táº¡o khÃ³a há»c thÃ nh cÃ´ng',
       data: serializeCourse(newCourse),
@@ -148,10 +172,15 @@ export class CoursesController {
       hinhThuNho: imageUrl,
     };
 
+    const mucTieu = parseArrayData(courseData.muc_tieu);
+    const yeuCau = parseArrayData(courseData.yeu_cau);
+
     const updatedCourse = await this.coursesService.updateCourse(
       Number(courseId),
       req.user.sub,
       payload,
+      mucTieu,
+      yeuCau
     );
     return {
       message: 'Cáº­p nháº­t khÃ³a há»c thÃ nh cÃ´ng',
@@ -204,7 +233,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'ÄÃ£ gá»­i pháº£n há»“i thÃ nh cÃ´ng',
+      message: 'Gá»­i pháº£n há»“i Ä‘Ã¡nh giÃ¡ thÃ nh cÃ´ng',
       data: replyData,
     };
   }
