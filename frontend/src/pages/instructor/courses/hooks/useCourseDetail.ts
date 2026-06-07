@@ -295,14 +295,27 @@ export function useCourseDetail(
 
     const handleStatusChange = async (newStatus: string) => {
         if (!id) return;
+
+        // 1. KIỂM TRA RÀNG BUỘC DỮ LIỆU TRƯỚC KHI LƯU VÀ GỬI DUYỆT
+        const trimmedTitle = formData.title.trim();
+        if (!trimmedTitle) {
+            toast.error('Tên khóa học không được để trống!');
+            return;
+        }
+        if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
+            toast.error(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
+            return;
+        }
+
         if (newStatus === 'PENDING' && lessons.length === 0) {
             toast.error('Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.');
             return;
         }
 
+        // Cập nhật câu thông báo xác nhận cho rõ ràng hơn
         const confirmMessage =
             newStatus === 'PENDING'
-                ? 'Gửi yêu cầu duyệt? Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi.'
+                ? 'Nội dung hiện tại sẽ được tự động lưu lại và gửi yêu cầu duyệt. Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi. Tiếp tục?'
                 : newStatus === 'DRAFT'
                     ? 'Hủy yêu cầu duyệt và quay lại bản nháp?'
                     : 'Tạm ngưng xuất bản? Khóa học sẽ bị ẩn khỏi trang chủ để bạn chỉnh sửa.';
@@ -310,14 +323,35 @@ export function useCourseDetail(
         if (!window.confirm(confirmMessage)) return;
 
         try {
+            // 2. AUTO-SAVE: TỰ ĐỘNG LƯU TOÀN BỘ NỘI DUNG MỚI TRƯỚC KHI ĐỔI TRẠNG THÁI
+            const data = new FormData();
+            data.append('ten_khoa_hoc', trimmedTitle);
+            data.append('mo_ta', formData.description);
+            data.append('gia', formData.price.toString());
+            data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
+            data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
+            data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
+            if (imageFile) {
+                data.append('image', imageFile);
+            }
+
+            // Gọi API lưu dữ liệu (PUT)
+            await axiosClient.put(`/courses/${id}`, data, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            // 3. NẾU LƯU DỮ LIỆU THÀNH CÔNG -> GỌI API CẬP NHẬT TRẠNG THÁI (PATCH)
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
-            toast.success('Đã cập nhật trạng thái!');
+
+            toast.success('Đã lưu lại nội dung và cập nhật trạng thái mới!');
             setFormData((current) => ({ ...current, trang_thai: newStatus }));
+
         } catch (error: unknown) {
+            // Bắt lỗi nếu quá trình lưu hoặc đổi trạng thái thất bại
             const message = typeof error === 'object' && error !== null && 'response' in error &&
                 typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
                 ? (error as { response: { data: { message: string } } }).response.data.message
-                : 'Lỗi khi cập nhật trạng thái';
+                : 'Lỗi khi xử lý yêu cầu. Vui lòng kiểm tra lại!';
             toast.error(message);
         }
     };
