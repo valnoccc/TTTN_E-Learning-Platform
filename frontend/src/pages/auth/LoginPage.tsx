@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Container, Row, Col } from 'react-bootstrap';
 import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import { normalizeRole } from '../../utils/roles';
+import HeaderTwo from '../../features/student-portal/components/HeaderTwo';
+import { BreadcrumbBox } from '../../features/student-portal/components/common/Breadcrumb';
+import FooterTwo from '../../features/student-portal/components/FooterTwo';
+import { Styles } from '../../features/student-portal/pages/account/styles/account';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -36,43 +42,89 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
-            <div className="max-w-[400px] w-full bg-white border border-gray-200 rounded-md shadow-sm p-8">
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">Đăng nhập</h2>
-                    <p className="text-sm text-gray-500 mt-2">Sử dụng tài khoản nội bộ của bạn</p>
-                </div>
+        <Styles>
+            <div className="main-wrapper login-page">
+                {/* Header 2 */}
+                <HeaderTwo />
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-[13px] font-medium mb-1.5 text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            required
-                            className="w-full px-3 py-2 bg-[#FBFBFD] border border-gray-300 rounded-md text-sm outline-none focus:border-[#0071E3] transition-colors"
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[13px] font-medium mb-1.5 text-gray-700">Mật khẩu</label>
-                        <input
-                            type="password"
-                            required
-                            className="w-full px-3 py-2 bg-[#FBFBFD] border border-gray-300 rounded-md text-sm outline-none focus:border-[#0071E3] transition-colors"
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
+                {/* Breadcroumb */}
+                <BreadcrumbBox title="Log In" />
 
-                    <button className="w-full bg-[#0071E3] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0077ED] transition-colors mt-2">
-                        Tiếp tục
-                    </button>
-                </form>
+                {/* Login Area */}
+                <section className="login-area">
+                    <Container>
+                        <Row>
+                            <Col md={12}>
+                                <div className="login-box">
+                                    <div className="login-title text-center">
+                                        <h3>Log In</h3>
+                                    </div>
+                                    <form onSubmit={handleLogin} className="form">
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>User Name</label>
+                                            <input
+                                                type="email"
+                                                placeholder="Username"
+                                                required
+                                                onChange={(e) => setEmail(e.target.value)}
+                                            />
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="*******"
+                                                required
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                style={{ paddingRight: '45px' }}
+                                            />
+                                            <i 
+                                                className={`las ${showPassword ? 'la-eye-slash' : 'la-eye'}`}
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    right: '15px', 
+                                                    top: '44px', 
+                                                    cursor: 'pointer', 
+                                                    fontSize: '20px', 
+                                                    color: '#888',
+                                                    zIndex: 10
+                                                }}
+                                            ></i>
+                                        </p>
+                                        <button type="submit">Log In</button>
+                                        <div className="save-forget-password d-flex justify-content-between">
+                                            <div className="save-passowrd">
+                                                <label>
+                                                    <input type="checkbox" />
+                                                    Save Password
+                                                </label>
+                                            </div>
+                                            <div className="forget-password">
+                                                <Link to="#">Forget Password?</Link>
+                                            </div>
+                                        </div>
+                                        <div className="not_account-btn text-center">
+                                            <p>Haven't Any Account Yet? <Link to="/register">Click Here</Link></p>
+                                        </div>
+                                        <div className="social-login text-center">
+                                            <p>Login With Social</p>
+                                            <ul className="list-unstyled d-flex justify-content-center" style={{ gap: '15px' }}>
+                                                <li><Link to="#"><i className="fab fa-google"></i> Google</Link></li>
+                                                <li><Link to="#"><i className="fab fa-facebook-f"></i> Facebook</Link></li>
+                                                <li><Link to="#"><i className="fab fa-twitter"></i> Twitter</Link></li>
+                                            </ul>
+                                        </div>
+                                    </form>
+                                </div>
+                            </Col>
+                        </Row>
+                    </Container>
+                </section>
 
-                <div className="mt-6 pt-6 border-t border-gray-100 text-center text-[13px]">
-                    <span className="text-gray-500">Chưa có tài khoản? </span>
-                    <Link to="/register" className="text-[#0071E3] hover:underline font-medium">Tạo tài khoản mới</Link>
-                </div>
+                {/* Footer 2 */}
+                <FooterTwo />
             </div>
-        </div>
+        </Styles>
     );
 }

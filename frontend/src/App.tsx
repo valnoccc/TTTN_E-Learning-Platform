@@ -12,6 +12,8 @@ import CourseList from './features/student-portal/pages/courses/CourseList';
 import CourseDetails from './features/student-portal/pages/courses/CourseDetails';
 import Faq from './features/student-portal/pages/faq/Faq';
 import Contact from './features/student-portal/pages/contact/Contact';
+import Instructors from './features/student-portal/pages/instructor/Instructors';
+import InstructorDetails from './features/student-portal/pages/instructor/InstructorDetails';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 
@@ -32,6 +34,8 @@ function App() {
         <Route path="/course-details" element={<CourseDetails />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/instructors" element={<Instructors />} />
+        <Route path="/instructor-details" element={<InstructorDetails />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/registration" element={<RegisterPage />} />

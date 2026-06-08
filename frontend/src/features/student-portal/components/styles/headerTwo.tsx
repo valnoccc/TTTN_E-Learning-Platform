@@ -195,7 +195,7 @@ export const Styles = styled.div`
     }
 
     .logo-area2 {
-        padding: 15px 0;
+        padding: 5px 0;
         box-shadow: 0 0 20px -10px #222222;
 
         .logo {
@@ -219,7 +219,7 @@ export const Styles = styled.div`
                         color         : ${colors.black1};
                         text-transform: uppercase;
                         font-weight   : 500;
-                        padding       : 10px 10px 20px;
+                        padding       : 15px 18px 15px;
 
                         i {
                             font-size: 12px;
