@@ -16,6 +16,7 @@ import {
     CourseSidebarCard,
     useInstructorCourseContext,
 } from '../CourseDetailShell';
+import { useCourseCategories } from '../hooks/useCourseCategories';
 
 export default function InstructorCourseOverview() {
     // UI lấy trực tiếp state formData và các action sửa/xóa từ Hook thông qua Context
@@ -35,6 +36,7 @@ export default function InstructorCourseOverview() {
         removeRequirement,
         addRequirement
     } = useInstructorCourseContext();
+    const { categories, isLoading } = useCourseCategories();
 
     return (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_320px]">
@@ -186,7 +188,7 @@ export default function InstructorCourseOverview() {
                 </CourseSectionCard>
             </div>
 
-            {/* SIDEBAR BÊN PHẢI (Giữ nguyên như cũ) */}
+            {/* SIDEBAR BÊN PHẢI */}
             <div className="space-y-5">
                 <CourseSidebarCard title="Thiết lập">
                     <div className="space-y-5">
@@ -222,12 +224,22 @@ export default function InstructorCourseOverview() {
                                     name="category"
                                     value={formData.category}
                                     onChange={handleChange}
-                                    disabled={isLocked}
-                                    className={`w-full appearance-none rounded-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
+                                    disabled={isLocked || isLoading}
+                                    className={`w-full appearance-none rounded-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked || isLoading ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                         }`}
                                 >
-                                    <option>Web Development</option>
-                                    <option>Data Science</option>
+                                    {isLoading ? (
+                                        <option value="">Đang tải danh mục...</option>
+                                    ) : (
+                                        <option value="">-- Chọn danh mục khóa học --</option>
+                                    )}
+
+                                    {/* ĐỔI THÀNH DỮ LIỆU ĐỘNG TỪ DB */}
+                                    {!isLoading && categories.map((cat) => (
+                                        <option key={cat.maDM} value={cat.maDM}>
+                                            {cat.tenDM}
+                                        </option>
+                                    ))}
                                 </select>
                                 <ChevronDown
                                     className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -278,7 +290,7 @@ export default function InstructorCourseOverview() {
                             </div>
                         </div>
                     </div>
-                </CourseSidebarCard>
+                </CourseSidebarCard> {/* Đóng CourseSidebarCard chuẩn cấu trúc phân cấp */}
             </div>
         </div>
     );

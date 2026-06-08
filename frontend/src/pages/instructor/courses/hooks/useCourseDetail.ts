@@ -91,7 +91,7 @@ export function useCourseDetail(
         title: '',
         description: '',
         price: 0,
-        category: 'Web Development',
+        category: '',
         hinh_anh: '',
         trang_thai: 'DRAFT',
         // ĐÃ KHỞI TẠO MẢNG MẶC ĐỊNH ĐỂ GIAO DIỆN KHÔNG BỊ TRỐNG
@@ -122,7 +122,7 @@ export function useCourseDetail(
                     title: courseData.ten_khoa_hoc || '',
                     description: courseData.mo_ta || '',
                     price: courseData.gia || 0,
-                    category: courseData.id_danh_muc === 1 ? 'Web Development' : 'Data Science',
+                    category: courseData.id_danh_muc ?? '',
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
@@ -242,7 +242,7 @@ export function useCourseDetail(
             data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
             data.append('gia', formData.price.toString());
-            data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
+            data.append('id_danh_muc', String(formData.category || ''));
 
             // Gắn mảng Mục tiêu và Yêu cầu vào request dưới dạng JSON string
             data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
@@ -328,7 +328,7 @@ export function useCourseDetail(
             data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
             data.append('gia', formData.price.toString());
-            data.append('id_danh_muc', formData.category === 'Web Development' ? '1' : '2');
+            data.append('id_danh_muc', String(formData.category || ''));
             data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
             data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
             if (imageFile) {
