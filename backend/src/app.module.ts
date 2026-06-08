@@ -13,6 +13,7 @@ import { UsersModule } from './modules/users/users.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { InstructorsModule } from './modules/instructors/instructors.module';
     CoursesModule,
     LessonsModule,
     InstructorsModule,
+    CategoriesModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

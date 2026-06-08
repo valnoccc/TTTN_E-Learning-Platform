@@ -28,7 +28,21 @@ import { CourseInstructorDiscussionsService } from '../services/course-instructo
 import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
 import { CoursesService } from '../services/course-instructor.service';
 
+
+
 const COURSE_TITLE_MAX_LENGTH = 60;
+
+const parseArrayData = (data: any): string[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [data];
+  }
+};
+
 
 @Controller('courses')
 @UseGuards(JwtAuthGuard)
@@ -39,7 +53,8 @@ export class CoursesController {
     private readonly discussionsService: CourseInstructorDiscussionsService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
+
 
   @Get('my-courses')
   async getMyCourses(@Request() req) {
@@ -47,20 +62,26 @@ export class CoursesController {
     const courses =
       await this.coursesService.getCoursesByInstructor(instructorId);
     return {
-      message: 'Láº¥y danh sÃ¡ch khÃ³a há»c thÃ nh cÃ´ng',
+      message: 'Lấy danh sách khóa học thành công',
       data: courses.map(serializeCourse),
     };
   }
 
   @Get(':id')
   async getCourseById(@Param('id') id: string, @Request() req) {
+    // Thêm `as any` ở cuối dòng này để vượt qua kiểm duyệt của TypeScript
     const course = await this.coursesService.getCourseById(
       Number(id),
       req.user.sub,
     );
+
     return {
-      message: 'Láº¥y thÃ´ng tin khÃ³a há»c thÃ nh cÃ´ng',
-      data: serializeCourse(course),
+      message: 'Lấy thông tin khóa học thành công',
+      data: {
+        ...serializeCourse(course),
+        muc_tieu: course.muc_tieu,
+        yeu_cau: course.yeu_cau,
+      },
     };
   }
 
@@ -73,11 +94,11 @@ export class CoursesController {
   ) {
     const tenKhoaHoc = courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc;
     if (typeof tenKhoaHoc !== 'string' || !tenKhoaHoc.trim()) {
-      throw new BadRequestException('TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng');
+      throw new BadRequestException('Tên khóa học không được để trống');
     }
     if (tenKhoaHoc.trim().length > COURSE_TITLE_MAX_LENGTH) {
       throw new BadRequestException(
-        `TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ ${COURSE_TITLE_MAX_LENGTH} kÃ½ tá»±`,
+        `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
       );
     }
 
@@ -100,9 +121,12 @@ export class CoursesController {
       hinhThuNho: imageUrl,
     };
 
-    const newCourse = await this.coursesService.createCourse(payload);
+    const mucTieu = parseArrayData(courseData.muc_tieu);
+    const yeuCau = parseArrayData(courseData.yeu_cau);
+
+    const newCourse = await this.coursesService.createCourse(payload, mucTieu, yeuCau);
     return {
-      message: 'Táº¡o khÃ³a há»c thÃ nh cÃ´ng',
+      message: 'Tạo khóa học thành công',
       data: serializeCourse(newCourse),
     };
   }
@@ -119,11 +143,11 @@ export class CoursesController {
     if (typeof tenKhoaHoc === 'string') {
       const trimmed = tenKhoaHoc.trim();
       if (!trimmed) {
-        throw new BadRequestException('TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng');
+        throw new BadRequestException('Tên khóa học không được để trống');
       }
       if (trimmed.length > COURSE_TITLE_MAX_LENGTH) {
         throw new BadRequestException(
-          `TÃªn khÃ³a há»c khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ ${COURSE_TITLE_MAX_LENGTH} kÃ½ tá»±`,
+          `Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự`,
         );
       }
     }
@@ -148,13 +172,18 @@ export class CoursesController {
       hinhThuNho: imageUrl,
     };
 
+    const mucTieu = parseArrayData(courseData.muc_tieu);
+    const yeuCau = parseArrayData(courseData.yeu_cau);
+
     const updatedCourse = await this.coursesService.updateCourse(
       Number(courseId),
       req.user.sub,
       payload,
+      mucTieu,
+      yeuCau
     );
     return {
-      message: 'Cáº­p nháº­t khÃ³a há»c thÃ nh cÃ´ng',
+      message: 'Cập nhật khóa học thành công',
       data: serializeCourse(updatedCourse),
     };
   }
@@ -170,7 +199,7 @@ export class CoursesController {
       req.user.sub,
       statusData.trangThai ?? statusData.trang_thai,
     );
-    return { message: 'Cáº­p nháº­t tráº¡ng thÃ¡i thÃ nh cÃ´ng', data: updatedCourse };
+    return { message: 'Cập nhật trạng thái thành công', data: updatedCourse };
   }
 
   @Delete(':id')
@@ -186,7 +215,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'Láº¥y danh sÃ¡ch Ä‘Ã¡nh giÃ¡ thÃ nh cÃ´ng',
+      message: 'Lấy danh sách đánh giá thành công',
       data: reviews,
     };
   }
@@ -204,7 +233,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'ÄÃ£ gá»­i pháº£n há»“i thÃ nh cÃ´ng',
+      message: 'Gửi phản hồi đánh giá thành công',
       data: replyData,
     };
   }
@@ -217,7 +246,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'Láº¥y danh sÃ¡ch tháº£o luáº­n khÃ³a há»c thÃ nh cÃ´ng',
+      message: 'Lấy danh sách thảo luận khóa học thành công',
       data: discussions,
     };
   }
@@ -235,7 +264,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'Gá»­i pháº£n há»“i tháº£o luáº­n thÃ nh cÃ´ng',
+      message: 'Gửi phản hồi thảo luận thành công',
       data: replyData,
     };
   }
@@ -248,7 +277,7 @@ export class CoursesController {
     );
 
     return {
-      message: 'Láº¥y chÆ°Æ¡ng trÃ¬nh há»c thÃ nh cÃ´ng',
+      message: 'Lấy chương trình học thành công',
       data,
     };
   }
@@ -260,12 +289,12 @@ export class CoursesController {
       req.user.sub,
       body,
     );
-    return { message: 'Táº¡o chÆ°Æ¡ng thÃ nh cÃ´ng', data };
+    return { message: 'Tạo chương thành công', data };
   }
 
   @Post('chapters/:chapterId/lessons')
   async addLesson(@Param('chapterId') chapterId: string, @Body() body: any) {
     const data = await this.curriculumService.addLesson(Number(chapterId), body);
-    return { message: 'Táº¡o bÃ i há»c thÃ nh cÃ´ng', data };
+    return { message: 'Tạo bài học thành công', data };
   }
 }

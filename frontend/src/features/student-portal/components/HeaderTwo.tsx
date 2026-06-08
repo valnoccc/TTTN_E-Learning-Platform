@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Dropdown } from 'react-bootstrap';
 import Search from './common/Search';
 import Sidebar from './common/Sidebar';
-import StickyMenu from './common/StickyMenu';
-import MobileMenu from './common/MobileMenu';
 import AuthControls from './common/AuthControls';
+
+import MobileMenu from './common/MobileMenu';
 import { Styles } from "./styles/headerTwo";
 
 class HeaderTwo extends Component {
@@ -19,9 +19,9 @@ class HeaderTwo extends Component {
                             <Col lg="7" md="9">
                                 <div className="bar-left">
                                     <ul className="list-unstyled list-inline">
-                                        <li className="list-inline-item"><i className="las la-phone"></i>+1 (396) 486 4709</li>
-                                        <li className="list-inline-item"><i className="las la-envelope"></i>enquery@domain.com</li>
-                                        <li className="list-inline-item"><i className="las la-map-marker"></i>795 South Park Avenue, CA
+                                        <li className="list-inline-item"><i className="las la-phone"></i>+098 000 0000</li>
+                                        <li className="list-inline-item"><i className="las la-envelope"></i>edumeo@domain.com</li>
+                                        <li className="list-inline-item"><i className="las la-map-marker"></i>84 Quận 8, TP.HCM
                                     </li>
                                     </ul>
                                 </div>
@@ -34,10 +34,7 @@ class HeaderTwo extends Component {
                                                 <Dropdown.Toggle><img src={process.env.PUBLIC_URL + "/assets/images/us.png"} alt="" />English<i className="las la-angle-down"></i></Dropdown.Toggle>
                                                 <Dropdown.Menu as="ul">
                                                     <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/us.png"} alt="" /> English</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/fra.png"} alt="" /> French</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/ger.png"} alt="" /> German</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/spa.png"} alt="" /> Spanish</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/bra.png"} alt="" /> Brazilian</Dropdown.Item>
+                                                    <Dropdown.Item as="li"><img src={process.env.PUBLIC_URL + "/assets/images/vietnam.png"} alt="" /> Việt Nam</Dropdown.Item>
                                                 </Dropdown.Menu>
                                             </Dropdown>
                                         </li>
@@ -63,23 +60,23 @@ class HeaderTwo extends Component {
                 {/* Logo Area 2 */}
                 <section className="logo-area2">
                     <Container>
-                        <Row>
+                        <Row className="align-items-center">
                             <Col md="3">
                                 <div className="logo">
                                     <Link to={process.env.PUBLIC_URL + "/"}><img src={process.env.PUBLIC_URL + "/assets/images/logo.png"} alt="" /></Link>
                                 </div>
                             </Col>
                             <Col md="9">
-                                <div className="menu-box d-flex justify-content-end">
-                                    <ul className="nav menu-nav">
-                                        <li className="nav-item dropdown active">
-                                            <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Home <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
+                                <div className="menu-box d-flex">
+                                    <ul className="nav menu-nav justify-content-center flex-grow-1">
+                                        <li className="nav-item active">
+                                            <Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home</Link>
+                                            <ul className="dropdown list-unstyled d-none">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home Style 1</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/home-two"}>Home Style 2</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Pages <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/about"}>About Us</Link></li>
@@ -103,7 +100,7 @@ class HeaderTwo extends Component {
                                         <li className="nav-item dropdown">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Instructor <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor"}>Instructors</Link></li>
+                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructors"}>Instructors</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor-details"}>Instructor Details</Link></li>
                                             </ul>
                                         </li>
@@ -122,7 +119,7 @@ class HeaderTwo extends Component {
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/blog-details"}>Blog Details</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Shop <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/products"}>Products</Link></li>
@@ -131,20 +128,21 @@ class HeaderTwo extends Component {
                                             </ul>
                                         </li>
                                     </ul>
-                                    <div className="search-box">
-                                        <Search />
-                                    </div>
-                                    <div className="nav-auth-box">
-                                        <AuthControls />
-                                    </div>
+                                    <ul className="nav search-cart-bar">
+                                        <li className="nav-item search-box" style={{ marginTop: '13px' }}>
+                                            <Search />
+                                        </li>
+                                        <li className="nav-item cart-box" style={{ marginTop: '2px', marginLeft: '15px' }}>
+                                            <AuthControls />
+                                        </li>
+                                    </ul>
                                 </div>
                             </Col>
                         </Row>
                     </Container>
                 </section>
 
-                {/* Sticky Menu */}
-                <StickyMenu />
+                {/* Sticky Menu removed in favor of native CSS position: sticky on logo-area2 */}
 
                 {/* Mobile Menu */}
                 <MobileMenu />

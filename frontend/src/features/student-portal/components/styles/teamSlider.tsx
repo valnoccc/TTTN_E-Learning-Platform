@@ -9,9 +9,10 @@ export const Styles = styled.div`
         .sec-title {
             h4 {
                 color        : ${colors.black1};
-                line-height  : 35px;
-                font-weight  : 600;
-                max-width    : 550px;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
+                max-width    : 700px;
                 margin       : auto;
                 margin-bottom: 50px;
 
@@ -31,6 +32,9 @@ export const Styles = styled.div`
 
                 img {
                     border-radius : 5px;
+                    width: 100%;
+                    aspect-ratio: 1 / 1;
+                    object-fit: cover;
                 }
 
                 .img-content {
@@ -46,12 +50,13 @@ export const Styles = styled.div`
 
                     h5 {
                         color        : ${colors.black1};
-                        font-weight  : 600;
+                        font-size    : 20px;
+                        font-weight  : 700;
                         margin-bottom: 5px;
                     }
 
                     p {
-                        font-size    : 14px;
+                        font-size    : 16px;
                         color        : ${colors.text3};
                         font-weight  : 500;
                         margin-bottom: 5px;

@@ -5,15 +5,15 @@
         {
             "id": "1",
             "testimonialTitle": "It is great to be a part of this community.",
-            "testimonialDesc": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Exercitation maior. Placeat repellat, et totam optio. Sequi qui laborum ratione cumque tempo totam voluptatum.",
+            "testimonialDesc": "The course is of high quality and very useful. I have learned a lot of practical knowledge and can apply it directly to my work.",
             "authorImg": "testimonial-1.jpg",
             "authorName": "David Show",
             "authorTitle": "Developer"
         },
         {
             "id": "2",
-            "testimonialTitle": "It is great to be a part of this community.",
-            "testimonialDesc": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Exercitation maior. Placeat repellat, et totam optio. Sequi qui laborum ratione cumque tempo totam voluptatum.",
+            "testimonialTitle": "A learning experience beyond expectations.",
+            "testimonialDesc": "Enthusiastic instructors, easy-to-understand lecture content, and closely related to reality. The learning platform is highly professional and friendly.",
             "authorImg": "testimonial-2.jpg",
             "authorName": "Tom Parker",
             "authorTitle": "Programmer"

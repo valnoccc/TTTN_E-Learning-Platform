@@ -14,6 +14,7 @@ export const Styles = styled.div`
                 border-radius: 5px;
                 .login-title {
                     h3 {
+                        font-size: 28px;
                         color : ${colors.black2};
                         text-transform: uppercase;
                         font-weight: 600;
@@ -238,17 +239,19 @@ export const Styles = styled.div`
                                     font-size: 14px;
                                     color: #ffffff;
                                     display: inline-block;
-                                    width: 110px;
+                                    width: 160px;
                                     height: 40px;
                                     border-radius: 30px;
                                     padding-top: 10px;
+                                    text-decoration: none;
                                     i {
                                         margin-right : 3px;
                                     }
                                     &:hover {
                                         background: ${colors.green} !important;
-                                    }import { colors } from './../../../components/common/element/elements';
-
+                                        text-decoration: none;
+                                        color: #ffffff;
+                                    }
                                 }
                                 &:nth-child(1) {
                                     a {
@@ -258,11 +261,6 @@ export const Styles = styled.div`
                                 &:nth-child(2) {
                                     a {
                                         background: #4267B2;
-                                    }
-                                }
-                                &:nth-child(3) {
-                                    a {
-                                        background: #1DA1F2;
                                     }
                                 }
                             }
@@ -289,6 +287,7 @@ export const Styles = styled.div`
                 border-radius: 5px;
                 .registration-title {
                     h3 {
+                        font-size: 28px;
                         color : ${colors.black2};
                         text-transform: uppercase;
                         font-weight: 600;

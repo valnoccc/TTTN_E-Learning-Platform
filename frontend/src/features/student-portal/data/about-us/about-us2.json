@@ -1,18 +1,18 @@
 {
-    "secTitle": "We Have Experienced Professionals & We Do Our Best To Achieve Your Goal. Your Happiness Is Our First Priority.",
-    "secDesc": "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Corporis error ut provident vel repellendus nihil atque possimus aliquam, mollitia tempora neque voluptate debitis illum veniam.",
+    "secTitle": "Highly Qualified Experts Accompanying You. Your Success Is Our Top Priority.",
+    "secDesc": "We are committed to providing a modern, professional, and friendly learning environment. With an experienced teaching staff, we always provide maximum support for students to develop their full potential and confidently enter the real working world.",
     "dataList": [
         {
-            "iconTitle": "Best Quality Courses",
-            "iconSubtitle": "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Corporis error ut provident vel repellendus nihil atque possimus aliquam"
+            "iconTitle": "High Quality Courses",
+            "iconSubtitle": "The training content is designed in depth and continuously updated according to the latest trends."
         },
         {
-            "iconTitle": "Best Quality Courses",
-            "iconSubtitle": "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Corporis error ut provident vel repellendus nihil atque possimus aliquam"
+            "iconTitle": "Professional Instructors",
+            "iconSubtitle": "A team of experts with years of experience, dedicated to guiding and imparting knowledge."
         },
         {
-            "iconTitle": "Best Quality Courses",
-            "iconSubtitle": "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Corporis error ut provident vel repellendus nihil atque possimus aliquam"
+            "iconTitle": "Dedicated Support",
+            "iconSubtitle": "Always accompany you throughout the learning process and be ready to answer any questions."
         }
     ],
     "aboutImageOne": "about-2.jpg",

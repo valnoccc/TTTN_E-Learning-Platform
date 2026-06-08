@@ -1,17 +1,18 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import InstructorDashboard from '../pages/instructor/dashboard/Dashboard';
-import InstructorCourses from '../pages/instructor/courses/CourseList';
 import InstructorCourseCreate from '../pages/instructor/courses/CourseCreate';
 import InstructorCourseDetail from '../pages/instructor/courses/CourseDetailShell';
-import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
-import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
-import InstructorCourseReviews from '../pages/instructor/courses/tabs/CourseReviews';
+import InstructorCourses from '../pages/instructor/courses/CourseList';
 import InstructorCourseDiscussions from '../pages/instructor/courses/tabs/CourseDiscussions';
-import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
+import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
+import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
+import InstructorCourseReviews from '../pages/instructor/courses/tabs/CourseReviews';
+import InstructorDashboard from '../pages/instructor/dashboard/Dashboard';
 import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
-import InstructorStudents from '../pages/instructor/students/StudentEvaluations';
+import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
+import InstructorProfile from '../pages/instructor/profile/InstructorProfile';
 import InstructorReports from '../pages/instructor/reports/RevenueReports';
+import InstructorStudents from '../pages/instructor/students/StudentEvaluations';
 
 export default function InstructorRoutes() {
   return (
@@ -27,6 +28,7 @@ export default function InstructorRoutes() {
         <Route path="discussions" element={<InstructorCourseDiscussions />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Route>
+      <Route path="profile" element={<InstructorProfile />} />
       <Route path="courses/:id/lessons/new" element={<InstructorLessonCreate />} />
       <Route path="lessons/:lessonId/edit" element={<InstructorLessonEdit />} />
       <Route path="students" element={<InstructorStudents />} />

@@ -1,41 +1,41 @@
 {
-    "secTitle": "Checkout Our Features To Know Why We Are Best In This Business",
+    "secTitle": "Discover Our Features To Know Why We Are Best In This Business",
     "dataList": [
         {
             "id": "1",
             "boxIcon": "flaticon-thumbs-like",
             "title": "Popular Courses",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "The most popular and highly anticipated courses today."
         },
         {
             "id": "2",
             "boxIcon": "flaticon-reading",
             "title": "Modern Library",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "Rich, modern, and continuously updated document library."
         },
         {
             "id": "3",
             "boxIcon": "flaticon-teacher",
             "title": "Qualified Teacher",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "Highly experienced and qualified teaching staff."
         },
         {
             "id": "4",
             "boxIcon": "flaticon-unlimited",
             "title": "Unlimited Courses",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "Learn unlimitedly anytime, anywhere on any device."
         },
         {
             "id": "5",
             "boxIcon": "flaticon-locations",
             "title": "Many Locations",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "Support and learning systems available in many locations."
         },
         {
             "id": "6",
             "boxIcon": "flaticon-support",
             "title": "Online Support",
-            "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+            "subTitle": "24/7 online support to answer all your questions."
         }
     ]
 }

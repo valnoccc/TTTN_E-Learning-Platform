@@ -1,16 +1,41 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Container, Row, Col } from 'react-bootstrap';
 import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
+import HeaderTwo from '../../features/student-portal/components/HeaderTwo';
+import { BreadcrumbBox } from '../../features/student-portal/components/common/Breadcrumb';
+import FooterTwo from '../../features/student-portal/components/FooterTwo';
+import { Styles } from '../../features/student-portal/pages/account/styles/account';
 
 export default function RegisterPage() {
-    const [formData, setFormData] = useState({ email: '', password: '', fullName: '' });
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        userName: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (formData.password !== formData.confirmPassword) {
+            toast.error('Mật khẩu xác nhận không khớp');
+            return;
+        }
+
         try {
-            await axiosClient.post('/auth/register', formData);
+            const submitData = {
+                fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+                email: formData.email,
+                password: formData.password
+            };
+            
+            await axiosClient.post('/auth/register', submitData);
             toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
             navigate('/login');
         } catch (err: any) {
@@ -19,49 +44,120 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
-            <div className="max-w-[400px] w-full bg-white border border-gray-200 rounded-md shadow-sm p-8">
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">Tạo tài khoản</h2>
-                    <p className="text-sm text-gray-500 mt-2">Đăng ký để bắt đầu học tập</p>
-                </div>
+        <Styles>
+            <div className="main-wrapper registration-page">
+                {/* Header 2 */}
+                <HeaderTwo />
 
-                <form onSubmit={handleRegister} className="space-y-4">
-                    <div>
-                        <label className="block text-[13px] font-medium mb-1.5 text-gray-700">Họ và tên</label>
-                        <input
-                            type="text" required
-                            className="w-full px-3 py-2 bg-[#FBFBFD] border border-gray-300 rounded-md text-sm outline-none focus:border-[#0071E3] transition-colors"
-                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[13px] font-medium mb-1.5 text-gray-700">Email</label>
-                        <input
-                            type="email" required
-                            className="w-full px-3 py-2 bg-[#FBFBFD] border border-gray-300 rounded-md text-sm outline-none focus:border-[#0071E3] transition-colors"
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[13px] font-medium mb-1.5 text-gray-700">Mật khẩu</label>
-                        <input
-                            type="password" required
-                            className="w-full px-3 py-2 bg-[#FBFBFD] border border-gray-300 rounded-md text-sm outline-none focus:border-[#0071E3] transition-colors"
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        />
-                    </div>
+                {/* Breadcroumb */}
+                <BreadcrumbBox title="Registration" />
 
-                    <button className="w-full bg-[#0071E3] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0077ED] transition-colors mt-2">
-                        Đăng ký
-                    </button>
-                </form>
+                {/* Registration Area */}
+                <section className="registration-area">
+                    <Container>
+                        <Row>
+                            <Col md={12}>
+                                <div className="registration-box">
+                                    <div className="registration-title text-center">
+                                        <h3>Registration</h3>
+                                    </div>
+                                    <form onSubmit={handleRegister} className="form">
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>First Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="First name"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                            />
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Last Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Last name"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                            />
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Email Address</label>
+                                            <input
+                                                type="email"
+                                                placeholder="Email address"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            />
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>User Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Username"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                                            />
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="*******"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                style={{ paddingRight: '45px' }}
+                                            />
+                                            <i 
+                                                className={`las ${showPassword ? 'la-eye-slash' : 'la-eye'}`}
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    right: '15px', 
+                                                    top: '44px', 
+                                                    cursor: 'pointer', 
+                                                    fontSize: '20px', 
+                                                    color: '#888',
+                                                    zIndex: 10
+                                                }}
+                                            ></i>
+                                        </p>
+                                        <p className="form-control">
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Confirm Password</label>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Confirm password"
+                                                required
+                                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                                style={{ paddingRight: '45px' }}
+                                            />
+                                            <i 
+                                                className={`las ${showPassword ? 'la-eye-slash' : 'la-eye'}`}
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    right: '15px', 
+                                                    top: '44px', 
+                                                    cursor: 'pointer', 
+                                                    fontSize: '20px', 
+                                                    color: '#888',
+                                                    zIndex: 10
+                                                }}
+                                            ></i>
+                                        </p>
+                                        <button type="submit">Register Now</button>
+                                        <div className="have_account-btn text-center">
+                                            <p>Already have an account? <Link to="/login">Login Here</Link></p>
+                                        </div>
+                                    </form>
+                                </div>
+                            </Col>
+                        </Row>
+                    </Container>
+                </section>
 
-                <div className="mt-6 pt-6 border-t border-gray-100 text-center text-[13px]">
-                    <span className="text-gray-500">Đã có tài khoản? </span>
-                    <Link to="/login" className="text-[#0071E3] hover:underline font-medium">Đăng nhập ngay</Link>
-                </div>
+                {/* Footer 2 */}
+                <FooterTwo />
             </div>
-        </div>
+        </Styles>
     );
 }

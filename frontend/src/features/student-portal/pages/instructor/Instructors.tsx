@@ -29,7 +29,16 @@ class Instructor extends Component {
                                     Datas.map((data, i) => (
                                         <Col lg="3" md="4" sm="6" key={i}>
                                             <div className="instructor-item">
-                                                <Link to={process.env.PUBLIC_URL + "/instructor-details"}><img src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} alt="" className="img-fluid" /></Link>
+                                                <Link to={process.env.PUBLIC_URL + "/instructor-details"}>
+                                                    <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
+                                                        <img 
+                                                            src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                            alt="" 
+                                                            className="img-fluid" 
+                                                            style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
+                                                        />
+                                                    </div>
+                                                </Link>
                                                 <div className="img-content text-center">
                                                     <h5><Link to={process.env.PUBLIC_URL + "/instructor-details"}>{data.personName}</Link></h5>
                                                     <p>{data.personTitle}</p>

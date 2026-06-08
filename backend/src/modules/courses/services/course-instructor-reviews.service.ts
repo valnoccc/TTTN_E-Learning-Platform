@@ -11,7 +11,7 @@ export class CourseInstructorReviewsService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getCourseReviews(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
@@ -20,7 +20,7 @@ export class CourseInstructorReviewsService {
 
     if (!course) {
       throw new ForbiddenException(
-        'Báº¡n khÃ´ng cÃ³ quyá»n xem Ä‘Ã¡nh giÃ¡ cá»§a khÃ³a há»c nÃ y',
+        'Bạn không có quyền xem đánh giá của khóa học này',
       );
     }
 
@@ -56,7 +56,7 @@ export class CourseInstructorReviewsService {
 
     if (!course) {
       throw new ForbiddenException(
-        'Báº¡n khÃ´ng cÃ³ quyá»n thao tÃ¡c trÃªn khÃ³a há»c nÃ y',
+        'Bạn không có quyền thao tác trên khóa học này',
       );
     }
 
@@ -66,7 +66,7 @@ export class CourseInstructorReviewsService {
     );
 
     if (parentReview.length === 0) {
-      throw new BadRequestException('KhÃ´ng tÃ¬m tháº¥y Ä‘Ã¡nh giÃ¡ gá»‘c há»£p lá»‡');
+      throw new BadRequestException('Không tìm thấy đánh giá gốc hợp lệ');
     }
 
     const result = await this.dataSource.query(
@@ -82,7 +82,7 @@ export class CourseInstructorReviewsService {
       createdAt: new Date().toISOString(),
       parentId: payload.parentId,
       studentId: instructorId,
-      studentName: course.giangVien?.hoTen || 'Giáº£ng viÃªn',
+      studentName: course.giangVien?.hoTen || 'Giảng viên',
       studentAvatar: course.giangVien?.anhDaiDien || null,
     };
   }

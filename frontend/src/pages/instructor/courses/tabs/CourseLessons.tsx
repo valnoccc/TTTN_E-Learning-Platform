@@ -41,7 +41,7 @@ export default function InstructorCourseLessons() {
             >
                 {showAddChapterForm ? (
                     <div className="animate-in slide-in-from-top-2 mb-5 rounded-sm border border-emerald-200 bg-emerald-50/40 p-4 fade-in duration-200">
-                        <h4 className="mb-3 text-sm font-bold text-slate-800">Tao chuong hoc moi</h4>
+                        <h4 className="mb-3 text-sm font-bold text-slate-800">Tạo chương mới</h4>
                         <div className="flex flex-col gap-3 sm:flex-row">
                             <input
                                 type="text"
@@ -120,7 +120,7 @@ export default function InstructorCourseLessons() {
                                                     {chapter.tenChuong}
                                                 </h3>
                                                 <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                                                    {chapter.baiHocs.length} Bai hoc
+                                                    {chapter.baiHocs.length} Bài học
                                                 </p>
                                             </div>
                                         </div>

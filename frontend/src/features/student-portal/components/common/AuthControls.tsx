@@ -51,21 +51,13 @@ export default function AuthControls() {
 
   if (!user) {
     return (
-      <div className="flex items-center whitespace-nowrap">
-        <Link
-          to="/login"
-          className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 shadow-[0_6px_16px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:no-underline"
-        >
-          Login
-        </Link>
-        <span className="mx-2 text-[13px] font-medium text-slate-400">/</span>
-        <Link
-          to="/register"
-          className="inline-flex h-9 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-green-600 px-4 text-[13px] font-semibold text-white shadow-[0_10px_20px_rgba(22,163,74,0.22)] transition duration-200 hover:-translate-y-0.5 hover:from-emerald-600 hover:to-green-700 hover:text-white hover:no-underline"
-        >
-          Register
-        </Link>
-      </div>
+      <Link
+        to="/login"
+        className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+        title="Login / Register"
+      >
+        <User size={20} />
+      </Link>
     );
   }
 

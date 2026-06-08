@@ -8,7 +8,7 @@ export const Styles = styled.div`
         top: 0;
         left: 0;
         width: 100%;
-        z-index: 11;
+        z-index: 9999;
         animation: 300ms ease-in-out 0s normal none 1 fadeInDown;
         background: #ffffff;
         height: 75px;
@@ -18,6 +18,7 @@ export const Styles = styled.div`
         .logo {
             a {
                 img {
+                    max-height: 35px;
                     @media(max-width: 1199px) {
                         max-width : 100%;
                     }
@@ -194,10 +195,10 @@ export const Styles = styled.div`
         }
     }
     .sticky-menu.sticky {
-        display: block;
+        display: block !important;
         
         @media(max-width: 767px) {
-            display: none;
+            display: none !important;
         }
     }
 `;

@@ -1,9 +1,16 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '../../users/entities/user.entity';
 
+// LƯU Ý: Đảm bảo đường dẫn import các Entity và DTO này khớp với project của bạn
+import { User } from '../../users/entities/user.entity';
+import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
+import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+
 export interface InstructorPrincipal {
-  maND?: number;
+  maND?: number; S
   sub?: number;
   vaiTro?: UserRole;
   role?: UserRole;
@@ -58,7 +65,84 @@ type RawStudentRow = {
 
 @Injectable()
 export class InstructorsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(HoSoGiangVien)
+    private readonly hoSoRepo: Repository<HoSoGiangVien>,
+
+    // THÊM: Inject dịch vụ Cloudinary vào đây
+    private readonly cloudinaryService: CloudinaryService,
+  ) { }
+
+  async updateProfile(principal: InstructorPrincipal, dto: UpdateInstructorProfileDto, file?: Express.Multer.File) {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+
+    // 1. Cập nhật bảng NguoiDung (User)
+    const user = await this.userRepo.findOne({ where: { maND: instructorId } });
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+
+    let isUserUpdated = false;
+    if (dto.HoTen !== undefined) {
+      user.hoTen = dto.HoTen;
+      isUserUpdated = true;
+    }
+
+    // Nếu có file ảnh được truyền lên, tiến hành xóa ảnh cũ (nếu có) và đẩy ảnh mới lên Cloudinary
+    if (file) {
+      // --- TÍNH NĂNG MỚI: XÓA ẢNH CŨ TRÁNH RÁC CLOUDINARY ---
+      if (user.anhDaiDien) {
+        const oldPublicId = this.cloudinaryService.extractPublicId(user.anhDaiDien);
+        if (oldPublicId) {
+          try {
+            await this.cloudinaryService.deleteFile(oldPublicId, 'image');
+          } catch (deleteError) {
+            // Log lỗi ra console để theo dõi nhưng không chặn luồng xử lý chính nếu lỡ xóa thất bại
+            console.error('Lỗi khi xóa ảnh đại diện cũ trên Cloudinary:', deleteError);
+          }
+        }
+      }
+      // -----------------------------------------------------
+
+      const uploadResult = await this.cloudinaryService.uploadFile(file);
+      user.anhDaiDien = uploadResult.secure_url || uploadResult.url;
+      isUserUpdated = true;
+    }
+
+    if (isUserUpdated) {
+      await this.userRepo.save(user);
+    }
+
+    // 2. Tìm hoặc Tạo mới HoSoGiangVien
+    let profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+    if (!profile) {
+      profile = this.hoSoRepo.create({ MaND: instructorId });
+    }
+
+    // 3. Cập nhật các trường profile văn bản
+    if (dto.TieuSu !== undefined) profile.TieuSu = dto.TieuSu;
+    if (dto.ChuyenMon !== undefined) profile.ChuyenMon = dto.ChuyenMon;
+    if (dto.SoTaiKhoan !== undefined) profile.SoTaiKhoan = dto.SoTaiKhoan;
+    if (dto.FacebookURL !== undefined) profile.FacebookURL = dto.FacebookURL;
+    if (dto.InstagramURL !== undefined) profile.InstagramURL = dto.InstagramURL;
+    if (dto.GitHubURL !== undefined) profile.GitHubURL = dto.GitHubURL;
+    if (dto.WebsiteURL !== undefined) profile.WebsiteURL = dto.WebsiteURL;
+
+    await this.hoSoRepo.save(profile);
+
+    return {
+      message: 'Cập nhật trọn bộ hồ sơ thành công',
+      user: {
+        HoTen: user.hoTen,
+        AnhDaiDien: user.anhDaiDien,
+      },
+      profile,
+    };
+  }
 
   async getMyCourses(
     principal: InstructorPrincipal,
@@ -186,6 +270,9 @@ export class InstructorsService {
     };
   }
 
+  // =========================================================================
+  // PRIVATE HELPER METHODS
+  // =========================================================================
   private buildStudentQuery(
     instructorId: number,
     filters: InstructorStudentFilters,
@@ -229,7 +316,7 @@ export class InstructorsService {
     const role = principal.vaiTro ?? principal.role;
     if (role !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
-        'Chỉ giảng viên mới có quyền quản lý học viên.',
+        'Chỉ giảng viên mới có quyền quản lý hồ sơ và học viên.',
       );
     }
   }
@@ -240,6 +327,25 @@ export class InstructorsService {
       throw new ForbiddenException('Không xác định được giảng viên hiện tại.');
     }
     return instructorId;
+  }
+
+  async getProfile(principal: InstructorPrincipal) {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+
+    // Lấy thông tin user (HoTen, AnhDaiDien)
+    const user = await this.userRepo.findOne({ where: { maND: instructorId } });
+    if (!user) throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+
+    // Lấy thông tin profile
+    const profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+
+    // Gộp data lại và trả về cho Frontend
+    return {
+      hoTen: user.hoTen,
+      anhDaiDien: user.anhDaiDien,
+      ...profile, // Trải phẳng TieuSu, ChuyenMon, FacebookURL... ra ngoài
+    };
   }
 
   private toNumber(value: number | string | null | undefined) {

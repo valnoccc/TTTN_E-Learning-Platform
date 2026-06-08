@@ -114,16 +114,16 @@ class MobileMenu extends Component {
                     <div className="mb-sidebar-menu">
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
-                                <p>Home <i className="las la-plus"></i></p>
+                                <p><Link to={process.env.PUBLIC_URL + "/"} style={{ color: "inherit", textDecoration: "none" }}>Home</Link></p>
                             </button>
-                            <div className="mb-menu-content show">
+                            <div className="mb-menu-content show d-none">
                                 <ul className="list-unstyled">
                                     <li><Link to={process.env.PUBLIC_URL + "/"}>Home Style 1</Link></li>
                                     <li><Link to={process.env.PUBLIC_URL + "/home-two"}>Home Style 2</Link></li>
                                 </ul>
                             </div>
                         </div>
-                        <div className="mb-menu-item">
+                        <div className="mb-menu-item d-none">
                             <button className="mb-menu-button active">
                                 <p>Pages <i className="las la-plus"></i></p>
                             </button>
@@ -158,7 +158,7 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/instructor"}>Instructors</Link></li>
+                                    <li><Link to={process.env.PUBLIC_URL + "/instructors"}>Instructors</Link></li>
                                     <li><Link to={process.env.PUBLIC_URL + "/instructor-details"}>Instructor Details</Link></li>
                                 </ul>
                             </div>
@@ -186,7 +186,7 @@ class MobileMenu extends Component {
                                 </ul>
                             </div>
                         </div>
-                        <div className="mb-menu-item">
+                        <div className="mb-menu-item d-none">
                             <button className="mb-menu-button">
                                 <p>Shop <i className="las la-plus"></i></p>
                             </button>

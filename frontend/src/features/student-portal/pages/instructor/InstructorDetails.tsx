@@ -10,6 +10,9 @@ import { Styles } from './styles/instructor';
 
 class InstructorDetails extends Component {
     render() {
+        // Fix for Vite CommonJS interop with react-id-swiper
+        const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
+
         const settings = {
             slidesPerView: 3,
             loop: true,
@@ -105,7 +108,7 @@ class InstructorDetails extends Component {
                                         <h5>Courses by Kamal Sulaiman</h5>
                                     </div>
                                     <div className="instructor-course-slider">
-                                        <Swiper {...settings}>
+                                        <SwiperComponent {...settings}>
                                             {
                                                 Datas.map((data, i) => (
                                                     <div className="course-item" key={i}>
@@ -151,7 +154,7 @@ class InstructorDetails extends Component {
                                                     </div>
                                                 ))
                                             }
-                                        </Swiper>
+                                        </SwiperComponent>
                                     </div>
                                 </Col>
                             </Row>

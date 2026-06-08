@@ -59,7 +59,14 @@ class EventDetails extends Component {
                                                     Datas.map((data, i) => (
                                                         <Col lg="3" md="6" sm="6" key={i}>
                                                             <div className="event-speaker-item">
-                                                                <img src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} alt="" className="img-fluid" />
+                                                                <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
+                                                                    <img 
+                                                                        src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                                        alt="" 
+                                                                        className="img-fluid" 
+                                                                        style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
+                                                                    />
+                                                                </div>
                                                                 <div className="img-content text-center">
                                                                     <h6>{data.personName}</h6>
                                                                     <ul className="list-unstyled list-inline">
