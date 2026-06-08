@@ -1,6 +1,8 @@
 import { Users, BookOpen, Wallet, RefreshCw, Code, FileEdit, CheckCircle, XCircle } from 'lucide-react';
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import ClassicFilterBar from '../../../components/instructor/ClassicFilterBar';
+// Nhớ kiểm tra lại đường dẫn import Pagination cho đúng với dự án của bạn nhé:
+import Pagination from '../../../components/Pagination';
 import { useStudentEvaluations, type SubmissionStatus, type StudentSubmissionSummary } from './hooks/useStudentEvaluations';
 
 function formatCurrency(value: number) {
@@ -26,6 +28,13 @@ export default function StudentEvaluations() {
         selectedCourseName,
         loadStudents,
 
+        // THÊM: Các state phân trang
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        paginatedStudents,
+        paginationMeta,
+
         // Modal states & actions
         selectedStudent,
         scoreInput,
@@ -36,7 +45,7 @@ export default function StudentEvaluations() {
         handleOpenGradeModal,
         handleCloseGradeModal,
         handleSaveEvaluation
-    } = useStudentEvaluations(); // Gọi Custom Hook
+    } = useStudentEvaluations();
 
     return (
         <InstructorLayout>
@@ -83,63 +92,67 @@ export default function StudentEvaluations() {
                     </div>
                 </section>
 
-                {/* Khu Vực Lọc và Tìm Kiếm đã sửa lỗi action */}
-                <div className="flex flex-col gap-3 bg-white p-4 rounded-md border border-slate-200 lg:flex-row lg:items-center">
-                    <div className="flex-1">
-                        <ClassicFilterBar
-                            searchValue={searchInput}
-                            onSearchChange={(event) => setSearchInput(event.target.value)}
-                            onSearchKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    setAppliedSearch(searchInput);
-                                    void loadStudents(courseId, searchInput, statusFilter);
-                                }
-                            }}
-                            searchPlaceholder="Tìm theo tên hoặc email học viên..."
-                            selectValue={courseId}
-                            onSelectChange={(event) => {
-                                setCourseId(event.target.value);
-                                void loadStudents(event.target.value, searchInput, statusFilter);
-                            }}
-                            options={[
-                                { label: 'Tất cả khóa học', value: '' },
-                                ...courses.map((course) => ({
-                                    label: course.courseName,
-                                    value: String(course.courseId),
-                                })),
-                            ]}
-                            // THÊM THUỘC TÍNH ACTION VÀO ĐÂY ĐỂ HẾT LỖI:
-                            action={
-                                <button
-                                    type="button"
-                                    onClick={() => {
+                {/* Ô chọn trạng thái bài làm được đưa vào chung và căn phải */}
+                <div className="flex items-center lg:mt-0 justify-end">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => {
+                            setStatusFilter(e.target.value);
+                            void loadStudents(courseId, searchInput, e.target.value);
+                        }}
+                        // Đã hạ xuống py-2 và text-xs font-semibold để đồng bộ kích thước gọn gàng
+                        className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-[#1dbf73]"
+                    >
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="NOT_SUBMITTED">Chưa nộp bài</option>
+                        <option value="PENDING">Chờ chấm bài</option>
+                        <option value="PASSED">Đã đạt yêu cầu</option>
+                        <option value="FAILED">Cần chỉnh sửa lại</option>
+                    </select>
+                </div>
+
+                {/* Khu Vực Lọc và Tìm Kiếm Tổng Hợp */}
+                <div className="bg-white p-4 rounded-md border border-slate-200">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                        {/* Thanh tìm kiếm và ô chọn khóa học bên trái */}
+                        <div className="flex-1">
+                            <ClassicFilterBar
+                                searchValue={searchInput}
+                                onSearchChange={(event) => setSearchInput(event.target.value)}
+                                onSearchKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
                                         setAppliedSearch(searchInput);
                                         void loadStudents(courseId, searchInput, statusFilter);
-                                    }}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] lg:w-auto"
-                                >
-                                    <RefreshCw size={16} /> Lọc dữ liệu
-                                </button>
-                            }
-                        />
-                    </div>
-
-                    {/* Thanh chọn trạng thái xếp cạnh */}
-                    <div className="flex items-center gap-2 lg:mt-0">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                                void loadStudents(courseId, searchInput, e.target.value);
-                            }}
-                            className="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-[#1dbf73] lg:w-auto"
-                        >
-                            <option value="">Tất cả trạng thái bài làm</option>
-                            <option value="NOT_SUBMITTED">Chưa nộp bài</option>
-                            <option value="PENDING">Chờ chấm bài</option>
-                            <option value="PASSED">Đã đạt yêu cầu</option>
-                            <option value="FAILED">Cần chỉnh sửa lại</option>
-                        </select>
+                                    }
+                                }}
+                                searchPlaceholder="Tìm theo tên hoặc email học viên..."
+                                selectValue={courseId}
+                                onSelectChange={(event) => {
+                                    setCourseId(event.target.value);
+                                    void loadStudents(event.target.value, searchInput, statusFilter);
+                                }}
+                                options={[
+                                    { label: 'Tất cả khóa học', value: '' },
+                                    ...courses.map((course) => ({
+                                        label: course.courseName,
+                                        value: String(course.courseId),
+                                    })),
+                                ]}
+                                // Nút lọc đã được thu nhỏ py-2 và text-xs để bằng ô nhập liệu
+                                action={
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAppliedSearch(searchInput);
+                                            void loadStudents(courseId, searchInput, statusFilter);
+                                        }}
+                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[#1dbf73] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#169b5c] lg:w-auto"
+                                    >
+                                        <RefreshCw size={14} /> Lọc dữ liệu
+                                    </button>
+                                }
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -158,7 +171,7 @@ export default function StudentEvaluations() {
                     ) : board.students.length === 0 ? (
                         <div className="py-16 text-center text-slate-500">Không tìm thấy dữ liệu học viên phù hợp.</div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto flex flex-col justify-between min-h-[400px]">
                             <table className="w-full border-collapse text-left text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/70">
@@ -170,7 +183,8 @@ export default function StudentEvaluations() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {board.students.map((student) => (
+                                    {/* ĐÃ SỬA: Map qua paginatedStudents thay vì board.students */}
+                                    {paginatedStudents.map((student) => (
                                         <tr key={`${student.studentId}-${student.courseId}`} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="p-4">
                                                 <div className="font-bold text-slate-900">{student.studentName}</div>
@@ -212,6 +226,21 @@ export default function StudentEvaluations() {
                                     ))}
                                 </tbody>
                             </table>
+
+                            {/* THÊM: Component Phân Trang */}
+                            {totalPages > 1 && (
+                                <div className="p-4 border-t border-slate-100 mt-auto bg-white">
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setCurrentPage}
+                                        variant="numbers"
+                                        totalItems={paginationMeta.totalItems}
+                                        indexOfFirst={paginationMeta.indexOfFirst}
+                                        indexOfLast={paginationMeta.indexOfLast}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
                 </section>

@@ -182,17 +182,17 @@ export class InstructorsService {
   async getMyStudents(
     principal: InstructorPrincipal,
     filters: InstructorStudentFilters,
-  ): Promise<InstructorStudentBoard> {
+  ): Promise<any> { // Có thể đổi kiểu trả về thành InstructorStudentBoard sau
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
-    let rows: RawStudentRow[] = [];
+    let rows: any[] = [];
 
     try {
       const { sql, params } = this.buildStudentQuery(instructorId, filters);
       rows = await this.dataSource.query(sql, params);
     } catch (error) {
-      console.error('Failed to load instructor students', error);
+      console.error('Lỗi khi tải danh sách học viên:', error);
       return {
         totalStudents: 0,
         totalPurchases: 0,
@@ -201,117 +201,94 @@ export class InstructorsService {
       };
     }
 
-    const grouped = new Map<number, InstructorStudentSummary>();
+    // KHÔNG gom nhóm (Group) bằng Map nữa. Tạo trực tiếp danh sách phẳng.
+    const flatStudentsList = rows.map((row) => ({
+      studentId: Number(row.studentId),
+      studentName: row.studentName,
+      studentEmail: row.studentEmail,
+      courseId: Number(row.courseId),
+      courseName: row.courseName,
+      totalSpent: this.toNumber(row.coursePrice),
+      purchasedAt: row.purchasedAt,
+      // Đảm bảo map thêm các trường cần cho việc chấm điểm
+      githubLink: row.githubLink || null,
+      status: row.status || 'NOT_SUBMITTED',
+      score: row.score ? Number(row.score) : undefined,
+      feedback: row.feedback || '',
+    }));
 
-    for (const row of rows) {
-      const studentId = Number(row.studentId);
-      const courseId = Number(row.courseId);
-      const coursePrice = this.toNumber(row.coursePrice);
+    // Tính toán lại tổng quan
+    // 1. Tính tổng số học viên duy nhất (dùng Set để đếm)
+    const uniqueStudentIds = new Set(flatStudentsList.map(s => s.studentId));
 
-      const existing = grouped.get(studentId);
-      const purchaseAt = row.purchasedAt;
-
-      if (!existing) {
-        grouped.set(studentId, {
-          studentId,
-          studentName: row.studentName,
-          studentEmail: row.studentEmail,
-          totalCourses: 1,
-          totalSpent: coursePrice,
-          lastPurchasedAt: purchaseAt,
-          courses: [
-            {
-              courseId,
-              courseName: row.courseName,
-              coursePrice,
-              purchasedAt: purchaseAt,
-            },
-          ],
-        });
-        continue;
-      }
-
-      const courseExists = existing.courses.some(
-        (course) => course.courseId === courseId,
-      );
-      if (!courseExists) {
-        existing.courses.push({
-          courseId,
-          courseName: row.courseName,
-          coursePrice,
-          purchasedAt: purchaseAt,
-        });
-        existing.totalCourses += 1;
-        existing.totalSpent += coursePrice;
-      }
-
-      if (
-        this.toTimestamp(purchaseAt) >
-        this.toTimestamp(existing.lastPurchasedAt)
-      ) {
-        existing.lastPurchasedAt = purchaseAt;
-      }
-    }
-
-    const students = Array.from(grouped.values()).sort(
-      (left, right) =>
-        this.toTimestamp(right.lastPurchasedAt) -
-        this.toTimestamp(left.lastPurchasedAt),
-    );
+    // 2. Tính tổng doanh thu
+    const totalRevenue = flatStudentsList.reduce((sum, current) => sum + current.totalSpent, 0);
 
     return {
-      totalStudents: students.length,
-      totalPurchases: rows.length,
-      totalRevenue: students.reduce(
-        (sum, student) => sum + student.totalSpent,
-        0,
-      ),
-      students,
+      totalStudents: uniqueStudentIds.size,
+      totalPurchases: flatStudentsList.length,
+      totalRevenue: totalRevenue,
+      students: flatStudentsList, // Trả về danh sách phẳng để React dễ dàng lặp
     };
   }
 
   // =========================================================================
   // PRIVATE HELPER METHODS
   // =========================================================================
-  private buildStudentQuery(
-    instructorId: number,
-    filters: InstructorStudentFilters,
-  ) {
-    const clauses = ['kh.MaND_GiangVien = ?'];
-    const params: Array<number | string> = [instructorId];
+  private buildStudentQuery(instructorId: number, filters: any) {
+    // 1. Câu lệnh SQL nền tảng y hệt như bạn vừa test thành công
+    let sql = `
+        SELECT 
+            dk.MaND AS studentId,
+            nd.HoTen AS studentName,
+            nd.Email AS studentEmail,
+            dk.MaKH AS courseId,
+            kh.TenKhoaHoc AS courseName,
+            kh.GiaBan AS coursePrice,
+            dk.NgayDangKy AS purchasedAt,
+            bn.LinkGitHub AS githubLink,
+            IFNULL(bn.TrangThai, 'NOT_SUBMITTED') AS status,
+            bn.DiemSo AS score,
+            bn.NhanXet AS feedback
+        FROM DangKyKhoaHoc dk
+        JOIN NguoiDung nd ON dk.MaND = nd.MaND
+        JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+        LEFT JOIN DuAnCuoiKhoa da ON kh.MaKH = da.MaKH
+        LEFT JOIN BaiNopDuAn bn ON da.MaDuAn = bn.MaDuAn AND bn.MaND = nd.MaND
+        WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'
+    `;
 
+    // Tham số đầu tiên luôn là ID của giảng viên
+    const params: any[] = [instructorId];
+
+    // 2. Xử lý các bộ lọc từ Frontend truyền xuống
     if (filters.courseId) {
-      clauses.push('kh.MaKH = ?');
+      sql += ` AND kh.MaKH = ?`;
       params.push(filters.courseId);
     }
 
-    if (filters.search) {
-      clauses.push('(u.HoTen LIKE ? OR u.Email LIKE ?)');
-      const keyword = `%${filters.search}%`;
-      params.push(keyword, keyword);
+    if (filters.status) {
+      if (filters.status === 'NOT_SUBMITTED') {
+        // Nếu chọn "Chưa nộp bài", nghĩa là chưa có record trong bảng BaiNopDuAn
+        sql += ` AND bn.TrangThai IS NULL`;
+      } else {
+        // Các trạng thái khác: PENDING, PASSED, FAILED
+        sql += ` AND bn.TrangThai = ?`;
+        params.push(filters.status);
+      }
     }
 
-    return {
-      sql: `
-        SELECT
-          u.MaND AS studentId,
-          u.HoTen AS studentName,
-          u.Email AS studentEmail,
-          kh.MaKH AS courseId,
-          kh.TenKhoaHoc AS courseName,
-          COALESCE(ct.GiaGhiNhan, kh.GiaBan, 0) AS coursePrice,
-          hd.NgayLap AS purchasedAt
-        FROM ChiTietHoaDon ct
-        INNER JOIN KhoaHoc kh ON kh.MaKH = ct.MaKH
-        INNER JOIN HoaDon hd ON hd.MaHD = ct.MaHD
-        INNER JOIN NguoiDung u ON u.MaND = hd.MaND
-        WHERE ${clauses.join(' AND ')}
-        ORDER BY purchasedAt DESC, u.HoTen ASC
-      `,
-      params,
-    };
-  }
+    if (filters.search) {
+      // Tìm kiếm theo tên hoặc email học viên
+      sql += ` AND (nd.HoTen LIKE ? OR nd.Email LIKE ?)`;
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
 
+    // 3. Sắp xếp người mua mới nhất lên đầu
+    sql += ` ORDER BY dk.NgayDangKy DESC`;
+
+    return { sql, params };
+  }
   private assertInstructor(principal: InstructorPrincipal) {
     const role = principal.vaiTro ?? principal.role;
     if (role !== UserRole.INSTRUCTOR) {
