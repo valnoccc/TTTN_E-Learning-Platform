@@ -41,4 +41,4 @@ import { InstructorsModule } from './modules/instructors/instructors.module';
     InstructorsModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

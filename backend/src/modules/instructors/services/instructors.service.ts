@@ -1,9 +1,15 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '../../users/entities/user.entity';
 
+// LƯU Ý: Đảm bảo đường dẫn import các Entity và DTO này khớp với project của bạn
+import { User } from '../../users/entities/user.entity';
+import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
+import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
+
 export interface InstructorPrincipal {
-  maND?: number;
+  maND?: number; S
   sub?: number;
   vaiTro?: UserRole;
   role?: UserRole;
@@ -58,7 +64,69 @@ type RawStudentRow = {
 
 @Injectable()
 export class InstructorsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    // Giữ nguyên DataSource cho các query SELECT phức tạp
+    private readonly dataSource: DataSource,
+
+    // Inject thêm các Repository để dùng cho việc Update Profile
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(HoSoGiangVien)
+    private readonly hoSoRepo: Repository<HoSoGiangVien>,
+  ) { }
+
+  async updateProfile(principal: InstructorPrincipal, dto: UpdateInstructorProfileDto) {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+
+    // 1. Cập nhật bảng NguoiDung (HoTen, AnhDaiDien)
+    // Đã sửa 'nguoiDungRepo' thành 'userRepo' cho khớp với constructor của bạn
+    const user = await this.userRepo.findOne({ where: { maND: instructorId } });
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+
+    let isUserUpdated = false;
+    if (dto.HoTen !== undefined) {
+      user.hoTen = dto.HoTen;
+      isUserUpdated = true;
+    }
+    if (dto.AnhDaiDien !== undefined) {
+      user.anhDaiDien = dto.AnhDaiDien;
+      isUserUpdated = true;
+    }
+
+    if (isUserUpdated) {
+      await this.userRepo.save(user);
+    }
+
+    // 2. Tìm hoặc Tạo mới HoSoGiangVien (Khôi phục đoạn code khai báo biến profile)
+    let profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+
+    if (!profile) {
+      profile = this.hoSoRepo.create({ MaND: instructorId });
+    }
+
+    // 3. Cập nhật các trường profile
+    if (dto.TieuSu !== undefined) profile.TieuSu = dto.TieuSu;
+    if (dto.ChuyenMon !== undefined) profile.ChuyenMon = dto.ChuyenMon;
+    if (dto.SoTaiKhoan !== undefined) profile.SoTaiKhoan = dto.SoTaiKhoan;
+    if (dto.FacebookURL !== undefined) profile.FacebookURL = dto.FacebookURL;
+    if (dto.InstagramURL !== undefined) profile.InstagramURL = dto.InstagramURL;
+    if (dto.GitHubURL !== undefined) profile.GitHubURL = dto.GitHubURL;
+    if (dto.WebsiteURL !== undefined) profile.WebsiteURL = dto.WebsiteURL;
+
+    await this.hoSoRepo.save(profile);
+
+    return {
+      message: 'Cập nhật hồ sơ thành công',
+      user: {
+        HoTen: user.hoTen,
+        AnhDaiDien: user.anhDaiDien,
+      },
+      profile, // Lỗi báo đỏ ở đây sẽ biến mất vì 'profile' đã được khai báo ở bước 2
+    };
+  }
 
   async getMyCourses(
     principal: InstructorPrincipal,
@@ -186,6 +254,9 @@ export class InstructorsService {
     };
   }
 
+  // =========================================================================
+  // PRIVATE HELPER METHODS
+  // =========================================================================
   private buildStudentQuery(
     instructorId: number,
     filters: InstructorStudentFilters,
@@ -229,7 +300,7 @@ export class InstructorsService {
     const role = principal.vaiTro ?? principal.role;
     if (role !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
-        'Chỉ giảng viên mới có quyền quản lý học viên.',
+        'Chỉ giảng viên mới có quyền quản lý hồ sơ và học viên.',
       );
     }
   }
@@ -240,6 +311,25 @@ export class InstructorsService {
       throw new ForbiddenException('Không xác định được giảng viên hiện tại.');
     }
     return instructorId;
+  }
+
+  async getProfile(principal: InstructorPrincipal) {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+
+    // Lấy thông tin user (HoTen, AnhDaiDien)
+    const user = await this.userRepo.findOne({ where: { maND: instructorId } });
+    if (!user) throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+
+    // Lấy thông tin profile
+    const profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+
+    // Gộp data lại và trả về cho Frontend
+    return {
+      hoTen: user.hoTen,
+      anhDaiDien: user.anhDaiDien,
+      ...profile, // Trải phẳng TieuSu, ChuyenMon, FacebookURL... ra ngoài
+    };
   }
 
   private toNumber(value: number | string | null | undefined) {

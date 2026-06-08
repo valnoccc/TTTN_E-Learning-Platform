@@ -1,8 +1,9 @@
-import { ChangeEvent, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, Image, Save, User } from 'lucide-react';
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useInstructorProfile } from './hooks/useInstructorProfile';
+
 
 type StoredInstructorUser = {
     fullName?: string;
@@ -11,51 +12,48 @@ type StoredInstructorUser = {
 };
 
 export default function InstructorProfile() {
-    const { formData, handleChange, handleSave } = useInstructorProfile();
+    // Lấy thêm initialUser từ hook
+    const { formData, handleChange, handleSave, initialUser } = useInstructorProfile();
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
-    const storedUser = useMemo<StoredInstructorUser>(() => {
-        try {
-            return JSON.parse(localStorage.getItem('user') || 'null') || {};
-        } catch {
-            return {};
-        }
-    }, []);
+    const [currentName, setCurrentName] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
 
-    const [currentName, setCurrentName] = useState(storedUser.fullName || '');
-    const [avatarUrl, setAvatarUrl] = useState(storedUser.AnhDaiDien || storedUser.avatar || '');
+    // Khi initialUser từ API load xong, lập tức gán vào state của giao diện
+    useEffect(() => {
+        if (initialUser.hoTen || initialUser.anhDaiDien) {
+            setCurrentName(initialUser.hoTen);
+            setAvatarUrl(initialUser.anhDaiDien);
+        }
+    }, [initialUser]);
+
+    // BỎ TOÀN BỘ ĐOẠN KHAI BÁO storedUser (localStorage) CŨ ĐI NHÉ!
 
     const avatarPreview = avatarUrl.trim();
-    const instructorInitial = (currentName || storedUser.fullName || 'G').charAt(0).toUpperCase();
+    const instructorInitial = (currentName || 'G').charAt(0).toUpperCase();
 
-    const handleUserFieldChange =
-        (setter: (value: string) => void) => (event: ChangeEvent<HTMLInputElement>) => {
-            setter(event.target.value);
+    // 1. Hàm xử lý khi nhập tên hiển thị
+    const handleUserFieldChange = (setter: React.Dispatch<React.SetStateAction<string>>) =>
+        (e: ChangeEvent<HTMLInputElement>) => {
+            setter(e.target.value);
         };
 
-    const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    // 2. Hàm xử lý khi chọn file ảnh đại diện mới
+    const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (typeof reader.result === 'string') {
-                setAvatarUrl(reader.result);
-            }
-        };
-        reader.readAsDataURL(file);
+        // Tạo một URL tạm thời (blob) để hiển thị ảnh vừa chọn lên giao diện
+        const previewUrl = URL.createObjectURL(file);
+        setAvatarUrl(previewUrl);
+
+        // Lưu ý: Nếu dự án của bạn có API upload ảnh lên Cloudinary, 
+        // bạn sẽ gọi API upload đó tại đây, lấy URL trả về từ Cloudinary và đưa vào setAvatarUrl()
     };
 
     const handleSubmit = async () => {
-        const nextUser = {
-            ...storedUser,
-            fullName: currentName,
-            AnhDaiDien: avatarUrl,
-            avatar: avatarUrl,
-        };
-
-        localStorage.setItem('user', JSON.stringify(nextUser));
-        await handleSave();
+        // Không cần lưu vào localStorage nữa, backend là nguồn chân lý (Source of Truth)
+        await handleSave(currentName, avatarUrl);
     };
 
     return (
