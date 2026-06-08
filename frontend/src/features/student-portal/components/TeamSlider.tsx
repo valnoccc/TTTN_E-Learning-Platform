@@ -55,7 +55,14 @@ class TeamSlider extends Component {
                                         {
                                             Datas.dataList.map((data, i) => (
                                                 <div className="team-item" key={i}>
-                                                    <img src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} alt="" className="img-fluid" />
+                                                    <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
+                                                        <img 
+                                                            src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                            alt="" 
+                                                            className="img-fluid" 
+                                                            style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
+                                                        />
+                                                    </div>
                                                     <div className="img-content text-center">
                                                         <h5>{data.personName}</h5>
                                                         <p>{data.personTitle}</p>

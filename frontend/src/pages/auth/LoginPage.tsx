@@ -112,7 +112,6 @@ export default function LoginPage() {
                                             <ul className="list-unstyled d-flex justify-content-center" style={{ gap: '15px' }}>
                                                 <li><Link to="#"><i className="fab fa-google"></i> Google</Link></li>
                                                 <li><Link to="#"><i className="fab fa-facebook-f"></i> Facebook</Link></li>
-                                                <li><Link to="#"><i className="fab fa-twitter"></i> Twitter</Link></li>
                                             </ul>
                                         </div>
                                     </form>

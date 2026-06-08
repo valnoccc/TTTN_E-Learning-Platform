@@ -19,9 +19,9 @@ class HeaderTwo extends Component {
                             <Col lg="7" md="9">
                                 <div className="bar-left">
                                     <ul className="list-unstyled list-inline">
-                                        <li className="list-inline-item"><i className="las la-phone"></i>+1 (396) 486 4709</li>
-                                        <li className="list-inline-item"><i className="las la-envelope"></i>enquery@domain.com</li>
-                                        <li className="list-inline-item"><i className="las la-map-marker"></i>795 South Park Avenue, CA
+                                        <li className="list-inline-item"><i className="las la-phone"></i>+098 000 0000</li>
+                                        <li className="list-inline-item"><i className="las la-envelope"></i>edumeo@domain.com</li>
+                                        <li className="list-inline-item"><i className="las la-map-marker"></i>84 Quận 8, TP.HCM
                                     </li>
                                     </ul>
                                 </div>
