@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Tab, Nav } from 'react-bootstrap';
 import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
@@ -9,6 +10,9 @@ import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/course';
 
 function CourseDetails() {
+    const navigate = useNavigate();
+    const course = { id: 15 }; // Mock course for now
+
     useEffect(() => {
         const courseButton = document.querySelectorAll<HTMLElement>(".course-button");
         courseButton.forEach(button => {
@@ -430,7 +434,7 @@ function CourseDetails() {
                                                     <li><i className="las la-bookmark"></i> Enrolled: <span>236</span></li>
                                                     <li><i className="las la-certificate"></i> Certification: <span>Yes</span></li>
                                                 </ul>
-                                                <button type="button" className="enroll-btn">Enroll Course</button>
+                                                <button type="button" className="enroll-btn" onClick={() => navigate(`/checkout/${course.id}`)}>Enroll Course</button>
                                             </div>
                                         </Col>
                                         <Col md="12">

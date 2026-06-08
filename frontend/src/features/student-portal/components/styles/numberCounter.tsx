@@ -23,9 +23,10 @@ export const Styles = styled.div`
         .sec-title {
             h4 {
                 color        : #ffffff;
-                line-height  : 35px;
-                font-weight  : 600;
-                max-width    : 550px;
+                font-size    : 32px;
+                line-height  : 45px;
+                font-weight  : 700;
+                max-width    : 800px;
                 margin       : auto;
                 margin-bottom: 43px;
 

@@ -239,7 +239,7 @@ export const Styles = styled.div`
                                     font-size: 14px;
                                     color: #ffffff;
                                     display: inline-block;
-                                    width: 110px;
+                                    width: 160px;
                                     height: 40px;
                                     border-radius: 30px;
                                     padding-top: 10px;
@@ -261,11 +261,6 @@ export const Styles = styled.div`
                                 &:nth-child(2) {
                                     a {
                                         background: #4267B2;
-                                    }
-                                }
-                                &:nth-child(3) {
-                                    a {
-                                        background: #1DA1F2;
                                     }
                                 }
                             }

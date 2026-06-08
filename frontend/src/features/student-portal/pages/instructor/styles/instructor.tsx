@@ -12,6 +12,9 @@ export const Styles = styled.div`
                 a {
                     img {
                         border-radius : 5px;
+                        width: 100%;
+                        aspect-ratio: 1 / 1;
+                        object-fit: cover;
                     }
                 }
 
