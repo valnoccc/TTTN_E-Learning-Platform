@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import Search from './Search';
+import AuthControls from './AuthControls';
 import { Styles } from "./styles/stickyMenu";
 
 class StickyMenu extends Component<{}, { isSticky: boolean }> {
@@ -47,14 +48,14 @@ class StickyMenu extends Component<{}, { isSticky: boolean }> {
                             <Col md="9">
                                 <div className="menu-box d-flex justify-content-end">
                                     <ul className="nav menu-nav">
-                                        <li className="nav-item dropdown active">
-                                            <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Home <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
+                                        <li className="nav-item active">
+                                            <Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home</Link>
+                                            <ul className="dropdown list-unstyled d-none">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home Style 1</Link></li>
                                                 <li className="nav-item active"><Link className="nav-link" to={process.env.PUBLIC_URL + "/home-two"}>Home Style 2</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Pages <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/about"}>About Us</Link></li>
@@ -78,7 +79,7 @@ class StickyMenu extends Component<{}, { isSticky: boolean }> {
                                         <li className="nav-item dropdown">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Instructor <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor"}>Instructors</Link></li>
+                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructors"}>Instructors</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor-details"}>Instructor Details</Link></li>
                                             </ul>
                                         </li>
@@ -97,7 +98,7 @@ class StickyMenu extends Component<{}, { isSticky: boolean }> {
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/blog-details"}>Blog Details</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Shop <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/products"}>Products</Link></li>
@@ -109,8 +110,8 @@ class StickyMenu extends Component<{}, { isSticky: boolean }> {
                                     <div className="search-box">
                                         <Search />
                                     </div>
-                                    <div className="apply-btn">
-                                        <Link to={process.env.PUBLIC_URL + "/registration"}><i className="las la-clipboard-list"></i>Apply Now</Link>
+                                    <div className="nav-auth-box" style={{ marginLeft: '20px' }}>
+                                        <AuthControls />
                                     </div>
                                 </div>
                             </Col>

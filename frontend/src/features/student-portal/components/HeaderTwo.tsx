@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Dropdown } from 'react-bootstrap';
 import Search from './common/Search';
 import Sidebar from './common/Sidebar';
+import AuthControls from './common/AuthControls';
 
 import MobileMenu from './common/MobileMenu';
 import { Styles } from "./styles/headerTwo";
@@ -66,16 +67,16 @@ class HeaderTwo extends Component {
                                 </div>
                             </Col>
                             <Col md="9">
-                                <div className="menu-box d-flex justify-content-end">
-                                    <ul className="nav menu-nav">
-                                        <li className="nav-item dropdown active">
-                                            <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Home <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
+                                <div className="menu-box d-flex">
+                                    <ul className="nav menu-nav justify-content-center flex-grow-1">
+                                        <li className="nav-item active">
+                                            <Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home</Link>
+                                            <ul className="dropdown list-unstyled d-none">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/"}>Home Style 1</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/home-two"}>Home Style 2</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Pages <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/about"}>About Us</Link></li>
@@ -99,7 +100,7 @@ class HeaderTwo extends Component {
                                         <li className="nav-item dropdown">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Instructor <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor"}>Instructors</Link></li>
+                                                <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructors"}>Instructors</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/instructor-details"}>Instructor Details</Link></li>
                                             </ul>
                                         </li>
@@ -118,7 +119,7 @@ class HeaderTwo extends Component {
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/blog-details"}>Blog Details</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
+                                        <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={process.env.PUBLIC_URL + "/"} data-toggle="dropdown">Shop <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={process.env.PUBLIC_URL + "/products"}>Products</Link></li>
@@ -127,12 +128,14 @@ class HeaderTwo extends Component {
                                             </ul>
                                         </li>
                                     </ul>
-                                    <div className="search-box">
-                                        <Search />
-                                    </div>
-                                    <div className="apply-btn">
-                                        <Link to={process.env.PUBLIC_URL + "/registration"}><i className="las la-clipboard-list"></i>Apply Now</Link>
-                                    </div>
+                                    <ul className="nav search-cart-bar">
+                                        <li className="nav-item search-box" style={{ marginTop: '13px' }}>
+                                            <Search />
+                                        </li>
+                                        <li className="nav-item cart-box" style={{ marginTop: '2px', marginLeft: '15px' }}>
+                                            <AuthControls />
+                                        </li>
+                                    </ul>
                                 </div>
                             </Col>
                         </Row>
