@@ -92,8 +92,22 @@ export class InstructorsService {
       isUserUpdated = true;
     }
 
-    // THAY ĐỔI: Nếu có file ảnh được truyền lên, tiến hành đẩy lên Cloudinary và lấy URL thật lưu vào DB
+    // Nếu có file ảnh được truyền lên, tiến hành xóa ảnh cũ (nếu có) và đẩy ảnh mới lên Cloudinary
     if (file) {
+      // --- TÍNH NĂNG MỚI: XÓA ẢNH CŨ TRÁNH RÁC CLOUDINARY ---
+      if (user.anhDaiDien) {
+        const oldPublicId = this.cloudinaryService.extractPublicId(user.anhDaiDien);
+        if (oldPublicId) {
+          try {
+            await this.cloudinaryService.deleteFile(oldPublicId, 'image');
+          } catch (deleteError) {
+            // Log lỗi ra console để theo dõi nhưng không chặn luồng xử lý chính nếu lỡ xóa thất bại
+            console.error('Lỗi khi xóa ảnh đại diện cũ trên Cloudinary:', deleteError);
+          }
+        }
+      }
+      // -----------------------------------------------------
+
       const uploadResult = await this.cloudinaryService.uploadFile(file);
       user.anhDaiDien = uploadResult.secure_url || uploadResult.url;
       isUserUpdated = true;

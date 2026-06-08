@@ -5,8 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Lesson } from '../entities/lesson.entity';
+
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { Lesson } from '../entities/lesson.entity';
 
 @Injectable()
 export class LessonsService {
@@ -20,7 +21,7 @@ export class LessonsService {
     try {
       const result = await this.lessonRepository.save(payload);
       return result;
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(
         'Không thể lưu bài học vào Database',
       );
@@ -44,6 +45,17 @@ export class LessonsService {
   }
 
   async update(id: number, payload: any): Promise<Lesson> {
+    const existingLesson = await this.lessonRepository.findOne({
+      where: { maBH: id },
+    });
+
+    if (!existingLesson) {
+      throw new NotFoundException(`Không tìm thấy bài học có ID #${id}`);
+    }
+
+    const previousVideoUrl = existingLesson.videoURL;
+    const nextVideoUrl = payload.videoURL;
+
     const lesson = await this.lessonRepository.preload({
       maBH: id,
       ...payload,
@@ -54,11 +66,19 @@ export class LessonsService {
     }
 
     try {
-      return await this.lessonRepository.save(lesson);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Lỗi hệ thống khi cập nhật dữ liệu',
-      );
+      const updatedLesson = await this.lessonRepository.save(lesson);
+
+      if (previousVideoUrl && nextVideoUrl && previousVideoUrl !== nextVideoUrl) {
+        const oldPublicId =
+          this.cloudinaryService.extractPublicId(previousVideoUrl);
+        if (oldPublicId) {
+          await this.cloudinaryService.deleteFile(oldPublicId, 'video');
+        }
+      }
+
+      return updatedLesson;
+    } catch {
+      throw new InternalServerErrorException('Lỗi hệ thống khi cập nhật dữ liệu');
     }
   }
 
@@ -70,10 +90,10 @@ export class LessonsService {
 
     if (lesson.videoURL) {
       try {
-        const urlParts = lesson.videoURL.split('/');
-        const fileNameWithExt = urlParts[urlParts.length - 1];
-        const publicId = fileNameWithExt.split('.')[0];
-        await this.cloudinaryService.deleteFile(publicId);
+        const publicId = this.cloudinaryService.extractPublicId(lesson.videoURL);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
       } catch (cloudError) {
         console.error('Lỗi khi xóa video trên Cloudinary:', cloudError);
       }
@@ -81,7 +101,7 @@ export class LessonsService {
 
     try {
       await this.lessonRepository.remove(lesson);
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Lỗi hệ thống khi xóa dữ liệu');
     }
   }

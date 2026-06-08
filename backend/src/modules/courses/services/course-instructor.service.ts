@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/com
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../entities/course.entity';
 
 @Injectable()
@@ -10,7 +11,8 @@ export class CoursesService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-  ) { }
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
@@ -20,30 +22,27 @@ export class CoursesService {
   }
 
   async createCourse(payload: any, mucTieu: string[], yeuCau: string[]) {
-    // 1. Lưu thông tin cơ bản của khóa học
     const newCourse = this.khoaHocRepository.create(payload);
     const savedCourse = await this.khoaHocRepository.save(newCourse);
     const courseId = (savedCourse as any).maKH;
 
-    // 2. Chèn danh sách Mục tiêu khóa học
     if (mucTieu && mucTieu.length > 0) {
       for (const noiDung of mucTieu) {
         if (noiDung.trim()) {
           await this.dataSource.query(
             `INSERT INTO MucTieuKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
-            [courseId, noiDung.trim()]
+            [courseId, noiDung.trim()],
           );
         }
       }
     }
 
-    // 3. Chèn danh sách Yêu cầu khóa học
     if (yeuCau && yeuCau.length > 0) {
       for (const noiDung of yeuCau) {
         if (noiDung.trim()) {
           await this.dataSource.query(
             `INSERT INTO YeuCauKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
-            [courseId, noiDung.trim()]
+            [courseId, noiDung.trim()],
           );
         }
       }
@@ -119,15 +118,15 @@ export class CoursesService {
       );
     }
 
-    // 1. LẤY THÊM MỤC TIÊU VÀ YÊU CẦU TỪ DATABASE
     const mucTieuData = await this.dataSource.query(
-      `SELECT NoiDung FROM MucTieuKhoaHoc WHERE MaKH = ?`, [courseId]
+      `SELECT NoiDung FROM MucTieuKhoaHoc WHERE MaKH = ?`,
+      [courseId],
     );
     const yeuCauData = await this.dataSource.query(
-      `SELECT NoiDung FROM YeuCauKhoaHoc WHERE MaKH = ?`, [courseId]
+      `SELECT NoiDung FROM YeuCauKhoaHoc WHERE MaKH = ?`,
+      [courseId],
     );
 
-    // 2. GỘP VÀO OBJECT TRẢ VỀ
     return {
       ...course,
       muc_tieu: mucTieuData.map((item: any) => item.NoiDung),
@@ -135,40 +134,64 @@ export class CoursesService {
     };
   }
 
-  async updateCourse(courseId: number, instructorId: number, payload: any, mucTieu: string[], yeuCau: string[]) {
+  async updateCourse(
+    courseId: number,
+    instructorId: number,
+    payload: any,
+    mucTieu: string[],
+    yeuCau: string[],
+  ) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
     });
 
-    if (!course) throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+    if (!course) {
+      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+    }
 
-    // 1. Cập nhật thông tin cơ bản
+    const previousThumbnail = course.hinhThuNho;
+    const nextThumbnail = payload.hinhThuNho;
+
     Object.assign(course, payload);
     const updatedCourse = await this.khoaHocRepository.save(course);
 
-    // 2. Xóa dữ liệu cũ và chèn dữ liệu mới cho Mục tiêu
     if (mucTieu !== undefined) {
-      await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [courseId]);
+      await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [
+        courseId,
+      ]);
       for (const noiDung of mucTieu) {
         if (noiDung.trim()) {
           await this.dataSource.query(
             `INSERT INTO MucTieuKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
-            [courseId, noiDung.trim()]
+            [courseId, noiDung.trim()],
           );
         }
       }
     }
 
-    // 3. Xóa dữ liệu cũ và chèn dữ liệu mới cho Yêu cầu
     if (yeuCau !== undefined) {
-      await this.dataSource.query(`DELETE FROM YeuCauKhoaHoc WHERE MaKH = ?`, [courseId]);
+      await this.dataSource.query(`DELETE FROM YeuCauKhoaHoc WHERE MaKH = ?`, [
+        courseId,
+      ]);
       for (const noiDung of yeuCau) {
         if (noiDung.trim()) {
           await this.dataSource.query(
             `INSERT INTO YeuCauKhoaHoc (MaKH, NoiDung) VALUES (?, ?)`,
-            [courseId, noiDung.trim()]
+            [courseId, noiDung.trim()],
           );
         }
+      }
+    }
+
+    if (
+      previousThumbnail &&
+      nextThumbnail &&
+      previousThumbnail !== nextThumbnail
+    ) {
+      const oldPublicId =
+        this.cloudinaryService.extractPublicId(previousThumbnail);
+      if (oldPublicId) {
+        await this.cloudinaryService.deleteFile(oldPublicId, 'image');
       }
     }
 
