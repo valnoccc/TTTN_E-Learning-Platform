@@ -1,31 +1,36 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Image, Save, User } from 'lucide-react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { Camera, Save, User } from 'lucide-react';
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useInstructorProfile } from './hooks/useInstructorProfile';
-
-
-type StoredInstructorUser = {
-    fullName?: string;
-    AnhDaiDien?: string;
-    avatar?: string;
-};
 
 export default function InstructorProfile() {
     // Lấy thêm initialUser từ hook
     const { formData, handleChange, handleSave, initialUser } = useInstructorProfile();
     const avatarInputRef = useRef<HTMLInputElement>(null);
+    const previewUrlRef = useRef<string | null>(null);
 
     const [currentName, setCurrentName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
     // Khi initialUser từ API load xong, lập tức gán vào state của giao diện
     useEffect(() => {
         if (initialUser.hoTen || initialUser.anhDaiDien) {
             setCurrentName(initialUser.hoTen);
-            setAvatarUrl(initialUser.anhDaiDien);
+            if (!avatarFile) {
+                setAvatarUrl(initialUser.anhDaiDien);
+            }
         }
-    }, [initialUser]);
+    }, [avatarFile, initialUser]);
+
+    useEffect(() => {
+        return () => {
+            if (previewUrlRef.current) {
+                URL.revokeObjectURL(previewUrlRef.current);
+            }
+        };
+    }, []);
 
     // BỎ TOÀN BỘ ĐOẠN KHAI BÁO storedUser (localStorage) CŨ ĐI NHÉ!
 
@@ -44,7 +49,13 @@ export default function InstructorProfile() {
         if (!file) return;
 
         // Tạo một URL tạm thời (blob) để hiển thị ảnh vừa chọn lên giao diện
+        if (previewUrlRef.current) {
+            URL.revokeObjectURL(previewUrlRef.current);
+        }
+
         const previewUrl = URL.createObjectURL(file);
+        previewUrlRef.current = previewUrl;
+        setAvatarFile(file);
         setAvatarUrl(previewUrl);
 
         // Lưu ý: Nếu dự án của bạn có API upload ảnh lên Cloudinary, 
@@ -53,7 +64,7 @@ export default function InstructorProfile() {
 
     const handleSubmit = async () => {
         // Không cần lưu vào localStorage nữa, backend là nguồn chân lý (Source of Truth)
-        await handleSave(currentName, avatarUrl);
+        await handleSave(currentName, initialUser.anhDaiDien, avatarFile);
     };
 
     return (
