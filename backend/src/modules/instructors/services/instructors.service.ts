@@ -7,6 +7,7 @@ import { UserRole } from '../../users/entities/user.entity';
 import { User } from '../../users/entities/user.entity';
 import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 
 export interface InstructorPrincipal {
   maND?: number; S
@@ -65,22 +66,21 @@ type RawStudentRow = {
 @Injectable()
 export class InstructorsService {
   constructor(
-    // Giữ nguyên DataSource cho các query SELECT phức tạp
     private readonly dataSource: DataSource,
-
-    // Inject thêm các Repository để dùng cho việc Update Profile
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(HoSoGiangVien)
     private readonly hoSoRepo: Repository<HoSoGiangVien>,
+
+    // THÊM: Inject dịch vụ Cloudinary vào đây
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async updateProfile(principal: InstructorPrincipal, dto: UpdateInstructorProfileDto) {
+  async updateProfile(principal: InstructorPrincipal, dto: UpdateInstructorProfileDto, file?: Express.Multer.File) {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
-    // 1. Cập nhật bảng NguoiDung (HoTen, AnhDaiDien)
-    // Đã sửa 'nguoiDungRepo' thành 'userRepo' cho khớp với constructor của bạn
+    // 1. Cập nhật bảng NguoiDung (User)
     const user = await this.userRepo.findOne({ where: { maND: instructorId } });
     if (!user) {
       throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
@@ -91,8 +91,11 @@ export class InstructorsService {
       user.hoTen = dto.HoTen;
       isUserUpdated = true;
     }
-    if (dto.AnhDaiDien !== undefined) {
-      user.anhDaiDien = dto.AnhDaiDien;
+
+    // THAY ĐỔI: Nếu có file ảnh được truyền lên, tiến hành đẩy lên Cloudinary và lấy URL thật lưu vào DB
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadFile(file);
+      user.anhDaiDien = uploadResult.secure_url || uploadResult.url;
       isUserUpdated = true;
     }
 
@@ -100,14 +103,13 @@ export class InstructorsService {
       await this.userRepo.save(user);
     }
 
-    // 2. Tìm hoặc Tạo mới HoSoGiangVien (Khôi phục đoạn code khai báo biến profile)
+    // 2. Tìm hoặc Tạo mới HoSoGiangVien
     let profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
-
     if (!profile) {
       profile = this.hoSoRepo.create({ MaND: instructorId });
     }
 
-    // 3. Cập nhật các trường profile
+    // 3. Cập nhật các trường profile văn bản
     if (dto.TieuSu !== undefined) profile.TieuSu = dto.TieuSu;
     if (dto.ChuyenMon !== undefined) profile.ChuyenMon = dto.ChuyenMon;
     if (dto.SoTaiKhoan !== undefined) profile.SoTaiKhoan = dto.SoTaiKhoan;
@@ -119,12 +121,12 @@ export class InstructorsService {
     await this.hoSoRepo.save(profile);
 
     return {
-      message: 'Cập nhật hồ sơ thành công',
+      message: 'Cập nhật trọn bộ hồ sơ thành công',
       user: {
         HoTen: user.hoTen,
         AnhDaiDien: user.anhDaiDien,
       },
-      profile, // Lỗi báo đỏ ở đây sẽ biến mất vì 'profile' đã được khai báo ở bước 2
+      profile,
     };
   }
 

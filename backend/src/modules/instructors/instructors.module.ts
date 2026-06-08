@@ -7,11 +7,12 @@ import { InstructorsService } from './services/instructors.service';
 // 1. Import các Entity cần thiết
 import { User } from '../users/entities/user.entity';
 import { HoSoGiangVien } from './entities/ho-so-giang-vien.entity';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
-    // 2. KHAI BÁO CÁC ENTITY VÀO ĐÂY ĐỂ TRÁNH LỖI UNKNOWN DEPENDENCIES
-    TypeOrmModule.forFeature([User, HoSoGiangVien])
+    TypeOrmModule.forFeature([User, HoSoGiangVien]),
+    CloudinaryModule,
   ],
   controllers: [InstructorsController],
   providers: [InstructorsService],
