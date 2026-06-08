@@ -55,11 +55,9 @@ function AnimatedRoutes() {
         <Route
           path="/instructor/*"
           element={
-            <PageTransition>
-              <RoleBasedRoute allowedRoles={['INSTRUCTOR']}>
-                <InstructorRoutes />
-              </RoleBasedRoute>
-            </PageTransition>
+            <RoleBasedRoute allowedRoles={['INSTRUCTOR']}>
+              <InstructorRoutes />
+            </RoleBasedRoute>
           }
         />
 
