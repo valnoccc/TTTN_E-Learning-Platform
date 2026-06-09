@@ -19,7 +19,7 @@ export default function RoleBasedRoute({ children, allowedRoles }: RoleBasedRout
     if (userString) {
         try {
             const parsedUser = JSON.parse(userString);
-            userRole = (normalizeRole(parsedUser.role) as string) || '';
+            userRole = (normalizeRole(parsedUser.vaiTro) as string) || '';
         } catch {
             userRole = '';
         }

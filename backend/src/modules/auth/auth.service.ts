@@ -21,8 +21,8 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng!');
     }
 
-    const role = normalizeRole(user.vaiTro);
-    const payload = { sub: user.maND, email: user.email, role };
+    const vaiTro = normalizeRole(user.vaiTro);
+    const payload = { sub: user.maND, email: user.email, vaiTro };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -30,12 +30,11 @@ export class AuthService {
         maND: user.maND,
         hoTen: user.hoTen,
         email: user.email,
-        vaiTro: role,
+        vaiTro,
         anhDaiDien: user.anhDaiDien ?? null,
         ngayTao: user.ngayTao,
         id: user.maND,
         fullName: user.hoTen,
-        role,
         avatarUrl: user.anhDaiDien ?? null,
         createdAt: user.ngayTao,
       },

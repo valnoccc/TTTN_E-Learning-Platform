@@ -28,6 +28,7 @@
     "react-modal-video": "^1.2.3",
     "react-responsive-carousel": "^3.2.9",
     "react-router-dom": "^7.14.1",
+    "recharts": "^2.12.7",
     "styled-components": "^5.1.1",
     "swiper": "^5.4.5"
   },

@@ -89,7 +89,7 @@ describe('InstructorsService', () => {
   it('uses JWT subject as instructor id when listing students', async () => {
     dataSource.query.mockResolvedValue([]);
 
-    await service.getMyStudents({ sub: 5, role: UserRole.INSTRUCTOR }, {});
+    await service.getMyStudents({ sub: 5, vaiTro: UserRole.INSTRUCTOR }, {});
 
     expect(dataSource.query).toHaveBeenCalledWith(
       expect.stringContaining('kh.MaND_GiangVien = ?'),

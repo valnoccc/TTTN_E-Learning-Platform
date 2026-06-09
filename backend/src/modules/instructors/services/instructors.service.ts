@@ -13,7 +13,6 @@ export interface InstructorPrincipal {
   maND?: number; S
   sub?: number;
   vaiTro?: UserRole;
-  role?: UserRole;
 }
 
 export interface InstructorStudentFilters {
@@ -290,8 +289,7 @@ export class InstructorsService {
     return { sql, params };
   }
   private assertInstructor(principal: InstructorPrincipal) {
-    const role = principal.vaiTro ?? principal.role;
-    if (role !== UserRole.INSTRUCTOR) {
+    if (principal.vaiTro !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
         'Chỉ giảng viên mới có quyền quản lý hồ sơ và học viên.',
       );

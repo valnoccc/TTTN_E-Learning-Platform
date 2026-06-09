@@ -22,8 +22,8 @@ export default function LoginPage() {
             const response: any = await axiosClient.post('/auth/login', { email, password });
 
             // Lưu thông tin vào LocalStorage (truy cập trực tiếp vào response)
-            const role = normalizeRole(response.user?.role);
-            const user = response.user ? { ...response.user, role } : null;
+            const vaiTro = normalizeRole(response.user?.vaiTro);
+            const user = response.user ? { ...response.user, vaiTro } : null;
 
             localStorage.setItem('access_token', response.access_token);
             if (user) {
@@ -32,8 +32,8 @@ export default function LoginPage() {
 
             toast.success('Đăng nhập thành công');
 
-            if (role === 'ADMIN') navigate('/admin');
-            else if (role === 'INSTRUCTOR') navigate('/instructor');
+            if (vaiTro === 'ADMIN') navigate('/admin');
+            else if (vaiTro === 'INSTRUCTOR') navigate('/instructor');
             else navigate('/');
 
         } catch (err: any) {

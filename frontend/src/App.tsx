@@ -44,11 +44,9 @@ function AnimatedRoutes() {
         <Route
           path="/admin/*"
           element={
-            <PageTransition>
-              <RoleBasedRoute allowedRoles={['ADMIN']}>
-                <AdminRoutes />
-              </RoleBasedRoute>
-            </PageTransition>
+            <RoleBasedRoute allowedRoles={['ADMIN']}>
+              <AdminRoutes />
+            </RoleBasedRoute>
           }
         />
 

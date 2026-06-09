@@ -146,7 +146,7 @@ export default function StudentEvaluations() {
                                             setAppliedSearch(searchInput);
                                             void loadStudents(courseId, searchInput, statusFilter);
                                         }}
-                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[#1dbf73] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#169b5c] lg:w-auto"
+                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[#1dbf73] px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] lg:w-auto"
                                     >
                                         <RefreshCw size={14} /> Lọc dữ liệu
                                     </button>
