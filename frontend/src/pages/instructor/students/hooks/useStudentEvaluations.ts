@@ -20,7 +20,6 @@ export type StudentSubmissionSummary = {
     courseName: string;
     totalSpent: number;
     purchasedAt: string;
-    // Các trường mở rộng cho nghiệp vụ chấm bài GitHub
     githubLink?: string;
     status: SubmissionStatus;
     score?: number;
@@ -49,7 +48,11 @@ export function useStudentEvaluations() {
     const [searchInput, setSearchInput] = useState('');
     const [appliedSearch, setAppliedSearch] = useState('');
     const [courseId, setCourseId] = useState('');
-    const [statusFilter, setStatusFilter] = useState(''); // Bộ lọc trạng thái bài nộp mới
+    const [statusFilter, setStatusFilter] = useState('');
+
+    // THÊM: Quản lý phân trang cục bộ
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const ITEMS_PER_PAGE = 10;
 
     // Modal chấm bài state
     const [selectedStudent, setSelectedStudent] = useState<StudentSubmissionSummary | null>(null);
@@ -86,6 +89,7 @@ export function useStudentEvaluations() {
 
             const studentBoard = await axiosClient.get<InstructorStudentBoard>('/instructors/me/students', { params });
             setBoard(studentBoard);
+            setCurrentPage(1); // Quay về trang 1 khi lọc
         } catch {
             toast.error('Lỗi khi lọc dữ liệu học viên!');
         } finally {
@@ -114,7 +118,6 @@ export function useStudentEvaluations() {
 
         setIsSaving(true);
         try {
-            // Gửi dữ liệu chấm bài lên Backend
             await axiosClient.post(`/instructors/evaluations`, {
                 studentId: selectedStudent.studentId,
                 courseId: selectedStudent.courseId,
@@ -125,7 +128,6 @@ export function useStudentEvaluations() {
 
             toast.success('Đã lưu kết quả đánh giá thành công!');
 
-            // Cập nhật State cục bộ để UI thay đổi lập tức mà không cần reload toàn bộ trang
             setBoard(prev => ({
                 ...prev,
                 students: prev.students.map(s =>
@@ -147,6 +149,27 @@ export function useStudentEvaluations() {
         return courses.find((course) => String(course.courseId) === courseId)?.courseName ?? 'Khóa học đã chọn';
     }, [courseId, courses]);
 
+    // THÊM: Logic tính toán phân trang dữ liệu
+    const totalPages = useMemo(() => {
+        return Math.ceil(board.students.length / ITEMS_PER_PAGE);
+    }, [board.students.length]);
+
+    const paginatedStudents = useMemo(() => {
+        const indexOfLast = currentPage * ITEMS_PER_PAGE;
+        const indexOfFirst = indexOfLast - ITEMS_PER_PAGE;
+        return board.students.slice(indexOfFirst, indexOfLast);
+    }, [board.students, currentPage]);
+
+    const paginationMeta = useMemo(() => {
+        const indexOfLast = currentPage * ITEMS_PER_PAGE;
+        const indexOfFirst = indexOfLast - ITEMS_PER_PAGE;
+        return {
+            indexOfFirst,
+            indexOfLast,
+            totalItems: board.students.length,
+        };
+    }, [board.students.length, currentPage]);
+
     return {
         courses,
         board,
@@ -161,6 +184,13 @@ export function useStudentEvaluations() {
         setStatusFilter,
         selectedCourseName,
         loadStudents,
+
+        // THÊM: Biến cho phân trang
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        paginatedStudents,
+        paginationMeta,
 
         // Modal & Grade Actions
         selectedStudent,

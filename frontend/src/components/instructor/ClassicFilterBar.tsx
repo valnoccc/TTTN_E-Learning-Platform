@@ -28,23 +28,25 @@ export default function ClassicFilterBar({
     action,
 }: ClassicFilterBarProps) {
     return (
-        <section className="border border-[#d1d7dc] bg-white p-4 sm:p-5">
+        <section className=" bg-white p-4 sm:p-5">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_260px_auto]">
-                <label className="flex items-center gap-3 border border-[#d1d7dc] bg-white px-4 py-3">
+                {/* Ô Nhập Tìm Kiếm */}
+                <label className="flex h-[44px] items-center gap-3 border border-[#d1d7dc] bg-white px-4">
                     <Search size={16} className="text-slate-400" />
                     <input
                         value={searchValue}
                         onChange={onSearchChange}
                         onKeyDown={onSearchKeyDown}
                         placeholder={searchPlaceholder}
-                        className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 h-full"
                     />
                 </label>
 
+                {/* Ô Chọn Khóa Học */}
                 <select
                     value={selectValue}
                     onChange={onSelectChange}
-                    className="border border-[#d1d7dc] bg-white px-4 py-3 text-sm text-slate-800 outline-none"
+                    className="h-[44px] border border-[#d1d7dc] bg-white px-4 text-sm text-slate-800 outline-none"
                 >
                     {options.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -53,7 +55,10 @@ export default function ClassicFilterBar({
                     ))}
                 </select>
 
-                <div className="flex">{action}</div>
+                {/* Nút Bấm Action */}
+                <div className="flex h-[44px]">
+                    {action}
+                </div>
             </div>
         </section>
     );

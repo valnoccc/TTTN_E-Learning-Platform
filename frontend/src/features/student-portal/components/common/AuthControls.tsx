@@ -12,11 +12,11 @@ type StoredUser = {
   avatar?: string;
   photoUrl?: string;
   imageUrl?: string;
-  role?: string;
+  vaiTro?: string;
 };
 
-function getDashboardPath(role?: string) {
-  const normalizedRole = normalizeRole(role);
+function getDashboardPath(vaiTro?: string) {
+  const normalizedRole = normalizeRole(vaiTro);
   if (normalizedRole === 'ADMIN') return '/admin';
   if (normalizedRole === 'INSTRUCTOR') return '/instructor';
   return '/student/profile';
@@ -38,7 +38,7 @@ export default function AuthControls() {
     if (userString) {
       try {
         const parsedUser = JSON.parse(userString) as StoredUser;
-        return { ...parsedUser, role: normalizeRole(parsedUser.role) };
+        return { ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) };
       } catch {
         return null;
       }
@@ -114,7 +114,7 @@ export default function AuthControls() {
       <Dropdown.Menu className="mt-3 min-w-[190px] rounded-[14px] border border-slate-100 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
         <Dropdown.Item
           as={Link}
-          to={getDashboardPath(user.role)}
+          to={getDashboardPath(user.vaiTro)}
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50"
         >
           <User size={14} className="me-2" />

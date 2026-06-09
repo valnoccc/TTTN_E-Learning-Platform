@@ -22,7 +22,8 @@ export default function LoginPage() {
             const payload = response.data || response;
             const rawUser = payload.user || payload;
             const role = normalizeRole(rawUser?.role || rawUser?.vaiTro);
-            const user = { ...rawUser, role };
+            const vaiTro = role;
+            const user = rawUser ? { ...rawUser, role, vaiTro } : null;
 
             localStorage.setItem('access_token', payload.access_token || '');
             localStorage.setItem('user', JSON.stringify(user));
@@ -30,8 +31,8 @@ export default function LoginPage() {
 
             toast.success('Đăng nhập thành công');
 
-            if (role === 'ADMIN') navigate('/admin');
-            else if (role === 'INSTRUCTOR') navigate('/instructor');
+            if (vaiTro === 'ADMIN') navigate('/admin');
+            else if (vaiTro === 'INSTRUCTOR') navigate('/instructor');
             else navigate('/');
 
         } catch (err: any) {
