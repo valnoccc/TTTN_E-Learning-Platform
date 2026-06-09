@@ -35,8 +35,8 @@ axiosClient.interceptors.response.use(
     (response: AxiosResponse) => response.data,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.clear(); // Tạm comment lại
-            window.location.href = '/'; // Tạm comment lại
+            // localStorage.clear(); // Bỏ clear để tránh mất data ngoài ý muốn
+            // window.location.href = '/'; 
         }
         return Promise.reject(error);
     }

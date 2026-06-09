@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Spinner } from 'react-bootstrap';
 import toast from 'react-hot-toast';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/checkout';
 import {
   getCourseDetails,
@@ -125,8 +123,7 @@ export default function Checkout() {
     return (
       <Styles>
         <div className="main-wrapper checkout-page">
-          <HeaderTwo />
-          <Container>
+<Container>
             <div className="card-box text-center py-5">
               <i className="las la-check-circle text-success" style={{ fontSize: '80px' }}></i>
               <h2 className="mt-3 mb-4">Payment Successful!</h2>
@@ -136,8 +133,7 @@ export default function Checkout() {
               <p className="text-muted mt-4">Redirecting to your courses in 3 seconds...</p>
             </div>
           </Container>
-          <FooterTwo />
-        </div>
+</div>
       </Styles>
     );
   }
@@ -147,8 +143,7 @@ export default function Checkout() {
   return (
     <Styles>
       <div className="main-wrapper checkout-page">
-        <HeaderTwo />
-        <BreadcrumbBox title="Checkout" />
+<BreadcrumbBox title="Checkout" />
 
         <section className="checkout-area">
           <Container>
@@ -310,9 +305,7 @@ export default function Checkout() {
             </Row>
           </Container>
         </section>
-
-        <FooterTwo />
-      </div>
+</div>
     </Styles>
   );
 }

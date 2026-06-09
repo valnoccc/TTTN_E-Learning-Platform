@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Dropdown } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, User } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
 
@@ -11,14 +12,15 @@ type StoredUser = {
   avatar?: string;
   photoUrl?: string;
   imageUrl?: string;
+  vaiTro?: string;
   role?: string;
 };
 
-function getDashboardPath(role?: string) {
-  const normalizedRole = normalizeRole(role);
+function getDashboardPath(vaiTro?: string) {
+  const normalizedRole = normalizeRole(vaiTro);
   if (normalizedRole === 'ADMIN') return '/admin';
   if (normalizedRole === 'INSTRUCTOR') return '/instructor';
-  return '/student';
+  return '/student/profile';
 }
 
 function getDisplayName(user: StoredUser | null) {
@@ -32,20 +34,48 @@ function getAvatarUrl(user: StoredUser | null) {
 
 export default function AuthControls() {
   const navigate = useNavigate();
-  const userString = localStorage.getItem('user');
-  let user: StoredUser | null = null;
-
-  if (userString) {
-    try {
-      const parsedUser = JSON.parse(userString) as StoredUser;
-      user = { ...parsedUser, role: normalizeRole(parsedUser.role) };
-    } catch {
-      user = null;
+  const [user, setUser] = useState<StoredUser | null>(() => {
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      try {
+        const parsedUser = JSON.parse(userString) as StoredUser;
+        return { ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) };
+      } catch {
+        return null;
+      }
     }
-  }
+    return null;
+  });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        try {
+          const parsedUser = JSON.parse(userString) as StoredUser;
+          setUser({ ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) });
+        } catch (error) {
+          console.error('Lỗi khi parse user từ localStorage:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Chạy mỗi khi chuyển trang (ví dụ từ /login sang /)
+    handleAuthChange();
+
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, [location]);
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new Event('auth-change'));
     navigate('/');
   };
 
@@ -85,7 +115,7 @@ export default function AuthControls() {
       <Dropdown.Menu className="mt-3 min-w-[190px] rounded-[14px] border border-slate-100 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
         <Dropdown.Item
           as={Link}
-          to={getDashboardPath(user.role)}
+          to={getDashboardPath(user.vaiTro)}
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50"
         >
           <User size={14} className="me-2" />

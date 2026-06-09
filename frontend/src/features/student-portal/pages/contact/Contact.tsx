@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import GoogleMap from './GoogleMap';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/contact';
 
 function Contact() {
@@ -88,10 +86,7 @@ function Contact() {
             {/* Main Wrapper */}
             <div className="main-wrapper contact-page">
 
-                {/* Header 2 */}
-                <HeaderTwo />
-
-                {/* Breadcroumb */}
+{/* Breadcroumb */}
                 <BreadcrumbBox title="Contact Us" />
 
                 {/* Contact Area */}
@@ -186,10 +181,7 @@ function Contact() {
                     <GoogleMap />
                 </section>
 
-                {/* Footer 2 */}
-                <FooterTwo />
-
-            </div>
+</div>
         </Styles>
     )
 }

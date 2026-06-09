@@ -1,9 +1,7 @@
 import React, { Component } from 'react';
 import Datas from '../../data/faq/faq.json';
 import { Container, Row, Col, Tab, Nav } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/faq';
 
 class Faq extends Component {
@@ -13,10 +11,7 @@ class Faq extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper faq-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Faq" />
 
                     {/* Faq Area */}
@@ -135,10 +130,7 @@ class Faq extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

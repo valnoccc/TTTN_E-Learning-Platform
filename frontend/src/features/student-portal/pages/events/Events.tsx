@@ -2,11 +2,9 @@ import React, { Component } from 'react';
 import Datas from '../../data/event/events.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import Pagination from '../../components/Pagination';
 import CourseSidebar from '../courses/components/CourseSidebar';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/event';
 
 class Events extends Component {
@@ -17,10 +15,7 @@ class Events extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper event-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Events" />
 
                     {/* Events Area */}
@@ -85,11 +80,7 @@ class Events extends Component {
                         </Container>
                     </section>
 
-
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

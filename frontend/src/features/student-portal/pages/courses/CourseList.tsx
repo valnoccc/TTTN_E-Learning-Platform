@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import CourseSidebar from './components/CourseSidebar';
 import CourseItemList from './components/CourseItemsList';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/course';
 
 class CourseList extends Component {
@@ -13,10 +11,7 @@ class CourseList extends Component {
         return (
             <div className="main-wrapper course-page">
 
-                {/* Header 2 */}
-                <HeaderTwo />
-
-                {/* Breadcroumb */}
+{/* Breadcroumb */}
                 <BreadcrumbBox title="Courses" />
 
                 <Styles>
@@ -39,10 +34,7 @@ class CourseList extends Component {
                     </section>
                 </Styles>
 
-                {/* Footer 2 */}
-                <FooterTwo />
-
-            </div>
+</div>
         )
     }
 }

@@ -2,13 +2,11 @@ import React, { Component } from 'react';
 import Datas from '../../data/shop/details.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Tab, Nav, Table } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import Quantity from './components/Quantity';
 import ReviewForm from './../courses/components/ReviewForm';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/productDetails';
 
 class ProductDetails extends Component {
@@ -24,10 +22,7 @@ class ProductDetails extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper product-details-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Product Details" />
 
                     {/* Product Details */}
@@ -285,10 +280,7 @@ class ProductDetails extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

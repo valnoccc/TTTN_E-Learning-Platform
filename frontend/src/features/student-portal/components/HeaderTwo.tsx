@@ -7,6 +7,7 @@ import AuthControls from './common/AuthControls';
 
 import MobileMenu from './common/MobileMenu';
 import { Styles } from "./styles/headerTwo";
+import CartIcon from '../../cart/components/CartIcon';
 
 class HeaderTwo extends Component {
     render() {
@@ -128,11 +129,14 @@ class HeaderTwo extends Component {
                                             </ul>
                                         </li>
                                     </ul>
-                                    <ul className="nav search-cart-bar">
-                                        <li className="nav-item search-box" style={{ marginTop: '13px' }}>
+                                    <ul className="nav search-cart-bar d-flex align-items-center" style={{ gap: '25px' }}>
+                                        <li className="nav-item search-box">
                                             <Search />
                                         </li>
-                                        <li className="nav-item cart-box" style={{ marginTop: '2px', marginLeft: '15px' }}>
+                                        <li className="nav-item cart-box">
+                                            <CartIcon />
+                                        </li>
+                                        <li className="nav-item cart-box">
                                             <AuthControls />
                                         </li>
                                     </ul>

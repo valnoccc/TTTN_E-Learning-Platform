@@ -4,9 +4,7 @@ import { Container, Row, Col } from 'react-bootstrap';
 import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import { normalizeRole } from '../../utils/roles';
-import HeaderTwo from '../../features/student-portal/components/HeaderTwo';
 import { BreadcrumbBox } from '../../features/student-portal/components/common/Breadcrumb';
-import FooterTwo from '../../features/student-portal/components/FooterTwo';
 import { Styles } from '../../features/student-portal/pages/account/styles/account';
 
 export default function LoginPage() {
@@ -21,19 +19,20 @@ export default function LoginPage() {
             // Sửa ở đây: Loại bỏ bóc tách { data } vì axiosClient đã trả về data rồi
             const response: any = await axiosClient.post('/auth/login', { email, password });
 
-            // Lưu thông tin vào LocalStorage (truy cập trực tiếp vào response)
-            const role = normalizeRole(response.user?.role);
-            const user = response.user ? { ...response.user, role } : null;
+            const payload = response.data || response;
+            const rawUser = payload.user || payload;
+            const role = normalizeRole(rawUser?.role || rawUser?.vaiTro);
+            const vaiTro = role;
+            const user = rawUser ? { ...rawUser, role, vaiTro } : null;
 
-            localStorage.setItem('access_token', response.access_token);
-            if (user) {
-                localStorage.setItem('user', JSON.stringify(user));
-            }
+            localStorage.setItem('access_token', payload.access_token || '');
+            localStorage.setItem('user', JSON.stringify(user));
+            window.dispatchEvent(new Event('auth-change'));
 
             toast.success('Đăng nhập thành công');
 
-            if (role === 'ADMIN') navigate('/admin');
-            else if (role === 'INSTRUCTOR') navigate('/instructor');
+            if (vaiTro === 'ADMIN') navigate('/admin');
+            else if (vaiTro === 'INSTRUCTOR') navigate('/instructor');
             else navigate('/');
 
         } catch (err: any) {
@@ -44,9 +43,6 @@ export default function LoginPage() {
     return (
         <Styles>
             <div className="main-wrapper login-page">
-                {/* Header 2 */}
-                <HeaderTwo />
-
                 {/* Breadcroumb */}
                 <BreadcrumbBox title="Log In" />
 
@@ -61,10 +57,10 @@ export default function LoginPage() {
                                     </div>
                                     <form onSubmit={handleLogin} className="form">
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>User Name</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Email Address</label>
                                             <input
                                                 type="email"
-                                                placeholder="Username"
+                                                placeholder="Email address"
                                                 required
                                                 onChange={(e) => setEmail(e.target.value)}
                                             />
@@ -120,9 +116,6 @@ export default function LoginPage() {
                         </Row>
                     </Container>
                 </section>
-
-                {/* Footer 2 */}
-                <FooterTwo />
             </div>
         </Styles>
     );

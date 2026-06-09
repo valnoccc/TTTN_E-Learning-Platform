@@ -3,9 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
-import HeaderTwo from '../../features/student-portal/components/HeaderTwo';
 import { BreadcrumbBox } from '../../features/student-portal/components/common/Breadcrumb';
-import FooterTwo from '../../features/student-portal/components/FooterTwo';
 import { Styles } from '../../features/student-portal/pages/account/styles/account';
 
 export default function RegisterPage() {
@@ -19,36 +17,52 @@ export default function RegisterPage() {
     });
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+            alert('Vui lòng điền đầy đủ tất cả các trường!');
+            return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
-            toast.error('Mật khẩu xác nhận không khớp');
+            alert('Mật khẩu xác nhận không khớp');
             return;
         }
 
         try {
+            setIsLoading(true);
             const submitData = {
                 fullName: `${formData.firstName} ${formData.lastName}`.trim(),
                 email: formData.email,
                 password: formData.password
             };
             
-            await axiosClient.post('/auth/register', submitData);
-            toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
+            const registerPromise = axiosClient.post('/auth/register', submitData);
+            
+            await toast.promise(registerPromise, {
+                loading: 'Đang xử lý đăng ký...',
+                success: 'Đăng ký thành công! Bạn có thể đăng nhập ngay.',
+                error: (err: any) => {
+                    const msg = err.response?.data?.message;
+                    if (Array.isArray(msg)) return msg[0];
+                    return msg || 'Đăng ký thất bại, vui lòng thử lại';
+                }
+            });
+
             navigate('/login');
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Đăng ký thất bại, vui lòng thử lại');
+            // Error is already handled by toast.promise
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <Styles>
             <div className="main-wrapper registration-page">
-                {/* Header 2 */}
-                <HeaderTwo />
-
                 {/* Breadcroumb */}
                 <BreadcrumbBox title="Registration" />
 
@@ -67,7 +81,6 @@ export default function RegisterPage() {
                                             <input
                                                 type="text"
                                                 placeholder="First name"
-                                                required
                                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                             />
                                         </p>
@@ -76,7 +89,6 @@ export default function RegisterPage() {
                                             <input
                                                 type="text"
                                                 placeholder="Last name"
-                                                required
                                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                             />
                                         </p>
@@ -85,25 +97,15 @@ export default function RegisterPage() {
                                             <input
                                                 type="email"
                                                 placeholder="Email address"
-                                                required
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             />
                                         </p>
-                                        <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>User Name</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Username"
-                                                required
-                                                onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                                            />
-                                        </p>
+
                                         <p className="form-control">
                                             <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="*******"
-                                                required
                                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                                 style={{ paddingRight: '45px' }}
                                             />
@@ -126,7 +128,6 @@ export default function RegisterPage() {
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="Confirm password"
-                                                required
                                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                                 style={{ paddingRight: '45px' }}
                                             />
@@ -144,7 +145,9 @@ export default function RegisterPage() {
                                                 }}
                                             ></i>
                                         </p>
-                                        <button type="submit">Register Now</button>
+                                        <button type="submit" disabled={isLoading}>
+                                            {isLoading ? 'Processing...' : 'Register Now'}
+                                        </button>
                                         <div className="have_account-btn text-center">
                                             <p>Already have an account? <Link to="/login">Login Here</Link></p>
                                         </div>
@@ -154,9 +157,6 @@ export default function RegisterPage() {
                         </Row>
                     </Container>
                 </section>
-
-                {/* Footer 2 */}
-                <FooterTwo />
             </div>
         </Styles>
     );

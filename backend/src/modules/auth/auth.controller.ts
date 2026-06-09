@@ -18,4 +18,13 @@ export class AuthController {
       body.hoTen ?? body.fullName,
     );
   }
+
+  @Post('change-password')
+  changePassword(@Body() body: any) {
+    return this.authService.changePassword(
+      body.userId,
+      body.oldPassword,
+      body.newPassword,
+    );
+  }
 }

@@ -1,17 +1,29 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Tab, Nav } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import ReviewForm from './components/ReviewForm';
 import PopularCourse from './components/PopularCourse';
 import CourseTag from './components/CourseTag';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/course';
+
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../../../cart/cartSlice';
+import { CourseDetailsData } from '../../../../api/checkout';
 
 function CourseDetails() {
     const navigate = useNavigate();
-    const course = { id: 15 }; // Mock course for now
+    const dispatch = useDispatch();
+    const course: CourseDetailsData = { 
+        id: 15,
+        courseName: 'Javascript Programming',
+        thumbnail: '/assets/images/course-1.jpg',
+        instructor: 'Andy Robert',
+        price: 29.0,
+        duration: '1 Year',
+        level: 'Beginner',
+        category: 'Web',
+    };
 
     useEffect(() => {
         const courseButton = document.querySelectorAll<HTMLElement>(".course-button");
@@ -37,9 +49,6 @@ function CourseDetails() {
 
     return (
         <div className="main-wrapper course-details-page" >
-
-            {/* Header 2 */}
-            < HeaderTwo />
 
             {/* Breadcroumb */}
             < BreadcrumbBox title="Course Details" />
@@ -434,7 +443,18 @@ function CourseDetails() {
                                                     <li><i className="las la-bookmark"></i> Enrolled: <span>236</span></li>
                                                     <li><i className="las la-certificate"></i> Certification: <span>Yes</span></li>
                                                 </ul>
-                                                <button type="button" className="enroll-btn" onClick={() => navigate(`/checkout/${course.id}`)}>Enroll Course</button>
+                                                <div className="d-flex align-items-center gap-2 mt-4">
+                                                    <button type="button" className="enroll-btn flex-grow-1" onClick={() => navigate(`/checkout/${course.id}`)}>Enroll Course</button>
+                                                    <button 
+                                                        type="button" 
+                                                        className="btn d-flex align-items-center justify-content-center" 
+                                                        style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: '#fff', width: '45px', height: '40px', borderRadius: '5px', padding: '0' }} 
+                                                        onClick={() => dispatch(addToCart(course))}
+                                                        title="Add to Cart"
+                                                    >
+                                                        <i className="las la-shopping-cart" style={{ fontSize: '24px' }}></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </Col>
                                         <Col md="12">
@@ -452,10 +472,7 @@ function CourseDetails() {
                 </section>
             </Styles>
 
-            {/* Footer 2 */}
-            <FooterTwo />
-
-        </div >
+</div >
     )
 }
 

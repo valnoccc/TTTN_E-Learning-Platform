@@ -21,8 +21,8 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng!');
     }
 
-    const role = normalizeRole(user.vaiTro);
-    const payload = { sub: user.maND, email: user.email, role };
+    const vaiTro = normalizeRole(user.vaiTro);
+    const payload = { sub: user.maND, email: user.email, vaiTro };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -30,12 +30,11 @@ export class AuthService {
         maND: user.maND,
         hoTen: user.hoTen,
         email: user.email,
-        vaiTro: role,
+        vaiTro,
         anhDaiDien: user.anhDaiDien ?? null,
         ngayTao: user.ngayTao,
         id: user.maND,
         fullName: user.hoTen,
-        role,
         avatarUrl: user.anhDaiDien ?? null,
         createdAt: user.ngayTao,
       },
@@ -60,5 +59,18 @@ export class AuthService {
 
     await this.userRepository.save(newUser);
     return { message: 'Đăng ký thành công! Bạn có thể đăng nhập.' };
+  }
+
+  async changePassword(userId: number, oldPass: string, newPass: string) {
+    const user = await this.userRepository.findOne({ where: { maND: userId } });
+    if (!user) throw new UnauthorizedException('Người dùng không tồn tại!');
+
+    if (!(await bcrypt.compare(oldPass, user.matKhau))) {
+      throw new UnauthorizedException('Mật khẩu cũ không chính xác!');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+    await this.userRepository.update(userId, { matKhau: hashedPassword });
+    return { message: 'Đổi mật khẩu thành công!' };
   }
 }

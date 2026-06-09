@@ -1,6 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import AdminDashboard from '../pages/admin/AdminDashboard';
-// Import thêm các trang Admin khác của bạn vào đây (ví dụ: Quản lý người dùng, thống kê...)
+import AdminDashboard from '../pages/admin/Dashboard/AdminDashboard';
 
 export default function AdminRoutes() {
     return (
