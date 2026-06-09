@@ -13,6 +13,7 @@ type StoredUser = {
   photoUrl?: string;
   imageUrl?: string;
   vaiTro?: string;
+  role?: string;
 };
 
 function getDashboardPath(vaiTro?: string) {
@@ -54,7 +55,7 @@ export default function AuthControls() {
       if (userString) {
         try {
           const parsedUser = JSON.parse(userString) as StoredUser;
-          setUser({ ...parsedUser, role: normalizeRole(parsedUser.role) });
+          setUser({ ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) });
         } catch (error) {
           console.error('Lỗi khi parse user từ localStorage:', error);
           setUser(null);
