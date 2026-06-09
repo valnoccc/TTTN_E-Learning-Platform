@@ -4,8 +4,11 @@ import Datas from '../../../data/course/item.json';
 import { Link } from 'react-router-dom';
 import { Col } from 'react-bootstrap';
 import Pagination from './../../../components/Pagination';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../../../../cart/cartSlice';
 
 const CourseItemGrid = () => {
+    const dispatch = useDispatch();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6; // Đã trả lại 6 khóa học 1 trang như ban đầu
     
@@ -59,6 +62,29 @@ const CourseItemGrid = () => {
                                     <div className="student">
                                         <p><i className="las la-chair"></i>60</p>
                                     </div>
+                                </div>
+                                <div className="mt-3">
+                                    <button 
+                                        type="button" 
+                                        className="btn w-100" 
+                                        style={{ backgroundColor: '#10b981', color: '#fff', fontWeight: '500' }}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            dispatch(addToCart({
+                                                id: parseInt(data.id || Math.floor(Math.random() * 1000).toString(), 10),
+                                                courseName: data.courseTitle,
+                                                thumbnail: `/assets/images/${data.imgUrl}`,
+                                                instructor: data.authorName,
+                                                price: parseFloat(data.price.replace('$', '')),
+                                                duration: '120 Min',
+                                                level: 'All Levels',
+                                                category: 'General'
+                                            }));
+                                        }}
+                                    >
+                                        Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>

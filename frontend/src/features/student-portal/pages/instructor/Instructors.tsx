@@ -2,10 +2,8 @@ import React, { Component } from 'react';
 import Datas from '../../data/instructor/instructor.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import Pagination from './../../components/Pagination';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/instructor';
 
 class Instructor extends Component {
@@ -15,10 +13,7 @@ class Instructor extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper instructor-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Instructors" />
 
                     {/* Instructor Area */}
@@ -60,10 +55,7 @@ class Instructor extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

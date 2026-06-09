@@ -327,7 +327,6 @@ export const Styles = styled.div`
 
             .search-box {
                 margin-left: 18px;
-                margin-top : 11px;
 
                 a {
                     padding: 0;

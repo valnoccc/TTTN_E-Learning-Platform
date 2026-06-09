@@ -61,4 +61,17 @@ export class AuthService {
     await this.userRepository.save(newUser);
     return { message: 'Đăng ký thành công! Bạn có thể đăng nhập.' };
   }
+
+  async changePassword(userId: number, oldPass: string, newPass: string) {
+    const user = await this.userRepository.findOne({ where: { maND: userId } });
+    if (!user) throw new UnauthorizedException('Người dùng không tồn tại!');
+
+    if (!(await bcrypt.compare(oldPass, user.matKhau))) {
+      throw new UnauthorizedException('Mật khẩu cũ không chính xác!');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+    await this.userRepository.update(userId, { matKhau: hashedPassword });
+    return { message: 'Đổi mật khẩu thành công!' };
+  }
 }

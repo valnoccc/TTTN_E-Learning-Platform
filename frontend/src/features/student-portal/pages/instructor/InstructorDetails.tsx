@@ -3,9 +3,7 @@ import Datas from '../../data/instructor/details.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import Swiper from 'react-id-swiper';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/instructor';
 
 class InstructorDetails extends Component {
@@ -45,10 +43,7 @@ class InstructorDetails extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper instructor-details-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Instructor Details" />
 
                     {/* Instructor Details Area */}
@@ -161,10 +156,7 @@ class InstructorDetails extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

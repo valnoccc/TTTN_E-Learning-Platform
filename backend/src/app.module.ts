@@ -14,6 +14,7 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     LessonsModule,
     InstructorsModule,
     CategoriesModule,
+    CloudinaryModule,
   ],
 })
 export class AppModule { }

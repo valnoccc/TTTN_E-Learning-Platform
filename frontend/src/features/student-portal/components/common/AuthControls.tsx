@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Dropdown } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, User } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
 
@@ -18,7 +19,7 @@ function getDashboardPath(role?: string) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === 'ADMIN') return '/admin';
   if (normalizedRole === 'INSTRUCTOR') return '/instructor';
-  return '/student';
+  return '/student/profile';
 }
 
 function getDisplayName(user: StoredUser | null) {
@@ -32,20 +33,48 @@ function getAvatarUrl(user: StoredUser | null) {
 
 export default function AuthControls() {
   const navigate = useNavigate();
-  const userString = localStorage.getItem('user');
-  let user: StoredUser | null = null;
-
-  if (userString) {
-    try {
-      const parsedUser = JSON.parse(userString) as StoredUser;
-      user = { ...parsedUser, role: normalizeRole(parsedUser.role) };
-    } catch {
-      user = null;
+  const [user, setUser] = useState<StoredUser | null>(() => {
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      try {
+        const parsedUser = JSON.parse(userString) as StoredUser;
+        return { ...parsedUser, role: normalizeRole(parsedUser.role) };
+      } catch {
+        return null;
+      }
     }
-  }
+    return null;
+  });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        try {
+          const parsedUser = JSON.parse(userString) as StoredUser;
+          setUser({ ...parsedUser, role: normalizeRole(parsedUser.role) });
+        } catch (error) {
+          console.error('Lỗi khi parse user từ localStorage:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Chạy mỗi khi chuyển trang (ví dụ từ /login sang /)
+    handleAuthChange();
+
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, [location]);
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new Event('auth-change'));
     navigate('/');
   };
 

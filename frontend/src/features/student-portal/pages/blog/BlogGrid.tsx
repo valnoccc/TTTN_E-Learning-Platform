@@ -2,11 +2,9 @@ import React, { Component } from 'react';
 import Datas from '../../data/blog/grid.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import Pagination from './../../components/Pagination';
 import BlogSidebar from './components/BlogSidebar';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/blog';
 
 class BlogGrid extends Component {
@@ -17,10 +15,7 @@ class BlogGrid extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper blog-grid-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Blog Grid" />
 
                     {/* Blog Classic */}
@@ -71,10 +66,7 @@ class BlogGrid extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }
