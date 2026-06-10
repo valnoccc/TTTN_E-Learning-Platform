@@ -28,6 +28,7 @@ frontend/dist-ssr/
 backend/dist/
 .codegraph/
 .nest/
+database/
 
 # =========================================
 # LOGS (File lưu vết lỗi)

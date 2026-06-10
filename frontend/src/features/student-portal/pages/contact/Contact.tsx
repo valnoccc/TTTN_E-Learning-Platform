@@ -126,11 +126,11 @@ function Contact() {
                                 </div>
                                 <div className="contact-social">
                                     <ul className="social list-unstyled list-inline">
-                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                        <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                        <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                        <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                        <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                        <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                     </ul>
                                 </div>
                             </Col>
@@ -187,3 +187,4 @@ function Contact() {
 }
 
 export default Contact
+

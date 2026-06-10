@@ -35,7 +35,7 @@ class ProductDetails extends Component {
                                             {
                                                 Datas.map((data, i) => (
                                                     <div className="slider-item" key={i}>
-                                                        <img src={process.env.PUBLIC_URL + `/assets/images/${data.productImg}`} alt="" className="img-fluid" />
+                                                        <img src={`/assets/images/${data.productImg}`} alt="" className="img-fluid" />
                                                     </div>
                                                 ))
                                             }
@@ -57,7 +57,7 @@ class ProductDetails extends Component {
                                                 <li className="list-inline-item"><i className="las la-star-half-alt"></i></li>
                                             </ul>
                                             <div className="review-num">
-                                                <Link to={process.env.PUBLIC_URL + "/"}>( 07 Review )</Link>
+                                                <Link to={"/"}>( 07 Review )</Link>
                                             </div>
                                         </div>
                                         <div className="product-price d-flex">
@@ -120,9 +120,9 @@ class ProductDetails extends Component {
                                         <Quantity />
 
                                         <div className="product-cart-wh-com-btn">
-                                            <Link to={process.env.PUBLIC_URL + "/product-details"} className="cart-btn">Add To Cart</Link>
-                                            <Link to={process.env.PUBLIC_URL + "/product-details"} className="wishlist-btn"><i className="far fa-heart"></i></Link>
-                                            <Link to={process.env.PUBLIC_URL + "/product-details"} className="compare-btn"><i className="fas fa-random"></i></Link>
+                                            <Link to={"/product-details"} className="cart-btn">Add To Cart</Link>
+                                            <Link to={"/product-details"} className="wishlist-btn"><i className="far fa-heart"></i></Link>
+                                            <Link to={"/product-details"} className="compare-btn"><i className="fas fa-random"></i></Link>
                                         </div>
                                     </div>
                                 </Col>
@@ -198,7 +198,7 @@ class ProductDetails extends Component {
                                                     <div className="review-comments">
                                                         <div className="comment-box d-flex">
                                                             <div className="comment-image">
-                                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                                <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                             </div>
                                                             <div className="comment-content">
                                                                 <div className="comment-title">
@@ -221,7 +221,7 @@ class ProductDetails extends Component {
                                                         </div>
                                                         <div className="comment-box d-flex">
                                                             <div className="comment-image">
-                                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-1.jpg`} alt="" />
+                                                                <img src={`/assets/images/testimonial-1.jpg`} alt="" />
                                                             </div>
                                                             <div className="comment-content">
                                                                 <div className="comment-title">
@@ -244,7 +244,7 @@ class ProductDetails extends Component {
                                                         </div>
                                                         <div className="comment-box d-flex">
                                                             <div className="comment-image">
-                                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                                <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                             </div>
                                                             <div className="comment-content">
                                                                 <div className="comment-title">

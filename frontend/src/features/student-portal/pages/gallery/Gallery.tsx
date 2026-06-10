@@ -25,7 +25,7 @@ class Gallery extends Component {
                                     Datas.map((data, i) => (
                                         <Col lg="4" sm="6" key={i}>
                                             <div className="gallery-box">
-                                                <ModalImage small={process.env.PUBLIC_URL + `/assets/images/${data.galleryImage}`} large={process.env.PUBLIC_URL + `/assets/images/${data.galleryImage}`} alt="" />
+                                                <ModalImage small={`/assets/images/${data.galleryImage}`} large={`/assets/images/${data.galleryImage}`} alt="" />
                                             </div>
                                         </Col>
                                     ))

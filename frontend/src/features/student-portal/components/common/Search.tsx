@@ -46,7 +46,7 @@ class Search extends Component {
     render() {
         return (
             <Styles>
-                <a href={process.env.PUBLIC_URL + "/"} className="nav-link nav-search" id="search-trigger">
+                <a href={"/"} className="nav-link nav-search" id="search-trigger">
                     <i className="las la-search"></i>
                 </a>
                 <div className="search-wrap" id="search-wrap" ref={this.searchWrapRef}>
@@ -64,3 +64,4 @@ class Search extends Component {
 }
 
 export default Search;
+

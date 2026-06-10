@@ -23,24 +23,24 @@ class BlogDetails extends Component {
                                 <Col lg="9" md="8" sm="7">
                                     <div className="blog-details-box">
                                         <div className="blog-details-banner">
-                                            <img src={process.env.PUBLIC_URL + `/assets/images/blog_c-04.jpg`} alt="" className="img-fluid" />
+                                            <img src={`/assets/images/blog_c-04.jpg`} alt="" className="img-fluid" />
                                         </div>
                                         <div className="heading">
                                             <h4>International students coming in Uk from Asian subcontinant for better education.</h4>
                                         </div>
                                         <div className="blog-auth_date d-flex">
                                             <div className="author-img d-flex">
-                                                <Link to={process.env.PUBLIC_URL + "/"}><img src={process.env.PUBLIC_URL + `/assets/images/author.jpg`} alt="" /></Link>
-                                                <p><Link to={process.env.PUBLIC_URL + "/"}>Medison Azar</Link></p>
+                                                <Link to={"/"}><img src={`/assets/images/author.jpg`} alt="" /></Link>
+                                                <p><Link to={"/"}>Medison Azar</Link></p>
                                             </div>
                                             <div className="post-date">
                                                 <p><i className="las la-calendar"></i> April 23, 2020</p>
                                             </div>
                                             <div className="post-category">
-                                                <p><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-bookmark"></i> Web Design</Link></p>
+                                                <p><Link to={"/"}><i className="las la-bookmark"></i> Web Design</Link></p>
                                             </div>
                                             <div className="post-comment">
-                                                <p><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-comment"></i> (23)</Link></p>
+                                                <p><Link to={"/"}><i className="las la-comment"></i> (23)</Link></p>
                                             </div>
                                         </div>
                                         <div className="blog-details-desc">
@@ -55,20 +55,20 @@ class BlogDetails extends Component {
                                             <div className="blog-tag">
                                                 <ul className="tags list-unstyled list-inline">
                                                     <li className="list-inline-item">Tags:</li>
-                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + "/"}>Html</Link>,</li>
-                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + "/"}>Design</Link>,</li>
-                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + "/"}>Develop</Link>,</li>
-                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + "/"}>React</Link></li>
+                                                    <li className="list-inline-item"><Link to={"/"}>Html</Link>,</li>
+                                                    <li className="list-inline-item"><Link to={"/"}>Design</Link>,</li>
+                                                    <li className="list-inline-item"><Link to={"/"}>Develop</Link>,</li>
+                                                    <li className="list-inline-item"><Link to={"/"}>React</Link></li>
                                                 </ul>
                                             </div>
                                             <div className="blog-share">
                                                 <ul className="social list-unstyled list-inline">
                                                     <li className="list-inline-item">Share:</li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -76,7 +76,7 @@ class BlogDetails extends Component {
                                             <h5>Comments (03)</h5>
                                             <div className="comment-box d-flex">
                                                 <div className="comment-image">
-                                                    <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                    <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                 </div>
                                                 <div className="comment-content">
                                                     <div className="content-title d-flex justify-content-between">
@@ -95,7 +95,7 @@ class BlogDetails extends Component {
                                             </div>
                                             <div className="comment-box d-flex">
                                                 <div className="comment-image">
-                                                    <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-1.jpg`} alt="" />
+                                                    <img src={`/assets/images/testimonial-1.jpg`} alt="" />
                                                 </div>
                                                 <div className="comment-content">
                                                     <div className="content-title d-flex justify-content-between">
@@ -114,7 +114,7 @@ class BlogDetails extends Component {
                                             </div>
                                             <div className="comment-box d-flex">
                                                 <div className="comment-image">
-                                                    <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                    <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                 </div>
                                                 <div className="comment-content">
                                                     <div className="content-title d-flex justify-content-between">

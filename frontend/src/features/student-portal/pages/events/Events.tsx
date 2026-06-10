@@ -29,7 +29,7 @@ class Events extends Component {
                                                 <Row>
                                                     <Col xl="3" lg="4" md={0}>
                                                         <div className="event-img">
-                                                            <Link to={process.env.PUBLIC_URL + data.eventLink}><img src={process.env.PUBLIC_URL + `/assets/images/${data.eventImg}`} alt="" className="img-fluid" /></Link>
+                                                            <Link to={data.eventLink}><img src={`/assets/images/${data.eventImg}`} alt="" className="img-fluid" /></Link>
                                                         </div>
                                                     </Col>
                                                     <Col xl="9" lg="8" md="12">
@@ -38,7 +38,7 @@ class Events extends Component {
                                                                 <Row>
                                                                     <Col md="9">
                                                                         <div className="event-title">
-                                                                            <h6><Link to={process.env.PUBLIC_URL + data.eventLink}>{data.eventTitle}</Link></h6>
+                                                                            <h6><Link to={data.eventLink}>{data.eventTitle}</Link></h6>
                                                                         </div>
                                                                         <div className="event-time-location">
                                                                             <ul className="list-unstyled list-inline">
@@ -55,7 +55,7 @@ class Events extends Component {
                                                                             <p>{data.eventDate}</p>
                                                                         </div>
                                                                         <div className="join-btn">
-                                                                            <Link to={process.env.PUBLIC_URL + data.eventLink}>Join Now</Link>
+                                                                            <Link to={data.eventLink}>Join Now</Link>
                                                                         </div>
                                                                     </Col>
                                                                 </Row>
@@ -87,3 +87,4 @@ class Events extends Component {
 }
 
 export default Events
+

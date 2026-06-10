@@ -34,8 +34,8 @@ class AboutUsTwo extends Component {
                             </Col>
                             <Col md="6">
                                 <div className="about-image">
-                                    <img src={process.env.PUBLIC_URL + `/assets/images/${Datas.aboutImageOne}`} className="main-img1" alt="" />
-                                    <img src={process.env.PUBLIC_URL + `/assets/images/${Datas.aboutImageTwo}`} className="main-img2" alt="" />
+                                    <img src={`/assets/images/${Datas.aboutImageOne}`} className="main-img1" alt="" />
+                                    <img src={`/assets/images/${Datas.aboutImageTwo}`} className="main-img2" alt="" />
                                     <p className="exp-box"><span>{Datas.experianceYear}<i className="las la-plus"></i></span> Yrs Exprience</p>
                                 </div>
                             </Col>
@@ -48,3 +48,4 @@ class AboutUsTwo extends Component {
 }
 
 export default AboutUsTwo
+

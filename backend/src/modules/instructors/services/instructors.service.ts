@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '../../users/entities/user.entity';
@@ -10,7 +14,8 @@ import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 
 export interface InstructorPrincipal {
-  maND?: number; S
+  maND?: number;
+  S;
   sub?: number;
   vaiTro?: UserRole;
 }
@@ -73,9 +78,13 @@ export class InstructorsService {
 
     // THÊM: Inject dịch vụ Cloudinary vào đây
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
-  async updateProfile(principal: InstructorPrincipal, dto: UpdateInstructorProfileDto, file?: Express.Multer.File) {
+  async updateProfile(
+    principal: InstructorPrincipal,
+    dto: UpdateInstructorProfileDto,
+    file?: Express.Multer.File,
+  ) {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
@@ -95,13 +104,18 @@ export class InstructorsService {
     if (file) {
       // --- TÍNH NĂNG MỚI: XÓA ẢNH CŨ TRÁNH RÁC CLOUDINARY ---
       if (user.anhDaiDien) {
-        const oldPublicId = this.cloudinaryService.extractPublicId(user.anhDaiDien);
+        const oldPublicId = this.cloudinaryService.extractPublicId(
+          user.anhDaiDien,
+        );
         if (oldPublicId) {
           try {
             await this.cloudinaryService.deleteFile(oldPublicId, 'image');
           } catch (deleteError) {
             // Log lỗi ra console để theo dõi nhưng không chặn luồng xử lý chính nếu lỡ xóa thất bại
-            console.error('Lỗi khi xóa ảnh đại diện cũ trên Cloudinary:', deleteError);
+            console.error(
+              'Lỗi khi xóa ảnh đại diện cũ trên Cloudinary:',
+              deleteError,
+            );
           }
         }
       }
@@ -117,7 +131,9 @@ export class InstructorsService {
     }
 
     // 2. Tìm hoặc Tạo mới HoSoGiangVien
-    let profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+    let profile = await this.hoSoRepo.findOne({
+      where: { MaND: instructorId },
+    });
     if (!profile) {
       profile = this.hoSoRepo.create({ MaND: instructorId });
     }
@@ -181,7 +197,8 @@ export class InstructorsService {
   async getMyStudents(
     principal: InstructorPrincipal,
     filters: InstructorStudentFilters,
-  ): Promise<any> { // Có thể đổi kiểu trả về thành InstructorStudentBoard sau
+  ): Promise<any> {
+    // Có thể đổi kiểu trả về thành InstructorStudentBoard sau
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
@@ -218,10 +235,13 @@ export class InstructorsService {
 
     // Tính toán lại tổng quan
     // 1. Tính tổng số học viên duy nhất (dùng Set để đếm)
-    const uniqueStudentIds = new Set(flatStudentsList.map(s => s.studentId));
+    const uniqueStudentIds = new Set(flatStudentsList.map((s) => s.studentId));
 
     // 2. Tính tổng doanh thu
-    const totalRevenue = flatStudentsList.reduce((sum, current) => sum + current.totalSpent, 0);
+    const totalRevenue = flatStudentsList.reduce(
+      (sum, current) => sum + current.totalSpent,
+      0,
+    );
 
     return {
       totalStudents: uniqueStudentIds.size,
@@ -310,10 +330,13 @@ export class InstructorsService {
 
     // Lấy thông tin user (HoTen, AnhDaiDien)
     const user = await this.userRepo.findOne({ where: { maND: instructorId } });
-    if (!user) throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    if (!user)
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
 
     // Lấy thông tin profile
-    const profile = await this.hoSoRepo.findOne({ where: { MaND: instructorId } });
+    const profile = await this.hoSoRepo.findOne({
+      where: { MaND: instructorId },
+    });
 
     // Gộp data lại và trả về cho Frontend
     return {

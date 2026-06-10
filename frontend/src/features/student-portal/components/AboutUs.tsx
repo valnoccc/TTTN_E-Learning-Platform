@@ -14,9 +14,9 @@ class AboutUs extends Component {
                         <Row>
                             <Col md="6">
                                 <div className="about-image">
-                                    <img src={process.env.PUBLIC_URL + `/assets/images/${Datas.mainImage}`} className="main-img" alt="" />
-                                    <img src={process.env.PUBLIC_URL + "/assets/images/pattern.png"} className="pattern-img" alt="" />
-                                    <div className="video-player" style={{backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.videoBackground})`}}>
+                                    <img src={`/assets/images/${Datas.mainImage}`} className="main-img" alt="" />
+                                    <img src={"/assets/images/pattern.png"} className="pattern-img" alt="" />
+                                    <div className="video-player" style={{backgroundImage: `url(/assets/images/${Datas.videoBackground})`}}>
                                         <a
                                             href="https://www.youtube.com/watch?v=uXFUl0KcIkA"
                                             target="_blank"
@@ -52,7 +52,7 @@ class AboutUs extends Component {
                                             </div>
                                         </Col>
                                     </Row>
-                                    <Link className="readmore-btn" to={process.env.PUBLIC_URL + "/about"}>Read More</Link>
+                                    <Link className="readmore-btn" to={"/about"}>Read More</Link>
                                 </div>
                             </Col>
                         </Row>
@@ -64,3 +64,4 @@ class AboutUs extends Component {
 }
 
 export default AboutUs
+

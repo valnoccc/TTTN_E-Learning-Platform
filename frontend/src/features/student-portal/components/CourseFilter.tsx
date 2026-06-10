@@ -67,11 +67,11 @@ function CourseFilter() {
                                     Datas.dataList.map((data, i) => (
                                         <Col lg="4" md="6" key={i} data-id={data.targetId}>
                                             <div className="course-item">
-                                                <Link to={process.env.PUBLIC_URL + data.courseLink}>
-                                                    <div className="course-image" style={{backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${data.imgUrl})`}}>
+                                                <Link to={data.courseLink}>
+                                                    <div className="course-image" style={{backgroundImage: `url(/assets/images/${data.imgUrl})`}}>
                                                         <div className="author-img d-flex">
                                                             <div className="img">
-                                                                <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} alt="" />
+                                                                <img src={`/assets/images/${data.authorImg}`} alt="" />
                                                             </div>
                                                             <div className="title">
                                                                 <p>{data.authorName}</p>
@@ -84,7 +84,7 @@ function CourseFilter() {
                                                     </div>
                                                 </Link>
                                                 <div className="course-content">
-                                                    <h6 className="heading"><Link to={process.env.PUBLIC_URL + data.courseLink}>{data.courseTitle}</Link></h6>
+                                                    <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
                                                     <p className="desc">{data.courseDesc}</p>
                                                     <div className="course-face d-flex justify-content-between">
                                                         <div className="duration">
@@ -114,7 +114,7 @@ function CourseFilter() {
                         </Col>
                         <Col md="12" className="text-center">
                             <div className="viewall-btn">
-                                <Link to={process.env.PUBLIC_URL + "/course-grid"}>View All Courses</Link>
+                                <Link to={"/course-grid"}>View All Courses</Link>
                             </div>
                         </Col>
                     </Row>
@@ -125,3 +125,4 @@ function CourseFilter() {
 }
 
 export default CourseFilter
+

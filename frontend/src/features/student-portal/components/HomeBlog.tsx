@@ -24,7 +24,7 @@ class HomeBlog extends Component {
                                             <Row>
                                                 <Col lg="6" md="12">
                                                     <div className="blog-img">
-                                                        <Link to={process.env.PUBLIC_URL + data.postLink}><img src={process.env.PUBLIC_URL + `/assets/images/${data.postImg}`} alt="" className="img-fluid" /></Link>
+                                                        <Link to={data.postLink}><img src={`/assets/images/${data.postImg}`} alt="" className="img-fluid" /></Link>
                                                     </div>
                                                 </Col>
                                                 <Col lg="6" md="12">
@@ -35,15 +35,15 @@ class HomeBlog extends Component {
                                                                     <p>{data.postDate}</p>
                                                                 </div>
                                                                 <div className="blog-title">
-                                                                    <h6><Link to={process.env.PUBLIC_URL + data.postLink}>{data.postTitle}</Link></h6>
+                                                                    <h6><Link to={data.postLink}>{data.postTitle}</Link></h6>
                                                                 </div>
                                                             </div>
                                                             <div className="blog-desk">
                                                                 <p>{data.postExcerpt}</p>
                                                                 <ul className="list-unstyled list-inline">
-                                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + data.authorLink}><i className="las la-user"></i> Jhon</Link></li>
-                                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + data.commentLink}><i className="las la-comment"></i> 19</Link></li>
-                                                                    <li className="list-inline-item"><Link to={process.env.PUBLIC_URL + data.likeLink}><i className="las la-thumbs-up"></i> 37</Link></li>
+                                                                    <li className="list-inline-item"><Link to={data.authorLink}><i className="las la-user"></i> Jhon</Link></li>
+                                                                    <li className="list-inline-item"><Link to={data.commentLink}><i className="las la-comment"></i> 19</Link></li>
+                                                                    <li className="list-inline-item"><Link to={data.likeLink}><i className="las la-thumbs-up"></i> 37</Link></li>
                                                                 </ul>
                                                             </div>
                                                         </div>
@@ -63,3 +63,4 @@ class HomeBlog extends Component {
 }
 
 export default HomeBlog
+

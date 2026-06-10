@@ -10,11 +10,8 @@ import { HoSoGiangVien } from './entities/ho-so-giang-vien.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, HoSoGiangVien]),
-    CloudinaryModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User, HoSoGiangVien]), CloudinaryModule],
   controllers: [InstructorsController],
   providers: [InstructorsService],
 })
-export class InstructorsModule { }
+export class InstructorsModule {}

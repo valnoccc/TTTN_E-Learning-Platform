@@ -68,7 +68,7 @@ class FreeCourse extends Component<unknown, FreeCourseState> {
                                 </div>
                             </Col>
                             <Col md="5">
-                                <div className="register-form text-center" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.formBackground})` }}>
+                                <div className="register-form text-center" style={{ backgroundImage: `url(/assets/images/${Datas.formBackground})` }}>
                                     <div className="form-box">
                                         <h4 className="title">Sign Up Now</h4>
                                         <p className="desc">Get Free Courses</p>
@@ -99,3 +99,4 @@ class FreeCourse extends Component<unknown, FreeCourseState> {
 }
 
 export default FreeCourse;
+

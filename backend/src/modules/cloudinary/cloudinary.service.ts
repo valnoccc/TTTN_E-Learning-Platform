@@ -28,7 +28,10 @@ export class CloudinaryService {
     });
   }
 
-  async deleteFile(publicId: string, resourceType: 'image' | 'video' = 'image'): Promise<any> {
+  async deleteFile(
+    publicId: string,
+    resourceType: 'image' | 'video' = 'image',
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(
         publicId,
@@ -36,7 +39,7 @@ export class CloudinaryService {
         (error, result) => {
           if (error) return reject(error);
           resolve(result);
-        }
+        },
       );
     });
   }
@@ -54,7 +57,10 @@ export class CloudinaryService {
       const remainingPath = parts[1].replace(/^v\d+\//, '');
 
       // Loại bỏ phần định dạng file (.jpg, .png, .mp4...) ở cuối cùng
-      const publicId = remainingPath.substring(0, remainingPath.lastIndexOf('.'));
+      const publicId = remainingPath.substring(
+        0,
+        remainingPath.lastIndexOf('.'),
+      );
 
       return publicId;
     } catch (error) {

@@ -61,14 +61,14 @@ function ComingSoon() {
                 <div className="main-wrapper coming-soon-page">
 
                     {/* Coming Soon Area */}
-                    <section className="coming-soon-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.backgroundImage})` }}>
+                    <section className="coming-soon-area" style={{ backgroundImage: `url(/assets/images/${Datas.backgroundImage})` }}>
                         <div className="cm-table">
                             <div className="cm-tablecell">
                                 <Container>
                                     <Row>
                                         <Col md="12" className="text-center">
                                             <div className="cm-logo">
-                                                <img src={process.env.PUBLIC_URL + "/assets/images/logo.png"} alt="" />
+                                                <img src={"/assets/images/logo.png"} alt="" />
                                             </div>
                                             <div className="launching-text">
                                                 <p>We are launching soon</p>
@@ -93,11 +93,11 @@ function ComingSoon() {
                                             </div>
                                             <div className="cm-social">
                                                 <ul className="social list-unstyled list-inline">
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                                 </ul>
                                             </div>
                                         </Col>
@@ -115,3 +115,4 @@ function ComingSoon() {
 }
 
 export default ComingSoon
+

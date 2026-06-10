@@ -45,20 +45,26 @@ describe('LessonsService', () => {
   it('deletes the previous Cloudinary video when replacing a lesson video', async () => {
     lessonRepository.findOne.mockResolvedValue({
       maBH: 1,
-      videoURL: 'https://res.cloudinary.com/demo/video/upload/v123/lessons_videos/old-video.mp4',
+      videoURL:
+        'https://res.cloudinary.com/demo/video/upload/v123/lessons_videos/old-video.mp4',
     });
     lessonRepository.preload.mockResolvedValue({
       maBH: 1,
-      videoURL: 'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
+      videoURL:
+        'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
     });
     lessonRepository.save.mockResolvedValue({
       maBH: 1,
-      videoURL: 'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
+      videoURL:
+        'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
     });
-    cloudinaryService.extractPublicId.mockReturnValue('lessons_videos/old-video');
+    cloudinaryService.extractPublicId.mockReturnValue(
+      'lessons_videos/old-video',
+    );
 
     await service.update(1, {
-      videoURL: 'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
+      videoURL:
+        'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
     });
 
     expect(cloudinaryService.extractPublicId).toHaveBeenCalledWith(

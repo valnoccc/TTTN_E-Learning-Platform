@@ -18,7 +18,7 @@ export class BreadcrumbBox extends Component<BreadcrumbBoxProps, BreadcrumbBoxSt
     render() {
         return (
             <Styles>
-                <section className="breadcrumb-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${this.state.backgroundImage})` }}>
+                <section className="breadcrumb-area" style={{ backgroundImage: `url(/assets/images/${this.state.backgroundImage})` }}>
                     <Container>
                         <Row>
                             <Col md="12" className="text-center">
@@ -37,3 +37,4 @@ export class BreadcrumbBox extends Component<BreadcrumbBoxProps, BreadcrumbBoxSt
         )
     }
 }
+

@@ -9,7 +9,7 @@ export class CategoriesController {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
-  ) { }
+  ) {}
 
   @Get()
   async getAllCategories() {

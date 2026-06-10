@@ -14,7 +14,7 @@ class ImageGallery extends Component {
                                 Datas.map((data, i) => (
                                     <Col md="3" sm="6" key={i}>
                                         <div className="gallery-box" style={{ marginBottom: '30px' }}>
-                                            <img src={process.env.PUBLIC_URL + `/assets/images/${data.galleryImage}`} alt="" className="img-fluid" />
+                                            <img src={`/assets/images/${data.galleryImage}`} alt="" className="img-fluid" />
                                         </div>
                                     </Col>
                                 ))
@@ -28,3 +28,4 @@ class ImageGallery extends Component {
 }
 
 export default ImageGallery;
+
