@@ -6,6 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity('KhoaHoc')
 export class KhoaHoc {
@@ -44,7 +45,17 @@ export class KhoaHoc {
   @Column({ name: 'HinhThuNho', type: 'varchar', length: 255, nullable: true })
   hinhThuNho?: string;
 
+  @Column({ name: 'KetQuaHocTap', type: 'text', nullable: true })
+  ketQuaHocTap?: string;
+
+  @Column({ name: 'YeuCauKhoaHoc', type: 'text', nullable: true })
+  yeuCauKhoaHoc?: string;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'MaND_GiangVien' })
   giangVien!: User;
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'MaDM' })
+  danhMuc!: Category;
 }

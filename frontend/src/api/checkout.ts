@@ -16,7 +16,7 @@ export interface CouponResponse {
 }
 
 export interface PaymentRequest {
-  courseId: number;
+  courseIds: number[];
   paymentMethod: string;
   couponCode?: string;
   customerDetails: {

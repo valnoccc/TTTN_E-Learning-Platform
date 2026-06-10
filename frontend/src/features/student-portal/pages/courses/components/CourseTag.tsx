@@ -1,28 +1,43 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Styles } from '../styles/courseTag';
+import axiosClient from '../../../../../api/axios';
 
-class CourseTag extends Component {
-    render() {
-        return (
-            <Styles>
-                {/* Course Tag */}
-                <div className="course-tag">
-                    <h5>Course Tag</h5>
-                    <div className="tag-box">
-                        <Link to={process.env.PUBLIC_URL + "/"}>HTML</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>CSS</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Photoshop</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Jquery</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>PHP</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Wordpress</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Bootstrap</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Javascript</Link>
-                    </div>
+const CourseTag = () => {
+    const [categories, setCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res: any = await axiosClient.get('/categories');
+                if (res) {
+                    setCategories(res);
+                }
+            } catch (error) {
+                console.error('Error fetching categories', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    return (
+        <Styles>
+            {/* Course Tag */}
+            <div className="course-tag">
+                <h5>Course Tag</h5>
+                <div className="tag-box">
+                    {categories.map((cat: any) => (
+                        <Link 
+                            key={cat.maDM} 
+                            to={process.env.PUBLIC_URL + `/course-grid?categoryId=${cat.maDM}`}
+                        >
+                            {cat.tenDM}
+                        </Link>
+                    ))}
                 </div>
-            </Styles>
-        )
-    }
-}
+            </div>
+        </Styles>
+    );
+};
 
-export default CourseTag
+export default CourseTag;

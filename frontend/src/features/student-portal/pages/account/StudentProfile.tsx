@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, User, BookOpen, CreditCard, Save, Camera, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
@@ -20,12 +21,15 @@ type StoredUser = {
 
 export default function StudentProfile() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password'>('profile');
   const [user, setUser] = useState<StoredUser | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', avatarUrl: '' });
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const userString = localStorage.getItem('user');
@@ -42,6 +46,27 @@ export default function StudentProfile() {
       } catch (e) {
         console.error('Lỗi khi parse user', e);
       }
+    }
+
+    // Load mock data from localStorage
+    const savedCourses = localStorage.getItem('myCourses');
+    if (savedCourses) {
+        setMyCourses(JSON.parse(savedCourses));
+    } else {
+        setMyCourses([
+            { id: 1, title: 'ReactJS Masterclass', progress: 80, image: '/assets/images/course-1.jpg' },
+            { id: 2, title: 'Advanced Tailwind CSS', progress: 45, image: '/assets/images/course-2.jpg' },
+        ]);
+    }
+
+    const savedPayments = localStorage.getItem('paymentHistory');
+    if (savedPayments) {
+        setPaymentHistory(JSON.parse(savedPayments));
+    } else {
+        setPaymentHistory([
+            { id: 'INV-001', date: '2026-06-01', amount: 49.0, status: 'Success' },
+            { id: 'INV-002', date: '2026-06-05', amount: 99.0, status: 'Pending' },
+        ]);
     }
   }, []);
 
@@ -133,17 +158,6 @@ export default function StudentProfile() {
       }
     }
   };
-
-  // Mock Data
-  const myCourses = [
-    { id: 1, title: 'ReactJS Masterclass', progress: 80, image: '/assets/images/course-1.jpg' },
-    { id: 2, title: 'Advanced Tailwind CSS', progress: 45, image: '/assets/images/course-2.jpg' },
-  ];
-
-  const paymentHistory = [
-    { id: 'INV-001', date: '2026-06-01', amount: 49.0, status: 'Success' },
-    { id: 'INV-002', date: '2026-06-05', amount: 99.0, status: 'Pending' },
-  ];
 
   return (
     <div className="profile-page bg-slate-50 min-h-screen pb-16">
@@ -299,10 +313,14 @@ export default function StudentProfile() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myCourses.map((course) => (
                       <div key={course.id} className="border border-slate-100 rounded-2xl p-4 hover:shadow-md transition-shadow group">
-                        <div className="h-40 bg-slate-200 rounded-xl mb-4 overflow-hidden">
-                           <div className="w-full h-full bg-slate-300 flex items-center justify-center text-slate-400">
-                             <BookOpen size={40} />
-                           </div>
+                        <div className="h-40 bg-slate-200 rounded-xl mb-4 overflow-hidden relative">
+                           {course.image ? (
+                             <img src={process.env.PUBLIC_URL + course.image} alt={course.title} className="w-full h-full object-cover" />
+                           ) : (
+                             <div className="w-full h-full bg-slate-300 flex items-center justify-center text-slate-400">
+                               <BookOpen size={40} />
+                             </div>
+                           )}
                         </div>
                         <h4 className="font-bold text-slate-800 mb-2">{course.title}</h4>
                         <div className="mb-4">
@@ -314,7 +332,10 @@ export default function StudentProfile() {
                             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${course.progress}%` }}></div>
                           </div>
                         </div>
-                        <button className="w-full py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors">
+                        <button 
+                          onClick={() => navigate(`/student/learn/${course.id}`)}
+                          className="w-full py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors"
+                        >
                           {t('Learn Now')}
                         </button>
                       </div>
@@ -342,7 +363,7 @@ export default function StudentProfile() {
                           <tr key={invoice.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="p-4 text-slate-600">{invoice.date}</td>
                             <td className="p-4 font-medium text-slate-800">{invoice.id}</td>
-                            <td className="p-4 font-semibold text-slate-700">${invoice.amount.toFixed(2)}</td>
+                            <td className="p-4 font-semibold text-slate-700">{invoice.amount.toLocaleString('vi-VN')} đ</td>
                             <td className="p-4 text-right">
                               <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                                 invoice.status === 'Success' 

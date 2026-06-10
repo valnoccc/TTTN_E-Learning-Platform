@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Spinner } from 'react-bootstrap';
 import toast from 'react-hot-toast';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
@@ -10,13 +10,17 @@ import {
   processPayment,
   CourseDetailsData,
 } from '../../../../api/checkout';
+import { useDispatch } from 'react-redux';
+import { removeFromCart } from '../../../cart/cartSlice';
 
 export default function Checkout() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
 
   // Course State
-  const [course, setCourse] = useState<CourseDetailsData | null>(null);
+  const [courses, setCourses] = useState<CourseDetailsData[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form State
@@ -37,16 +41,22 @@ export default function Checkout() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   useEffect(() => {
-    if (courseId) {
+    if (location.state?.selectedCourses && location.state.selectedCourses.length > 0) {
+      setCourses(location.state.selectedCourses);
+      setLoading(false);
+    } else if (courseId) {
       loadCourseData(Number(courseId));
+    } else {
+      toast.error('Không có khóa học nào được chọn!');
+      navigate('/student/cart');
     }
-  }, [courseId]);
+  }, [courseId, location.state, navigate]);
 
   const loadCourseData = async (id: number) => {
     try {
       setLoading(true);
       const data = await getCourseDetails(id);
-      setCourse(data);
+      setCourses([data]);
     } catch (error) {
       toast.error('Failed to load course details');
     } finally {
@@ -65,10 +75,11 @@ export default function Checkout() {
     if (!couponCode) return;
     try {
       setIsApplyingCoupon(true);
-      const res = await validateCoupon(couponCode, Number(courseId));
+      const res = await validateCoupon(couponCode, courses[0]?.id || Number(courseId));
       if (res.valid) {
-        if (res.discountType === 'PERCENT' && course) {
-          setDiscountValue(course.price * (res.discountValue / 100));
+        const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
+        if (res.discountType === 'PERCENT' && courses.length > 0) {
+          setDiscountValue(totalOriginalPrice * (res.discountValue / 100));
         } else {
           setDiscountValue(res.discountValue);
         }
@@ -91,17 +102,49 @@ export default function Checkout() {
     try {
       setIsProcessing(true);
       const res = await processPayment({
-        courseId: Number(courseId),
+        courseIds: courses.map(c => c.id),
         paymentMethod,
         couponCode: discountValue > 0 ? couponCode : undefined,
         customerDetails: formData,
       });
 
       if (res.success) {
+        // Remove purchased items from cart
+        courses.forEach(c => dispatch(removeFromCart(c.id)));
+
+        // Mock save to localStorage for StudentProfile
+        const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
+        const finalPrice = Math.max(0, totalOriginalPrice - discountValue);
+
+        const myCourses = JSON.parse(localStorage.getItem('myCourses') || '[]');
+        const newCourses = courses.map(c => ({
+            id: c.id,
+            title: c.courseName,
+            progress: 0,
+            image: c.thumbnail
+        }));
+        // Avoid duplicates
+        const updatedCourses = [...myCourses];
+        newCourses.forEach(nc => {
+            if (!updatedCourses.find(c => c.id === nc.id)) {
+                updatedCourses.push(nc);
+            }
+        });
+        localStorage.setItem('myCourses', JSON.stringify(updatedCourses));
+
+        const paymentHistory = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
+        const newPayment = {
+            id: `INV-${res.invoiceId}`,
+            date: new Date().toISOString().split('T')[0],
+            amount: finalPrice,
+            status: 'Success'
+        };
+        localStorage.setItem('paymentHistory', JSON.stringify([newPayment, ...paymentHistory]));
+
         setSuccessData({ invoiceId: res.invoiceId });
         toast.success('Payment successful!');
         setTimeout(() => {
-          navigate('/student/my-courses');
+          navigate('/student/profile'); // Changed to profile since my-courses is inside StudentProfile tab
         }, 3000);
       }
     } catch (error) {
@@ -128,7 +171,7 @@ export default function Checkout() {
               <i className="las la-check-circle text-success" style={{ fontSize: '80px' }}></i>
               <h2 className="mt-3 mb-4">Payment Successful!</h2>
               <p>Invoice ID: <strong>#{successData.invoiceId}</strong></p>
-              <p>Course: <strong>{course?.courseName}</strong></p>
+              <p>Course: <strong>{courses.map(c => c.courseName).join(', ')}</strong></p>
               <p>Payment Method: <strong>{paymentMethod}</strong></p>
               <p className="text-muted mt-4">Redirecting to your courses in 3 seconds...</p>
             </div>
@@ -138,7 +181,8 @@ export default function Checkout() {
     );
   }
 
-  const finalPrice = course ? Math.max(0, course.price - discountValue) : 0;
+  const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
+  const finalPrice = Math.max(0, totalOriginalPrice - discountValue);
 
   return (
     <Styles>
@@ -247,15 +291,15 @@ export default function Checkout() {
                 <div className="card-box order-summary">
                   <h4 className="title">Order Summary</h4>
                   
-                  {course && (
-                    <div className="course-info">
-                      <img src={process.env.PUBLIC_URL + course.thumbnail} alt={course.courseName} />
-                      <div className="details">
-                        <h6>{course.courseName}</h6>
-                        <p>By {course.instructor}</p>
+                  {courses.map((course, idx) => (
+                    <div className="course-info mb-3" key={idx} style={{ display: 'flex', alignItems: 'center' }}>
+                      <img src={process.env.PUBLIC_URL + course.thumbnail} alt={course.courseName} style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div className="details ml-3">
+                        <h6 className="mb-1" style={{ fontSize: '15px' }}>{course.courseName}</h6>
+                        <p className="mb-0" style={{ fontSize: '13px' }}>By {course.instructor}</p>
                       </div>
                     </div>
-                  )}
+                  ))}
 
                   <div className="coupon-box">
                     <input
@@ -275,17 +319,17 @@ export default function Checkout() {
                   <ul className="list-unstyled price-list">
                     <li>
                       <span>Original Price</span>
-                      <span>${course?.price.toFixed(2)}</span>
+                      <span>{totalOriginalPrice.toLocaleString('vi-VN')} đ</span>
                     </li>
                     {discountValue > 0 && (
                       <li className="discount">
                         <span>Discount</span>
-                        <span>-${discountValue.toFixed(2)}</span>
+                        <span>-{discountValue.toLocaleString('vi-VN')} đ</span>
                       </li>
                     )}
                     <li className="total">
                       <span>Total</span>
-                      <span>${finalPrice.toFixed(2)}</span>
+                      <span>{finalPrice.toLocaleString('vi-VN')} đ</span>
                     </li>
                   </ul>
 

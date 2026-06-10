@@ -1,12 +1,14 @@
 const mysql = require('mysql2/promise');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 async function check() {
   const connection = await mysql.createConnection({
-    host: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
-    port: 4000,
-    user: '3RAn3h6KN29y4p7.root',
-    password: '4GnyOM0eggS0zlaf',
-    database: 'db_lvtn',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
     ssl: {
       minVersion: 'TLSv1.2',
       rejectUnauthorized: true
