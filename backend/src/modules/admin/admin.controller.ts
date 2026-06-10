@@ -11,7 +11,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 // KÍCH HOẠT CẢ 2 LỚP BẢO VỆ TẠI ĐÂY
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminDashboardController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
   // BẮT BUỘC TÀI KHOẢN PHẢI CÓ VaiTro LÀ 'ADMIN'

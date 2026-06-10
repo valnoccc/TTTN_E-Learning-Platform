@@ -68,7 +68,11 @@ export class LessonsService {
     try {
       const updatedLesson = await this.lessonRepository.save(lesson);
 
-      if (previousVideoUrl && nextVideoUrl && previousVideoUrl !== nextVideoUrl) {
+      if (
+        previousVideoUrl &&
+        nextVideoUrl &&
+        previousVideoUrl !== nextVideoUrl
+      ) {
         const oldPublicId =
           this.cloudinaryService.extractPublicId(previousVideoUrl);
         if (oldPublicId) {
@@ -78,7 +82,9 @@ export class LessonsService {
 
       return updatedLesson;
     } catch {
-      throw new InternalServerErrorException('Lỗi hệ thống khi cập nhật dữ liệu');
+      throw new InternalServerErrorException(
+        'Lỗi hệ thống khi cập nhật dữ liệu',
+      );
     }
   }
 
@@ -90,7 +96,9 @@ export class LessonsService {
 
     if (lesson.videoURL) {
       try {
-        const publicId = this.cloudinaryService.extractPublicId(lesson.videoURL);
+        const publicId = this.cloudinaryService.extractPublicId(
+          lesson.videoURL,
+        );
         if (publicId) {
           await this.cloudinaryService.deleteFile(publicId, 'video');
         }

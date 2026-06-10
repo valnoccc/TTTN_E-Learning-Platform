@@ -28,8 +28,6 @@ import { CourseInstructorDiscussionsService } from '../services/course-instructo
 import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
 import { CoursesService } from '../services/course-instructor.service';
 
-
-
 const COURSE_TITLE_MAX_LENGTH = 60;
 
 const parseArrayData = (data: any): string[] => {
@@ -43,7 +41,6 @@ const parseArrayData = (data: any): string[] => {
   }
 };
 
-
 @Controller('courses')
 @UseGuards(JwtAuthGuard)
 export class CoursesController {
@@ -53,8 +50,7 @@ export class CoursesController {
     private readonly discussionsService: CourseInstructorDiscussionsService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
-
+  ) {}
 
   @Get('my-courses')
   async getMyCourses(@Request() req) {
@@ -124,7 +120,11 @@ export class CoursesController {
     const mucTieu = parseArrayData(courseData.muc_tieu);
     const yeuCau = parseArrayData(courseData.yeu_cau);
 
-    const newCourse = await this.coursesService.createCourse(payload, mucTieu, yeuCau);
+    const newCourse = await this.coursesService.createCourse(
+      payload,
+      mucTieu,
+      yeuCau,
+    );
     return {
       message: 'Tạo khóa học thành công',
       data: serializeCourse(newCourse),
@@ -180,7 +180,7 @@ export class CoursesController {
       req.user.sub,
       payload,
       mucTieu,
-      yeuCau
+      yeuCau,
     );
     return {
       message: 'Cập nhật khóa học thành công',
@@ -294,7 +294,10 @@ export class CoursesController {
 
   @Post('chapters/:chapterId/lessons')
   async addLesson(@Param('chapterId') chapterId: string, @Body() body: any) {
-    const data = await this.curriculumService.addLesson(Number(chapterId), body);
+    const data = await this.curriculumService.addLesson(
+      Number(chapterId),
+      body,
+    );
     return { message: 'Tạo bài học thành công', data };
   }
 }

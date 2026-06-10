@@ -13,4 +13,4 @@ import { Category } from './entities/category.entity';
   providers: [CategoriesService],
   exports: [TypeOrmModule],
 })
-export class CategoriesModule { }
+export class CategoriesModule {}

@@ -48,4 +48,4 @@ import { AdminDashboardModule } from './modules/admin/admin.module';
     AdminDashboardModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

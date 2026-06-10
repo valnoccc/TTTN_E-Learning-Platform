@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
@@ -12,7 +16,7 @@ export class CoursesService {
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({

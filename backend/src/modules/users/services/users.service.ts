@@ -27,10 +27,12 @@ export class UsersService {
   async update(id: number, updateUserDto: any) {
     const updateData: any = {};
     if (updateUserDto.hoTen) updateData.hoTen = updateUserDto.hoTen;
-    if (updateUserDto.anhDaiDien) updateData.anhDaiDien = updateUserDto.anhDaiDien;
+    if (updateUserDto.anhDaiDien)
+      updateData.anhDaiDien = updateUserDto.anhDaiDien;
     if (updateUserDto.name) updateData.hoTen = updateUserDto.name;
     if (updateUserDto.fullName) updateData.hoTen = updateUserDto.fullName;
-    if (updateUserDto.avatarUrl) updateData.anhDaiDien = updateUserDto.avatarUrl;
+    if (updateUserDto.avatarUrl)
+      updateData.anhDaiDien = updateUserDto.avatarUrl;
 
     if (Object.keys(updateData).length > 0) {
       await this.userRepository.update(id, updateData);

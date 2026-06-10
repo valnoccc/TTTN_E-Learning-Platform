@@ -52,16 +52,20 @@ describe('CoursesService', () => {
     khoaHocRepository.findOne.mockResolvedValue({
       maKH: 10,
       maND_GiangVien: 7,
-      hinhThuNho: 'https://res.cloudinary.com/demo/image/upload/v123/course_thumbnails/old-thumb.jpg',
+      hinhThuNho:
+        'https://res.cloudinary.com/demo/image/upload/v123/course_thumbnails/old-thumb.jpg',
     });
     khoaHocRepository.save.mockImplementation(async (course) => course);
-    cloudinaryService.extractPublicId.mockReturnValue('course_thumbnails/old-thumb');
+    cloudinaryService.extractPublicId.mockReturnValue(
+      'course_thumbnails/old-thumb',
+    );
 
     await service.updateCourse(
       10,
       7,
       {
-        hinhThuNho: 'https://res.cloudinary.com/demo/image/upload/v456/course_thumbnails/new-thumb.jpg',
+        hinhThuNho:
+          'https://res.cloudinary.com/demo/image/upload/v456/course_thumbnails/new-thumb.jpg',
       },
       [],
       [],
