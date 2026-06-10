@@ -263,42 +263,6 @@ describe('AdminCoursesService', () => {
     });
   });
 
-  it('bans published courses and writes moderation history', async () => {
-    const course = {
-      maKH: 11,
-      tenKhoaHoc: 'React Co Ban',
-      trangThai: 'PUBLISHED',
-      maND_GiangVien: 7,
-    };
-    courseRepository.findOne.mockResolvedValue(course);
-    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
-    notificationsService.createNotification.mockImplementation((value) =>
-      resolveValue(value),
-    );
-    moderationHistoryRepository.create.mockImplementation((value) => value);
-    moderationHistoryRepository.save.mockImplementation((value: unknown) =>
-      resolveValue(value),
-    );
-
-    await expect(
-      service.banPublishedCourse(11, 99, 'Vi pham noi dung khoa hoc.'),
-    ).resolves.toEqual({
-      message: 'Đã ban khóa học thành công.',
-      data: {
-        id: 11,
-        trangThai: 'BANNED',
-        lyDo: 'Vi pham noi dung khoa hoc.',
-      },
-    });
-
-    expect(moderationHistoryRepository.create).toHaveBeenCalledWith({
-      maKH: 11,
-      maND_Admin: 99,
-      hanhDong: 'BAN',
-      ghiChu: 'Vi pham noi dung khoa hoc.',
-    });
-  });
-
   it('hides published courses by moving them back to draft and writes moderation history', async () => {
     const course = {
       maKH: 11,
@@ -317,21 +281,29 @@ describe('AdminCoursesService', () => {
     );
 
     await expect(
-      service.hidePublishedCourse(11, 99, 'Can an de cap nhat noi dung.'),
+      service.hidePublishedCourse(11, 99, 'Vi pham tieu chuan khoa hoc.'),
     ).resolves.toEqual({
-      message: 'Đã ẩn khóa học và chuyển về bản nháp.',
+      message: 'Đã ẩn khóa học vi phạm tiêu chuẩn và chuyển về bản nháp.',
       data: {
         id: 11,
         trangThai: 'DRAFT',
-        lyDo: 'Can an de cap nhat noi dung.',
+        lyDo: 'Vi pham tieu chuan khoa hoc.',
       },
     });
 
+    expect(notificationsService.createNotification).toHaveBeenCalledWith({
+      maND: 7,
+      maNguoiGui: 99,
+      loaiThongBao: 'COURSE',
+      tieuDe: 'Khóa học vi phạm tiêu chuẩn',
+      noiDung: expect.stringContaining('vi phạm tiêu chuẩn hệ thống'),
+      daDoc: false,
+    });
     expect(moderationHistoryRepository.create).toHaveBeenCalledWith({
       maKH: 11,
       maND_Admin: 99,
       hanhDong: 'HIDE',
-      ghiChu: 'Can an de cap nhat noi dung.',
+      ghiChu: 'Vi pham tieu chuan khoa hoc.',
     });
   });
 

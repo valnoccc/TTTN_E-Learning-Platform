@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import axiosClient from '../../../../api/axios';
 
-export type AdminCourseStatus = 'ALL' | 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'BANNED';
+export type AdminCourseStatus = 'ALL' | 'DRAFT' | 'PENDING' | 'PUBLISHED';
 
 export interface AdminManagedCourse {
     id: number;

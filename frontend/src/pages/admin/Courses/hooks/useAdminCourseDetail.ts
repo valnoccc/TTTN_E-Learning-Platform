@@ -8,9 +8,9 @@ import {
     type AdminModerationLesson,
 } from './useAdminCourseModeration';
 
-export type AdminCourseAction = 'reject' | 'ban' | 'hide';
+export type AdminCourseAction = 'reject' | 'hide';
 
-export const REVIEW_PAGE_SIZE = 5;
+export const REVIEW_PAGE_SIZE = 10;
 
 export const actionConfig: Record<AdminCourseAction, {
     title: string;
@@ -28,21 +28,13 @@ export const actionConfig: Record<AdminCourseAction, {
         confirmLabel: 'Xác nhận từ chối',
         placeholder: 'Ví dụ: Cần bổ sung nội dung bài học, mô tả khóa học chưa rõ, video chưa phù hợp...',
     },
-    ban: {
-        title: 'Ban khóa học',
-        description: 'Nhập lý do ban khóa học để giảng viên biết nội dung vi phạm.',
-        endpoint: (courseId) => `/admin/courses/${courseId}/ban`,
-        successMessage: 'Đã ban khóa học.',
-        confirmLabel: 'Xác nhận ban',
-        placeholder: 'Ví dụ: Nội dung khóa học vi phạm chính sách, thông tin sai lệch hoặc không đáp ứng yêu cầu hệ thống...',
-    },
     hide: {
-        title: 'Ẩn khóa học',
-        description: 'Nhập lý do ẩn khóa học để giảng viên chỉnh sửa và gửi duyệt lại nếu cần.',
+        title: 'Ẩn khóa học vi phạm',
+        description: 'Nhập lý do vi phạm tiêu chuẩn để giảng viên biết nội dung cần chỉnh sửa. Khóa học sẽ được chuyển về bản nháp.',
         endpoint: (courseId) => `/admin/courses/${courseId}/hide`,
-        successMessage: 'Đã ẩn khóa học.',
-        confirmLabel: 'Xác nhận ẩn',
-        placeholder: 'Ví dụ: Khóa học cần tạm ẩn để cập nhật bài học, video hoặc nội dung mô tả...',
+        successMessage: 'Đã ẩn khóa học vi phạm tiêu chuẩn và chuyển về bản nháp.',
+        confirmLabel: 'Xác nhận ẩn khóa học',
+        placeholder: 'Ví dụ: Nội dung khóa học vi phạm tiêu chuẩn hệ thống, thông tin sai lệch, video không phù hợp...',
     },
 };
 
@@ -163,14 +155,14 @@ export function useAdminCourseDetail(courseId: number) {
     };
 
     const canApproveOrReject = course?.trangThai === 'PENDING';
-    const canBanOrHide = course?.trangThai === 'PUBLISHED';
+    const canHideCourse = course?.trangThai === 'PUBLISHED';
     const action = activeAction ? actionConfig[activeAction] : null;
 
     return {
         action,
         actionReason,
         canApproveOrReject,
-        canBanOrHide,
+        canHideCourse,
         course,
         expandedChapterId,
         expandedReplyIds,

@@ -41,7 +41,6 @@ Admin (Kiem duyet)
 - `GET /admin/courses/:id` (Xem chi tiet khoa hoc cho quy trinh kiem duyet, gom muc tieu, yeu cau, curriculum, danh gia va lich su kiem duyet)
 - `PATCH /admin/courses/:id/approve` (Phe duyet khoa hoc va luu lich su kiem duyet)
 - `PATCH /admin/courses/:id/reject` (Tu choi khoa hoc, body: `{ lyDo: string }`, dong thoi tao thong bao cho giang vien va luu lich su kiem duyet)
-- `PATCH /admin/courses/:id/ban` (Ban khoa hoc da xuat ban, body: `{ lyDo: string }`, chuyen trang thai sang `BANNED`, tao thong bao va luu lich su kiem duyet)
 - `PATCH /admin/courses/:id/hide` (An khoa hoc da xuat ban, body: `{ lyDo: string }`, chuyen trang thai sang `DRAFT`, tao thong bao va luu lich su kiem duyet)
 
 ## Lessons (Quan ly bai hoc)

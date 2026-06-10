@@ -298,19 +298,6 @@ export class AdminCoursesService {
     };
   }
 
-  async banPublishedCourse(courseId: number, adminId: number, reason?: string) {
-    return this.moderatePublishedCourse({
-      courseId,
-      adminId,
-      reason,
-      nextStatus: 'BANNED',
-      action: CourseModerationAction.BAN,
-      successMessage: 'Đã ban khóa học thành công.',
-      notificationTitle: 'Khóa học đã bị ban',
-      actionText: 'đã bị ban do vi phạm yêu cầu hệ thống',
-    });
-  }
-
   async hidePublishedCourse(courseId: number, adminId: number, reason?: string) {
     return this.moderatePublishedCourse({
       courseId,
@@ -318,9 +305,9 @@ export class AdminCoursesService {
       reason,
       nextStatus: 'DRAFT',
       action: CourseModerationAction.HIDE,
-      successMessage: 'Đã ẩn khóa học và chuyển về bản nháp.',
-      notificationTitle: 'Khóa học đã bị ẩn',
-      actionText: 'đã bị ẩn và chuyển về bản nháp',
+      successMessage: 'Đã ẩn khóa học vi phạm tiêu chuẩn và chuyển về bản nháp.',
+      notificationTitle: 'Khóa học vi phạm tiêu chuẩn',
+      actionText: 'đã bị ẩn do vi phạm tiêu chuẩn hệ thống và được chuyển về bản nháp',
     });
   }
 
@@ -385,8 +372,8 @@ export class AdminCoursesService {
     courseId: number;
     adminId: number;
     reason?: string;
-    nextStatus: 'BANNED' | 'DRAFT';
-    action: CourseModerationAction.BAN | CourseModerationAction.HIDE;
+    nextStatus: 'DRAFT';
+    action: CourseModerationAction.HIDE;
     successMessage: string;
     notificationTitle: string;
     actionText: string;
@@ -404,7 +391,7 @@ export class AdminCoursesService {
     }
     if (course.trangThai !== 'PUBLISHED') {
       throw new BadRequestException(
-        'Chỉ khóa học đã xuất bản mới có thể ban hoặc ẩn.',
+        'Chỉ khóa học đã xuất bản mới có thể ẩn.',
       );
     }
 

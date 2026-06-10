@@ -22,7 +22,6 @@ const statusOptions: { value: AdminCourseStatus; label: string }[] = [
     { value: 'ALL', label: 'Tất cả' },
     { value: 'DRAFT', label: 'Bản nháp' },
     { value: 'PUBLISHED', label: 'Đã xuất bản' },
-    { value: 'BANNED', label: 'Đã ban' },
 ];
 
 function formatCurrency(value: number) {
@@ -71,17 +70,13 @@ export default function AdminCourseModeration() {
             <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
+                        {/* <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
                             <Layers3 size={14} />
                             Quản lý khóa học
-                        </div>
+                        </div> */}
                         <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
                             Phê duyệt khóa học
                         </h1>
-                        <p className="mt-2 max-w-2xl text-[14px] text-slate-500">
-                            Xem chi tiết nội dung khóa học, lịch sử kiểm duyệt và xử lý phê duyệt
-                            cho các khóa học giảng viên gửi lên hệ thống.
-                        </p>
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">
@@ -144,14 +139,15 @@ export default function AdminCourseModeration() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full text-left">
+                            <table className="min-w-full table-fixed text-left"> {/* Thêm table-fixed vào đây */}
                                 <thead className="bg-slate-50/50">
                                     <tr>
-                                        <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Khóa học</th>
-                                        <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Giảng viên</th>
-                                        <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Chi tiết</th>
-                                        <th className="px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Xem chi tiết</th>
-                                        <th className="px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Thao tác</th>
+                                        {/* Thiết lập width cụ thể cho từng cột để cân đối không gian */}
+                                        <th className="w-[35%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Khóa học</th>
+                                        <th className="w-[25%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Giảng viên</th>
+                                        <th className="w-[15%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Chi tiết</th>
+                                        <th className="w-[10%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Chi tiết</th>
+                                        <th className="w-[15%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Trạng thái</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -171,21 +167,22 @@ export default function AdminCourseModeration() {
                                                             />
                                                         ) : null}
                                                     </div>
-                                                    <div className="min-w-[240px]">
-                                                        <h3 className="line-clamp-1 text-[14px] font-semibold text-slate-800">
+                                                    {/* min-w-0 giúp text truncate hoạt động đúng trong flexbox */}
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="truncate text-[14px] font-semibold text-slate-800">
                                                             {course.tenKhoaHoc}
                                                         </h3>
-                                                        <p className="mt-1 line-clamp-1 text-[13px] text-slate-500">
+                                                        <p className="mt-1 truncate text-[13px] text-slate-500">
                                                             {course.moTa || 'Chưa có mô tả khóa học.'}
                                                         </p>
                                                         <p className="mt-1.5 text-[12px] font-medium text-slate-400">
-                                                            Đã bán: {course.orderCount.toLocaleString('vi-VN')}
+                                                            {course.lessonCount} bài
                                                         </p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <div className="flex min-w-[200px] items-center gap-3">
+                                                <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
                                                         {course.instructorAvatar ? (
                                                             <img
@@ -195,13 +192,13 @@ export default function AdminCourseModeration() {
                                                             />
                                                         ) : null}
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[14px] font-semibold text-slate-800">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-[14px] font-semibold text-slate-800">
                                                             {course.instructorName}
                                                         </p>
-                                                        <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-slate-500">
-                                                            <Mail size={12} />
-                                                            {course.instructorEmail}
+                                                        <p className="mt-0.5 flex items-center gap-1 text-[13px] text-slate-500">
+                                                            <Mail size={12} className="shrink-0" />
+                                                            <span className="truncate">{course.instructorEmail}</span>
                                                         </p>
                                                     </div>
                                                 </div>
@@ -210,42 +207,23 @@ export default function AdminCourseModeration() {
                                                 <p className="text-[14px] font-semibold text-slate-800">
                                                     {formatCurrency(course.giaBan)}
                                                 </p>
-                                                <div className="mt-1 flex items-center gap-2 text-[13px] text-slate-500">
-                                                    <span className="max-w-[120px] truncate">{course.categoryName}</span>
-                                                    <span>•</span>
-                                                    <span>{course.lessonCount} bài</span>
+                                                <div className="mt-1 flex items-center gap-1.5 text-[13px] text-slate-500">
+                                                    {/* Đã thêm truncate cho categoryName để tránh tràn chữ */}
+                                                    <span className="truncate block max-w-[90px]" title={course.categoryName}>
+                                                        {course.categoryName}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 align-middle">
-                                                <div className="flex justify-center">
-                                                    <button
-                                                        onClick={() => navigate(`/admin/courses/${course.id}`)}
-                                                        className="inline-flex h-[38px] items-center justify-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-4 text-[13px] font-semibold text-blue-700 transition hover:bg-blue-100"
-                                                    >
-                                                        <Eye size={16} strokeWidth={2.5} />
-                                                        Xem chi tiết
-                                                    </button>
-                                                </div>
+                                            <td className="px-6 py-5 align-middle text-center">
+                                                <button
+                                                    onClick={() => navigate(`/admin/courses/${course.id}`)}
+                                                    className="inline-flex px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-[13px] transition hover:bg-blue-700 active:bg-blue-800"
+                                                >
+                                                    Xem chi tiết
+                                                </button>
                                             </td>
-                                            <td className="px-6 py-5 align-middle">
-                                                <div className="flex justify-center gap-2">
-                                                    <button
-                                                        disabled={course.trangThai !== 'PENDING'}
-                                                        onClick={() => void approveCourse(course.id)}
-                                                        className="inline-flex h-[38px] w-24 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-[13px] font-semibold text-teal-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                                    >
-                                                        <CheckCircle2 size={16} strokeWidth={2.5} />
-                                                        Duyệt
-                                                    </button>
-                                                    <button
-                                                        disabled={course.trangThai !== 'PENDING'}
-                                                        onClick={() => handleOpenReject(course.id)}
-                                                        className="inline-flex h-[38px] w-24 items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 text-[13px] font-semibold leading-tight text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                                    >
-                                                        <XCircle size={16} strokeWidth={2.5} />
-                                                        <span className="text-left leading-4">Từ chối</span>
-                                                    </button>
-                                                </div>
+                                            <td>
+                                                <span className=''>{course.trangThai}</span>
                                             </td>
                                         </tr>
                                     ))}
