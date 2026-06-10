@@ -14,6 +14,9 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { Admin } from 'typeorm';
+import { AdminDashboardModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -41,6 +44,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
     LessonsModule,
     InstructorsModule,
     CategoriesModule,
+    CloudinaryModule,
+    AdminDashboardModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

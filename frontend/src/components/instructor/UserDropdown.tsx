@@ -7,13 +7,13 @@ type UserDropdownProps = {
   user: {
     fullName?: string;
     email?: string;
-    role?: string;
+    vaiTro?: string;
   } | null;
   onLogout: MouseEventHandler<HTMLButtonElement>;
 };
 
 export default function UserDropdown({ user, onLogout }: UserDropdownProps) {
-  const normalizedRole = normalizeRole(user?.role);
+  const normalizedRole = normalizeRole(user?.vaiTro);
   const isInstructor = normalizedRole === 'INSTRUCTOR';
 
   return (

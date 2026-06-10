@@ -2,11 +2,9 @@ import React, { Component } from 'react';
 import Datas from '../../data/blog/classic.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import Pagination from './../../components/Pagination';
 import BlogSidebar from './components/BlogSidebar';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/blog';
 
 class BlogClassic extends Component {
@@ -17,10 +15,7 @@ class BlogClassic extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper blog-classic-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Blog Classic" />
 
                     {/* Blog Classic */}
@@ -69,10 +64,7 @@ class BlogClassic extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

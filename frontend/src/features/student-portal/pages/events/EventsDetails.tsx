@@ -3,11 +3,9 @@ import Datas from '../../data/event/details.json';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import Timer from 'react-compound-timer';
-import HeaderTwo from '../../components/HeaderTwo';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import PopularCourse from './../courses/components/PopularCourse';
 import CourseTag from './../courses/components/CourseTag';
-import FooterTwo from '../../components/FooterTwo';
 import { Styles } from './styles/eventDetails';
 
 class EventDetails extends Component {
@@ -17,10 +15,7 @@ class EventDetails extends Component {
                 {/* Main Wrapper */}
                 <div className="main-wrapper event-details-page">
 
-                    {/* Header 2 */}
-                    <HeaderTwo />
-
-                    {/* Breadcroumb */}
+{/* Breadcroumb */}
                     <BreadcrumbBox title="Event Details" />
 
                     {/* Event Details Area */}
@@ -149,10 +144,7 @@ class EventDetails extends Component {
                         </Container>
                     </section>
 
-                    {/* Footer 2 */}
-                    <FooterTwo />
-
-                </div>
+</div>
             </Styles>
         )
     }

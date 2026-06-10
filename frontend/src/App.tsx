@@ -1,8 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './features/student-portal/helper/ScrollToTop';
-import PageTransition from './components/PageTransition';
 
 import RoleBasedRoute from './components/RoleBasedRoute';
 import AdminRoutes from './routes/AdminRoutes';
@@ -21,53 +19,52 @@ import Checkout from './features/student-portal/pages/checkout/Checkout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 
+import StudentLayout from './features/student-portal/components/StudentLayout';
+
 function AnimatedRoutes() {
-  const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><HomeTwo /></PageTransition>} />
-        <Route path="/home-two" element={<PageTransition><HomeTwo /></PageTransition>} />
-        <Route path="/about" element={<PageTransition><About /></PageTransition>} />
-        <Route path="/course-grid" element={<PageTransition><CourseGrid /></PageTransition>} />
-        <Route path="/course-list" element={<PageTransition><CourseList /></PageTransition>} />
-        <Route path="/course-details" element={<PageTransition><CourseDetails /></PageTransition>} />
-        <Route path="/faq" element={<PageTransition><Faq /></PageTransition>} />
-        <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
-        <Route path="/instructors" element={<PageTransition><Instructors /></PageTransition>} />
-        <Route path="/instructor-details" element={<PageTransition><InstructorDetails /></PageTransition>} />
-        <Route path="/checkout/:courseId" element={<PageTransition><Checkout /></PageTransition>} />
-        <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
-        <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
-        <Route path="/registration" element={<PageTransition><RegisterPage /></PageTransition>} />
+    <Routes>
+      {/* Student/Public Routes with Persistent Layout */}
+      <Route element={<StudentLayout />}>
+        <Route path="/" element={<HomeTwo />} />
+        <Route path="/home-two" element={<HomeTwo />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/course-grid" element={<CourseGrid />} />
+        <Route path="/course-list" element={<CourseList />} />
+        <Route path="/course-details" element={<CourseDetails />} />
+        <Route path="/faq" element={<Faq />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/instructors" element={<Instructors />} />
+        <Route path="/instructor-details" element={<InstructorDetails />} />
+        <Route path="/checkout/:courseId" element={<Checkout />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/registration" element={<RegisterPage />} />
+        <Route path="/student/*" element={<StudentRoutes />} />
+      </Route>
 
-        <Route
-          path="/admin/*"
-          element={
-            <PageTransition>
-              <RoleBasedRoute allowedRoles={['ADMIN']}>
-                <AdminRoutes />
-              </RoleBasedRoute>
-            </PageTransition>
-          }
-        />
+      {/* Admin Routes */}
+      <Route
+        path="/admin/*"
+        element={
+          <RoleBasedRoute allowedRoles={['ADMIN']}>
+            <AdminRoutes />
+          </RoleBasedRoute>
+        }
+      />
 
-        <Route
-          path="/instructor/*"
-          element={
-            <PageTransition>
-              <RoleBasedRoute allowedRoles={['INSTRUCTOR']}>
-                <InstructorRoutes />
-              </RoleBasedRoute>
-            </PageTransition>
-          }
-        />
+      {/* Instructor Routes */}
+      <Route
+        path="/instructor/*"
+        element={
+          <RoleBasedRoute allowedRoles={['INSTRUCTOR']}>
+            <InstructorRoutes />
+          </RoleBasedRoute>
+        }
+      />
 
-        <Route path="/student/*" element={<PageTransition><StudentRoutes /></PageTransition>} />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AnimatePresence>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

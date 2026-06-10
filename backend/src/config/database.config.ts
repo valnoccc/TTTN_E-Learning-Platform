@@ -32,10 +32,15 @@ export function buildTypeOrmOptions(
     password: config.password,
     database: config.database,
     synchronize: false,
-    ssl: {
-      minVersion: 'TLSv1.2',
-      rejectUnauthorized: true,
-    },
+    ...(config.host.includes('amazonaws.com') ||
+    config.host.includes('tidbcloud.com')
+      ? {
+          ssl: {
+            minVersion: 'TLSv1.2',
+            rejectUnauthorized: true,
+          },
+        }
+      : {}),
     ...overrides,
   } as DataSourceOptions;
 }

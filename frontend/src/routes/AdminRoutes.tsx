@@ -1,14 +1,13 @@
-import { Routes, Route } from 'react-router-dom';
-import AdminDashboard from '../pages/admin/AdminDashboard';
-// Import thêm các trang Admin khác của bạn vào đây (ví dụ: Quản lý người dùng, thống kê...)
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AdminDashboard from '../pages/admin/Dashboard/AdminDashboard';
+import AdminCourseModeration from '../pages/admin/Courses/AdminCourseModeration';
 
 export default function AdminRoutes() {
     return (
         <Routes>
-            {/* Đường dẫn gốc là /admin/ */}
-            <Route path="/" element={<AdminDashboard />} />
-
-            {/* Ví dụ sau này bạn thêm: <Route path="users" element={<AdminUserManagement />} /> */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="courses" element={<AdminCourseModeration />} />
         </Routes>
     );
 }

@@ -4,65 +4,73 @@ Source of truth:
 - Swagger: `http://localhost:3000/api/docs`
 - OpenAPI JSON: `http://localhost:3000/api-json`
 
-## Auth & Account (Quản lý tài khoản)
+## Auth & Account (Quan ly tai khoan)
 - `POST /auth/register`
 - `POST /auth/login`
 - `GET /auth/me`
-- `PATCH /auth/profile` (Cập nhật thông tin cá nhân/tiểu sử)
-- `PATCH /auth/change-password` (Đổi mật khẩu)
-- `POST /auth/forgot-password` (Khôi phục mật khẩu)
+- `PATCH /auth/profile` (Cap nhat thong tin ca nhan/tieu su)
+- `PATCH /auth/change-password` (Doi mat khau)
+- `POST /auth/forgot-password` (Khoi phuc mat khau)
 
-## Users (Admin - Quản lý người dùng)
-- `GET /users` (Xem danh sách tài khoản)
-- `PATCH /users/:id/status` (Khóa/Mở khóa tài khoản)
-- `PATCH /users/:id/roles` (Cấp quyền hệ thống)
+## Users (Admin - Quan ly nguoi dung)
+- `GET /users` (Xem danh sach tai khoan)
+- `PATCH /users/:id/status` (Khoa/Mo khoa tai khoan)
+- `PATCH /users/:id/roles` (Cap quyen he thong)
 
-## Categories (Quản lý danh mục)
-- `GET /categories` (Public - Hiển thị danh mục)
-- `POST /categories` (Admin - Thêm danh mục mới)
-- `PATCH /categories/:id` (Admin - Sửa danh mục)
-- `DELETE /categories/:id` (Admin - Xóa danh mục)
+## Categories (Quan ly danh muc)
+- `GET /categories` (Public - Hien thi danh muc)
+- `POST /categories` (Admin - Them danh muc moi)
+- `PATCH /categories/:id` (Admin - Sua danh muc)
+- `DELETE /categories/:id` (Admin - Xoa danh muc)
 
-## Courses (Quản lý Khóa học)
-**Public & Student (Khám phá & Học tập)**
-- `GET /courses` (Tìm kiếm, lọc khóa học)
-- `GET /courses/:id` (Xem chi tiết khóa học)
+## Courses (Quan ly khoa hoc)
+Public & Student (Kham pha & Hoc tap)
+- `GET /courses` (Tim kiem, loc khoa hoc)
+- `GET /courses/:id` (Xem chi tiet khoa hoc)
 
-**Instructor (Giảng viên)**
-- `GET /instructor/courses` (Xem danh sách khóa học của tôi)
-- `POST /instructor/courses` (Thêm khóa học mới - Trạng thái "Nháp")
-- `PATCH /instructor/courses/:id` (Cập nhật nội dung khóa học)
-- `DELETE /instructor/courses/:id` (Ẩn/Xóa khóa học)
-- `POST /instructor/courses/:id/submit` (Gửi yêu cầu kiểm duyệt)
+Instructor (Giang vien)
+- `GET /instructor/courses` (Xem danh sach khoa hoc cua toi)
+- `POST /instructor/courses` (Them khoa hoc moi - Trang thai "Nhap")
+- `PATCH /instructor/courses/:id` (Cap nhat noi dung khoa hoc)
+- `DELETE /instructor/courses/:id` (An/Xoa khoa hoc)
+- `POST /instructor/courses/:id/submit` (Gui yeu cau kiem duyet)
 
-**Admin (Kiểm duyệt)**
-- `GET /admin/courses/pending` (Xem danh sách chờ duyệt)
-- `PATCH /admin/courses/:id/approve` (Phê duyệt khóa học)
-- `PATCH /admin/courses/:id/reject` (Từ chối khóa học kèm lý do)
+Admin (Kiem duyet)
+- `GET /admin/courses` (Admin - Xem danh sach khoa hoc, ho tro `status` va `search`)
+- `GET /admin/courses/pending` (Xem danh sach cho duyet)
+- `GET /admin/courses/:id` (Xem chi tiet khoa hoc cho quy trinh kiem duyet, gom muc tieu, yeu cau, curriculum va lich su kiem duyet)
+- `PATCH /admin/courses/:id/approve` (Phe duyet khoa hoc va luu lich su kiem duyet)
+- `PATCH /admin/courses/:id/reject` (Tu choi khoa hoc, body: `{ lyDo: string }`, dong thoi tao thong bao cho giang vien va luu lich su kiem duyet)
 
-## Lessons (Quản lý Bài học)
-- `GET /courses/:courseId/lessons` (Danh sách bài học của khóa)
-- `GET /lessons/:id` (Xem chi tiết video/tài liệu bài học - Yêu cầu đã mua khóa)
-- `POST /courses/:courseId/lessons` (Instructor - Thêm bài học mới)
-- `PATCH /lessons/:id` (Instructor - Sửa nội dung bài học)
-- `DELETE /lessons/:id` (Instructor - Xóa bài học)
+## Lessons (Quan ly bai hoc)
+- `GET /courses/:courseId/lessons` (Danh sach bai hoc cua khoa)
+- `GET /lessons/:id` (Xem chi tiet video/tai lieu bai hoc - Yeu cau da mua khoa)
+- `POST /courses/:courseId/lessons` (Instructor - Them bai hoc moi)
+- `PATCH /lessons/:id` (Instructor - Sua noi dung bai hoc)
+- `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
-## Enrollments & Progress (Giao dịch & Tiến độ)
-- `POST /enrollments` (Đăng ký mua/Thanh toán khóa học)
-- `GET /enrollments/me` (Xem danh sách khóa học đã mua & lịch sử giao dịch)
-- `GET /enrollments/:courseId/status` (Kiểm tra trạng thái mua khóa học)
-- `PATCH /enrollments/:courseId/progress` (Hệ thống tự động cập nhật tiến độ xem video)
+## Enrollments & Progress (Giao dich & Tien do)
+- `POST /enrollments` (Dang ky mua/Thanh toan khoa hoc)
+- `GET /enrollments/me` (Xem danh sach khoa hoc da mua & lich su giao dich)
+- `GET /enrollments/:courseId/status` (Kiem tra trang thai mua khoa hoc)
+- `PATCH /enrollments/:courseId/progress` (He thong tu dong cap nhat tien do xem video)
 
-## Submissions & Grading (Thực hành & Chấm điểm)
-- `POST /lessons/:lessonId/submissions` (Student - Nộp bài tập qua link GitHub)
-- `GET /instructor/courses/:courseId/submissions` (Instructor - Xem danh sách bài nộp của học viên)
-- `PATCH /submissions/:id/grade` (Instructor - Chấm điểm Đạt/Không đạt & nhập nhận xét)
-- `GET /submissions/me` (Student - Xem kết quả & phản hồi từ giảng viên)
+## Submissions & Grading (Thuc hanh & Cham diem)
+- `POST /lessons/:lessonId/submissions` (Student - Nop bai tap qua link GitHub)
+- `GET /instructor/courses/:courseId/submissions` (Instructor - Xem danh sach bai nop cua hoc vien)
+- `PATCH /submissions/:id/grade` (Instructor - Cham diem Dat/Khong dat & nhap nhan xet)
+- `GET /submissions/me` (Student - Xem ket qua & phan hoi tu giang vien)
+
+## Notifications (Thong bao)
+- `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)
+- `GET /notifications/unread-count` (Dem thong bao chua doc)
+- `PATCH /notifications/:id/read` (Danh dau mot thong bao la da doc)
+- `PATCH /notifications/read-all` (Danh dau tat ca thong bao la da doc)
 
 ## Rules
 - Protected endpoints require `Bearer token` (JWT).
 - Admin endpoints require `ADMIN` role.
 - Instructor course/lesson mutations require `INSTRUCTOR` role.
-- Student enrollments & submissions require `STUDENT` role (hoặc role mặc định khi user đăng ký).
-- **Data Isolation:** Giảng viên CHỈ ĐƯỢC PHÉP thao tác (Sửa/Xóa/Xem bài nộp) trên các khóa học do chính họ tạo ra.
-- **Data Integrity:** Không được phép xóa cứng (Hard Delete) khóa học/bài học nếu đã có học viên đăng ký (`enrollments > 0`). Chuyển sang trạng thái Ẩn (Soft Delete/Deactivate).
+- Student enrollments & submissions require `STUDENT` role (hoac role mac dinh khi user dang ky).
+- Data Isolation: Giang vien chi duoc phep thao tac tren cac khoa hoc do chinh ho tao ra.
+- Data Integrity: Khong duoc phep xoa cung khoa hoc/bai hoc neu da co hoc vien dang ky (`enrollments > 0`). Chuyen sang trang thai an (Soft Delete/Deactivate).

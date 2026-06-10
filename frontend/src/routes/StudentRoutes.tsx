@@ -6,6 +6,8 @@ import CourseList from '../features/student-portal/pages/courses/CourseList';
 import CourseDetails from '../features/student-portal/pages/courses/CourseDetails';
 import Faq from '../features/student-portal/pages/faq/Faq';
 import Contact from '../features/student-portal/pages/contact/Contact';
+import StudentProfile from '../features/student-portal/pages/account/StudentProfile';
+import Cart from '../features/student-portal/pages/shop/Cart';
 
 export default function StudentRoutes() {
   return (
@@ -18,6 +20,8 @@ export default function StudentRoutes() {
       <Route path="course-details" element={<CourseDetails />} />
       <Route path="faq" element={<Faq />} />
       <Route path="contact" element={<Contact />} />
+      <Route path="profile" element={<StudentProfile />} />
+      <Route path="cart" element={<Cart />} />
       <Route path="*" element={<Navigate to="/student" replace />} />
     </Routes>
   );
