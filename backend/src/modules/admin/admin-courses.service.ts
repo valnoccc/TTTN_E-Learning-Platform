@@ -49,6 +49,16 @@ type ModerationHistoryRow = {
   adminId?: string | number;
   adminName?: string | null;
 };
+type CourseReviewRow = {
+  reviewId?: string | number;
+  rating?: string | number | null;
+  content?: string | null;
+  createdAt?: string | Date;
+  parentId?: string | number | null;
+  userId?: string | number;
+  userName?: string | null;
+  userAvatar?: string | null;
+};
 
 export interface AdminCourseFilters {
   search?: string;
@@ -122,6 +132,24 @@ export class AdminCoursesService {
       `,
       [courseId],
     )) as CurriculumRow[];
+    const reviewRows = (await this.dataSource.query(
+      `
+        SELECT
+          dg.MaDanhGia as reviewId,
+          dg.SoSao as rating,
+          dg.NoiDung as content,
+          dg.ThoiGian as createdAt,
+          dg.MaDanhGiaCha as parentId,
+          nd.MaND as userId,
+          nd.HoTen as userName,
+          nd.AnhDaiDien as userAvatar
+        FROM DanhGiaKhoaHoc dg
+        JOIN NguoiDung nd ON nd.MaND = dg.MaND
+        WHERE dg.MaKH = ?
+        ORDER BY dg.ThoiGian DESC, dg.MaDanhGia DESC
+      `,
+      [courseId],
+    )) as CourseReviewRow[];
     const moderationRows = (await this.dataSource.query(
       `
         SELECT
@@ -155,6 +183,19 @@ export class AdminCoursesService {
         .map((item) => item.NoiDung?.trim() ?? '')
         .filter(Boolean),
       curriculum: this.mapCurriculum(curriculumRows),
+      reviews: reviewRows.map((row) => ({
+        reviewId: Number(row.reviewId ?? 0),
+        rating: row.rating == null ? null : Number(row.rating),
+        content: row.content ?? '',
+        createdAt:
+          row.createdAt instanceof Date
+            ? row.createdAt.toISOString()
+            : String(row.createdAt ?? ''),
+        parentId: row.parentId == null ? null : Number(row.parentId),
+        userId: Number(row.userId ?? 0),
+        userName: row.userName ?? '',
+        userAvatar: row.userAvatar ?? null,
+      })),
       moderationHistory: moderationRows.map((row) => ({
         maLSKD: Number(row.maLSKD ?? 0),
         hanhDong: row.hanhDong ?? 'REJECT',
@@ -257,6 +298,32 @@ export class AdminCoursesService {
     };
   }
 
+  async banPublishedCourse(courseId: number, adminId: number, reason?: string) {
+    return this.moderatePublishedCourse({
+      courseId,
+      adminId,
+      reason,
+      nextStatus: 'BANNED',
+      action: CourseModerationAction.BAN,
+      successMessage: 'Đã ban khóa học thành công.',
+      notificationTitle: 'Khóa học đã bị ban',
+      actionText: 'đã bị ban do vi phạm yêu cầu hệ thống',
+    });
+  }
+
+  async hidePublishedCourse(courseId: number, adminId: number, reason?: string) {
+    return this.moderatePublishedCourse({
+      courseId,
+      adminId,
+      reason,
+      nextStatus: 'DRAFT',
+      action: CourseModerationAction.HIDE,
+      successMessage: 'Đã ẩn khóa học và chuyển về bản nháp.',
+      notificationTitle: 'Khóa học đã bị ẩn',
+      actionText: 'đã bị ẩn và chuyển về bản nháp',
+    });
+  }
+
   private buildCourseListQuery(filters: AdminCourseFilters) {
     let sql = `
       SELECT
@@ -312,6 +379,66 @@ export class AdminCoursesService {
     `;
 
     return { sql, params };
+  }
+
+  private async moderatePublishedCourse(params: {
+    courseId: number;
+    adminId: number;
+    reason?: string;
+    nextStatus: 'BANNED' | 'DRAFT';
+    action: CourseModerationAction.BAN | CourseModerationAction.HIDE;
+    successMessage: string;
+    notificationTitle: string;
+    actionText: string;
+  }) {
+    const trimmedReason = params.reason?.trim();
+    if (!trimmedReason) {
+      throw new BadRequestException('Lý do xử lý khóa học không được để trống.');
+    }
+
+    const course = await this.courseRepository.findOne({
+      where: { maKH: params.courseId },
+    });
+    if (!course) {
+      throw new NotFoundException('Không tìm thấy khóa học.');
+    }
+    if (course.trangThai !== 'PUBLISHED') {
+      throw new BadRequestException(
+        'Chỉ khóa học đã xuất bản mới có thể ban hoặc ẩn.',
+      );
+    }
+
+    course.trangThai = params.nextStatus;
+    await this.courseRepository.save(course);
+    await this.notificationsService.createNotification({
+      maND: course.maND_GiangVien,
+      maNguoiGui: params.adminId,
+      loaiThongBao: NotificationType.COURSE,
+      tieuDe: params.notificationTitle,
+      noiDung: this.buildPublishedCourseActionNotification(
+        course.tenKhoaHoc,
+        params.actionText,
+        trimmedReason,
+      ),
+      daDoc: false,
+    });
+    await this.moderationHistoryRepository.save(
+      this.moderationHistoryRepository.create({
+        maKH: course.maKH,
+        maND_Admin: params.adminId,
+        hanhDong: params.action,
+        ghiChu: trimmedReason,
+      }),
+    );
+
+    return {
+      message: params.successMessage,
+      data: {
+        id: course.maKH,
+        trangThai: course.trangThai,
+        lyDo: trimmedReason,
+      },
+    };
   }
 
   private mapCurriculum(rows: CurriculumRow[]) {
@@ -371,5 +498,14 @@ export class AdminCoursesService {
   ) {
     const safeCourseName = courseName?.trim() || 'Khóa học của bạn';
     return `${safeCourseName} đã bị từ chối xuất bản. Nội dung cần chỉnh sửa: ${reason}`;
+  }
+
+  private buildPublishedCourseActionNotification(
+    courseName: string | undefined,
+    actionText: string,
+    reason: string,
+  ) {
+    const safeCourseName = courseName?.trim() || 'Khóa học của bạn';
+    return `${safeCourseName} ${actionText}. Lý do: ${reason}`;
   }
 }

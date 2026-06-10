@@ -78,7 +78,7 @@ describe('AdminCoursesService', () => {
     ]);
   });
 
-  it('returns course detail with goals requirements curriculum and moderation history', async () => {
+  it('returns course detail with goals requirements curriculum reviews and moderation history', async () => {
     courseRepository.findOne.mockResolvedValue({
       maKH: 11,
       tenKhoaHoc: 'React Co Ban',
@@ -103,6 +103,18 @@ describe('AdminCoursesService', () => {
           noiDungBaiHoc: 'Noi dung',
           videoURL: 'https://example.com/video.mp4',
           trangThaiBaiHoc: 'ACTIVE',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          reviewId: 501,
+          rating: 5,
+          content: 'Khoa hoc rat hay',
+          createdAt: '2026-06-10 09:00:00',
+          parentId: null,
+          userId: 30002,
+          userName: 'Hoc vien A',
+          userAvatar: null,
         },
       ])
       .mockResolvedValueOnce([
@@ -142,6 +154,18 @@ describe('AdminCoursesService', () => {
               trangThai: 'ACTIVE',
             },
           ],
+        },
+      ],
+      reviews: [
+        {
+          reviewId: 501,
+          rating: 5,
+          content: 'Khoa hoc rat hay',
+          createdAt: '2026-06-10 09:00:00',
+          parentId: null,
+          userId: 30002,
+          userName: 'Hoc vien A',
+          userAvatar: null,
         },
       ],
       moderationHistory: [
@@ -236,6 +260,78 @@ describe('AdminCoursesService', () => {
       maND_Admin: 99,
       hanhDong: 'REJECT',
       ghiChu: 'Thieu noi dung bai hoc thuc hanh.',
+    });
+  });
+
+  it('bans published courses and writes moderation history', async () => {
+    const course = {
+      maKH: 11,
+      tenKhoaHoc: 'React Co Ban',
+      trangThai: 'PUBLISHED',
+      maND_GiangVien: 7,
+    };
+    courseRepository.findOne.mockResolvedValue(course);
+    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    notificationsService.createNotification.mockImplementation((value) =>
+      resolveValue(value),
+    );
+    moderationHistoryRepository.create.mockImplementation((value) => value);
+    moderationHistoryRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
+
+    await expect(
+      service.banPublishedCourse(11, 99, 'Vi pham noi dung khoa hoc.'),
+    ).resolves.toEqual({
+      message: 'Đã ban khóa học thành công.',
+      data: {
+        id: 11,
+        trangThai: 'BANNED',
+        lyDo: 'Vi pham noi dung khoa hoc.',
+      },
+    });
+
+    expect(moderationHistoryRepository.create).toHaveBeenCalledWith({
+      maKH: 11,
+      maND_Admin: 99,
+      hanhDong: 'BAN',
+      ghiChu: 'Vi pham noi dung khoa hoc.',
+    });
+  });
+
+  it('hides published courses by moving them back to draft and writes moderation history', async () => {
+    const course = {
+      maKH: 11,
+      tenKhoaHoc: 'React Co Ban',
+      trangThai: 'PUBLISHED',
+      maND_GiangVien: 7,
+    };
+    courseRepository.findOne.mockResolvedValue(course);
+    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    notificationsService.createNotification.mockImplementation((value) =>
+      resolveValue(value),
+    );
+    moderationHistoryRepository.create.mockImplementation((value) => value);
+    moderationHistoryRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
+
+    await expect(
+      service.hidePublishedCourse(11, 99, 'Can an de cap nhat noi dung.'),
+    ).resolves.toEqual({
+      message: 'Đã ẩn khóa học và chuyển về bản nháp.',
+      data: {
+        id: 11,
+        trangThai: 'DRAFT',
+        lyDo: 'Can an de cap nhat noi dung.',
+      },
+    });
+
+    expect(moderationHistoryRepository.create).toHaveBeenCalledWith({
+      maKH: 11,
+      maND_Admin: 99,
+      hanhDong: 'HIDE',
+      ghiChu: 'Can an de cap nhat noi dung.',
     });
   });
 

@@ -45,6 +45,17 @@ export interface AdminModerationHistoryItem {
     adminName: string;
 }
 
+export interface AdminCourseReview {
+    reviewId: number;
+    rating: number | null;
+    content: string;
+    createdAt: string;
+    parentId: number | null;
+    userId: number;
+    userName: string;
+    userAvatar: string | null;
+}
+
 export interface AdminCourseModerationDetail {
     id: number;
     tenKhoaHoc: string;
@@ -57,7 +68,13 @@ export interface AdminCourseModerationDetail {
     mucTieu: string[];
     yeuCau: string[];
     curriculum: AdminModerationChapter[];
+    reviews: AdminCourseReview[];
     moderationHistory: AdminModerationHistoryItem[];
+}
+
+export async function fetchAdminCourseModerationDetail(courseId: number) {
+    const response = await axiosClient.get<{ data?: AdminCourseModerationDetail }>(`/admin/courses/${courseId}`);
+    return response?.data ?? null;
 }
 
 export function useAdminCourseModeration() {
@@ -65,8 +82,6 @@ export function useAdminCourseModeration() {
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<AdminCourseStatus>('PENDING');
     const [search, setSearch] = useState('');
-    const [selectedCourseDetail, setSelectedCourseDetail] = useState<AdminCourseModerationDetail | null>(null);
-    const [detailLoading, setDetailLoading] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -81,7 +96,7 @@ export function useAdminCourseModeration() {
                 setCourses(Array.isArray(response?.data) ? response.data : []);
             } catch (error: any) {
                 if (error?.name !== 'CanceledError' && error?.code !== 'ERR_CANCELED') {
-                    toast.error('Khong the tai danh sach khoa hoc cho admin.');
+                    toast.error('Không thể tải danh sách khóa học cho admin.');
                     setCourses([]);
                 }
             } finally {
@@ -93,11 +108,6 @@ export function useAdminCourseModeration() {
         return () => controller.abort();
     }, [search, status]);
 
-    const fetchCourseDetail = async (courseId: number) => {
-        const response = await axiosClient.get<{ data?: AdminCourseModerationDetail }>(`/admin/courses/${courseId}`);
-        return response?.data ?? null;
-    };
-
     const approveCourse = async (courseId: number) => {
         try {
             const response = await axiosClient.patch<{ data?: { trangThai: string } }>(`/admin/courses/${courseId}/approve`);
@@ -107,16 +117,9 @@ export function useAdminCourseModeration() {
                     course.id === courseId ? { ...course, trangThai: nextStatus } : course,
                 ),
             );
-            setSelectedCourseDetail((current) =>
-                current && current.id === courseId ? { ...current, trangThai: nextStatus } : current,
-            );
-            if (selectedCourseDetail?.id === courseId) {
-                const refreshedDetail = await fetchCourseDetail(courseId);
-                setSelectedCourseDetail(refreshedDetail);
-            }
-            toast.success('Da phe duyet khoa hoc.');
+            toast.success('Đã phê duyệt khóa học.');
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Khong the phe duyet khoa hoc.');
+            toast.error(error?.response?.data?.message || 'Không thể phê duyệt khóa học.');
         }
     };
 
@@ -132,32 +135,11 @@ export function useAdminCourseModeration() {
                     course.id === courseId ? { ...course, trangThai: nextStatus } : course,
                 ),
             );
-            if (selectedCourseDetail?.id === courseId) {
-                const refreshedDetail = await fetchCourseDetail(courseId);
-                setSelectedCourseDetail(refreshedDetail);
-            }
-            toast.success('Da tu choi khoa hoc.');
+            toast.success('Đã từ chối khóa học.');
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Khong the tu choi khoa hoc.');
+            toast.error(error?.response?.data?.message || 'Không thể từ chối khóa học.');
             throw error;
         }
-    };
-
-    const openCourseDetail = async (courseId: number) => {
-        setDetailLoading(true);
-        try {
-            const detail = await fetchCourseDetail(courseId);
-            setSelectedCourseDetail(detail);
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Khong the tai chi tiet khoa hoc.');
-            setSelectedCourseDetail(null);
-        } finally {
-            setDetailLoading(false);
-        }
-    };
-
-    const closeCourseDetail = () => {
-        setSelectedCourseDetail(null);
     };
 
     return {
@@ -169,9 +151,5 @@ export function useAdminCourseModeration() {
         setStatus,
         approveCourse,
         rejectCourse,
-        selectedCourseDetail,
-        detailLoading,
-        openCourseDetail,
-        closeCourseDetail,
     };
 }

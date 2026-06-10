@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminDashboard from '../pages/admin/Dashboard/AdminDashboard';
 import AdminCourseModeration from '../pages/admin/Courses/AdminCourseModeration';
+import AdminCourseDetail from '../pages/admin/Courses/AdminCourseDetail';
 
 export default function AdminRoutes() {
     return (
@@ -8,6 +9,7 @@ export default function AdminRoutes() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="courses" element={<AdminCourseModeration />} />
+            <Route path="courses/:id" element={<AdminCourseDetail />} />
         </Routes>
     );
 }

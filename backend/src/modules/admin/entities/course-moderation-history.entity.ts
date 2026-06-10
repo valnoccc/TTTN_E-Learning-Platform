@@ -8,6 +8,8 @@ import {
 export enum CourseModerationAction {
   APPROVE = 'APPROVE',
   REJECT = 'REJECT',
+  BAN = 'BAN',
+  HIDE = 'HIDE',
 }
 
 @Entity('LichSuKiemDuyetKhoaHoc')
