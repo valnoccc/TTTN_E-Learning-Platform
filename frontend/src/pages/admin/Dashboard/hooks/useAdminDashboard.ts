@@ -8,12 +8,45 @@ export interface RevenueChartData {
     doanhThu: number;
 }
 
+export interface SalesOverview {
+    orders: number;
+    earnings: number;
+    refunds: number;
+}
+
+export interface SalesChartData {
+    label: string;
+    orders: number;
+    earnings: number;
+    refunds: number;
+}
+
 export interface RecentOrder {
     orderId: number;
     customerName: string;
     totalAmount: number;
     paidAt: string;
     paymentMethod: string;
+}
+
+export interface TopCourse {
+    id: number | string;
+    name: string;
+    date: string;
+    price: number;
+    orders: number;
+    revenue: number;
+    image: string;
+}
+
+export interface TopInstructor {
+    id: number | string;
+    name: string;
+    category: string;
+    students: number;
+    revenue: number;
+    percentage: number;
+    avatar: string;
 }
 
 export interface DashboardStats {
@@ -27,6 +60,10 @@ export interface DashboardStats {
     revenueGrowth: number;
     recentOrders: RecentOrder[];
     revenueChart: RevenueChartData[];
+    salesOverview: SalesOverview;
+    salesChart: SalesChartData[];
+    topCourses: TopCourse[];
+    topInstructors: TopInstructor[];
 }
 
 export function useAdminDashboard() {
@@ -40,7 +77,7 @@ export function useAdminDashboard() {
                 const response = await axiosClient.get<DashboardStats>('/admin/dashboard/stats');
                 setStats(response as any);
             } catch (error) {
-                toast.error('Không thể tải dữ liệu thống kê tổng quan!');
+                toast.error('Lỗi khi tải dữ liệu!');
             } finally {
                 setLoading(false);
             }

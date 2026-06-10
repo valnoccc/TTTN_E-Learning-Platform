@@ -1,1 +1,1 @@
-export class Admin { }
+export class Admin {}
