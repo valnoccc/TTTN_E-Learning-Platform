@@ -12,7 +12,7 @@ class NumberCounter extends Component {
         return (
             <Styles>
                 {/* Counter Area */}
-                <section className="counter-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.backgroundImage})` }}>
+                <section className="counter-area" style={{ backgroundImage: `url(/assets/images/${Datas.backgroundImage})` }}>
                     <Container>
                         <Row>
                             <Col md="12">
@@ -73,3 +73,4 @@ class NumberCounter extends Component {
 }
 
 export default NumberCounter
+

@@ -24,10 +24,10 @@ class Instructor extends Component {
                                     Datas.map((data, i) => (
                                         <Col lg="3" md="4" sm="6" key={i}>
                                             <div className="instructor-item">
-                                                <Link to={process.env.PUBLIC_URL + "/instructor-details"}>
+                                                <Link to={"/instructor-details"}>
                                                     <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
                                                         <img 
-                                                            src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                            src={`/assets/images/${data.personImage}`} 
                                                             alt="" 
                                                             className="img-fluid" 
                                                             style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
@@ -35,12 +35,12 @@ class Instructor extends Component {
                                                     </div>
                                                 </Link>
                                                 <div className="img-content text-center">
-                                                    <h5><Link to={process.env.PUBLIC_URL + "/instructor-details"}>{data.personName}</Link></h5>
+                                                    <h5><Link to={"/instructor-details"}>{data.personName}</Link></h5>
                                                     <p>{data.personTitle}</p>
                                                     <ul className="list-unstyled list-inline">
-                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
-                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
-                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
+                                                        <li className="list-inline-item"><a href={data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
+                                                        <li className="list-inline-item"><a href={data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
+                                                        <li className="list-inline-item"><a href={data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
                                                     </ul>
                                                 </div>
                                             </div>

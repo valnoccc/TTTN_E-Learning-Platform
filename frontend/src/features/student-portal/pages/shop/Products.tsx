@@ -28,15 +28,15 @@ class Product extends Component {
                                                 <Col lg="4" md="6" key={i}>
                                                     <div className="product-box">
                                                         <div className="product-img">
-                                                            <img src={process.env.PUBLIC_URL + `/assets/images/${data.productImg}`} alt="" className="img-fluid" />
+                                                            <img src={`/assets/images/${data.productImg}`} alt="" className="img-fluid" />
                                                             <span>{data.discount}</span>
                                                             <div className="layer-box"></div>
-                                                            <Link className="add_cart" to={process.env.PUBLIC_URL + data.productUrl}>Add To Cart</Link>
-                                                            <Link className="item_view" to={process.env.PUBLIC_URL + data.productUrl}>View Item</Link>
+                                                            <Link className="add_cart" to={data.productUrl}>Add To Cart</Link>
+                                                            <Link className="item_view" to={data.productUrl}>View Item</Link>
                                                         </div>
                                                         <div className="product-content text-center">
                                                             <div className="pro-title">
-                                                                <h5><Link to={process.env.PUBLIC_URL + data.productUrl}>{data.productTitle}</Link></h5>
+                                                                <h5><Link to={data.productUrl}>{data.productTitle}</Link></h5>
                                                             </div>
                                                             <div className="pro-rating">
                                                                 <ul className="list-unstyled list-inline">

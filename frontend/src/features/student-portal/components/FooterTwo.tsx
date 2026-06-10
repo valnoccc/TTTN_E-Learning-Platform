@@ -58,12 +58,12 @@ function FooterTwo() {
     return (
         <Styles>
             {/* Footer Two */}
-            <footer className="footer2" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.backgroundImage})` }}>
+            <footer className="footer2" style={{ backgroundImage: `url(/assets/images/${Datas.backgroundImage})` }}>
                 <Container>
                     <Row>
                         <Col md="3">
                             <div className="footer-logo-info">
-                                <img src={process.env.PUBLIC_URL + "/assets/images/logo.png"} alt="" className="img-fluid" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px' }} />
+                                <img src={"/assets/images/logo.png"} alt="" className="img-fluid" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px' }} />
                                 <p>We provide high-quality courses to help you improve your skills and advance in your career.</p>
                                 <ul className="list-unstyled">
                                     <li><i className="las la-map-marker"></i>795 South Park Avenue, CA 94107</li>
@@ -76,11 +76,11 @@ function FooterTwo() {
                             <div className="f-links">
                                 <h5>Useful Links</h5>
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-angle-right"></i>General Information</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-angle-right"></i>Help Center</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-angle-right"></i>Our Services</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-angle-right"></i>Privacy Policy</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}><i className="las la-angle-right"></i>Online Support</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>General Information</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Help Center</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Our Services</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Privacy Policy</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Online Support</Link></li>
                                 </ul>
                             </div>
                         </Col>
@@ -92,7 +92,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Discover new technology trends...</Link>
+                                        <Link to={"/blog-details"}>Discover new technology trends...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -101,7 +101,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>The most effective programming study guide...</Link>
+                                        <Link to={"/blog-details"}>The most effective programming study guide...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -110,7 +110,7 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={process.env.PUBLIC_URL + "/blog-details"}>Secrets to building a successful career...</Link>
+                                        <Link to={"/blog-details"}>Secrets to building a successful career...</Link>
                                         <span>Mar 30, 2019</span>
                                     </div>
                                 </div>
@@ -132,13 +132,13 @@ function FooterTwo() {
                         </Col>
                         <Col md="12">
                             <div className="copytext-area text-center">
-                                <p>Copyright &copy; 2017 | Designed With <i className="las la-heart"></i> by <a href={process.env.PUBLIC_URL + "/"} target="_blank" rel="noopener noreferrer">SnazzyTheme</a></p>
+                                <p>Copyright &copy; 2017 | Designed With <i className="las la-heart"></i> by <a href={"/"} target="_blank" rel="noopener noreferrer">SnazzyTheme</a></p>
                                 <ul className="social list-unstyled list-inline">
-                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                 </ul>
                             </div>
                         </Col>
@@ -153,3 +153,4 @@ function FooterTwo() {
 }
 
 export default FooterTwo
+

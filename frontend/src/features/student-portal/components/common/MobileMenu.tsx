@@ -86,12 +86,12 @@ class MobileMenu extends Component {
                                 <div className="mb-logo-area d-flex justify-content-between">
                                     <div className="mb-logo-box d-flex">
                                         <div className="hm-button">
-                                            <a href={process.env.PUBLIC_URL + "/"} id="mb-sidebar-btn">
+                                            <a href={"/"} id="mb-sidebar-btn">
                                                 <i className="las la-bars"></i>
                                             </a>
                                         </div>
                                         <div className="mb-logo">
-                                            <Link to={process.env.PUBLIC_URL + "/"}><img src={process.env.PUBLIC_URL + "/assets/images/f-logo.png"} alt="" /></Link>
+                                            <Link to={"/"}><img src={"/assets/images/f-logo.png"} alt="" /></Link>
                                         </div>
                                     </div>
                                     <div className="mb-search-box">
@@ -109,17 +109,17 @@ class MobileMenu extends Component {
                 <section className="mb-sidebar" id="mb-sidebar-body">
                     <div className="mb-sidebar-heading d-flex justify-content-between">
                         <div><h5>Menu</h5></div>
-                        <div><a href={process.env.PUBLIC_URL + "/"} id="close-mb-sidebar"><i className="las la-times"></i></a></div>
+                        <div><a href={"/"} id="close-mb-sidebar"><i className="las la-times"></i></a></div>
                     </div>
                     <div className="mb-sidebar-menu">
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
-                                <p><Link to={process.env.PUBLIC_URL + "/"} style={{ color: "inherit", textDecoration: "none" }}>Home</Link></p>
+                                <p><Link to={"/"} style={{ color: "inherit", textDecoration: "none" }}>Home</Link></p>
                             </button>
                             <div className="mb-menu-content show d-none">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/"}>Home Style 1</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/home-two"}>Home Style 2</Link></li>
+                                    <li><Link to={"/"}>Home Style 1</Link></li>
+                                    <li><Link to={"/home-two"}>Home Style 2</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -129,14 +129,14 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content show">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/about"}>About Us</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/gallery"}>Gallery</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/login"}>Log In</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/registration"}>Registration</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/contact"}>Contact</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/faq"}>Faq</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/404"}>404</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/coming-soon"}>Coming Soon</Link></li>
+                                    <li><Link to={"/about"}>About Us</Link></li>
+                                    <li><Link to={"/gallery"}>Gallery</Link></li>
+                                    <li><Link to={"/login"}>Log In</Link></li>
+                                    <li><Link to={"/registration"}>Registration</Link></li>
+                                    <li><Link to={"/contact"}>Contact</Link></li>
+                                    <li><Link to={"/faq"}>Faq</Link></li>
+                                    <li><Link to={"/404"}>404</Link></li>
+                                    <li><Link to={"/coming-soon"}>Coming Soon</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -146,9 +146,9 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content show">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/course-grid"}>Course Grid</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/course-list"}>Course List</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/course-details"}>Course Details</Link></li>
+                                    <li><Link to={"/course-grid"}>Course Grid</Link></li>
+                                    <li><Link to={"/course-list"}>Course List</Link></li>
+                                    <li><Link to={"/course-details"}>Course Details</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -158,8 +158,8 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/instructors"}>Instructors</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/instructor-details"}>Instructor Details</Link></li>
+                                    <li><Link to={"/instructors"}>Instructors</Link></li>
+                                    <li><Link to={"/instructor-details"}>Instructor Details</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -169,8 +169,8 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/events"}>Events</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/event-details"}>Event Details</Link></li>
+                                    <li><Link to={"/events"}>Events</Link></li>
+                                    <li><Link to={"/event-details"}>Event Details</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -180,9 +180,9 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/blog-classic"}>Blog Classic</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/blog-grid"}>Blog Grid</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/blog-details"}>Blog Details</Link></li>
+                                    <li><Link to={"/blog-classic"}>Blog Classic</Link></li>
+                                    <li><Link to={"/blog-grid"}>Blog Grid</Link></li>
+                                    <li><Link to={"/blog-details"}>Blog Details</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -192,9 +192,9 @@ class MobileMenu extends Component {
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">
-                                    <li><Link to={process.env.PUBLIC_URL + "/products"}>Products</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/product-details"}>Product Details</Link></li>
-                                    <li><Link to={process.env.PUBLIC_URL + "/cart"}>Cart</Link></li>
+                                    <li><Link to={"/products"}>Products</Link></li>
+                                    <li><Link to={"/product-details"}>Product Details</Link></li>
+                                    <li><Link to={"/cart"}>Cart</Link></li>
                                 </ul>
                             </div>
                         </div>
@@ -207,3 +207,4 @@ class MobileMenu extends Component {
 }
 
 export default MobileMenu;
+

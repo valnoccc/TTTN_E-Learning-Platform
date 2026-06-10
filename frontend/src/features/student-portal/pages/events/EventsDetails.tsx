@@ -36,7 +36,7 @@ class EventDetails extends Component {
                                             </ul>
                                         </div>
                                         <div className="event-details-banner">
-                                            <img src={process.env.PUBLIC_URL + `/assets/images/event-banner.jpg`} alt="" className="img-fluid" />
+                                            <img src={`/assets/images/event-banner.jpg`} alt="" className="img-fluid" />
                                         </div>
                                         <div className="event-details-overview">
                                             <h5>Event Overview</h5>
@@ -56,7 +56,7 @@ class EventDetails extends Component {
                                                             <div className="event-speaker-item">
                                                                 <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
                                                                     <img 
-                                                                        src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                                        src={`/assets/images/${data.personImage}`} 
                                                                         alt="" 
                                                                         className="img-fluid" 
                                                                         style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
@@ -65,9 +65,9 @@ class EventDetails extends Component {
                                                                 <div className="img-content text-center">
                                                                     <h6>{data.personName}</h6>
                                                                     <ul className="list-unstyled list-inline">
-                                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
-                                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
-                                                                        <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
+                                                                        <li className="list-inline-item"><a href={data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
+                                                                        <li className="list-inline-item"><a href={data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
+                                                                        <li className="list-inline-item"><a href={data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
                                                                     </ul>
                                                                 </div>
                                                             </div>
@@ -82,10 +82,10 @@ class EventDetails extends Component {
                                                 <Col md="6">
                                                     <div className="next-prev-item prev-event d-flex">
                                                         <div className="prev-img">
-                                                            <img src={process.env.PUBLIC_URL + `/assets/images/gallery-03.jpg`} alt="" />
+                                                            <img src={`/assets/images/gallery-03.jpg`} alt="" />
                                                         </div>
                                                         <div className="prev-text">
-                                                            <p><Link to={process.env.PUBLIC_URL + "/event-details"}>Lorem, ipsum dolor sit amet consectetur adipisicing elit Perferendis.</Link></p>
+                                                            <p><Link to={"/event-details"}>Lorem, ipsum dolor sit amet consectetur adipisicing elit Perferendis.</Link></p>
                                                             <span> March 27, 2020</span>
                                                         </div>
                                                     </div>
@@ -93,10 +93,10 @@ class EventDetails extends Component {
                                                 <Col md="6">
                                                     <div className="next-prev-item next-event d-flex flex-row-reverse text-right">
                                                         <div className="next-img">
-                                                            <img src={process.env.PUBLIC_URL + `/assets/images/gallery-06.jpg`} alt="" />
+                                                            <img src={`/assets/images/gallery-06.jpg`} alt="" />
                                                         </div>
                                                         <div className="next-text">
-                                                            <p><Link to={process.env.PUBLIC_URL + "/event-details"}>Lorem, ipsum dolor sit amet consectetur adipisicing elit Perferendis.</Link></p>
+                                                            <p><Link to={"/event-details"}>Lorem, ipsum dolor sit amet consectetur adipisicing elit Perferendis.</Link></p>
                                                             <span> March 27, 2020</span>
                                                         </div>
                                                     </div>

@@ -249,7 +249,7 @@ export default function Checkout() {
                   
                   {course && (
                     <div className="course-info">
-                      <img src={process.env.PUBLIC_URL + course.thumbnail} alt={course.courseName} />
+                      <img src={course.thumbnail} alt={course.courseName} />
                       <div className="details">
                         <h6>{course.courseName}</h6>
                         <p>By {course.instructor}</p>
@@ -309,3 +309,4 @@ export default function Checkout() {
     </Styles>
   );
 }
+

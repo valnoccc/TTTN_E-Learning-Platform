@@ -27,12 +27,12 @@ class BlogClassic extends Component {
                                         Datas.map((data, i) => (
                                             <div className="blog-item" key={i}>
                                                 <div className="blog-img">
-                                                    <Link to={process.env.PUBLIC_URL + data.postLink}><img src={process.env.PUBLIC_URL + `/assets/images/${data.postImg}`} alt="" className="img-fluid" /></Link>
+                                                    <Link to={data.postLink}><img src={`/assets/images/${data.postImg}`} alt="" className="img-fluid" /></Link>
                                                 </div>
                                                 <div className="blog-auth_date d-flex">
                                                     <div className="author-img d-flex">
-                                                        <Link to={process.env.PUBLIC_URL + data.authorLink}><img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} alt="" /></Link>
-                                                        <p><Link to={process.env.PUBLIC_URL + data.authorLink}>{data.authorName}</Link></p>
+                                                        <Link to={data.authorLink}><img src={`/assets/images/${data.authorImg}`} alt="" /></Link>
+                                                        <p><Link to={data.authorLink}>{data.authorName}</Link></p>
                                                     </div>
                                                     <div className="post-date">
                                                         <p><i className="las la-calendar"></i> {data.postDate}</p>
@@ -45,7 +45,7 @@ class BlogClassic extends Component {
                                                     </div>
                                                 </div>
                                                 <div className="blog-title">
-                                                    <h5><Link to={process.env.PUBLIC_URL + data.postLink}>{data.postTitle}</Link></h5>
+                                                    <h5><Link to={data.postLink}>{data.postTitle}</Link></h5>
                                                 </div>
                                             </div>
                                         ))

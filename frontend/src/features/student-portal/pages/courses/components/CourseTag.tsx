@@ -10,14 +10,14 @@ class CourseTag extends Component {
                 <div className="course-tag">
                     <h5>Course Tag</h5>
                     <div className="tag-box">
-                        <Link to={process.env.PUBLIC_URL + "/"}>HTML</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>CSS</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Photoshop</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Jquery</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>PHP</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Wordpress</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Bootstrap</Link>
-                        <Link to={process.env.PUBLIC_URL + "/"}>Javascript</Link>
+                        <Link to={"/"}>HTML</Link>
+                        <Link to={"/"}>CSS</Link>
+                        <Link to={"/"}>Photoshop</Link>
+                        <Link to={"/"}>Jquery</Link>
+                        <Link to={"/"}>PHP</Link>
+                        <Link to={"/"}>Wordpress</Link>
+                        <Link to={"/"}>Bootstrap</Link>
+                        <Link to={"/"}>Javascript</Link>
                     </div>
                 </div>
             </Styles>
@@ -26,3 +26,4 @@ class CourseTag extends Component {
 }
 
 export default CourseTag
+

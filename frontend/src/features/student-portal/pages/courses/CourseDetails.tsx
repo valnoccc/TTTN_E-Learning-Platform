@@ -66,7 +66,7 @@ function CourseDetails() {
                                     <div className="course-top-overview">
                                         <div className="d-flex overviews">
                                             <div className="author">
-                                                <img src={process.env.PUBLIC_URL + `/assets/images/author.jpg`} alt="" />
+                                                <img src={`/assets/images/author.jpg`} alt="" />
                                                 <div className="author-name">
                                                     <h6>Author</h6>
                                                     <p>Andy Robert</p>
@@ -95,7 +95,7 @@ function CourseDetails() {
                                         </div>
                                     </div>
                                     <div className="course-details-banner">
-                                        <img src={process.env.PUBLIC_URL + `/assets/images/details-banner.jpg`} alt="" className="img-fluid" />
+                                        <img src={`/assets/images/details-banner.jpg`} alt="" className="img-fluid" />
                                     </div>
                                     <div className="course-tab-list">
                                         <Tab.Container defaultActiveKey="overview">
@@ -141,11 +141,11 @@ function CourseDetails() {
                                                     <div className="course-share">
                                                         <h5>Share This Course</h5>
                                                         <ul className="social list-unstyled list-inline">
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                                         </ul>
                                                     </div>
                                                 </Tab.Pane>
@@ -235,7 +235,7 @@ function CourseDetails() {
                                                         <Row>
                                                             <Col md="4">
                                                                 <div className="instructor-img">
-                                                                    <img src={process.env.PUBLIC_URL + `/assets/images/instructor-1.jpg`} alt="" className="img-fluid" />
+                                                                    <img src={`/assets/images/instructor-1.jpg`} alt="" className="img-fluid" />
                                                                 </div>
                                                             </Col>
                                                             <Col md="8">
@@ -248,10 +248,10 @@ function CourseDetails() {
                                                                             </div>
                                                                             <div className="instructor-social">
                                                                                 <ul className="social list-unstyled list-inline">
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
                                                                                 </ul>
                                                                             </div>
                                                                         </div>
@@ -267,7 +267,7 @@ function CourseDetails() {
                                                         <Row>
                                                             <Col md="4">
                                                                 <div className="instructor-img">
-                                                                    <img src={process.env.PUBLIC_URL + `/assets/images/instructor-2.jpg`} alt="" className="img-fluid" />
+                                                                    <img src={`/assets/images/instructor-2.jpg`} alt="" className="img-fluid" />
                                                                 </div>
                                                             </Col>
                                                             <Col md="8">
@@ -280,10 +280,10 @@ function CourseDetails() {
                                                                             </div>
                                                                             <div className="instructor-social">
                                                                                 <ul className="social list-unstyled list-inline">
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
                                                                                 </ul>
                                                                             </div>
                                                                         </div>
@@ -299,7 +299,7 @@ function CourseDetails() {
                                                         <Row>
                                                             <Col md="4">
                                                                 <div className="instructor-img">
-                                                                    <img src={process.env.PUBLIC_URL + `/assets/images/instructor-3.jpg`} alt="" className="img-fluid" />
+                                                                    <img src={`/assets/images/instructor-3.jpg`} alt="" className="img-fluid" />
                                                                 </div>
                                                             </Col>
                                                             <Col md="8">
@@ -312,10 +312,10 @@ function CourseDetails() {
                                                                             </div>
                                                                             <div className="instructor-social">
                                                                                 <ul className="social list-unstyled list-inline">
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                                                                    <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                                                                    <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
                                                                                 </ul>
                                                                             </div>
                                                                         </div>
@@ -335,7 +335,7 @@ function CourseDetails() {
                                                                 <h5>Course Reviews</h5>
                                                                 <div className="comment-box d-flex">
                                                                     <div className="comment-image">
-                                                                        <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                                        <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                                     </div>
                                                                     <div className="comment-content">
                                                                         <div className="content-title d-flex justify-content-between">
@@ -362,7 +362,7 @@ function CourseDetails() {
                                                                 </div>
                                                                 <div className="comment-box d-flex">
                                                                     <div className="comment-image">
-                                                                        <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-1.jpg`} alt="" />
+                                                                        <img src={`/assets/images/testimonial-1.jpg`} alt="" />
                                                                     </div>
                                                                     <div className="comment-content">
                                                                         <div className="content-title d-flex justify-content-between">
@@ -389,7 +389,7 @@ function CourseDetails() {
                                                                 </div>
                                                                 <div className="comment-box d-flex">
                                                                     <div className="comment-image">
-                                                                        <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="" />
+                                                                        <img src={`/assets/images/testimonial-2.jpg`} alt="" />
                                                                     </div>
                                                                     <div className="comment-content">
                                                                         <div className="content-title d-flex justify-content-between">
@@ -477,3 +477,4 @@ function CourseDetails() {
 }
 
 export default CourseDetails
+

@@ -14,11 +14,11 @@ class CourseItemList extends Component {
                         <Col md="12" key={i}>
                             <div className="course-item d-flex">
                                 <div className="course-image-box">
-                                    <div className="course-image" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${data.imgUrl})` }}>
+                                    <div className="course-image" style={{ backgroundImage: `url(/assets/images/${data.imgUrl})` }}>
                                         <div className="author-img d-flex">
                                             <div className="img">
-                                                <Link to={process.env.PUBLIC_URL + data.courseLink}>
-                                                    <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} alt="" />
+                                                <Link to={data.courseLink}>
+                                                    <img src={`/assets/images/${data.authorImg}`} alt="" />
                                                 </Link>
                                             </div>
                                             <div className="title">
@@ -32,7 +32,7 @@ class CourseItemList extends Component {
                                     </div>
                                 </div>
                                 <div className="course-content">
-                                    <h6 className="heading"><Link to={process.env.PUBLIC_URL + data.courseLink}>{data.courseTitle}</Link></h6>
+                                    <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
                                     <div className="rating">
                                         <ul className="list-unstyled list-inline">
                                             <li className="list-inline-item"><i className="las la-star"></i></li>
@@ -45,7 +45,7 @@ class CourseItemList extends Component {
                                         </ul>
                                     </div>
                                     <p className="desc">{data.courseDesc}</p>
-                                    <Link className="details-btn" to={process.env.PUBLIC_URL + data.courseLink}>View Details</Link>
+                                    <Link className="details-btn" to={data.courseLink}>View Details</Link>
                                 </div>
                             </div>
                         </Col>
@@ -62,3 +62,4 @@ class CourseItemList extends Component {
 }
 
 export default CourseItemList
+

@@ -8,8 +8,8 @@ class HeroImage extends Component {
         return (
             <Styles>
                 {/* Hero Image */}
-                <section className="hero-image-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.heroBackground})` }}>
-                <div className="round-shape" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.heroRoundShape})` }}></div>
+                <section className="hero-image-area" style={{ backgroundImage: `url(/assets/images/${Datas.heroBackground})` }}>
+                <div className="round-shape" style={{ backgroundImage: `url(/assets/images/${Datas.heroRoundShape})` }}></div>
                     <div className="hero-table">
                         <div className="hero-tablecell">
                             <Container>
@@ -41,3 +41,4 @@ class HeroImage extends Component {
 }
 
 export default HeroImage
+

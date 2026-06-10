@@ -57,7 +57,7 @@ class TeamSlider extends Component {
                                                 <div className="team-item" key={i}>
                                                     <div style={{ overflow: 'hidden', borderRadius: '5px' }}>
                                                         <img 
-                                                            src={process.env.PUBLIC_URL + `/assets/images/${data.personImage}`} 
+                                                            src={`/assets/images/${data.personImage}`} 
                                                             alt="" 
                                                             className="img-fluid" 
                                                             style={data.personImage === 'team-3.jpg' ? { transform: 'scale(1.2)', transformOrigin: 'top center' } : {}}
@@ -67,9 +67,9 @@ class TeamSlider extends Component {
                                                         <h5>{data.personName}</h5>
                                                         <p>{data.personTitle}</p>
                                                         <ul className="list-unstyled list-inline">
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
-                                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
+                                                            <li className="list-inline-item"><a href={data.socialLinks.facebook}><i className="fab fa-facebook-f"></i></a></li>
+                                                            <li className="list-inline-item"><a href={data.socialLinks.twitter}><i className="fab fa-twitter"></i></a></li>
+                                                            <li className="list-inline-item"><a href={data.socialLinks.youtube}><i className="fab fa-youtube"></i></a></li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -87,3 +87,4 @@ class TeamSlider extends Component {
 }
 
 export default TeamSlider;
+

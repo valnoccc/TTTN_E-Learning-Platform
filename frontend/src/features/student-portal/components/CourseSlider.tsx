@@ -56,11 +56,11 @@ class CourseSlider extends Component {
                                         {
                                             Datas.dataList.map((data, i) => (
                                                 <div className="course-item" key={i}>
-                                                    <Link to={process.env.PUBLIC_URL + data.courseLink}>
-                                                        <div className="course-image" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${data.imgUrl})` }}>
+                                                    <Link to={data.courseLink}>
+                                                        <div className="course-image" style={{ backgroundImage: `url(/assets/images/${data.imgUrl})` }}>
                                                             <div className="author-img d-flex">
                                                                 <div className="img">
-                                                                    <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} alt="" />
+                                                                    <img src={`/assets/images/${data.authorImg}`} alt="" />
                                                                 </div>
                                                                 <div className="title">
                                                                     <p>{data.authorName}</p>
@@ -73,7 +73,7 @@ class CourseSlider extends Component {
                                                         </div>
                                                     </Link>
                                                     <div className="course-content">
-                                                        <h6 className="heading"><Link to={process.env.PUBLIC_URL + data.courseLink}>{data.courseTitle}</Link></h6>
+                                                        <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
                                                         <p className="desc">{data.courseDesc}</p>
                                                         <div className="course-face d-flex justify-content-between">
                                                             <div className="duration">
@@ -109,3 +109,4 @@ class CourseSlider extends Component {
 }
 
 export default CourseSlider;
+
