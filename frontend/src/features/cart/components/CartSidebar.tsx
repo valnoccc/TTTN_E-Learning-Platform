@@ -57,7 +57,7 @@ export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
               {cartItems.map((item) => (
                 <div key={item.id} className="d-flex gap-3 mb-3 pb-3 border-bottom position-relative">
                   <img
-                    src={process.env.PUBLIC_URL + item.thumbnail}
+                    src={item.thumbnail}
                     alt={item.courseName}
                     style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
                   />
@@ -98,3 +98,4 @@ export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
     </Offcanvas>
   );
 }
+

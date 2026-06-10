@@ -52,18 +52,18 @@ class InstructorDetails extends Component {
                             <Row>
                                 <Col md="4">
                                     <div className="instructor-img">
-                                        <img src={process.env.PUBLIC_URL + `/assets/images/team-7.jpg`} alt="" className="img-fluid" />
+                                        <img src={`/assets/images/team-7.jpg`} alt="" className="img-fluid" />
                                         <ul className="list-unstyled getintouch">
                                             <li><i className="las la-phone"></i> +1 (396) 486 4709</li>
                                             <li><i className="lar la-envelope"></i> mail@contactme.com</li>
                                             <li><i className="lab la-skype"></i> contact.me</li>
                                         </ul>
                                         <ul className="social list-unstyled list-inline">
-                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-facebook-f"></i></a></li>
-                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-twitter"></i></a></li>
-                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-youtube"></i></a></li>
-                                            <li className="list-inline-item"><a href={process.env.PUBLIC_URL + "/"}><i className="fab fa-dribbble"></i></a></li>
+                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
+                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
+                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
+                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
+                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
                                         </ul>
                                     </div>
                                 </Col>
@@ -107,11 +107,11 @@ class InstructorDetails extends Component {
                                             {
                                                 Datas.map((data, i) => (
                                                     <div className="course-item" key={i}>
-                                                        <Link to={process.env.PUBLIC_URL + data.courseLink}>
-                                                            <div className="course-image" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${data.imgUrl})` }}>
+                                                        <Link to={data.courseLink}>
+                                                            <div className="course-image" style={{ backgroundImage: `url(/assets/images/${data.imgUrl})` }}>
                                                                 <div className="author-img d-flex">
                                                                     <div className="img">
-                                                                        <img src={process.env.PUBLIC_URL + `/assets/images/${data.authorImg}`} alt="" />
+                                                                        <img src={`/assets/images/${data.authorImg}`} alt="" />
                                                                     </div>
                                                                     <div className="title">
                                                                         <p>{data.authorName}</p>
@@ -124,7 +124,7 @@ class InstructorDetails extends Component {
                                                             </div>
                                                         </Link>
                                                         <div className="course-content">
-                                                            <h6 className="heading"><Link to={process.env.PUBLIC_URL + data.courseLink}>{data.courseTitle}</Link></h6>
+                                                            <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
                                                             <p className="desc">{data.courseDesc}</p>
                                                             <div className="course-face d-flex justify-content-between">
                                                                 <div className="duration">

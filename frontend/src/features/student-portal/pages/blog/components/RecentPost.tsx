@@ -16,10 +16,10 @@ class RecentPost extends Component {
 
                                 <div className="item-box d-flex" key={i}>
                                     <div className="item-img">
-                                        <Link to={data.blogLink}><img src={process.env.PUBLIC_URL + `/assets/images/${data.imgUrl}`} alt="" /></Link>
+                                        <Link to={data.blogLink}><img src={`/assets/images/${data.imgUrl}`} alt="" /></Link>
                                     </div>
                                     <div className="item-content">
-                                        <p className="title"><Link to={process.env.PUBLIC_URL + data.blogLink}>{data.blogTitle}</Link></p>
+                                        <p className="title"><Link to={data.blogLink}>{data.blogTitle}</Link></p>
                                         <span className="date">{data.blogDate}</span>
                                     </div>
                                 </div>
@@ -34,3 +34,4 @@ class RecentPost extends Component {
 }
 
 export default RecentPost
+

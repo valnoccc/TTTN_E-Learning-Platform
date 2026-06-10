@@ -74,7 +74,7 @@ function HelpArea() {
     return (
         <Styles>
             {/* Help Area */}
-            <section className="home-contact-area" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/${Datas.backgroundImage})` }}>
+            <section className="home-contact-area" style={{ backgroundImage: `url(/assets/images/${Datas.backgroundImage})` }}>
                 <Container>
                     <Row>
                         <Col md="12">
@@ -117,3 +117,4 @@ function HelpArea() {
 }
 
 export default HelpArea
+

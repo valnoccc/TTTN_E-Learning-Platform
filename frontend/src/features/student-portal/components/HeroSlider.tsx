@@ -41,7 +41,7 @@ class HeroSlider extends Component {
                             Datas.map((data, i) => (
                                 <div className="slider-item" key={i}>
                                     <div className="image-container">
-                                        <img src={process.env.PUBLIC_URL + `/assets/images/${data.backgroundImage}`} className="slider-image" alt={data.backgroundImage} />
+                                        <img src={`/assets/images/${data.backgroundImage}`} className="slider-image" alt={data.backgroundImage} />
                                     </div>
                                     <div className="slider-table">
                                         <div className="slider-tablecell" style={{ display: 'table-cell', verticalAlign: 'middle' }}>
@@ -72,7 +72,7 @@ class HeroSlider extends Component {
                             ))
                         }
                     </SwiperComponent>
-                    <div className="round-shape" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/r-shape.png)` }}></div>
+                    <div className="round-shape" style={{ backgroundImage: `url(/assets/images/r-shape.png)` }}></div>
                 </section>
             </Styles>
         )
@@ -80,3 +80,4 @@ class HeroSlider extends Component {
 }
 
 export default HeroSlider
+
