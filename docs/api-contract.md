@@ -61,6 +61,12 @@ Admin (Kiem duyet)
 - `PATCH /submissions/:id/grade` (Instructor - Cham diem Dat/Khong dat & nhap nhan xet)
 - `GET /submissions/me` (Student - Xem ket qua & phan hoi tu giang vien)
 
+## Notifications (Thong bao)
+- `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)
+- `GET /notifications/unread-count` (Dem thong bao chua doc)
+- `PATCH /notifications/:id/read` (Danh dau mot thong bao la da doc)
+- `PATCH /notifications/read-all` (Danh dau tat ca thong bao la da doc)
+
 ## Rules
 - Protected endpoints require `Bearer token` (JWT).
 - Admin endpoints require `ADMIN` role.

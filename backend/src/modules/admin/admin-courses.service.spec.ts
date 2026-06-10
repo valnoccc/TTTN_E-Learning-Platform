@@ -13,9 +13,8 @@ describe('AdminCoursesService', () => {
     save: jest.fn(),
   };
 
-  const notificationRepository = {
-    create: jest.fn(),
-    save: jest.fn(),
+  const notificationsService = {
+    createNotification: jest.fn(),
   };
 
   const moderationHistoryRepository = {
@@ -25,8 +24,8 @@ describe('AdminCoursesService', () => {
 
   const service = new AdminCoursesService(
     courseRepository as never,
-    notificationRepository as never,
     moderationHistoryRepository as never,
+    notificationsService as never,
     dataSource as never,
   );
 
@@ -34,10 +33,9 @@ describe('AdminCoursesService', () => {
     dataSource.query.mockReset();
     courseRepository.findOne.mockReset();
     courseRepository.save.mockReset();
-    notificationRepository.create.mockReset();
-    notificationRepository.save.mockReset();
     moderationHistoryRepository.create.mockReset();
     moderationHistoryRepository.save.mockReset();
+    notificationsService.createNotification.mockReset();
   });
 
   it('returns admin course management rows', async () => {
@@ -168,10 +166,7 @@ describe('AdminCoursesService', () => {
     };
     courseRepository.findOne.mockResolvedValue(course);
     courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
-    notificationRepository.create.mockImplementation((value) => value);
-    notificationRepository.save.mockImplementation((value: unknown) =>
-      resolveValue(value),
-    );
+    notificationsService.createNotification.mockImplementation((value) => resolveValue(value));
     moderationHistoryRepository.create.mockImplementation((value) => value);
     moderationHistoryRepository.save.mockImplementation((value: unknown) =>
       resolveValue(value),
@@ -182,7 +177,7 @@ describe('AdminCoursesService', () => {
       data: { id: 11, trangThai: 'PUBLISHED' },
     });
 
-    expect(notificationRepository.create).toHaveBeenCalledWith({
+    expect(notificationsService.createNotification).toHaveBeenCalledWith({
       maND: 7,
       maNguoiGui: 99,
       loaiThongBao: 'COURSE',
@@ -207,10 +202,7 @@ describe('AdminCoursesService', () => {
     };
     courseRepository.findOne.mockResolvedValue(course);
     courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
-    notificationRepository.create.mockImplementation((value) => value);
-    notificationRepository.save.mockImplementation((value: unknown) =>
-      resolveValue(value),
-    );
+    notificationsService.createNotification.mockImplementation((value) => resolveValue(value));
     moderationHistoryRepository.create.mockImplementation((value) => value);
     moderationHistoryRepository.save.mockImplementation((value: unknown) =>
       resolveValue(value),
@@ -227,7 +219,7 @@ describe('AdminCoursesService', () => {
       },
     });
 
-    expect(notificationRepository.create).toHaveBeenCalledWith({
+    expect(notificationsService.createNotification).toHaveBeenCalledWith({
       maND: 7,
       maNguoiGui: 99,
       loaiThongBao: 'COURSE',

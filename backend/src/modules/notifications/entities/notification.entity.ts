@@ -17,7 +17,7 @@ export class ThongBao {
   @PrimaryGeneratedColumn({ name: 'MaTB' })
   maTB!: number;
 
-  @Column({ name: 'MaND' })
+  @Column({ name: 'MaND', type: 'int' })
   maND!: number;
 
   @Column({ name: 'MaNguoiGui', type: 'int', nullable: true })

@@ -10,7 +10,10 @@ import {
   CourseModerationAction,
   CourseModerationHistory,
 } from './entities/course-moderation-history.entity';
-import { NotificationType, ThongBao } from './entities/notification.entity';
+import {
+  NotificationType,
+} from '../notifications/entities/notification.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type AdminCourseRow = {
   id?: string | number;
@@ -59,10 +62,9 @@ export class AdminCoursesService {
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly courseRepository: Repository<KhoaHoc>,
-    @InjectRepository(ThongBao)
-    private readonly notificationRepository: Repository<ThongBao>,
     @InjectRepository(CourseModerationHistory)
     private readonly moderationHistoryRepository: Repository<CourseModerationHistory>,
+    private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -184,16 +186,14 @@ export class AdminCoursesService {
 
     course.trangThai = 'PUBLISHED';
     await this.courseRepository.save(course);
-    await this.notificationRepository.save(
-      this.notificationRepository.create({
+    await this.notificationsService.createNotification({
         maND: course.maND_GiangVien,
         maNguoiGui: adminId,
         loaiThongBao: NotificationType.COURSE,
         tieuDe: 'Khoa hoc da duoc phe duyet',
         noiDung: this.buildApprovalNotification(course.tenKhoaHoc),
         daDoc: false,
-      }),
-    );
+    });
     await this.moderationHistoryRepository.save(
       this.moderationHistoryRepository.create({
         maKH: course.maKH,
@@ -229,8 +229,7 @@ export class AdminCoursesService {
 
     course.trangThai = 'DRAFT';
     await this.courseRepository.save(course);
-    await this.notificationRepository.save(
-      this.notificationRepository.create({
+    await this.notificationsService.createNotification({
         maND: course.maND_GiangVien,
         maNguoiGui: adminId,
         loaiThongBao: NotificationType.COURSE,
@@ -240,8 +239,7 @@ export class AdminCoursesService {
           trimmedReason,
         ),
         daDoc: false,
-      }),
-    );
+    });
     await this.moderationHistoryRepository.save(
       this.moderationHistoryRepository.create({
         maKH: course.maKH,
