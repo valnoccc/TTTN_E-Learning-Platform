@@ -48,7 +48,7 @@ export class NotificationsService {
     });
 
     if (!notification || notification.maND !== userId) {
-      throw new NotFoundException('Khong tim thay thong bao.');
+      throw new NotFoundException('Không tìm thấy thông báo.');
     }
 
     notification.daDoc = true;
@@ -62,7 +62,7 @@ export class NotificationsService {
     );
 
     return {
-      message: 'Da danh dau tat ca thong bao la da doc.',
+      message: 'Đã đánh dấu tất cả thông báo là đã đọc.',
     };
   }
 

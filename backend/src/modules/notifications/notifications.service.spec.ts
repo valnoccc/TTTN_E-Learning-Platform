@@ -24,21 +24,23 @@ describe('NotificationsService', () => {
 
   it('creates a notification with default unread state', async () => {
     notificationRepository.create.mockImplementation((value) => value);
-    notificationRepository.save.mockImplementation((value) => Promise.resolve(value));
+    notificationRepository.save.mockImplementation((value) =>
+      Promise.resolve(value),
+    );
 
     await expect(
       service.createNotification({
         maND: 7,
         maNguoiGui: 99,
         loaiThongBao: 'COURSE',
-        tieuDe: 'Khoa hoc bi tu choi xuat ban',
+        tieuDe: 'Khóa học bị từ chối xuất bản',
         noiDung: 'Can bo sung bai hoc',
       }),
     ).resolves.toEqual({
       maND: 7,
       maNguoiGui: 99,
       loaiThongBao: 'COURSE',
-      tieuDe: 'Khoa hoc bi tu choi xuat ban',
+      tieuDe: 'Khóa học bị từ chối xuất bản',
       noiDung: 'Can bo sung bai hoc',
       daDoc: false,
     });
@@ -62,7 +64,9 @@ describe('NotificationsService', () => {
       maND: 7,
       daDoc: false,
     });
-    notificationRepository.save.mockImplementation((value) => Promise.resolve(value));
+    notificationRepository.save.mockImplementation((value) =>
+      Promise.resolve(value),
+    );
 
     await expect(service.markAsRead(11, 7)).resolves.toEqual({
       maTB: 11,

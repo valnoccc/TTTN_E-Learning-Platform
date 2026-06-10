@@ -32,7 +32,7 @@ export class AdminCoursesController {
   ) {
     const data = await this.adminCoursesService.getCourses({ status, search });
     return {
-      message: 'Lay danh sach khoa hoc thanh cong.',
+      message: 'Lấy danh sách khóa học thành công.',
       data,
     };
   }
@@ -43,7 +43,7 @@ export class AdminCoursesController {
       status: 'PENDING',
     });
     return {
-      message: 'Lay danh sach khoa hoc cho duyet thanh cong.',
+      message: 'Lấy danh sách khóa học chờ duyệt thành công.',
       data,
     };
   }
@@ -52,7 +52,7 @@ export class AdminCoursesController {
   async getCourseDetail(@Param('id') id: string) {
     const data = await this.adminCoursesService.getCourseDetail(Number(id));
     return {
-      message: 'Lay chi tiet khoa hoc thanh cong.',
+      message: 'Lấy chi tiết khóa học thành công.',
       data,
     };
   }
@@ -62,7 +62,10 @@ export class AdminCoursesController {
     @Param('id') id: string,
     @Req() req: Request & { user: { sub: number } },
   ) {
-    return this.adminCoursesService.approveCourse(Number(id), this.getAdminId(req));
+    return this.adminCoursesService.approveCourse(
+      Number(id),
+      this.getAdminId(req),
+    );
   }
 
   @Patch(':id/reject')

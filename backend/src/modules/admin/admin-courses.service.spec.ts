@@ -166,14 +166,16 @@ describe('AdminCoursesService', () => {
     };
     courseRepository.findOne.mockResolvedValue(course);
     courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
-    notificationsService.createNotification.mockImplementation((value) => resolveValue(value));
+    notificationsService.createNotification.mockImplementation((value) =>
+      resolveValue(value),
+    );
     moderationHistoryRepository.create.mockImplementation((value) => value);
     moderationHistoryRepository.save.mockImplementation((value: unknown) =>
       resolveValue(value),
     );
 
     await expect(service.approveCourse(11, 99)).resolves.toEqual({
-      message: 'Da phe duyet khoa hoc thanh cong.',
+      message: 'Đã phê duyệt khóa học thành công.',
       data: { id: 11, trangThai: 'PUBLISHED' },
     });
 
@@ -181,7 +183,7 @@ describe('AdminCoursesService', () => {
       maND: 7,
       maNguoiGui: 99,
       loaiThongBao: 'COURSE',
-      tieuDe: 'Khoa hoc da duoc phe duyet',
+      tieuDe: 'Khóa học đã được phê duyệt',
       noiDung: expect.stringContaining('React Co Ban'),
       daDoc: false,
     });
@@ -202,7 +204,9 @@ describe('AdminCoursesService', () => {
     };
     courseRepository.findOne.mockResolvedValue(course);
     courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
-    notificationsService.createNotification.mockImplementation((value) => resolveValue(value));
+    notificationsService.createNotification.mockImplementation((value) =>
+      resolveValue(value),
+    );
     moderationHistoryRepository.create.mockImplementation((value) => value);
     moderationHistoryRepository.save.mockImplementation((value: unknown) =>
       resolveValue(value),
@@ -211,7 +215,7 @@ describe('AdminCoursesService', () => {
     await expect(
       service.rejectCourse(11, 99, 'Thieu noi dung bai hoc thuc hanh.'),
     ).resolves.toEqual({
-      message: 'Da tu choi khoa hoc va chuyen ve ban nhap.',
+      message: 'Đã từ chối khóa học và chuyển về bản nháp.',
       data: {
         id: 11,
         trangThai: 'DRAFT',
@@ -223,7 +227,7 @@ describe('AdminCoursesService', () => {
       maND: 7,
       maNguoiGui: 99,
       loaiThongBao: 'COURSE',
-      tieuDe: 'Khoa hoc bi tu choi xuat ban',
+      tieuDe: 'Khóa học bị từ chối xuất bản',
       noiDung: expect.stringContaining('Thieu noi dung bai hoc thuc hanh.'),
       daDoc: false,
     });

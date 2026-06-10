@@ -10,9 +10,7 @@ import {
   CourseModerationAction,
   CourseModerationHistory,
 } from './entities/course-moderation-history.entity';
-import {
-  NotificationType,
-} from '../notifications/entities/notification.entity';
+import { NotificationType } from '../notifications/entities/notification.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 
 type AdminCourseRow = {
@@ -83,7 +81,7 @@ export class AdminCoursesService {
       instructorName: row.instructorName ?? '',
       instructorEmail: row.instructorEmail ?? '',
       instructorAvatar: row.instructorAvatar ?? null,
-      categoryName: row.categoryName ?? 'Chua phan loai',
+      categoryName: row.categoryName ?? 'Chưa phân loại',
       lessonCount: Number(row.lessonCount ?? 0),
       orderCount: Number(row.orderCount ?? 0),
     }));
@@ -94,7 +92,7 @@ export class AdminCoursesService {
       where: { maKH: courseId },
     });
     if (!course) {
-      throw new NotFoundException('Khong tim thay khoa hoc.');
+      throw new NotFoundException('Không tìm thấy khóa học.');
     }
 
     const mucTieuRows = (await this.dataSource.query(
@@ -176,23 +174,23 @@ export class AdminCoursesService {
       where: { maKH: courseId },
     });
     if (!course) {
-      throw new NotFoundException('Khong tim thay khoa hoc.');
+      throw new NotFoundException('Không tìm thấy khóa học.');
     }
     if (course.trangThai !== 'PENDING') {
       throw new BadRequestException(
-        'Chi khoa hoc dang cho duyet moi co the phe duyet.',
+        'Chỉ khóa học đang chờ duyệt mới có thể phê duyệt.',
       );
     }
 
     course.trangThai = 'PUBLISHED';
     await this.courseRepository.save(course);
     await this.notificationsService.createNotification({
-        maND: course.maND_GiangVien,
-        maNguoiGui: adminId,
-        loaiThongBao: NotificationType.COURSE,
-        tieuDe: 'Khoa hoc da duoc phe duyet',
-        noiDung: this.buildApprovalNotification(course.tenKhoaHoc),
-        daDoc: false,
+      maND: course.maND_GiangVien,
+      maNguoiGui: adminId,
+      loaiThongBao: NotificationType.COURSE,
+      tieuDe: 'Khóa học đã được phê duyệt',
+      noiDung: this.buildApprovalNotification(course.tenKhoaHoc),
+      daDoc: false,
     });
     await this.moderationHistoryRepository.save(
       this.moderationHistoryRepository.create({
@@ -204,7 +202,7 @@ export class AdminCoursesService {
     );
 
     return {
-      message: 'Da phe duyet khoa hoc thanh cong.',
+      message: 'Đã phê duyệt khóa học thành công.',
       data: { id: course.maKH, trangThai: course.trangThai },
     };
   }
@@ -212,33 +210,33 @@ export class AdminCoursesService {
   async rejectCourse(courseId: number, adminId: number, reason?: string) {
     const trimmedReason = reason?.trim();
     if (!trimmedReason) {
-      throw new BadRequestException('Ly do tu choi khong duoc de trong.');
+      throw new BadRequestException('Lý do từ chối không được để trống.');
     }
 
     const course = await this.courseRepository.findOne({
       where: { maKH: courseId },
     });
     if (!course) {
-      throw new NotFoundException('Khong tim thay khoa hoc.');
+      throw new NotFoundException('Không tìm thấy khóa học.');
     }
     if (course.trangThai !== 'PENDING') {
       throw new BadRequestException(
-        'Chi khoa hoc dang cho duyet moi co the tu choi.',
+        'Chỉ khóa học đang chờ duyệt mới có thể từ chối.',
       );
     }
 
     course.trangThai = 'DRAFT';
     await this.courseRepository.save(course);
     await this.notificationsService.createNotification({
-        maND: course.maND_GiangVien,
-        maNguoiGui: adminId,
-        loaiThongBao: NotificationType.COURSE,
-        tieuDe: 'Khoa hoc bi tu choi xuat ban',
-        noiDung: this.buildRejectionNotification(
-          course.tenKhoaHoc,
-          trimmedReason,
-        ),
-        daDoc: false,
+      maND: course.maND_GiangVien,
+      maNguoiGui: adminId,
+      loaiThongBao: NotificationType.COURSE,
+      tieuDe: 'Khóa học bị từ chối xuất bản',
+      noiDung: this.buildRejectionNotification(
+        course.tenKhoaHoc,
+        trimmedReason,
+      ),
+      daDoc: false,
     });
     await this.moderationHistoryRepository.save(
       this.moderationHistoryRepository.create({
@@ -250,7 +248,7 @@ export class AdminCoursesService {
     );
 
     return {
-      message: 'Da tu choi khoa hoc va chuyen ve ban nhap.',
+      message: 'Đã từ chối khóa học và chuyển về bản nháp.',
       data: {
         id: course.maKH,
         trangThai: course.trangThai,
@@ -363,15 +361,15 @@ export class AdminCoursesService {
   }
 
   private buildApprovalNotification(courseName: string | undefined) {
-    const safeCourseName = courseName?.trim() || 'Khoa hoc cua ban';
-    return `${safeCourseName} da duoc phe duyet va san sang xuat ban tren he thong.`;
+    const safeCourseName = courseName?.trim() || 'Khóa học của bạn';
+    return `${safeCourseName} đã được phê duyệt và sẵn sàng xuất bản trên hệ thống.`;
   }
 
   private buildRejectionNotification(
     courseName: string | undefined,
     reason: string,
   ) {
-    const safeCourseName = courseName?.trim() || 'Khoa hoc cua ban';
-    return `${safeCourseName} da bi tu choi xuat ban. Noi dung can chinh sua: ${reason}`;
+    const safeCourseName = courseName?.trim() || 'Khóa học của bạn';
+    return `${safeCourseName} đã bị từ chối xuất bản. Nội dung cần chỉnh sửa: ${reason}`;
   }
 }

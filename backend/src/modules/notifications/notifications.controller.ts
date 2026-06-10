@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 
@@ -15,7 +23,7 @@ export class NotificationsController {
     );
 
     return {
-      message: 'Lay danh sach thong bao thanh cong.',
+      message: 'Lấy danh sách thông báo thành công.',
       data,
     };
   }
