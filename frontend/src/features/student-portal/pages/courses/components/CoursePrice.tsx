@@ -1,32 +1,46 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { Styles } from '../styles/coursePrice';
 
-class CoursePrice extends Component {
+const CoursePrice = ({ filters, setFilters }: { filters: any, setFilters: any }) => {
 
-    render() {
-        return (
-            <Styles>
-                {/* Course Price */}
-                <div className="course-price">
-                    <h5>Course Price</h5>
-                    <ul className="price-item list-unstyled">
-                        <li className="check-btn">
-                            <label htmlFor="price1"><input type="checkbox" id="price1" className="check-box" />All<span>(121)</span></label>
-                        </li>
-                        <li className="check-btn">
-                            <label htmlFor="price2"><input type="checkbox" id="price2" className="check-box" />Free<span>(09)</span></label>
-                        </li>
-                        <li className="check-btn">
-                            <label htmlFor="price3"><input type="checkbox" id="price3" className="check-box" />Paid<span>(77)</span></label>
-                        </li>
-                        <li className="check-btn">
-                            <label htmlFor="price4"><input type="checkbox" id="price4" className="check-box" />Scholarship<span>(35)</span></label>
-                        </li>
-                    </ul>
-                </div>
-            </Styles>
-        )
-    }
-}
+    const handlePriceChange = (priceValue: string | null) => {
+        setFilters({ ...filters, price: priceValue });
+    };
 
-export default CoursePrice
+    return (
+        <Styles>
+            {/* Course Price */}
+            <div className="course-price">
+                <h5>Course Price</h5>
+                <ul className="price-item list-unstyled">
+                    <li className="check-btn">
+                        <label htmlFor="price-all">
+                            <input 
+                                type="checkbox" 
+                                id="price-all" 
+                                className="check-box" 
+                                checked={filters.price === null}
+                                onChange={() => handlePriceChange(null)}
+                            />
+                            All
+                        </label>
+                    </li>
+                    <li className="check-btn">
+                        <label htmlFor="price-free">
+                            <input 
+                                type="checkbox" 
+                                id="price-free" 
+                                className="check-box" 
+                                checked={filters.price === 'free'}
+                                onChange={() => handlePriceChange('free')}
+                            />
+                            Free
+                        </label>
+                    </li>
+                </ul>
+            </div>
+        </Styles>
+    );
+};
+
+export default CoursePrice;

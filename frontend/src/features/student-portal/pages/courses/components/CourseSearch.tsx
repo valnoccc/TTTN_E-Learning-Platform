@@ -1,22 +1,32 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { Styles } from '../styles/courseSearch';
 
-class CourseSearch extends Component {
+const CourseSearch = ({ filters, setFilters }: { filters: any, setFilters: any }) => {
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
 
-    render() {
-        return (
-            <Styles>
-                {/* Course Search */}
-                <div className="course-search">
-                    <h5>Search Course</h5>
-                    <form action="#">
-                        <input type="text" name="search" placeholder="Search Here" />
-                        <button type="submit"><i className="las la-search"></i></button>
-                    </form>
-                </div>
-            </Styles>
-        )
-    }
-}
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setFilters({ ...filters, search: searchTerm });
+    };
 
-export default CourseSearch
+    return (
+        <Styles>
+            {/* Course Search */}
+            <div className="course-search">
+                <h5>Search Course</h5>
+                <form onSubmit={handleSearch}>
+                    <input 
+                        type="text" 
+                        name="search" 
+                        placeholder="Search Here" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button type="submit"><i className="las la-search"></i></button>
+                </form>
+            </div>
+        </Styles>
+    );
+};
+
+export default CourseSearch;

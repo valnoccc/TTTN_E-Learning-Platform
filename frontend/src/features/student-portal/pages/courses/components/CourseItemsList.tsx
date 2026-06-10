@@ -1,65 +1,173 @@
-import React, { Component, Fragment } from 'react';
-import Datas from '../../../data/course/item.json';
+import React, { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { Col } from 'react-bootstrap';
+import { Col, Spinner } from 'react-bootstrap';
 import Pagination from './../../../components/Pagination';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../../../../cart/cartSlice';
+import axiosClient from '../../../../../api/axios';
 
-class CourseItemList extends Component {
-    render() {
+const formatPrice = (price: any) => {
+    return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0 
+    }).format(price || 0);
+};
+
+const CourseItemList = ({ filters }: { filters?: any }) => {
+    const dispatch = useDispatch();
+    const [courses, setCourses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (filters?.search) params.append('search', filters.search);
+                if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
+                if (filters?.price) params.append('price', filters.price);
+
+                const response: any = await axiosClient.get(`/public/courses?${params.toString()}`);
+                if (response && response.data) {
+                    setCourses(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching courses", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCourses();
+    }, [filters]);
+
+    const totalPages = Math.ceil(courses.length / itemsPerPage);
+    
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = courses.slice(indexOfFirstItem, indexOfLastItem);
+
+    if (loading) {
         return (
-            <Fragment>
-                {/* Course Item */}
-                {
-                    Datas.map((data, i) => (
-                        <Col md="12" key={i}>
-                            <div className="course-item d-flex">
-                                <div className="course-image-box">
-                                    <div className="course-image" style={{ backgroundImage: `url(/assets/images/${data.imgUrl})` }}>
-                                        <div className="author-img d-flex">
-                                            <div className="img">
-                                                <Link to={data.courseLink}>
-                                                    <img src={`/assets/images/${data.authorImg}`} alt="" />
-                                                </Link>
-                                            </div>
-                                            <div className="title">
-                                                <p>{data.authorName}</p>
-                                                <span>{data.authorCourses}</span>
-                                            </div>
+            <Col md="12" className="text-center py-5">
+                <Spinner animation="border" variant="success" />
+            </Col>
+        );
+    }
+
+    if (courses.length === 0) {
+        return (
+            <Col md="12" className="text-center py-5">
+                <p>Chưa có khóa học nào</p>
+            </Col>
+        );
+    }
+
+    return (
+        <Fragment>
+            {
+                currentItems.map((data: any, i: number) => {
+                    const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Unknown Instructor';
+                    const categoryName = data.danhMuc?.tenDM || 'General';
+                    const courseImage = data.hinhThuNho || process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
+                    const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+
+                    return (
+                        <Col md="12" key={i} className="mb-4">
+                            <div className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-lg md:flex-row">
+                                <div className="relative w-full md:w-1/3">
+                                    <Link to={courseUrl} className="block h-full w-full">
+                                        <div className="absolute left-4 top-4 z-10 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
+                                            {categoryName}
                                         </div>
-                                        <div className="course-price">
-                                            <p>{data.price}</p>
-                                        </div>
-                                    </div>
+                                        <img src={courseImage} alt={data.tenKhoaHoc} className="h-64 w-full object-cover transition-transform duration-500 hover:scale-110 md:h-full" />
+                                    </Link>
                                 </div>
-                                <div className="course-content">
-                                    <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
-                                    <div className="rating">
-                                        <ul className="list-unstyled list-inline">
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star-half-alt"></i>
-                                            </li>
-                                            <li className="list-inline-item">(4.5)</li>
-                                        </ul>
+                                <div className="flex flex-1 flex-col p-6">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <div className="flex items-center space-x-1 text-amber-400">
+                                            <i className="las la-star"></i>
+                                            <i className="las la-star"></i>
+                                            <i className="las la-star"></i>
+                                            <i className="las la-star"></i>
+                                            <i className="las la-star-half-alt"></i>
+                                            <span className="ml-1 text-sm text-gray-500">(4.5)</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xl font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
+                                        </div>
                                     </div>
-                                    <p className="desc">{data.courseDesc}</p>
-                                    <Link className="details-btn" to={data.courseLink}>View Details</Link>
+                                    
+                                    <h5 className="mb-3 text-xl font-bold leading-tight text-slate-800 hover:text-emerald-500">
+                                        <Link to={courseUrl} className="text-decoration-none hover:no-underline text-slate-800 hover:text-emerald-500">{data.tenKhoaHoc}</Link>
+                                    </h5>
+                                    
+                                    <p className="mb-4 flex-1 text-gray-600 line-clamp-2">
+                                        {data.moTa || "No description available for this course."}
+                                    </p>
+                                    
+                                    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="flex items-center space-x-2">
+                                                <img src={process.env.PUBLIC_URL + '/assets/images/author.jpg'} alt={instructorName} className="h-8 w-8 rounded-full object-cover" />
+                                                <span className="text-sm font-medium text-gray-600">{instructorName}</span>
+                                            </div>
+                                            <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
+                                                <i className="las la-clock text-emerald-500"></i>
+                                                <span>120 Min</span>
+                                            </div>
+                                            <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
+                                                <i className="las la-signal text-emerald-500"></i>
+                                                <span>All Levels</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                className="flex items-center rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-500 hover:text-white"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    dispatch(addToCart({
+                                                        id: data.maKH,
+                                                        courseName: data.tenKhoaHoc,
+                                                        thumbnail: courseImage,
+                                                        instructor: instructorName,
+                                                        price: parseFloat(data.giaBan || '0'),
+                                                        duration: '120 Min',
+                                                        level: 'All Levels',
+                                                        category: categoryName
+                                                    }));
+                                                }}
+                                            >
+                                                <i className="las la-shopping-cart mr-1 text-lg"></i> Add to Cart
+                                            </button>
+                                            <Link to={courseUrl} className="flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600 hover:text-white text-decoration-none hover:no-underline">
+                                                Details <i className="las la-arrow-right ml-1"></i>
+                                            </Link>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </Col>
-                    ))
-                }
-                
-                <Col md="12"  className="text-center">
-                    <Pagination />
+                    );
+                })
+            }
+            
+            {totalPages > 1 && (
+                <Col md="12" className="text-center mt-4">
+                    <Pagination 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={(page) => setCurrentPage(page)}
+                    />
                 </Col>
+            )}
 
-            </Fragment>
-        )
-    }
-}
+        </Fragment>
+    );
+};
 
-export default CourseItemList
-
+export default CourseItemList;
