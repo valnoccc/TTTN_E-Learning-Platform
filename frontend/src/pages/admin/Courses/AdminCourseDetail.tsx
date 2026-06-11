@@ -1,11 +1,11 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     ArrowLeft,
+    Ban,
     BookOpen,
     CheckCircle2,
     ChevronDown,
     Clock3,
-    EyeOff,
     FileText,
     Layers3,
     MessageSquare,
@@ -46,6 +46,7 @@ function getStatusLabel(status: string) {
     const labels: Record<string, string> = {
         PENDING: 'Chờ duyệt',
         PUBLISHED: 'Đã xuất bản',
+        BANNED: 'Đã ban',
         DRAFT: 'Bản nháp',
         ACTIVE: 'Đang hoạt động',
         INACTIVE: 'Ngừng hoạt động',
@@ -58,6 +59,7 @@ function StatusBadge({ status }: { status: string }) {
     const styles: Record<string, string> = {
         PENDING: 'border-amber-300 bg-amber-50 text-amber-700',
         PUBLISHED: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+        BANNED: 'border-rose-300 bg-rose-50 text-rose-700',
         DRAFT: 'border-slate-300 bg-slate-50 text-slate-600',
         ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-700',
         INACTIVE: 'border-slate-300 bg-slate-50 text-slate-600',
@@ -74,6 +76,7 @@ function getActionLabel(action: string) {
     const labels: Record<string, string> = {
         APPROVE: 'Phê duyệt',
         REJECT: 'Từ chối',
+        BAN: 'Ban',
         HIDE: 'Ẩn',
     };
 
@@ -88,7 +91,7 @@ export default function AdminCourseDetail() {
         action,
         actionReason,
         canApproveOrReject,
-        canHideCourse,
+        canBanCourse,
         course,
         expandedChapterId,
         expandedReplyIds,
@@ -121,10 +124,6 @@ export default function AdminCourseDetail() {
                             <ArrowLeft size={16} />
                             Quay lại danh sách
                         </button>
-                        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
-                            <Layers3 size={14} />
-                            Chi tiết kiểm duyệt
-                        </div>
                         <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
                             Chi tiết khóa học
                         </h1>
@@ -152,12 +151,12 @@ export default function AdminCourseDetail() {
                                 Từ chối
                             </button>
                             <button
-                                disabled={!canHideCourse}
-                                onClick={() => setActiveAction('hide')}
-                                className="inline-flex h-[40px] items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={!canBanCourse}
+                                onClick={() => setActiveAction('ban')}
+                                className="inline-flex h-[40px] items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 text-[13px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                                <EyeOff size={17} strokeWidth={2.5} />
-                                Ẩn
+                                <Ban size={17} strokeWidth={2.5} />
+                                Ban
                             </button>
                         </div>
                     ) : null}

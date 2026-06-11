@@ -36,7 +36,7 @@ export class KhoaHoc {
 
   @Column({
     type: 'enum',
-    enum: ['DRAFT', 'PUBLISHED', 'PENDING'],
+    enum: ['DRAFT', 'PUBLISHED', 'BANNED', 'PENDING'],
     default: 'DRAFT',
     name: 'TrangThai',
   })

@@ -75,3 +75,4 @@ Admin (Kiem duyet)
 - Student enrollments & submissions require `STUDENT` role (hoac role mac dinh khi user dang ky).
 - Data Isolation: Giang vien chi duoc phep thao tac tren cac khoa hoc do chinh ho tao ra.
 - Data Integrity: Khong duoc phep xoa cung khoa hoc/bai hoc neu da co hoc vien dang ky (`enrollments > 0`). Chuyen sang trang thai an (Soft Delete/Deactivate).
+- `PATCH /admin/courses/:id/ban` (Ban khoa hoc da xuat ban, body: `{ lyDo: string }`, chuyen trang thai sang `BANNED`, tao thong bao va luu lich su kiem duyet)

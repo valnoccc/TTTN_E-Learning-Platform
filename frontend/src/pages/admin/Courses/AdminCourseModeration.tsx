@@ -22,6 +22,7 @@ const statusOptions: { value: AdminCourseStatus; label: string }[] = [
     { value: 'ALL', label: 'Tất cả' },
     { value: 'DRAFT', label: 'Bản nháp' },
     { value: 'PUBLISHED', label: 'Đã xuất bản' },
+    { value: 'BANNED', label: 'Đã ban' },
 ];
 
 function formatCurrency(value: number) {
@@ -64,6 +65,31 @@ export default function AdminCourseModeration() {
         setRejectingCourseId(null);
         setRejectReason('');
     };
+
+    function getStatusDisplay(status: string) {
+        switch (status) {
+            case 'PENDING':
+                return {
+                    label: 'Chờ duyệt',
+                    className: 'bg-amber-50 text-amber-600 border-amber-200'
+                };
+            case 'PUBLISHED':
+                return {
+                    label: 'Xuất bản',
+                    className: 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                };
+            case 'DRAFT':
+                return {
+                    label: 'Nháp',
+                    className: 'bg-slate-50 text-slate-600 border-slate-200'
+                };
+            default:
+                return {
+                    label: status,
+                    className: 'bg-slate-50 text-slate-600 border-slate-200'
+                };
+        }
+    }
 
     return (
         <AdminLayout>
@@ -217,13 +243,24 @@ export default function AdminCourseModeration() {
                                             <td className="px-6 py-5 align-middle text-center">
                                                 <button
                                                     onClick={() => navigate(`/admin/courses/${course.id}`)}
-                                                    className="inline-flex px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-[13px] transition hover:bg-blue-700 active:bg-blue-800"
+                                                    // Thêm whitespace-nowrap để chữ không bị rớt dòng, giảm padding (px-3 py-1.5) và text-[12px]
+                                                    className="whitespace-nowrap rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-blue-700 active:bg-blue-800"
                                                 >
                                                     Xem chi tiết
                                                 </button>
                                             </td>
-                                            <td>
-                                                <span className=''>{course.trangThai}</span>
+                                            {/* Thêm px-6, py-5 và align-middle để đồng bộ chiều cao và căn giữa dọc với các cột khác */}
+                                            <td className="px-6 py-5 align-middle text-center">
+                                                {(() => {
+                                                    const statusDisplay = getStatusDisplay(course.trangThai);
+                                                    return (
+                                                        <span
+                                                            className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[12px] font-semibold ${statusDisplay.className}`}
+                                                        >
+                                                            {statusDisplay.label}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                         </tr>
                                     ))}

@@ -81,6 +81,19 @@ export class AdminCoursesController {
     );
   }
 
+  @Patch(':id/ban')
+  banPublishedCourse(
+    @Param('id') id: string,
+    @Body() body: RejectCourseDto,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    return this.adminCoursesService.banPublishedCourse(
+      Number(id),
+      this.getAdminId(req),
+      body.lyDo,
+    );
+  }
+
   @Patch(':id/hide')
   hidePublishedCourse(
     @Param('id') id: string,
