@@ -64,7 +64,7 @@ export default function RegisterPage() {
         <Styles>
             <div className="main-wrapper registration-page">
                 {/* Breadcroumb */}
-                <BreadcrumbBox title="Registration" />
+                <BreadcrumbBox title="Đăng ký tài khoản" />
 
                 {/* Registration Area */}
                 <section className="registration-area">
@@ -73,36 +73,36 @@ export default function RegisterPage() {
                             <Col md={12}>
                                 <div className="registration-box">
                                     <div className="registration-title text-center">
-                                        <h3>Registration</h3>
+                                        <h3>Đăng ký</h3>
                                     </div>
                                     <form onSubmit={handleRegister} className="form">
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>First Name</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Họ</label>
                                             <input
                                                 type="text"
-                                                placeholder="First name"
+                                                placeholder="Nhập họ của bạn"
                                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                             />
                                         </p>
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>Last Name</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Tên</label>
                                             <input
                                                 type="text"
-                                                placeholder="Last name"
+                                                placeholder="Nhập tên của bạn"
                                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                             />
                                         </p>
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>Email Address</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Địa chỉ Email</label>
                                             <input
                                                 type="email"
-                                                placeholder="Email address"
+                                                placeholder="Nhập email"
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             />
                                         </p>
 
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Mật khẩu</label>
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="*******"
@@ -124,10 +124,10 @@ export default function RegisterPage() {
                                             ></i>
                                         </p>
                                         <p className="form-control">
-                                            <label style={{ display: 'block', marginBottom: '8px' }}>Confirm Password</label>
+                                            <label style={{ display: 'block', marginBottom: '8px' }}>Xác nhận mật khẩu</label>
                                             <input
                                                 type={showPassword ? "text" : "password"}
-                                                placeholder="Confirm password"
+                                                placeholder="Nhập lại mật khẩu"
                                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                                 style={{ paddingRight: '45px' }}
                                             />
@@ -146,10 +146,10 @@ export default function RegisterPage() {
                                             ></i>
                                         </p>
                                         <button type="submit" disabled={isLoading}>
-                                            {isLoading ? 'Processing...' : 'Register Now'}
+                                            {isLoading ? 'Đang xử lý...' : 'Đăng ký ngay'}
                                         </button>
                                         <div className="have_account-btn text-center">
-                                            <p>Already have an account? <Link to="/login">Login Here</Link></p>
+                                            <p>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
                                         </div>
                                     </form>
                                 </div>

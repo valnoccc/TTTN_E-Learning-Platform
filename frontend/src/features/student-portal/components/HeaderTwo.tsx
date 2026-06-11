@@ -8,6 +8,7 @@ import AuthControls from './common/AuthControls';
 import MobileMenu from './common/MobileMenu';
 import { Styles } from "./styles/headerTwo";
 import CartIcon from '../../cart/components/CartIcon';
+import { CourseCategoryDropdown } from './common/CourseCategoryMenu';
 
 class HeaderTwo extends Component {
     render() {
@@ -32,10 +33,10 @@ class HeaderTwo extends Component {
                                     <ul className="list-unstyled list-inline bar-lang">
                                         <li className="list-inline-item">
                                             <Dropdown>
-                                                <Dropdown.Toggle><img src={"/assets/images/us.png"} alt="" />English<i className="las la-angle-down"></i></Dropdown.Toggle>
+                                                <Dropdown.Toggle><img src={"/assets/images/vietnam.png"} alt="" />Tiếng Việt<i className="las la-angle-down"></i></Dropdown.Toggle>
                                                 <Dropdown.Menu as="ul">
-                                                    <Dropdown.Item as="li"><img src={"/assets/images/us.png"} alt="" /> English</Dropdown.Item>
-                                                    <Dropdown.Item as="li"><img src={"/assets/images/vietnam.png"} alt="" /> Việt Nam</Dropdown.Item>
+                                                    <Dropdown.Item as="li"><img src={"/assets/images/us.png"} alt="" /> Tiếng Anh</Dropdown.Item>
+                                                    <Dropdown.Item as="li"><img src={"/assets/images/vietnam.png"} alt="" /> Tiếng Việt</Dropdown.Item>
                                                 </Dropdown.Menu>
                                             </Dropdown>
                                         </li>
@@ -71,7 +72,7 @@ class HeaderTwo extends Component {
                                 <div className="menu-box d-flex">
                                     <ul className="nav menu-nav justify-content-center flex-grow-1">
                                         <li className="nav-item active">
-                                            <Link className="nav-link" to={"/"}>Home</Link>
+                                            <Link className="nav-link" to={"/"}>Trang chủ</Link>
                                             <ul className="dropdown list-unstyled d-none">
                                                 <li className="nav-item"><Link className="nav-link" to={"/"}>Home Style 1</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={"/home-two"}>Home Style 2</Link></li>
@@ -90,30 +91,15 @@ class HeaderTwo extends Component {
                                                 <li className="nav-item"><Link className="nav-link" to={"/coming-soon"}>Coming Soon</Link></li>
                                             </ul>
                                         </li>
-                                        <li className="nav-item dropdown">
-                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Courses <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={"/course-grid"}>Course Grid</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/course-list"}>Course List</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/course-details"}>Course Details</Link></li>
-                                            </ul>
+                                        <CourseCategoryDropdown />
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to={"/instructors"}>Giảng viên</Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to={"/events"}>Sự kiện</Link>
                                         </li>
                                         <li className="nav-item dropdown">
-                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Instructor <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={"/instructors"}>Instructors</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/instructor-details"}>Instructor Details</Link></li>
-                                            </ul>
-                                        </li>
-                                        <li className="nav-item dropdown">
-                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Event <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={"/events"}>Events</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/event-details"}>Event Details</Link></li>
-                                            </ul>
-                                        </li>
-                                        <li className="nav-item dropdown">
-                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Blog <i className="las la-angle-down"></i></Link>
+                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Bài viết <i className="las la-angle-down"></i></Link>
                                             <ul className="dropdown list-unstyled">
                                                 <li className="nav-item"><Link className="nav-link" to={"/blog-classic"}>Blog Classic</Link></li>
                                                 <li className="nav-item"><Link className="nav-link" to={"/blog-grid"}>Blog Grid</Link></li>

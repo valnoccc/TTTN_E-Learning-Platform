@@ -61,31 +61,31 @@ class FreeCourse extends Component<unknown, FreeCourseState> {
                                     <p>{Datas.subTitle}</p>
                                 </div>
                                 <div className="countdown-timer">
-                                    <p><span>{String(days).padStart(2, '0')}</span>Days</p>
-                                    <p><span>{String(hours).padStart(2, '0')}</span>Hours</p>
-                                    <p><span>{String(minutes).padStart(2, '0')}</span>Minutes</p>
-                                    <p><span>{String(seconds).padStart(2, '0')}</span>Seconds</p>
+                                    <p><span>{String(days).padStart(2, '0')}</span>Ngày</p>
+                                    <p><span>{String(hours).padStart(2, '0')}</span>Giờ</p>
+                                    <p><span>{String(minutes).padStart(2, '0')}</span>Phút</p>
+                                    <p><span>{String(seconds).padStart(2, '0')}</span>Giây</p>
                                 </div>
                             </Col>
                             <Col md="5">
                                 <div className="register-form text-center" style={{ backgroundImage: `url(/assets/images/${Datas.formBackground})` }}>
                                     <div className="form-box">
-                                        <h4 className="title">Sign Up Now</h4>
-                                        <p className="desc">Get Free Courses</p>
+                                        <h4 className="title">Đăng Ký Ngay</h4>
+                                        <p className="desc">Nhận Khóa Học Miễn Phí</p>
                                         <form id="form3" className="form">
                                             <p className="form-control">
-                                                <input type="text" placeholder="Enter your Name" id="name3" />
+                                                <input type="text" placeholder="Nhập Tên của bạn" id="name3" />
                                                 <span className="input-msg3"></span>
                                             </p>
                                             <p className="form-control">
-                                                <input type="email" placeholder="Enter your Email" id="email3" />
+                                                <input type="email" placeholder="Nhập Email của bạn" id="email3" />
                                                 <span className="input-msg3"></span>
                                             </p>
                                             <p className="form-control">
-                                                <input type="text" placeholder="Enter Phone NUmber" id="phone3" />
+                                                <input type="text" placeholder="Nhập Số Điện Thoại" id="phone3" />
                                                 <span className="input-msg3"></span>
                                             </p>
-                                            <button>Send Request</button>
+                                            <button>Gửi Yêu Cầu</button>
                                         </form>
                                     </div>
                                 </div>

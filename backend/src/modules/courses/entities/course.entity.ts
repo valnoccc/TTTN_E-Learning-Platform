@@ -3,10 +3,12 @@ import {
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Category } from '../../categories/entities/category.entity';
+import { Lesson } from '../../lessons/entities/lesson.entity';
 
 @Entity('KhoaHoc')
 export class KhoaHoc {
@@ -58,4 +60,7 @@ export class KhoaHoc {
   @ManyToOne(() => Category)
   @JoinColumn({ name: 'MaDM' })
   danhMuc!: Category;
+
+  @OneToMany(() => Lesson, (lesson) => lesson.khoaHoc)
+  baiHocs?: Lesson[];
 }

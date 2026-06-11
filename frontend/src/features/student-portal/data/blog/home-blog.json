@@ -1,13 +1,13 @@
 {
-    "secTitle": "Lets See What We Can Show To You Our Useful Blog Article Post.",
+    "secTitle": "Xem Những Bài Viết Mới Nhất Trên Blog Của Chúng Tôi.",
     "dataList": [
         {
             "id": "1",
             "postImg": "blog-1.jpg",
             "postLink": "/blog-details",
-            "postDate": "25 Mar",
-            "postTitle": "Effective Study Guide For Beginners.",
-            "postExcerpt": "Let's discover the secrets to help you optimize your study time and achieve the highest results.",
+            "postDate": "25 Th03",
+            "postTitle": "Hướng Dẫn Học Tập Hiệu Quả Cho Người Mới Bắt Đầu.",
+            "postExcerpt": "Khám phá những bí quyết giúp bạn tối ưu hóa thời gian học tập và đạt kết quả cao nhất.",
             "authorLink": "/",
             "commentLink": "/",
             "likeLink": "/"
@@ -16,9 +16,9 @@
             "id": "2",
             "postImg": "blog-2.jpg",
             "postLink": "/blog-details",
-            "postDate": "25 Mar",
-            "postTitle": "The Latest Technology Trends This Year You Should Know.",
-            "postExcerpt": "Summary of prominent new technologies and how they will change the future of programming.",
+            "postDate": "25 Th03",
+            "postTitle": "Xu Hướng Công Nghệ Mới Nhất Năm Nay Bạn Nên Biết.",
+            "postExcerpt": "Tổng hợp những công nghệ mới nổi bật và cách chúng sẽ thay đổi tương lai ngành lập trình.",
             "authorLink": "/",
             "commentLink": "/",
             "likeLink": "/"
@@ -27,9 +27,9 @@
             "id": "3",
             "postImg": "blog-3.jpg",
             "postLink": "/blog-details",
-            "postDate": "25 Mar",
-            "postTitle": "How to Overcome Procrastination When Self-Taught Programming At Home.",
-            "postExcerpt": "Practical methods to maintain motivation and discipline when you have to study on your own every day.",
+            "postDate": "25 Th03",
+            "postTitle": "Cách Vượt Qua Sự Trì Hoãn Khi Tự Học Lập Trình Tại Nhà.",
+            "postExcerpt": "Các phương pháp thực tế để duy trì động lực và kỷ luật khi bạn phải tự học mỗi ngày.",
             "authorLink": "/",
             "commentLink": "/",
             "likeLink": "/"
@@ -38,9 +38,9 @@
             "id": "4",
             "postImg": "blog-4.jpg",
             "postLink": "/blog-details",
-            "postDate": "25 Mar",
-            "postTitle": "Essential Soft Skills to Become a Good Programmer.",
-            "postExcerpt": "A programmer needs not only to be good at coding, but also needs these important soft skills.",
+            "postDate": "25 Th03",
+            "postTitle": "Kỹ Năng Mềm Cần Thiết Để Trở Thành Lập Trình Viên Giỏi.",
+            "postExcerpt": "Một lập trình viên không chỉ cần giỏi code mà còn cần những kỹ năng mềm quan trọng này.",
             "authorLink": "/",
             "commentLink": "/",
             "likeLink": "/"

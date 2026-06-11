@@ -24,7 +24,7 @@ const CourseTag = () => {
         <Styles>
             {/* Course Tag */}
             <div className="course-tag">
-                <h5>Course Tag</h5>
+                <h5>Thẻ khóa học</h5>
                 <div className="tag-box">
                     {categories.map((cat: any) => (
                         <Link 

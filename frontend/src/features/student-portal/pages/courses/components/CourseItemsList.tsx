@@ -70,7 +70,7 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
         <Fragment>
             {
                 currentItems.map((data: any, i: number) => {
-                    const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Unknown Instructor';
+                    const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Giảng viên chưa rõ';
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const courseImage = data.hinhThuNho || process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
                     const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
@@ -106,7 +106,7 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                     </h5>
                                     
                                     <p className="mb-4 flex-1 text-gray-600 line-clamp-2">
-                                        {data.moTa || "No description available for this course."}
+                                        {data.moTa || "Chưa có mô tả cho khóa học này."}
                                     </p>
                                     
                                     <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4">
@@ -117,11 +117,11 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                             </div>
                                             <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
                                                 <i className="las la-clock text-emerald-500"></i>
-                                                <span>120 Min</span>
+                                                <span>120 Phút</span>
                                             </div>
                                             <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
                                                 <i className="las la-signal text-emerald-500"></i>
-                                                <span>All Levels</span>
+                                                <span>Mọi cấp độ</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -136,16 +136,16 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                         thumbnail: courseImage,
                                                         instructor: instructorName,
                                                         price: parseFloat(data.giaBan || '0'),
-                                                        duration: '120 Min',
-                                                        level: 'All Levels',
+                                                        duration: '120 Phút',
+                                                        level: 'Mọi cấp độ',
                                                         category: categoryName
                                                     }));
                                                 }}
                                             >
-                                                <i className="las la-shopping-cart mr-1 text-lg"></i> Add to Cart
+                                                <i className="las la-shopping-cart mr-1 text-lg"></i> Thêm vào giỏ
                                             </button>
                                             <Link to={courseUrl} className="flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600 hover:text-white text-decoration-none hover:no-underline">
-                                                Details <i className="las la-arrow-right ml-1"></i>
+                                                Chi tiết <i className="las la-arrow-right ml-1"></i>
                                             </Link>
                                         </div>
                                     </div>

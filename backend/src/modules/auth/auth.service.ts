@@ -15,7 +15,11 @@ export class AuthService {
   ) {}
 
   async login(email: string, pass: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.matKhau')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user || !(await bcrypt.compare(pass, user.matKhau))) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng!');
@@ -62,7 +66,11 @@ export class AuthService {
   }
 
   async changePassword(userId: number, oldPass: string, newPass: string) {
-    const user = await this.userRepository.findOne({ where: { maND: userId } });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.matKhau')
+      .where('user.maND = :userId', { userId })
+      .getOne();
     if (!user) throw new UnauthorizedException('Người dùng không tồn tại!');
 
     if (!(await bcrypt.compare(oldPass, user.matKhau))) {

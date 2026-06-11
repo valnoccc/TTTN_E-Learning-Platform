@@ -346,6 +346,77 @@ export class InstructorsService {
     };
   }
 
+  async getAllPublicInstructors() {
+    const instructors = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.vaiTro = :role', { role: UserRole.INSTRUCTOR })
+      .getMany();
+
+    const profiles = await this.hoSoRepo.find();
+    
+    return instructors.map((user) => {
+      const profile = profiles.find((p) => p.MaND === user.maND);
+      return {
+        id: user.maND,
+        personName: user.hoTen,
+        personImage: user.anhDaiDien || 'team-3.jpg',
+        personTitle: profile?.ChuyenMon || 'Giảng viên',
+        socialLinks: {
+          facebook: profile?.FacebookURL || '',
+          instagram: profile?.InstagramURL || '',
+          github: profile?.GitHubURL || '',
+          website: profile?.WebsiteURL || '',
+        },
+      };
+    });
+  }
+
+  async getPublicInstructorById(id: number) {
+    const user = await this.userRepo.findOne({ where: { maND: id, vaiTro: UserRole.INSTRUCTOR } });
+    if (!user) {
+      throw new NotFoundException('Instructor not found');
+    }
+
+    const profile = await this.hoSoRepo.findOne({ where: { MaND: id } });
+
+    // Lấy danh sách khóa học của giảng viên này
+    const courses = await this.dataSource.query(
+      `
+        SELECT 
+          MaKH as id,
+          TenKhoaHoc as courseTitle,
+          GiaBan as price,
+          HinhThuNho as imgUrl,
+          MoTa as courseDesc,
+          0 as views
+        FROM KhoaHoc
+        WHERE MaND_GiangVien = ? AND TrangThai = 'ACTIVE'
+      `,
+      [id]
+    );
+
+    return {
+      id: user.maND,
+      personName: user.hoTen,
+      personImage: user.anhDaiDien || 'team-3.jpg',
+      personTitle: profile?.ChuyenMon || 'Giảng viên',
+      email: user.email,
+      phone: '', // Có thể thêm trường số điện thoại vào db sau
+      bio: profile?.TieuSu || 'Giảng viên chưa cập nhật tiểu sử.',
+      socialLinks: {
+        facebook: profile?.FacebookURL || '',
+        instagram: profile?.InstagramURL || '',
+        github: profile?.GitHubURL || '',
+        website: profile?.WebsiteURL || '',
+      },
+      courses: courses.map((c: any) => ({
+        ...c,
+        price: Number(c.price),
+        imgUrl: c.imgUrl || 'course-1.jpg'
+      }))
+    };
+  }
+
   private toNumber(value: number | string | null | undefined) {
     return Number(value ?? 0);
   }

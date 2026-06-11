@@ -49,8 +49,8 @@ class HeroSlider extends Component {
                                                 <Row>
                                                     <Col md="12">
                                                         <div className="hero-box text-center">
-                                                            <h1 style={{ fontSize: '46px', color: '#fff', maxWidth: '700px', margin: 'auto', marginBottom: '20px', fontWeight: 600 }}>{data.desc}</h1>
-                                                            <p style={{ fontSize: '16px', color: '#e5e5e5', maxWidth: '600px', lineHeight: '30px', margin: 'auto', marginBottom: '60px' }}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Laboriosam tempore laudantium pariatur ipsa delectus odit sequi dolor.</p>
+                                                            <h1 style={{ fontSize: '46px', color: '#fff', maxWidth: '700px', margin: 'auto', marginBottom: '20px', fontWeight: 600 }}>Khởi Đầu Hành Trình Học Tập Của Bạn</h1>
+                                                            <p style={{ fontSize: '16px', color: '#e5e5e5', maxWidth: '600px', lineHeight: '30px', margin: 'auto', marginBottom: '60px' }}>Khám phá hàng ngàn khóa học chất lượng từ các chuyên gia hàng đầu. Nâng cao kỹ năng và phát triển sự nghiệp ngay hôm nay.</p>
                                                             <div className="video-player">
                                                                 <a
                                                                     href="https://www.youtube.com/watch?v=uXFUl0KcIkA"

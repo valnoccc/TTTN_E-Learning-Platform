@@ -41,6 +41,14 @@ export default function Checkout() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   useEffect(() => {
+    // 1. Kiểm tra đăng nhập
+    const user = localStorage.getItem('user');
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để tiến hành thanh toán!');
+      navigate('/login');
+      return;
+    }
+
     if (location.state?.selectedCourses && location.state.selectedCourses.length > 0) {
       setCourses(location.state.selectedCourses);
       setLoading(false);
@@ -51,6 +59,12 @@ export default function Checkout() {
       navigate('/student/cart');
     }
   }, [courseId, location.state, navigate]);
+
+  useEffect(() => {
+    if (successData) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [successData]);
 
   const loadCourseData = async (id: number) => {
     try {
@@ -142,6 +156,7 @@ export default function Checkout() {
         localStorage.setItem('paymentHistory', JSON.stringify([newPayment, ...paymentHistory]));
 
         setSuccessData({ invoiceId: res.invoiceId });
+        window.scrollTo(0, 0);
         toast.success('Payment successful!');
         setTimeout(() => {
           navigate('/student/profile'); // Changed to profile since my-courses is inside StudentProfile tab

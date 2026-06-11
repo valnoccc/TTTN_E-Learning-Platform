@@ -35,7 +35,7 @@ function AnimatedRoutes() {
         <Route path="/faq" element={<Faq />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/instructors" element={<Instructors />} />
-        <Route path="/instructor-details" element={<InstructorDetails />} />
+        <Route path="/instructor-details/:id" element={<InstructorDetails />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/:courseId" element={<Checkout />} />
         <Route path="/login" element={<LoginPage />} />

@@ -36,23 +36,23 @@ class AboutUs extends Component {
                                         <Col sm="4">
                                             <div className="counter-box box1 text-center">
                                                 <h3>970<i className="las la-plus"></i></h3>
-                                                <p>Happy Students</p>
+                                                <p>Học viên</p>
                                             </div>
                                         </Col>
                                         <Col sm="4">
                                             <div className="counter-box box2 text-center">
                                                 <h3>130<i className="las la-plus"></i></h3>
-                                                <p>Teachers</p>
+                                                <p>Giảng viên</p>
                                             </div>
                                         </Col>
                                         <Col sm="4">
                                             <div className="counter-box box3 text-center">
                                                 <h3>340<i className="las la-plus"></i></h3>
-                                                <p>Courses</p>
+                                                <p>Khóa học</p>
                                             </div>
                                         </Col>
                                     </Row>
-                                    <Link className="readmore-btn" to={"/about"}>Read More</Link>
+                                    <Link className="readmore-btn" to={"/about"}>Xem thêm</Link>
                                 </div>
                             </Col>
                         </Row>

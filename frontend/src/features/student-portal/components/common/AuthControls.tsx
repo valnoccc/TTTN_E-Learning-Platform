@@ -87,7 +87,7 @@ export default function AuthControls() {
       <Link
         to="/login"
         className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
-        title="Login / Register"
+        title="Đăng nhập / Đăng ký"
       >
         <User size={20} />
       </Link>
@@ -122,7 +122,7 @@ export default function AuthControls() {
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
         >
           <User size={14} className="me-2" />
-          Dashboard
+          Bảng điều khiển
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}
@@ -131,7 +131,7 @@ export default function AuthControls() {
         >
           <div className="flex items-center">
             <Heart size={14} className="me-2 text-rose-500" />
-            Wishlist
+            Yêu thích
           </div>
           {wishlistItems.length > 0 && (
             <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
@@ -146,7 +146,7 @@ export default function AuthControls() {
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 flex items-center"
         >
           <LogOut size={14} className="me-2" />
-          Logout
+          Đăng xuất
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>

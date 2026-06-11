@@ -38,7 +38,7 @@ function FaqEvent() {
                                 <Row>
                                     <Col md="12">
                                         <div className="sec-title">
-                                            <h4>Upcoming <span>Events</span></h4>
+                                            <h4>Sự kiện <span>sắp tới</span></h4>
                                         </div>
                                     </Col>
                                     <Col md="12">
@@ -66,7 +66,7 @@ function FaqEvent() {
                         <Col md="6">
                             <div className="faq-area">
                                 <div className="sec-title">
-                                    <h4>Frequently Ask <span>Question</span></h4>
+                                    <h4>Câu hỏi <span>thường gặp</span></h4>
                                 </div>
                                 <div className="faq-box">
                                     {

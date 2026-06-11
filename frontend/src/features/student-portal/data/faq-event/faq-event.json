@@ -2,47 +2,47 @@
     "eventDataList": [
         {
             "id": "1",
-            "eventDate": "25 March",
-            "eventTitle": "2020 admidion fair going on this week",
+            "eventDate": "25 Tháng 3",
+            "eventTitle": "Hội chợ tuyển sinh diễn ra trong tuần này",
             "eventTime": "5:30pm - 7.00pm",
-            "eventLocation": "Newyork,NY.",
-            "eventdesc": "Lorem ipsum dolor sit amet consectetur. Como Ssee hou",
+            "eventLocation": "Hồ Chí Minh, VN",
+            "eventdesc": "Sự kiện được tổ chức nhằm mang đến thông tin tuyển sinh mới nhất.",
             "eventLink": "/event-details"
         },
         {
             "id": "2",
-            "eventDate": "25 March",
-            "eventTitle": "2020 admidion fair going on this week",
+            "eventDate": "25 Tháng 3",
+            "eventTitle": "Hội chợ tuyển sinh diễn ra trong tuần này",
             "eventTime": "5:30pm - 7.00pm",
-            "eventLocation": "Newyork,NY.",
-            "eventdesc": "Lorem ipsum dolor sit amet consectetur. Como Ssee hou",
+            "eventLocation": "Hồ Chí Minh, VN",
+            "eventdesc": "Sự kiện được tổ chức nhằm mang đến thông tin tuyển sinh mới nhất.",
             "eventLink": "/event-details"
         },
         {
             "id": "3",
-            "eventDate": "25 March",
-            "eventTitle": "2020 admidion fair going on this week",
+            "eventDate": "25 Tháng 3",
+            "eventTitle": "Hội chợ tuyển sinh diễn ra trong tuần này",
             "eventTime": "5:30pm - 7.00pm",
-            "eventLocation": "Newyork,NY.",
-            "eventdesc": "Lorem ipsum dolor sit amet consectetur. Como Ssee hou",
+            "eventLocation": "Hồ Chí Minh, VN",
+            "eventdesc": "Sự kiện được tổ chức nhằm mang đến thông tin tuyển sinh mới nhất.",
             "eventLink": "/event-details"
         }
     ],
     "faqDataList": [
         {
             "id": "1",
-            "faqTitle": "I don't know What should I write here?",
-            "faqDesc": "Anim pariatur cliche reprehenderit, enim eiusm high life accusamus terry richardson ad squid. 3 wolf moon."
+            "faqTitle": "Tôi cần biết thông tin gì về nền tảng này?",
+            "faqDesc": "EDUMEO là một hệ thống học trực tuyến hàng đầu, nơi bạn có thể tìm thấy các khóa học chất lượng từ các chuyên gia."
         },
         {
             "id": "2",
-            "faqTitle": "I don't know What should I write here?",
-            "faqDesc": "Anim pariatur cliche reprehenderit, enim eiusm high life accusamus terry richardson ad squid."
+            "faqTitle": "Nền tảng này hỗ trợ những hình thức học nào?",
+            "faqDesc": "Bạn có thể học qua video bài giảng, làm bài tập trực tuyến và tham gia các buổi thảo luận cùng giảng viên."
         },
         {
             "id": "3",
-            "faqTitle": "I don't know What should I write here?",
-            "faqDesc": "Anim pariatur cliche reprehenderit, enim eiusm high life accusamus terry richardson ad squid. 3 wolf moon."
+            "faqTitle": "Tôi cần biết thông tin gì về nền tảng này?",
+            "faqDesc": "EDUMEO là một hệ thống học trực tuyến hàng đầu, nơi bạn có thể tìm thấy các khóa học chất lượng từ các chuyên gia."
         }
     ]
 }

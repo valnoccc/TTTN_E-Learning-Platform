@@ -4,7 +4,7 @@ import { Styles } from "./styles/newsletterForm";
 
 function NewsletterForm() {
     let data = {
-        secTitle: 'Get The Latest News & Updates On Your Box',
+        secTitle: 'Nhận Tin Tức & Cập Nhật Mới Nhất',
     }
 
     useEffect(() => {
@@ -28,15 +28,15 @@ function NewsletterForm() {
             const emailValue = emailInput.value.trim();
 
             if (nameValue === "") {
-                setError(nameInput, "Name can't be blank");
+                setError(nameInput, "Tên không được để trống");
             } else {
                 setSuccess(nameInput);
             }
 
             if (emailValue === "") {
-                setError(emailInput, "Email can't be blank");
+                setError(emailInput, "Email không được để trống");
             } else if (!isEmail(emailValue)) {
-                setError(emailInput, "Not a valid email");
+                setError(emailInput, "Email không hợp lệ");
             } else {
                 setSuccess(emailInput);
             }
@@ -81,18 +81,18 @@ function NewsletterForm() {
                                         <Row>
                                             <Col md="4">
                                                 <p className="form-control">
-                                                    <input type="text" placeholder="Enter your Name" id="name2" />
+                                                    <input type="text" placeholder="Nhập Tên của bạn" id="name2" />
                                                     <span className="input-msg2"></span>
                                                 </p>
                                             </Col>
                                             <Col md="4">
                                                 <p className="form-control">
-                                                    <input type="email" placeholder="Enter your Email" id="email2" />
+                                                    <input type="email" placeholder="Nhập Email của bạn" id="email2" />
                                                     <span className="input-msg2"></span>
                                                 </p>
                                             </Col>
                                             <Col md="4">
-                                                <button><i className="las la-envelope"></i>Subscribe Now</button>
+                                                <button><i className="las la-envelope"></i>Đăng ký ngay</button>
                                             </Col>
                                         </Row>
                                     </form>

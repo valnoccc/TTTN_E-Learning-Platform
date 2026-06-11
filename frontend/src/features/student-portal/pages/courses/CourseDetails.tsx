@@ -46,6 +46,7 @@ function CourseDetails() {
                         giangVien: response.data.giangVien,
                         ketQuaHocTap: parsedKetQua,
                         yeuCauKhoaHoc: parsedYeuCau,
+                        baiHocs: response.data.baiHocs?.sort((a: any, b: any) => a.thuTu - b.thuTu) || [],
                         updatedAt: response.data.updatedAt || '01 January 2022'
                     });
                 }
@@ -94,12 +95,12 @@ function CourseDetails() {
     }
 
     const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('en-US', { 
+        return new Intl.NumberFormat('vi-VN', { 
             style: 'currency', 
-            currency: 'USD',
+            currency: 'VND',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0 
-        }).format(price);
+        }).format(price).replace('₫', 'đ');
     };
 
     const courseImage = course.thumbnail.startsWith('http') ? course.thumbnail : process.env.PUBLIC_URL + course.thumbnail;
@@ -147,7 +148,7 @@ function CourseDetails() {
                                             <i className="las la-star"></i>
                                             <i className="las la-star-half-alt"></i>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-600">(28) reviews</span>
+                                        <span className="text-sm font-medium text-gray-600">(28) đánh giá</span>
                                     </div>
                                     
                                     <hr className="border-gray-100 mb-6" />
@@ -156,20 +157,20 @@ function CourseDetails() {
                                         <div className="flex items-center gap-3">
                                             <img src={process.env.PUBLIC_URL + `/assets/images/author.jpg`} alt={course.instructor} className="w-10 h-10 rounded-full object-cover" />
                                             <div>
-                                                <p className="text-xs text-gray-500 mb-1">Created by</p>
+                                                <p className="text-xs text-gray-500 mb-1">Được tạo bởi</p>
                                                 <h6 className="text-sm font-bold text-slate-800 m-0">{course.instructor}</h6>
                                             </div>
                                         </div>
                                         <div className="border-l border-gray-100 pl-4 md:pl-6">
-                                            <p className="text-xs text-gray-500 mb-1">Total Enrolled</p>
+                                            <p className="text-xs text-gray-500 mb-1">Tổng số học viên</p>
                                             <h6 className="text-sm font-bold text-slate-800 m-0">5,420</h6>
                                         </div>
                                         <div className="border-l border-gray-100 pl-4 md:pl-6">
-                                            <p className="text-xs text-gray-500 mb-1">Last Update</p>
-                                            <h6 className="text-sm font-bold text-slate-800 m-0">01 January 2022</h6>
+                                            <p className="text-xs text-gray-500 mb-1">Cập nhật lần cuối</p>
+                                            <h6 className="text-sm font-bold text-slate-800 m-0">01 Th01, 2022</h6>
                                         </div>
                                         <div className="border-l border-gray-100 pl-4 md:pl-6">
-                                            <p className="text-xs text-gray-500 mb-1">Category</p>
+                                            <p className="text-xs text-gray-500 mb-1">Danh mục</p>
                                             <h6 className="text-sm font-bold text-slate-800 m-0">{course.category}</h6>
                                         </div>
                                     </div>
@@ -180,7 +181,7 @@ function CourseDetails() {
                                     
                                     {/* Description */}
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-4">Description</h3>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-4">Mô tả khóa học</h3>
                                         <div className="text-gray-600 leading-relaxed text-sm md:text-base space-y-4">
                                             <p>{course.moTa || "Chưa có mô tả cho khóa học này."}</p>
                                         </div>
@@ -189,7 +190,7 @@ function CourseDetails() {
                                     {/* What you'll learn */}
                                     {course.ketQuaHocTap && course.ketQuaHocTap.length > 0 && (
                                         <div className="bg-[#f5f7fa] rounded-xl p-6 md:p-8 border border-blue-50/50">
-                                            <h3 className="text-xl font-bold text-slate-800 mb-6">What you'll learn</h3>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-6">Mục tiêu khóa học</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                                 {course.ketQuaHocTap.map((item: string, idx: number) => (
                                                     <div key={idx} className="flex items-start">
@@ -201,10 +202,57 @@ function CourseDetails() {
                                         </div>
                                     )}
 
+
+
+                                    {/* Curriculum */}
+                                    <div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Curriculum</h3>
+                                        <p className="text-sm text-gray-500 mb-6">{course.baiHocs?.length || 0} lectures</p>
+                                        
+                                        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                            {course.baiHocs && course.baiHocs.length > 0 ? (
+                                                <div className="border-b border-gray-200 last:border-0">
+                                                    <button 
+                                                        className="w-full flex items-center justify-between p-4 md:p-5 bg-gray-50 hover:bg-gray-100 transition-colors text-left font-semibold text-slate-800 focus:outline-none border-0 active"
+                                                        onClick={toggleAccordion}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <i className="las la-minus text-gray-400 font-bold text-lg"></i>
+                                                            <span>Nội dung khóa học</span>
+                                                        </div>
+                                                        <span className="text-sm font-normal text-gray-500 hidden sm:block">{course.baiHocs.length} lectures</span>
+                                                    </button>
+                                                    <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: '1000px' }}>
+                                                        <div className="p-0">
+                                                            <ul className="m-0 p-0 list-none">
+                                                                {course.baiHocs.map((baiHoc: any, index: number) => (
+                                                                    <li key={index} className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                                                                        <div className="flex items-center gap-3 text-gray-500">
+                                                                            <i className="las la-play-circle text-xl text-gray-300"></i>
+                                                                            <span className="text-sm font-medium">{baiHoc.tenBaiHoc}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-3 text-gray-400 text-sm">
+                                                                            <span>{baiHoc.thoiLuong ? `${baiHoc.thoiLuong}m` : ''}</span>
+                                                                            <i className="las la-lock"></i>
+                                                                        </div>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="p-5 text-center text-gray-500">
+                                                    Khóa học này hiện chưa có bài giảng.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     {/* Requirements */}
                                     {course.yeuCauKhoaHoc && course.yeuCauKhoaHoc.length > 0 && (
                                         <div>
-                                            <h3 className="text-xl font-bold text-slate-800 mb-4">Requirements</h3>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-4">Yêu cầu của khóa học</h3>
                                             <ul className="space-y-2 m-0 p-0 pl-4 list-none">
                                                 {course.yeuCauKhoaHoc.map((item: string, idx: number) => (
                                                     <li key={idx} className="flex items-center text-gray-600 text-sm md:text-base relative before:content-[''] before:w-1.5 before:h-1.5 before:bg-gray-500 before:rounded-full before:absolute before:-left-4 before:top-1/2 before:-translate-y-1/2">
@@ -215,153 +263,34 @@ function CourseDetails() {
                                         </div>
                                     )}
 
-                                    {/* Curriculum */}
-                                    <div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Curriculum</h3>
-                                        <p className="text-sm text-gray-500 mb-6">15 lectures • 2h 29m 12s total length</p>
-                                        
-                                        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                                            {/* Accordion Item 1 */}
-                                            <div className="border-b border-gray-200 last:border-0">
-                                                <button 
-                                                    className="w-full flex items-center justify-between p-4 md:p-5 bg-gray-50 hover:bg-gray-100 transition-colors text-left font-semibold text-slate-800 focus:outline-none border-0 active"
-                                                    onClick={toggleAccordion}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <i className="las la-minus text-gray-400 font-bold text-lg"></i>
-                                                        <span>Welcome to the Course and Overview</span>
-                                                    </div>
-                                                    <span className="text-sm font-normal text-gray-500 hidden sm:block">8 lectures • 47m</span>
-                                                </button>
-                                                <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: '1000px' }}>
-                                                    <div className="p-0">
-                                                        <ul className="m-0 p-0 list-none">
-                                                            <li className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                                                <div className="flex items-center gap-3 text-gray-500">
-                                                                    <i className="las la-play-circle text-xl text-gray-300"></i>
-                                                                    <span className="text-sm font-medium">Importing the libraries</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-gray-400 text-sm">
-                                                                    <span>5:30</span>
-                                                                    <i className="las la-lock"></i>
-                                                                </div>
-                                                            </li>
-                                                            <li className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                                                <div className="flex items-center gap-3 text-gray-500">
-                                                                    <i className="las la-play-circle text-xl text-gray-300"></i>
-                                                                    <span className="text-sm font-medium">Data Exploration</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-gray-400 text-sm">
-                                                                    <span>7:30</span>
-                                                                    <i className="las la-lock"></i>
-                                                                </div>
-                                                            </li>
-                                                            <li className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                                                <div className="flex items-center gap-3 text-gray-500">
-                                                                    <i className="las la-play-circle text-xl text-gray-300"></i>
-                                                                    <span className="text-sm font-medium">Data Preprocessing</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-gray-400 text-sm">
-                                                                    <span>8:30</span>
-                                                                    <i className="las la-lock"></i>
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Accordion Item 2 */}
-                                            <div className="border-b border-gray-200 last:border-0">
-                                                <button 
-                                                    className="w-full flex items-center justify-between p-4 md:p-5 bg-white hover:bg-gray-50 transition-colors text-left font-semibold text-slate-800 focus:outline-none border-0"
-                                                    onClick={toggleAccordion}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <i className="las la-plus text-gray-400 font-bold text-lg"></i>
-                                                        <span>Python Application Engine</span>
-                                                    </div>
-                                                    <span className="text-sm font-normal text-gray-500 hidden sm:block">2 lectures • 12m</span>
-                                                </button>
-                                                <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: '0px' }}>
-                                                    <div className="p-0">
-                                                        <ul className="m-0 p-0 list-none">
-                                                            <li className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                                                <div className="flex items-center gap-3 text-gray-500">
-                                                                    <i className="las la-play-circle text-xl text-gray-300"></i>
-                                                                    <span className="text-sm font-medium">Building the engine</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-gray-400 text-sm">
-                                                                    <span>12:00</span>
-                                                                    <i className="las la-lock"></i>
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Accordion Item 3 */}
-                                            <div className="border-b border-gray-200 last:border-0">
-                                                <button 
-                                                    className="w-full flex items-center justify-between p-4 md:p-5 bg-white hover:bg-gray-50 transition-colors text-left font-semibold text-slate-800 focus:outline-none border-0"
-                                                    onClick={toggleAccordion}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <i className="las la-plus text-gray-400 font-bold text-lg"></i>
-                                                        <span>Algorithm Comparison</span>
-                                                    </div>
-                                                    <span className="text-sm font-normal text-gray-500 hidden sm:block">3 lectures • 13m</span>
-                                                </button>
-                                                <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: '0px' }}>
-                                                    <div className="p-0">
-                                                        <ul className="m-0 p-0 list-none">
-                                                            <li className="flex items-center justify-between px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                                                <div className="flex items-center gap-3 text-gray-500">
-                                                                    <i className="las la-play-circle text-xl text-gray-300"></i>
-                                                                    <span className="text-sm font-medium">Testing Algorithms</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-gray-400 text-sm">
-                                                                    <span>13:00</span>
-                                                                    <i className="las la-lock"></i>
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-
                                     {/* Instructors */}
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Instructors</h3>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Giảng viên</h3>
                                         <div className="border border-gray-100 rounded-xl p-6 md:p-8 bg-white shadow-sm">
                                             <div className="flex flex-col md:flex-row gap-6 mb-6">
                                                 <img src={process.env.PUBLIC_URL + `/assets/images/instructor-3.jpg`} alt={course.instructor} className="w-28 h-28 object-cover rounded-lg" />
                                                 <div>
                                                     <h4 className="text-lg font-bold text-slate-800 mb-1 m-0">{course.instructor}</h4>
-                                                    <p className="text-sm text-gray-500 mb-3 m-0">Data Scientist, BDervs Ltd.</p>
+                                                    <p className="text-sm text-gray-500 mb-3 m-0">Chuyên gia dữ liệu, BDervs Ltd.</p>
                                                     <div className="flex items-center text-sm font-medium text-amber-400 mb-2">
                                                         <i className="las la-star mr-1 text-lg"></i>
-                                                        4.7 <span className="text-gray-500 ml-1 font-normal">(54 reviews)</span>
+                                                        4.7 <span className="text-gray-500 ml-1 font-normal">(54 đánh giá)</span>
                                                     </div>
                                                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                        <span className="flex items-center"><i className="las la-play-circle text-lg mr-1 text-gray-400"></i> 3 Courses</span>
-                                                        <span className="flex items-center"><i className="las la-user-friends text-lg mr-1 text-gray-400"></i> 78,742 Students</span>
+                                                        <span className="flex items-center"><i className="las la-play-circle text-lg mr-1 text-gray-400"></i> 3 Khóa học</span>
+                                                        <span className="flex items-center"><i className="las la-user-friends text-lg mr-1 text-gray-400"></i> 78,742 Học viên</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <p className="text-gray-600 text-sm md:text-base leading-relaxed m-0">
-                                                Professionally, I come from the Data Science consulting space with experience in finance, retail, transport and other industries. I was trained by the best analytics mentors at Deloitte Australia and since starting on Udemy I have passed on my knowledge to spread around the world.
+                                                Về chuyên môn, tôi đến từ lĩnh vực tư vấn Khoa học dữ liệu với kinh nghiệm trong tài chính, bán lẻ, giao thông và các ngành công nghiệp khác. Tôi đã được đào tạo bởi những cố vấn phân tích tốt nhất tại Deloitte Australia và kể từ khi bắt đầu giảng dạy trực tuyến, tôi đã truyền đạt kiến thức của mình cho học viên trên toàn thế giới.
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Student Feedback */}
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Student Feedback</h3>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Phản hồi từ học viên</h3>
                                         <div className="flex flex-col md:flex-row gap-8 items-center">
                                             <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-xl shadow-sm text-center">
                                                 <h2 className="text-6xl font-bold text-amber-400 mb-2 m-0">4.7</h2>
@@ -372,7 +301,7 @@ function CourseDetails() {
                                                     <i className="las la-star"></i>
                                                     <i className="las la-star-half-alt"></i>
                                                 </div>
-                                                <p className="text-sm font-medium text-gray-500 m-0">5785 Rating</p>
+                                                <p className="text-sm font-medium text-gray-500 m-0">5785 Đánh giá</p>
                                             </div>
                                             
                                             <div className="w-full md:w-2/3 space-y-3">
@@ -399,7 +328,7 @@ function CourseDetails() {
 
                                     {/* Reviews */}
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Reviews</h3>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-6">Nhận xét</h3>
                                         
                                         <div className="space-y-6 mb-10">
                                             {/* Review 1 */}
@@ -415,9 +344,9 @@ function CourseDetails() {
                                                             <i className="las la-star"></i>
                                                             <i className="las la-star"></i>
                                                         </div>
-                                                        <span className="text-xs text-gray-400">55 min ago</span>
+                                                        <span className="text-xs text-gray-400">55 phút trước</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Very clean and organized with easy to follow tutorials, Exercises, and solutions. This course does start from the beginning with very little knowledge and gives a great overview of common tools used for data science and progresses into more complex concepts and ideas.</p>
+                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Rất rõ ràng và có tổ chức với các hướng dẫn dễ làm theo, bài tập và giải pháp. Khóa học này bắt đầu từ mức cơ bản nhất với rất ít kiến thức và cung cấp cái nhìn tổng quan tuyệt vời về các công cụ phổ biến cho khoa học dữ liệu, tiến tới các khái niệm và ý tưởng phức tạp hơn.</p>
                                                 </div>
                                             </div>
 
@@ -436,9 +365,9 @@ function CourseDetails() {
                                                             <i className="las la-star"></i>
                                                             <i className="las la-star"></i>
                                                         </div>
-                                                        <span className="text-xs text-gray-400">45 min ago</span>
+                                                        <span className="text-xs text-gray-400">45 phút trước</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">The course is good at explaining very basic intuition of the concepts. It will get you scratching the surface so to say, where this course is unique is the implementation methods are so well defined. Thank you to the team !</p>
+                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Khóa học giải thích rất tốt tư duy cơ bản của các khái niệm. Nó sẽ giúp bạn hiểu các nền tảng căn bản, điều làm khóa học này độc đáo là các phương pháp triển khai được định nghĩa rất rõ ràng. Cảm ơn đội ngũ !</p>
                                                 </div>
                                             </div>
 
@@ -457,22 +386,22 @@ function CourseDetails() {
                                                             <i className="las la-star"></i>
                                                             <i className="las la-star"></i>
                                                         </div>
-                                                        <span className="text-xs text-gray-400">30 min ago</span>
+                                                        <span className="text-xs text-gray-400">30 phút trước</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">This course is amazing..! I started this course as a beginner and learnt a lot. Instructors are great. Query handling can be improved. Overall very happy with the course.</p>
+                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Khóa học này thật tuyệt vời..! Tôi bắt đầu khóa học này như một người mới và đã học được rất nhiều điều. Giảng viên rất giỏi. Việc xử lý câu hỏi cần cải thiện đôi chút. Nhìn chung rất hài lòng với khóa học.</p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <button className="bg-blue-600 text-white font-medium py-2.5 px-6 rounded-lg hover:bg-blue-700 transition-colors mb-8 border-0">
-                                            Write a Review
+                                            Viết đánh giá
                                         </button>
 
                                         {/* Write Review Form */}
                                         <div>
-                                            <p className="text-sm text-gray-500 mb-6 m-0">Your email address will not be published. Required fields are marked *</p>
+                                            <p className="text-sm text-gray-500 mb-6 m-0">Địa chỉ email của bạn sẽ không được công bố. Các trường bắt buộc được đánh dấu *</p>
                                             <div className="flex items-center gap-2 mb-6 mt-4">
-                                                <span className="text-sm font-medium text-gray-600">Overall ratings</span>
+                                                <span className="text-sm font-medium text-gray-600">Đánh giá tổng quan</span>
                                                 <div className="flex text-amber-400 cursor-pointer text-lg">
                                                     <i className="las la-star"></i>
                                                     <i className="las la-star"></i>
@@ -486,22 +415,22 @@ function CourseDetails() {
                                                 <textarea 
                                                     rows={6} 
                                                     className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none mb-4" 
-                                                    placeholder="Your review"
+                                                    placeholder="Nhận xét của bạn"
                                                 ></textarea>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                     <input 
                                                         type="text" 
                                                         className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" 
-                                                        placeholder="Your Name"
+                                                        placeholder="Tên của bạn"
                                                     />
                                                     <input 
                                                         type="email" 
                                                         className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" 
-                                                        placeholder="Your Email"
+                                                        placeholder="Email của bạn"
                                                     />
                                                 </div>
                                                 <button type="button" className="bg-blue-600 text-white font-medium py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors mt-2 border-0">
-                                                    Submit
+                                                    Gửi
                                                 </button>
                                             </form>
                                         </div>
@@ -516,54 +445,68 @@ function CourseDetails() {
                                     <Row>
                                         <Col md="12">
                                             <div className="course-details-feature">
-                                                <h5 className="title">Course Details</h5>
+                                                <h5 className="title">Chi tiết khóa học</h5>
                                                 <ul className="list-unstyled feature-list">
-                                                    <li><i className="las la-calendar"></i> Start Date: <span>Aug 21, 2020</span></li>
-                                                    <li><i className="las la-clock"></i> Duration: <span>1 Year</span></li>
-                                                    <li><i className="las la-globe"></i> Language: <span>English</span></li>
-                                                    <li><i className="las la-sort-amount-up"></i> Skill Level: <span>Beginner</span></li>
-                                                    <li><i className="las la-graduation-cap"></i> Subject: <span>Web</span></li>
-                                                    <li><i className="las la-book"></i> Lectures: <span>51</span></li>
-                                                    <li><i className="las la-bookmark"></i> Enrolled: <span>236</span></li>
-                                                    <li><i className="las la-certificate"></i> Certification: <span>Yes</span></li>
+                                                    <li><i className="las la-calendar"></i> Ngày bắt đầu: <span>21 Th08, 2020</span></li>
+                                                    <li><i className="las la-clock"></i> Thời lượng: <span>1 Năm</span></li>
+                                                    <li><i className="las la-globe"></i> Ngôn ngữ: <span>Tiếng Anh</span></li>
+                                                    <li><i className="las la-sort-amount-up"></i> Cấp độ: <span>Cơ bản</span></li>
+                                                    <li><i className="las la-graduation-cap"></i> Chủ đề: <span>Web</span></li>
+                                                    <li><i className="las la-book"></i> Bài giảng: <span>51</span></li>
+                                                    <li><i className="las la-bookmark"></i> Đã tham gia: <span>236</span></li>
+                                                    <li><i className="las la-certificate"></i> Chứng chỉ: <span>Có</span></li>
                                                 </ul>
-                                                <div className="d-flex align-items-center gap-2 mt-4">
+
+                                                <div className="mt-6 mb-2 border-t border-gray-100 pt-6">
+                                                    <h3 className="text-3xl font-bold text-[#30263f] mb-4">
+                                                        {formatPrice(course.price)}
+                                                    </h3>
+                                                    <div className="d-flex align-items-center gap-2 mb-3">
+                                                        <button 
+                                                            type="button" 
+                                                            className="flex-grow-1 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
+                                                            style={{ height: '48px', borderRadius: '8px' }}
+                                                            onClick={() => {
+                                                                dispatch(addToCart(course));
+                                                                toast.success('Đã thêm vào giỏ hàng!');
+                                                            }}
+                                                        >
+                                                            Thêm vào giỏ hàng
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            className={`d-flex align-items-center justify-content-center transition-colors border ${wishlistItems.some(item => item.id === course?.id) ? 'bg-[#5a31a8] hover:bg-[#4a278a] text-white border-[#5a31a8]' : 'bg-white hover:bg-purple-50 text-[#5a31a8] border-[#5a31a8]'}`} 
+                                                            style={{ width: '48px', height: '48px', borderRadius: '8px', padding: '0' }} 
+                                                            onClick={(e) => {
+                                                                e.currentTarget.blur();
+                                                                const isWishlisted = wishlistItems.some(item => item.id === course?.id);
+                                                                dispatch(toggleWishlist(course));
+                                                                if (isWishlisted) {
+                                                                    toast.success('Đã gỡ khỏi danh sách yêu thích!');
+                                                                } else {
+                                                                    toast.success('Đã thêm vào danh sách yêu thích!');
+                                                                }
+                                                            }}
+                                                            title="Thêm vào yêu thích"
+                                                        >
+                                                            <i className={wishlistItems.some(item => item.id === course?.id) ? "las la-heart" : "lar la-heart"} style={{ fontSize: '24px' }}></i>
+                                                        </button>
+                                                    </div>
                                                     <button 
                                                         type="button" 
-                                                        className="enroll-btn flex-grow-1 bg-[#10b981] hover:bg-[#059669] text-white transition-colors border-none" 
-                                                        onClick={() => navigate(`/checkout/${course.id}`)}
-                                                    >
-                                                        Enroll Course
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        className="btn d-flex align-items-center justify-content-center bg-[#10b981] hover:bg-[#059669] text-white transition-colors border-none shadow-none" 
-                                                        style={{ width: '45px', height: '40px', borderRadius: '5px', padding: '0' }} 
+                                                        className="w-100 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
+                                                        style={{ height: '48px', borderRadius: '8px' }}
                                                         onClick={() => {
-                                                            dispatch(addToCart(course));
-                                                            toast.success('Đã thêm vào giỏ hàng!');
-                                                        }}
-                                                        title="Add to Cart"
-                                                    >
-                                                        <i className="las la-shopping-cart" style={{ fontSize: '24px' }}></i>
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        className={`btn d-flex align-items-center justify-content-center transition-colors shadow-none border ${wishlistItems.some(item => item.id === course?.id) ? 'bg-[#ef4444] hover:bg-[#dc2626] text-white border-[#ef4444] hover:border-[#dc2626]' : 'bg-white hover:bg-red-50 text-[#ef4444] border-[#ef4444]'}`} 
-                                                        style={{ width: '45px', height: '40px', borderRadius: '5px', padding: '0' }} 
-                                                        onClick={(e) => {
-                                                            e.currentTarget.blur();
-                                                            const isWishlisted = wishlistItems.some(item => item.id === course?.id);
-                                                            dispatch(toggleWishlist(course));
-                                                            if (isWishlisted) {
-                                                                toast.success('Đã gỡ khỏi danh sách yêu thích!');
+                                                            const user = localStorage.getItem('user');
+                                                            if (!user) {
+                                                                toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
+                                                                navigate('/login', { state: { from: `/checkout/${course.id}` } });
                                                             } else {
-                                                                toast.success('Đã thêm vào danh sách yêu thích!');
+                                                                navigate(`/checkout/${course.id}`);
                                                             }
                                                         }}
-                                                        title="Add to Wishlist"
                                                     >
-                                                        <i className={wishlistItems.some(item => item.id === course?.id) ? "las la-heart" : "lar la-heart"} style={{ fontSize: '24px' }}></i>
+                                                        Mua ngay
                                                     </button>
                                                 </div>
                                             </div>
