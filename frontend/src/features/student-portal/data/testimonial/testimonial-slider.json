@@ -1,22 +1,22 @@
 {
-    "secTitle": "Lets See What Our Valuable Students Think About Us. Their Testimonials.",
+    "secTitle": "Đánh Giá Của Học Viên Về Chúng Tôi.",
     "backgroundImage": "vd-bg.jpg",
     "dataList": [
         {
             "id": "1",
-            "testimonialTitle": "It is great to be a part of this community.",
-            "testimonialDesc": "The course is of high quality and very useful. I have learned a lot of practical knowledge and can apply it directly to my work.",
+            "testimonialTitle": "Thật tuyệt vời khi được tham gia cộng đồng này.",
+            "testimonialDesc": "Khóa học rất chất lượng và bổ ích. Tôi đã học được nhiều kiến thức thực tế và có thể áp dụng trực tiếp vào công việc.",
             "authorImg": "testimonial-1.jpg",
             "authorName": "David Show",
-            "authorTitle": "Developer"
+            "authorTitle": "Nhà Phát Triển"
         },
         {
             "id": "2",
-            "testimonialTitle": "A learning experience beyond expectations.",
-            "testimonialDesc": "Enthusiastic instructors, easy-to-understand lecture content, and closely related to reality. The learning platform is highly professional and friendly.",
+            "testimonialTitle": "Một trải nghiệm học tập vượt mong đợi.",
+            "testimonialDesc": "Giảng viên nhiệt tình, nội dung bài giảng dễ hiểu và bám sát thực tế. Nền tảng học tập rất chuyên nghiệp và thân thiện.",
             "authorImg": "testimonial-2.jpg",
             "authorName": "Tom Parker",
-            "authorTitle": "Programmer"
+            "authorTitle": "Lập Trình Viên"
         }
     ]
 }

@@ -33,7 +33,7 @@ const PopularCourse = () => {
         <Styles>
             {/* Popular Course */}
             <div className="popular-course">
-                <h5>Popular Course</h5>
+                <h5>Khóa học phổ biến</h5>
                 <div className="popular-items">
                     {
                         courses.map((data: any, i: number) => {

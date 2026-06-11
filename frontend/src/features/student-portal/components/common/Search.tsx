@@ -53,7 +53,7 @@ class Search extends Component {
                     <div className="search-overlay custom-overlay" id="search-overlay" ref={this.searchOverlayRef}></div>
                     <div className="search-inner">
                         <form method="get" className="search-form">
-                            <input type="search" name="search" placeholder="Type and hit enter...." />
+                            <input type="search" name="search" placeholder="Nhập từ khóa và nhấn Enter...." />
                             <i className="las la-times close-btn" id="search-close" ref={this.searchExitRef}></i>
                         </form>
                     </div>

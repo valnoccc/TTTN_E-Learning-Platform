@@ -27,7 +27,7 @@ class NumberCounter extends Component {
                                     </div>
                                     <div className="counter-number">
                                         <h4><CountUpComponent end={1170} duration={3} />+</h4>
-                                        <p>University Courses</p>
+                                        <p>Khóa Học</p>
                                     </div>
                                 </div>
                             </Col>
@@ -38,7 +38,7 @@ class NumberCounter extends Component {
                                     </div>
                                     <div className="counter-number">
                                         <h4><CountUpComponent end={2309} duration={3} />+</h4>
-                                        <p>Total Students</p>
+                                        <p>Học Viên</p>
                                     </div>
                                 </div>
                             </Col>
@@ -49,7 +49,7 @@ class NumberCounter extends Component {
                                     </div>
                                     <div className="counter-number">
                                         <h4><CountUpComponent end={590} duration={3} />+</h4>
-                                        <p>Awards Wins</p>
+                                        <p>Giải Thưởng</p>
                                     </div>
                                 </div>
                             </Col>
@@ -60,7 +60,7 @@ class NumberCounter extends Component {
                                     </div>
                                     <div className="counter-number">
                                         <h4><CountUpComponent end={3790} duration={3} />+</h4>
-                                        <p>Library Books</p>
+                                        <p>Sách Thư Viện</p>
                                     </div>
                                 </div>
                             </Col>

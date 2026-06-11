@@ -24,9 +24,9 @@ function FooterTwo() {
             const emailValue = emailInput.value.trim();
 
             if (emailValue === "") {
-                setError(emailInput, "Email can't be blank");
+                setError(emailInput, "Email không được để trống");
             } else if (!isEmail(emailValue)) {
-                setError(emailInput, "Not a valid email");
+                setError(emailInput, "Email không hợp lệ");
             } else {
                 setSuccess(emailInput);
             }
@@ -64,7 +64,7 @@ function FooterTwo() {
                         <Col md="3">
                             <div className="footer-logo-info">
                                 <img src={"/assets/images/logo.png"} alt="" className="img-fluid" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px' }} />
-                                <p>We provide high-quality courses to help you improve your skills and advance in your career.</p>
+                                <p>Chúng tôi cung cấp các khóa học chất lượng cao giúp bạn nâng cao kỹ năng và phát triển sự nghiệp.</p>
                                 <ul className="list-unstyled">
                                     <li><i className="las la-map-marker"></i>795 South Park Avenue, CA 94107</li>
                                     <li><i className="las la-envelope"></i>enquery@domain.com</li>
@@ -74,26 +74,26 @@ function FooterTwo() {
                         </Col>
                         <Col md="3">
                             <div className="f-links">
-                                <h5>Useful Links</h5>
+                                <h5>Liên Kết Hữu Ích</h5>
                                 <ul className="list-unstyled">
-                                    <li><Link to={"/"}><i className="las la-angle-right"></i>General Information</Link></li>
-                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Help Center</Link></li>
-                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Our Services</Link></li>
-                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Privacy Policy</Link></li>
-                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Online Support</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Thông Tin Chung</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Trung Tâm Hỗ Trợ</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Dịch Vụ Của Chúng Tôi</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Chính Sách Bảo Mật</Link></li>
+                                    <li><Link to={"/"}><i className="las la-angle-right"></i>Hỗ Trợ Trực Tuyến</Link></li>
                                 </ul>
                             </div>
                         </Col>
                         <Col md="3">
                             <div className="f-post">
-                                <h5>Twitter Post</h5>
+                                <h5>Bài Viết Nổi Bật</h5>
                                 <div className="post-box d-flex">
                                     <div className="po-icon">
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={"/blog-details"}>Discover new technology trends...</Link>
-                                        <span>Mar 30, 2019</span>
+                                        <Link to={"/blog-details"}>Khám phá xu hướng công nghệ mới...</Link>
+                                        <span>30 Th03, 2019</span>
                                     </div>
                                 </div>
                                 <div className="post-box d-flex">
@@ -101,8 +101,8 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={"/blog-details"}>The most effective programming study guide...</Link>
-                                        <span>Mar 30, 2019</span>
+                                        <Link to={"/blog-details"}>Hướng dẫn học lập trình hiệu quả...</Link>
+                                        <span>30 Th03, 2019</span>
                                     </div>
                                 </div>
                                 <div className="post-box d-flex">
@@ -110,23 +110,23 @@ function FooterTwo() {
                                         <i className="fab fa-twitter"></i>
                                     </div>
                                     <div className="po-content">
-                                        <Link to={"/blog-details"}>Secrets to building a successful career...</Link>
-                                        <span>Mar 30, 2019</span>
+                                        <Link to={"/blog-details"}>Bí quyết xây dựng sự nghiệp thành công...</Link>
+                                        <span>30 Th03, 2019</span>
                                     </div>
                                 </div>
                             </div>
                         </Col>
                         <Col md="3">
                             <div className="f-newsletter">
-                                <h5>Newsletter</h5>
-                                <p>Subscribe to our newsletter to receive the latest offers and courses from us.</p>
+                                <h5>Đăng Ký Nhận Tin</h5>
+                                <p>Đăng ký nhận bản tin của chúng tôi để nhận các ưu đãi và khóa học mới nhất.</p>
 
                                 <form id="form4" className="form">
                                     <p className="form-control">
-                                        <input type="email" placeholder="Enter email here" id="email4" />
+                                        <input type="email" placeholder="Nhập email của bạn" id="email4" />
                                         <span className="input-msg4"></span>
                                     </p>
-                                    <button>Submit</button>
+                                    <button>Gửi</button>
                                 </form>
                             </div>
                         </Col>

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { InstructorsController } from './controllers/instructors.controller'; // Hoặc đường dẫn chuẩn của bạn
+import { PublicInstructorsController } from './controllers/public-instructors.controller';
 import { InstructorsService } from './services/instructors.service';
 
 // 1. Import các Entity cần thiết
@@ -11,7 +12,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, HoSoGiangVien]), CloudinaryModule],
-  controllers: [InstructorsController],
+  controllers: [InstructorsController, PublicInstructorsController],
   providers: [InstructorsService],
 })
 export class InstructorsModule {}

@@ -87,7 +87,7 @@ const CourseSlider = () => {
                                     <SwiperComponent {...settings}>
                                         {
                                             displayCourses.map((data: any, i: number) => {
-                                                const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Unknown Instructor';
+                                                const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Giảng viên chưa rõ';
                                                 const categoryName = data.danhMuc?.tenDM || 'General';
                                                 const courseImage = data.hinhThuNho || process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
                                                 const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
@@ -102,20 +102,20 @@ const CourseSlider = () => {
                                                                     <div className="mb-2 text-sm font-semibold text-emerald-500">{categoryName}</div>
                                                                     <h5 className="mb-2 text-xl font-bold text-slate-800">{data.tenKhoaHoc}</h5>
                                                                     <div className="mb-3 flex items-center text-sm text-gray-500">
-                                                                        <span className="mr-3"><i className="las la-clock mr-1"></i>120 Min</span>
-                                                                        <span><i className="las la-signal mr-1"></i>All Levels</span>
+                                                                        <span className="mr-3"><i className="las la-clock mr-1"></i>120 Phút</span>
+                                                                        <span><i className="las la-signal mr-1"></i>Mọi cấp độ</span>
                                                                     </div>
                                                                     <p className="mb-4 text-sm text-gray-600 line-clamp-3">
-                                                                        {data.moTa || "No description available for this course."}
+                                                                        {data.moTa || "Chưa có mô tả cho khóa học này."}
                                                                     </p>
                                                                     <ul className="mb-6 space-y-2 text-sm text-gray-600">
-                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> High-quality video lectures</li>
-                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Downloadable resources</li>
-                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Certificate of completion</li>
+                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Video bài giảng chất lượng cao</li>
+                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Tài liệu tải xuống miễn phí</li>
+                                                                        <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Chứng chỉ hoàn thành</li>
                                                                     </ul>
                                                                     <div className="flex gap-2">
                                                                         <Link to={courseUrl} className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-emerald-600 hover:text-white text-decoration-none hover:no-underline">
-                                                                            View Details
+                                                                            Xem chi tiết
                                                                         </Link>
                                                                         <button 
                                                                             className="rounded-lg bg-emerald-50 px-4 text-emerald-500 transition-colors hover:bg-emerald-500 hover:text-white"
@@ -128,8 +128,8 @@ const CourseSlider = () => {
                                                                                     thumbnail: courseImage,
                                                                                     instructor: instructorName,
                                                                                     price: parseFloat(data.giaBan || '0'),
-                                                                                    duration: '120 Min',
-                                                                                    level: 'All Levels',
+                                                                                    duration: '120 Phút',
+                                                                                    level: 'Mọi cấp độ',
                                                                                     category: categoryName
                                                                                 }));
                                                                                 toast.success('Đã thêm vào giỏ hàng!');
@@ -149,8 +149,8 @@ const CourseSlider = () => {
                                                                                     thumbnail: courseImage,
                                                                                     instructor: instructorName,
                                                                                     price: parseFloat(data.giaBan || '0'),
-                                                                                    duration: '120 Min',
-                                                                                    level: 'All Levels',
+                                                                                    duration: '120 Phút',
+                                                                                    level: 'Mọi cấp độ',
                                                                                     category: categoryName
                                                                                 }));
                                                                                 if (isWishlisted) {
@@ -159,7 +159,7 @@ const CourseSlider = () => {
                                                                                     toast.success('Đã thêm vào danh sách yêu thích!');
                                                                                 }
                                                                             }}
-                                                                            title="Add to Wishlist"
+                                                                            title="Thêm vào yêu thích"
                                                                         >
                                                                             <i className={`${wishlistItems.some(item => item.id === data.maKH) ? "las la-heart" : "lar la-heart"} text-xl`}></i>
                                                                         </button>
@@ -206,10 +206,10 @@ const CourseSlider = () => {
                                                                 <div className="flex items-center justify-between text-sm font-medium text-gray-500">
                                                                     <div className="flex items-center space-x-1">
                                                                         <i className="las la-book text-emerald-500"></i>
-                                                                        <span>11 Lessons</span>
+                                                                        <span>11 Bài giảng</span>
                                                                     </div>
                                                                     <Link to={courseUrl} className="flex items-center text-emerald-500 hover:text-emerald-600 text-decoration-none hover:no-underline">
-                                                                        View Details <i className="las la-arrow-right ml-1"></i>
+                                                                        Xem chi tiết <i className="las la-arrow-right ml-1"></i>
                                                                     </Link>
                                                                 </div>
                                                             </div>

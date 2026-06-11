@@ -5,7 +5,7 @@ import { Styles } from "./styles/campusTour";
 
 class CampusTour extends Component {
     state = {
-        secTitle: "We Have Best Campus In The Region. Let's Explore The Campus.",
+        secTitle: "Khám Phá Khuôn Viên Trường Hiện Đại Bậc Nhất Trong Khu Vực.",
     }
 
     render() {

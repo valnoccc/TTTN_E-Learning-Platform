@@ -1,15 +1,15 @@
 {
-    "secTitle": "We Do What We Love To Do. Find the Best Course To Fit Your Needs.",
+    "secTitle": "Học những gì bạn đam mê. Tìm khóa học phù hợp nhất với nhu cầu của bạn.",
     "dataList": [
         {
             "id": "1",
             "imgUrl": "course-1.jpg",
             "authorImg": "author.jpg",
             "authorName": "John Doe",
-            "authorCourses": "13 Courses",
+            "authorCourses": "13 Khóa học",
             "price": "$20",
-            "courseTitle": "PHP & MySQL Programming",
-            "courseDesc": "The course provides foundational and in-depth knowledge of web programming with PHP & MySQL, helping you confidently apply it in practice.",
+            "courseTitle": "Lập trình PHP & MySQL",
+            "courseDesc": "Khóa học cung cấp kiến thức nền tảng và chuyên sâu về lập trình web với PHP & MySQL, giúp bạn tự tin áp dụng vào thực tế.",
             "courseLink": "/course-details"
         },
         {
@@ -17,10 +17,10 @@
             "imgUrl": "course-2.jpg",
             "authorImg": "author.jpg",
             "authorName": "Jara Sen",
-            "authorCourses": "21 Courses",
+            "authorCourses": "21 Khóa học",
             "price": "$13",
-            "courseTitle": "Basic Microsoft Excel",
-            "courseDesc": "Master Excel skills from basic to advanced, effectively applied in office work and data management.",
+            "courseTitle": "Microsoft Excel Cơ Bản",
+            "courseDesc": "Làm chủ các kỹ năng Excel từ cơ bản đến nâng cao, ứng dụng hiệu quả trong công việc văn phòng và quản lý dữ liệu.",
             "courseLink": "/course-details"
         },
         {
@@ -28,10 +28,10 @@
             "imgUrl": "course-3.jpg",
             "authorImg": "author.jpg",
             "authorName": "Kim Chang",
-            "authorCourses": "26 Courses",
+            "authorCourses": "26 Khóa học",
             "price": "$19",
-            "courseTitle": "Digital Marketing Course",
-            "courseDesc": "Comprehensive digital marketing strategy, helping you build and grow your brand on online platforms.",
+            "courseTitle": "Khóa Học Digital Marketing",
+            "courseDesc": "Chiến lược marketing kỹ thuật số toàn diện, giúp bạn xây dựng và phát triển thương hiệu trên nền tảng trực tuyến.",
             "courseLink": "/course-details"
         },
         {
@@ -39,10 +39,10 @@
             "imgUrl": "course-4.jpg",
             "authorImg": "author.jpg",
             "authorName": "Jim Hunt",
-            "authorCourses": "09 Courses",
+            "authorCourses": "09 Khóa học",
             "price": "$15",
-            "courseTitle": "Python 3 From Scratch",
-            "courseDesc": "Learn Python programming from the very first steps. Confidently build applications and master the most popular programming tools.",
+            "courseTitle": "Lập Trình Python Từ Số 0",
+            "courseDesc": "Học lập trình Python từ những bước đầu tiên. Tự tin xây dựng ứng dụng và làm chủ các công cụ lập trình phổ biến nhất.",
             "courseLink": "/course-details"
         }
     ]

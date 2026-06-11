@@ -56,7 +56,7 @@ export class PublicCoursesController {
   async getCourseById(@Param('id') id: string) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: parseInt(id) },
-      relations: ['giangVien', 'danhMuc'],
+      relations: ['giangVien', 'danhMuc', 'baiHocs'],
     });
 
     if (!course) {

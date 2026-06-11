@@ -32,27 +32,27 @@ function Contact() {
             const messageValue = messageInput.value.trim();
 
             if (nameValue === "") {
-                setError(nameInput, "Name can't be blank");
+                setError(nameInput, "Tên không được để trống");
             } else {
                 setSuccess(nameInput);
             }
 
             if (emailValue === "") {
-                setError(emailInput, "Email can't be blank");
+                setError(emailInput, "Email không được để trống");
             } else if (!isEmail(emailValue)) {
-                setError(emailInput, "Not a valid email");
+                setError(emailInput, "Email không hợp lệ");
             } else {
                 setSuccess(emailInput);
             }
 
             if (subjectValue === "") {
-                setError(subjectInput, "Subject can't be blank");
+                setError(subjectInput, "Chủ đề không được để trống");
             } else {
                 setSuccess(subjectInput);
             }
 
             if (messageValue === "") {
-                setError(messageInput, "Message can't be blank");
+                setError(messageInput, "Nội dung không được để trống");
             } else {
                 setSuccess(messageInput);
             }
@@ -87,7 +87,7 @@ function Contact() {
             <div className="main-wrapper contact-page">
 
 {/* Breadcroumb */}
-                <BreadcrumbBox title="Contact Us" />
+                <BreadcrumbBox title="Liên hệ" />
 
                 {/* Contact Area */}
                 <section className="contact-area">
@@ -102,8 +102,8 @@ function Contact() {
                                         <i className="las la-map-marker"></i>
                                     </div>
                                     <div className="box-content">
-                                        <h5>Our Location</h5>
-                                        <p>795 South Park Avenue, Long Island, Newyork, NY 94107.</p>
+                                        <h5>Địa chỉ</h5>
+                                        <p>123 Sư Vạn Hạnh, Quận 10, TP.HCM</p>
                                     </div>
                                 </div>
                                 <div className="contact-icon-box d-flex">
@@ -111,8 +111,8 @@ function Contact() {
                                         <i className="las la-envelope-open"></i>
                                     </div>
                                     <div className="box-content">
-                                        <h5>Email Address</h5>
-                                        <p>info@mydomain.com<br />enquery@edu.com</p>
+                                        <h5>Địa chỉ Email</h5>
+                                        <p>hotro@edumeo.vn</p>
                                     </div>
                                 </div>
                                 <div className="contact-icon-box d-flex">
@@ -120,8 +120,8 @@ function Contact() {
                                         <i className="las la-phone"></i>
                                     </div>
                                     <div className="box-content">
-                                        <h5>Phone Number</h5>
-                                        <p>+1 (396) 486 4709<br />+1 (396) 486 8419</p>
+                                        <h5>Số điện thoại</h5>
+                                        <p>+84 123 456 789</p>
                                     </div>
                                 </div>
                                 <div className="contact-social">
@@ -137,37 +137,37 @@ function Contact() {
                             <Col md="8">
                                 <div className="contact-form">
                                     <div className="form-title">
-                                        <h4>Get In Touch</h4>
+                                        <h4>Gửi tin nhắn cho chúng tôi</h4>
                                     </div>
                                     <div className="form-box">
                                         <form id="form_contact" className="form">
                                             <Row>
                                                 <Col md="6">
                                                     <p className="form-control">
-                                                        <input type="text" placeholder="Full Name" id="contact_name" />
+                                                        <input type="text" placeholder="Họ và tên" id="contact_name" />
                                                         <span className="contact_input-msg"></span>
                                                     </p>
                                                 </Col>
                                                 <Col md="6">
                                                     <p className="form-control">
-                                                        <input type="email" placeholder="Email Address" id="contact_email" />
+                                                        <input type="email" placeholder="Địa chỉ Email" id="contact_email" />
                                                         <span className="contact_input-msg"></span>
                                                     </p>
                                                 </Col>
                                                 <Col md="12">
                                                     <p className="form-control">
-                                                        <input type="text" placeholder="Subject" id="contact_subject" />
+                                                        <input type="text" placeholder="Chủ đề" id="contact_subject" />
                                                         <span className="contact_input-msg"></span>
                                                     </p>
                                                 </Col>
                                                 <Col md="12">
                                                     <p className="form-control">
-                                                        <textarea name="message" id="contact_message" placeholder="Enter Message"></textarea>
+                                                        <textarea name="message" id="contact_message" placeholder="Nhập nội dung tin nhắn"></textarea>
                                                         <span className="contact_input-msg"></span>
                                                     </p>
                                                 </Col>
                                                 <Col md="12">
-                                                    <button>Send Message</button>
+                                                    <button>Gửi tin nhắn</button>
                                                 </Col>
                                             </Row>
                                         </form>

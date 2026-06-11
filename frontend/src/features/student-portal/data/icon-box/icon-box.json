@@ -3,21 +3,21 @@
         "id": "1",
         "uniqClass": "box-icon box1",
         "boxIcon": "flaticon-thumbs-like",
-        "title": "Popular Courses",
-        "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+        "title": "Các khóa học phổ biến",
+        "subTitle": "Hàng ngàn khóa học đa dạng các lĩnh vực"
     },
     {
         "id": "2",
         "uniqClass": "box-icon box2",
         "boxIcon": "flaticon-reading",
-        "title": "Modern Library",
-        "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+        "title": "Thư viện hiện đại",
+        "subTitle": "Tài liệu phong phú, cập nhật liên tục"
     },
     {
         "id": "3",
         "uniqClass": "box-icon box3",
         "boxIcon": "flaticon-teacher",
-        "title": "Qualified Teacher",
-        "subTitle": "Lorem ipsum dolor sit, amet consectetur elit."
+        "title": "Giảng viên chất lượng",
+        "subTitle": "Chuyên gia đầu ngành, giàu kinh nghiệm"
     }
 ]

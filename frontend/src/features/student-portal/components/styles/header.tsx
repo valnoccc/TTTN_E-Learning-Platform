@@ -461,6 +461,18 @@ export const Styles = styled.div`
                             }
                         }
                     }
+
+                    li.notification-box {
+                        a.nav-notification {
+                            padding: 18px 0 0 10px;
+
+                            i {
+                                font-size: 20px;
+                                color    : ${colors.border1};
+                                line-height: 17px;
+                            }
+                        }
+                    }
                 }
 
                 @media(max-width: 991px) {

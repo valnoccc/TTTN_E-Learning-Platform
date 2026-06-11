@@ -3,6 +3,7 @@ import { Request } from 'express';
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CreateReplyDto } from '../../courses/dto/create-reply.dto';
+import { CreateStudentReviewDto } from '../dto/create-student-review.dto';
 import { ReviewsService } from '../services/reviews.service';
 
 @Controller('courses')
@@ -51,6 +52,24 @@ export class ReviewsController {
     return {
       message: 'Gửi phản hồi đánh giá thành công',
       data: replyData,
+    };
+  }
+
+  @Post(':id/reviews/student')
+  async createStudentReview(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { sub: number } },
+    @Body() body: CreateStudentReviewDto,
+  ) {
+    const reviewData = await this.reviewsService.createStudentReview(
+      Number(id),
+      req.user.sub,
+      body,
+    );
+
+    return {
+      message: 'Đánh giá khóa học thành công',
+      data: reviewData,
     };
   }
 }

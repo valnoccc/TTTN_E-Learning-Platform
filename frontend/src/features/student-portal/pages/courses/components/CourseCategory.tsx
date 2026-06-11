@@ -31,7 +31,7 @@ const CourseCategory = ({ filters, setFilters }: { filters: any, setFilters: any
         <Styles>
             {/* Course Category */}
             <div className="course-category">
-                <h5>Course Category</h5>
+                <h5>Danh mục khóa học</h5>
                 <ul className="category-item list-unstyled">
                     {categories.map((cat: any) => (
                         <li className="check-btn" key={cat.maDM}>

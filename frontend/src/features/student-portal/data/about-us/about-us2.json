@@ -1,18 +1,18 @@
 {
-    "secTitle": "Highly Qualified Experts Accompanying You. Your Success Is Our Top Priority.",
-    "secDesc": "We are committed to providing a modern, professional, and friendly learning environment. With an experienced teaching staff, we always provide maximum support for students to develop their full potential and confidently enter the real working world.",
+    "secTitle": "Đội ngũ chuyên gia chất lượng đồng hành cùng bạn. Thành công của bạn là ưu tiên hàng đầu.",
+    "secDesc": "Chúng tôi cam kết cung cấp một môi trường học tập hiện đại, chuyên nghiệp và thân thiện. Với đội ngũ giảng viên giàu kinh nghiệm, chúng tôi luôn hỗ trợ tối đa để học viên phát huy hết khả năng và tự tin bước vào thế giới công việc thực tế.",
     "dataList": [
         {
-            "iconTitle": "High Quality Courses",
-            "iconSubtitle": "The training content is designed in depth and continuously updated according to the latest trends."
+            "iconTitle": "Khóa học chất lượng cao",
+            "iconSubtitle": "Nội dung đào tạo được thiết kế chuyên sâu và liên tục cập nhật theo xu hướng mới nhất."
         },
         {
-            "iconTitle": "Professional Instructors",
-            "iconSubtitle": "A team of experts with years of experience, dedicated to guiding and imparting knowledge."
+            "iconTitle": "Giảng viên chuyên nghiệp",
+            "iconSubtitle": "Đội ngũ chuyên gia với nhiều năm kinh nghiệm, tận tâm hướng dẫn và truyền đạt kiến thức."
         },
         {
-            "iconTitle": "Dedicated Support",
-            "iconSubtitle": "Always accompany you throughout the learning process and be ready to answer any questions."
+            "iconTitle": "Hỗ trợ tận tình",
+            "iconSubtitle": "Luôn đồng hành cùng bạn trong suốt quá trình học tập và sẵn sàng giải đáp mọi thắc mắc."
         }
     ],
     "aboutImageOne": "about-2.jpg",

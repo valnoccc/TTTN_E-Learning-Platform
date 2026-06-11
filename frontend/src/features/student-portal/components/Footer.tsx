@@ -16,43 +16,43 @@ class Footer extends Component {
                             <Col md="4">
                                 <div className="footer-logo-info">
                                     <img src={"/assets/images/f-logo.png"} alt="" className="img-fluid" />
-                                    <p>Lorem ipsum dolor sit amet, consectet adipisicing elit. Saepe porro neque a nam null quos.  Adipisci eius unde magnam ad, nisi voluptates.</p>
+                                    <p>EDUMEO tự hào mang đến môi trường học trực tuyến chất lượng, kết nối người học và giảng viên ở mọi nơi.</p>
                                     <ul className="list-unstyled">
-                                        <li><i className="las la-map-marker"></i>795 South Park Avenue, CA 94107</li>
-                                        <li><i className="las la-envelope"></i>enquery@domain.com</li>
-                                        <li><i className="las la-phone"></i>+1 908 875 7678</li>
+                                        <li><i className="las la-map-marker"></i>123 Đường Sư Vạn Hạnh, Quận 10, TP.HCM</li>
+                                        <li><i className="las la-envelope"></i>hotro@edumeo.vn</li>
+                                        <li><i className="las la-phone"></i>+84 123 456 789</li>
                                     </ul>
                                 </div>
                             </Col>
                             <Col md="4">
                                 <div className="f-links">
-                                    <h5>Useful Links</h5>
+                                    <h5>Liên kết hữu ích</h5>
                                     <ul className="list-unstyled">
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>General Info</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Help Center</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Our Services</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Privacy Policy</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Online Support</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Thông tin chung</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Trung tâm hỗ trợ</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Dịch vụ</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Bảo mật & Điều khoản</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Hỗ trợ trực tuyến</Link></li>
                                     </ul>
                                     <ul className="list-unstyled">
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>General Info</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Help Center</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Our Services</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Privacy Policy</Link></li>
-                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Online Support</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Về chúng tôi</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Khóa học</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Giảng viên</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Tuyển dụng</Link></li>
+                                        <li><Link to={"/"}><i className="las la-angle-right"></i>Liên hệ</Link></li>
                                     </ul>
                                 </div>
                             </Col>
                             <Col md="4">
                                 <div className="f-post">
-                                    <h5>Recent Post</h5>
+                                    <h5>Bài viết mới nhất</h5>
                                     <div className="post-box d-flex">
                                         <div className="post-img">
                                             <img src={"/assets/images/blog-2.jpg"} alt="" />
                                         </div>
                                         <div className="post-content">
-                                            <Link to={ +"/blog-details"}>Lorem ipsum dolor sit amet consectet adipisicing elit com...</Link>
-                                            <span>Mar 30, 2020</span>
+                                            <Link to={ +"/blog-details"}>Các xu hướng E-Learning bùng nổ trong năm tới...</Link>
+                                            <span>30 Th03, 2024</span>
                                         </div>
                                     </div>
                                     <div className="post-box d-flex">
@@ -60,8 +60,8 @@ class Footer extends Component {
                                             <img src={"/assets/images/blog-3.jpg"} alt="" />
                                         </div>
                                         <div className="post-content">
-                                            <Link to={ +"/blog-details"}>Lorem ipsum dolor sit amet consectet adipisicing elit com...</Link>
-                                            <span>Mar 30, 2020</span>
+                                            <Link to={ +"/blog-details"}>Phương pháp tự học lập trình hiệu quả tại nhà...</Link>
+                                            <span>15 Th04, 2024</span>
                                         </div>
                                     </div>
                                 </div>
@@ -76,7 +76,7 @@ class Footer extends Component {
                         <Row>
                             <Col md="6">
                                 <div className="copy-text">
-                                    <p>Copyright &copy; 2020 | Designed With <i className="las la-heart"></i> by <a href={"/"} target="_blank" rel="noopener noreferrer">SnazzyTheme</a></p>
+                                    <p>Bản quyền &copy; {new Date().getFullYear()} | Phát triển bởi <i className="las la-heart text-danger"></i> <a href={"/"} target="_blank" rel="noopener noreferrer">EDUMEO Team</a></p>
                                 </div>
                             </Col>
                             <Col md="6" className="text-right">
