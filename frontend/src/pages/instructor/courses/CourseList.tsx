@@ -28,7 +28,7 @@ export default function InstructorCourses() {
                         onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#1dbf73')}
                     >
                         <FilePlusCorner size={18} />
-                        Thêm khóa học mới
+                        Thêm khóa học
                     </Link>
                 </div>
 

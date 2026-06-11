@@ -29,6 +29,7 @@ backend/dist/
 .codegraph/
 .nest/
 database/
+draft/
 
 # =========================================
 # LOGS (File lưu vết lỗi)

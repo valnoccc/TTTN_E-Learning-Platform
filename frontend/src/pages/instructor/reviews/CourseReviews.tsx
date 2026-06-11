@@ -205,125 +205,133 @@ export default function InstructorCourseReviewsPage() {
                     ) : currentReviews.length > 0 ? (
                         <>
                             <div className="divide-y divide-slate-100">
-                                {currentReviews.map((review) => {
-                                    const replies = getReplies(review.reviewId);
-                                    const hasReplies = replies.length > 0;
-                                    const isReplyOpen = replyingTo === review.reviewId;
-                                    const areRepliesVisible = expandedReplies[review.reviewId] ?? true;
+                                <div className="divide-y divide-slate-100">
+                                    {currentReviews.map((review) => {
+                                        const replies = getReplies(review.reviewId);
+                                        const hasReplies = replies.length > 0;
+                                        const isReplyOpen = replyingTo === review.reviewId;
+                                        // Đổi thành `false` để mặc định thu gọn
+                                        const areRepliesVisible = expandedReplies[review.reviewId] ?? false;
 
-                                    return (
-                                        <div
-                                            key={review.reviewId}
-                                            className="p-6 transition hover:bg-slate-50/30"
-                                        >
-                                            <div className="flex gap-4">
-                                                <Avatar review={review} />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                                        <div>
-                                                            <h3 className="text-[14px] font-bold text-slate-900">
-                                                                {review.studentName}
-                                                            </h3>
-                                                            <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                                <ReviewStars rating={review.rating} />
-                                                                <span className="text-[12px] font-medium text-slate-500">
-                                                                    {formatDate(review.createdAt)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[12px] font-medium text-slate-400">
-                                                            Khóa học:{' '}
-                                                            <span className="text-slate-600">{review.courseTitle}</span>
-                                                        </span>
-                                                    </div>
-
-                                                    <p className="mt-3 text-[14px] leading-relaxed text-slate-700">
-                                                        {review.content || 'Không có nội dung đánh giá.'}
-                                                    </p>
-
-                                                    {hasReplies && areRepliesVisible && (
-                                                        <div className="mt-4 space-y-3">
-                                                            {replies.map((reply) => (
-                                                                <div
-                                                                    key={reply.reviewId}
-                                                                    className="rounded border border-emerald-100 bg-emerald-50/50 p-4"
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                                                            <Check size={12} strokeWidth={3} />
-                                                                        </div>
-                                                                        <span className="text-[13px] font-bold text-emerald-800">
-                                                                            Phản hồi của bạn
-                                                                        </span>
-                                                                        <span className="text-[11px] text-slate-400">
-                                                                            {formatDate(reply.createdAt)}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="mt-2 text-[14px] text-slate-700">
-                                                                        {reply.content}
-                                                                    </p>
+                                        return (
+                                            <div
+                                                key={review.reviewId}
+                                                className="p-6 transition hover:bg-slate-50/30"
+                                            >
+                                                <div className="flex gap-4">
+                                                    <Avatar review={review} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                                            <div>
+                                                                <h3 className="text-[14px] font-bold text-slate-900">
+                                                                    {review.studentName}
+                                                                </h3>
+                                                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                                    <ReviewStars rating={review.rating} />
+                                                                    <span className="text-[12px] font-medium text-slate-500">
+                                                                        {formatDate(review.createdAt)}
+                                                                    </span>
                                                                 </div>
-                                                            ))}
+                                                            </div>
+                                                            <span className="text-[12px] font-medium text-slate-400">
+                                                                Khóa học:{' '}
+                                                                <span className="text-slate-600">{review.courseTitle}</span>
+                                                            </span>
                                                         </div>
-                                                    )}
 
-                                                    <div className="mt-4 flex flex-wrap gap-2">
+                                                        <p className="mt-3 text-[14px] leading-relaxed text-slate-700">
+                                                            {review.content || 'Không có nội dung đánh giá.'}
+                                                        </p>
+
+                                                        {/* Label thu gọn/xem phản hồi ngay dưới nội dung đánh giá */}
                                                         {hasReplies && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => toggleReplies(review.reviewId)}
-                                                                className="inline-flex items-center gap-2 rounded border border-emerald-100 bg-emerald-50 px-4 py-2 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                                className="mt-1.5 text-[13px] font-medium text-emerald-600 transition hover:text-emerald-700 hover:underline focus:outline-none"
                                                             >
                                                                 {areRepliesVisible
                                                                     ? 'Thu gọn phản hồi'
-                                                                    : `Xem ${replies.length} phản hồi`}
+                                                                    : `Xem ${replies.length} phản hồi của bạn`}
                                                             </button>
                                                         )}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleStartReply(review.reviewId)}
-                                                            className="inline-flex items-center gap-2 rounded border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-emerald-600"
-                                                        >
-                                                            {isReplyOpen ? <X size={16} /> : <Reply size={16} />}
-                                                            {isReplyOpen ? 'Hủy' : 'Trả lời học viên'}
-                                                        </button>
-                                                    </div>
 
-                                                    {isReplyOpen && (
-                                                        <div className="mt-4 rounded border border-slate-200 bg-slate-50 p-4">
-                                                            <textarea
-                                                                value={replyContent}
-                                                                onChange={(event) => setReplyContent(event.target.value)}
-                                                                placeholder="Viết phản hồi của bạn..."
-                                                                className="w-full resize-none rounded border border-slate-200 bg-white p-3 text-[13px] outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                                                                rows={3}
-                                                                autoFocus
-                                                            />
-                                                            <div className="mt-3 flex justify-end gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleStartReply(review.reviewId)}
-                                                                    className="rounded px-4 py-2 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-200"
-                                                                >
-                                                                    Hủy
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => void handleSubmitReply(review)}
-                                                                    disabled={isSubmitting || !replyContent.trim()}
-                                                                    className="inline-flex items-center gap-2 rounded bg-[#10B981] px-5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-emerald-600 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                >
-                                                                    <Send size={14} />
-                                                                    Gửi phản hồi
-                                                                </button>
+                                                        {/* Danh sách các phản hồi (đã giảm margin top xuống mt-3 cho liền mạch) */}
+                                                        {hasReplies && areRepliesVisible && (
+                                                            <div className="mt-3 space-y-3">
+                                                                {replies.map((reply) => (
+                                                                    <div
+                                                                        key={reply.reviewId}
+                                                                        className="rounded border border-emerald-100 bg-emerald-50/50 p-4"
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+                                                                                <Check size={12} strokeWidth={3} />
+                                                                            </div>
+                                                                            <span className="text-[13px] font-bold text-emerald-800">
+                                                                                Phản hồi của bạn
+                                                                            </span>
+                                                                            <span className="text-[11px] text-slate-400">
+                                                                                {formatDate(reply.createdAt)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="mt-2 text-[14px] text-slate-700">
+                                                                            {reply.content}
+                                                                        </p>
+                                                                    </div>
+                                                                ))}
                                                             </div>
+                                                        )}
+
+                                                        {/* Thanh action giờ chỉ còn nút Trả lời */}
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleStartReply(review.reviewId)}
+                                                                className="inline-flex items-center gap-2 rounded border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-emerald-600"
+                                                            >
+                                                                {isReplyOpen ? <X size={16} /> : <Reply size={16} />}
+                                                                {isReplyOpen ? 'Hủy' : 'Trả lời học viên'}
+                                                            </button>
                                                         </div>
-                                                    )}
+
+                                                        {/* Form trả lời giữ nguyên */}
+                                                        {isReplyOpen && (
+                                                            <div className="mt-4 rounded border border-slate-200 bg-slate-50 p-4">
+                                                                <textarea
+                                                                    value={replyContent}
+                                                                    onChange={(event) => setReplyContent(event.target.value)}
+                                                                    placeholder="Viết phản hồi của bạn..."
+                                                                    className="w-full resize-none rounded border border-slate-200 bg-white p-3 text-[13px] outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                                                    rows={3}
+                                                                    autoFocus
+                                                                />
+                                                                <div className="mt-3 flex justify-end gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleStartReply(review.reviewId)}
+                                                                        className="rounded px-4 py-2 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-200"
+                                                                    >
+                                                                        Hủy
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleSubmitReply(review)}
+                                                                        disabled={isSubmitting || !replyContent.trim()}
+                                                                        className="inline-flex items-center gap-2 rounded bg-[#10B981] px-5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-emerald-600 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                    >
+                                                                        <Send size={14} />
+                                                                        Gửi phản hồi
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             <div className="px-6 pb-6">
