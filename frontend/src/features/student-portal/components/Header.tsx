@@ -8,6 +8,7 @@ import MobileMenu from './common/MobileMenu';
 import AuthControls from './common/AuthControls';
 import { Styles } from "./styles/header";
 import { CourseCategoryDropdown } from './common/CourseCategoryMenu';
+import { NotificationDropdown } from './common/NotificationDropdown';
 
 class Header extends Component {
     render() {
@@ -151,6 +152,9 @@ class Header extends Component {
                                                 <Link to={"/cart"} className="nav-link nav-cart">
                                                     <i className="las la-shopping-bag"></i>
                                                 </Link>
+                                            </li>
+                                            <li className="nav-item notification-box">
+                                                <NotificationDropdown />
                                             </li>
                                             <li className="nav-item side-box">
                                                 <Sidebar />

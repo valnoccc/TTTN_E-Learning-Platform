@@ -15,9 +15,9 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
                 {/* Pagination */}
                 <ul className="pagination-box list-unstyled list-inline">
                     <li className="list-inline-item"><Link to={"/"}><i className="las la-angle-double-left"></i></Link></li>
-                    <li className="list-inline-item"><Link to={"/"}>1</Link></li>
+                    <li className="active list-inline-item"><Link to={"/"}>1</Link></li>
                     <li className="list-inline-item"><Link to={"/"}>2</Link></li>
-                    <li className="active list-inline-item"><Link to={"/"}>3</Link></li>
+                    <li className="list-inline-item"><Link to={"/"}>3</Link></li>
                     <li className="list-inline-item"><Link to={"/"}>...</Link></li>
                     <li className="list-inline-item"><Link to={"/"}>13</Link></li>
                     <li className="list-inline-item"><Link to={"/"}><i className="las la-angle-double-right"></i></Link></li>
@@ -26,7 +26,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
         );
     }
 
-    if (totalPages <= 1) return null;
+    if (totalPages < 1) return null;
 
     const getPageNumbers = () => {
         const pages = [];

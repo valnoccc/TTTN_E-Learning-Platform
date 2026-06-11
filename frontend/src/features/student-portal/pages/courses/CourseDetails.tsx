@@ -21,6 +21,15 @@ function CourseDetails() {
     
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviewStats, setReviewStats] = useState({ avgRating: 0, totalReviews: 0, bars: [
+        { stars: 5, pct: '0%' },
+        { stars: 4, pct: '0%' },
+        { stars: 3, pct: '0%' },
+        { stars: 2, pct: '0%' },
+        { stars: 1, pct: '0%' }
+    ] });
+    const [reviewForm, setReviewForm] = useState({ soSao: 5, noiDung: '' });
 
     useEffect(() => {
         const fetchCourseDetails = async () => {
@@ -61,6 +70,71 @@ function CourseDetails() {
             fetchCourseDetails();
         }
     }, [id]);
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!id) return;
+            try {
+                const response: any = await axiosClient.get(`/public/courses/${id}/reviews`);
+                if (response && response.data) {
+                    const fetchedReviews = response.data;
+                    setReviews(fetchedReviews);
+                    
+                    let totalRating = 0;
+                    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                    
+                    fetchedReviews.forEach((r: any) => {
+                        totalRating += r.rating;
+                        if (r.rating >= 1 && r.rating <= 5) {
+                            ratingCounts[r.rating as keyof typeof ratingCounts]++;
+                        }
+                    });
+                    
+                    const totalReviews = fetchedReviews.length;
+                    const avgRating = totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : 0;
+                    
+                    const bars = [5, 4, 3, 2, 1].map(stars => ({
+                        stars,
+                        pct: totalReviews > 0 ? Math.round((ratingCounts[stars as keyof typeof ratingCounts] / totalReviews) * 100) + '%' : '0%'
+                    }));
+                    
+                    setReviewStats({ avgRating: Number(avgRating), totalReviews, bars });
+                }
+            } catch (error) {
+                console.error("Error fetching reviews", error);
+            }
+        };
+        fetchReviews();
+    }, [id]);
+
+    const handleReviewSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const user = localStorage.getItem('user');
+        if (!user) {
+            toast.error('Vui lòng đăng nhập để viết đánh giá');
+            navigate('/login', { state: { from: `/course-details/${id}` } });
+            return;
+        }
+        
+        if (!reviewForm.noiDung.trim()) {
+            toast.error('Vui lòng nhập nội dung đánh giá');
+            return;
+        }
+
+        try {
+            await axiosClient.post(`/courses/${id}/reviews/student`, {
+                soSao: reviewForm.soSao,
+                noiDung: reviewForm.noiDung
+            });
+            toast.success('Đã gửi đánh giá thành công!');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || `Lỗi: ${JSON.stringify(error.response?.data || error.message)}`);
+        }
+    };
+
 
     const toggleAccordion = (e: React.MouseEvent<HTMLButtonElement>) => {
         const button = e.currentTarget;
@@ -142,13 +216,11 @@ function CourseDetails() {
                                     
                                     <div className="flex items-center gap-2 mb-6">
                                         <div className="flex text-amber-400">
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star-half-alt"></i>
+                                            {[...Array(5)].map((_, i) => (
+                                                <i key={i} className={i < Math.round(reviewStats.avgRating) ? "las la-star" : "lar la-star"}></i>
+                                            ))}
                                         </div>
-                                        <span className="text-sm font-medium text-gray-600">(28) đánh giá</span>
+                                        <span className="text-sm font-medium text-gray-600">({reviewStats.totalReviews}) đánh giá</span>
                                     </div>
                                     
                                     <hr className="border-gray-100 mb-6" />
@@ -274,7 +346,7 @@ function CourseDetails() {
                                                     <p className="text-sm text-gray-500 mb-3 m-0">Chuyên gia dữ liệu, BDervs Ltd.</p>
                                                     <div className="flex items-center text-sm font-medium text-amber-400 mb-2">
                                                         <i className="las la-star mr-1 text-lg"></i>
-                                                        4.7 <span className="text-gray-500 ml-1 font-normal">(54 đánh giá)</span>
+                                                        {reviewStats.avgRating} <span className="text-gray-500 ml-1 font-normal">({reviewStats.totalReviews} đánh giá)</span>
                                                     </div>
                                                     <div className="flex items-center gap-4 text-sm text-gray-600">
                                                         <span className="flex items-center"><i className="las la-play-circle text-lg mr-1 text-gray-400"></i> 3 Khóa học</span>
@@ -293,25 +365,17 @@ function CourseDetails() {
                                         <h3 className="text-xl font-bold text-slate-800 mb-6">Phản hồi từ học viên</h3>
                                         <div className="flex flex-col md:flex-row gap-8 items-center">
                                             <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-xl shadow-sm text-center">
-                                                <h2 className="text-6xl font-bold text-amber-400 mb-2 m-0">4.7</h2>
+                                                <h2 className="text-6xl font-bold text-amber-400 mb-2 m-0">{reviewStats.avgRating}</h2>
                                                 <div className="flex text-amber-400 mb-2 text-lg">
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star-half-alt"></i>
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <i key={i} className={i < Math.round(reviewStats.avgRating) ? "las la-star" : "lar la-star"}></i>
+                                                    ))}
                                                 </div>
-                                                <p className="text-sm font-medium text-gray-500 m-0">5785 Đánh giá</p>
+                                                <p className="text-sm font-medium text-gray-500 m-0">{reviewStats.totalReviews} Đánh giá</p>
                                             </div>
                                             
                                             <div className="w-full md:w-2/3 space-y-3">
-                                                {[
-                                                    { stars: 5, pct: '98%' },
-                                                    { stars: 4, pct: '78%' },
-                                                    { stars: 3, pct: '55%' },
-                                                    { stars: 2, pct: '60%' },
-                                                    { stars: 1, pct: '10%' }
-                                                ].map((bar, i) => (
+                                                {reviewStats.bars.map((bar, i) => (
                                                     <div key={i} className="flex items-center gap-4">
                                                         <div className="flex text-amber-400 text-sm w-20 justify-end">
                                                             {[...Array(bar.stars)].map((_, j) => <i key={j} className="las la-star"></i>)}
@@ -331,66 +395,34 @@ function CourseDetails() {
                                         <h3 className="text-xl font-bold text-slate-800 mb-6">Nhận xét</h3>
                                         
                                         <div className="space-y-6 mb-10">
-                                            {/* Review 1 */}
-                                            <div className="flex gap-4">
-                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-2.jpg`} alt="Reviewer" className="w-12 h-12 rounded-full object-cover" />
-                                                <div>
-                                                    <h6 className="font-bold text-slate-800 text-sm m-0 mb-1">Sotapdi Kunda</h6>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <div className="flex text-amber-400 text-xs">
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
+                                            {reviews.length > 0 ? (
+                                                reviews.map((review: any, idx: number) => (
+                                                    <Fragment key={review.reviewId}>
+                                                        <div className="flex gap-4">
+                                                            <img 
+                                                                src={review.studentAvatar ? (review.studentAvatar.startsWith('http') ? review.studentAvatar : process.env.PUBLIC_URL + review.studentAvatar) : process.env.PUBLIC_URL + '/assets/images/author.jpg'} 
+                                                                alt={review.studentName} 
+                                                                className="w-12 h-12 rounded-full object-cover" 
+                                                            />
+                                                            <div className="flex-1">
+                                                                <h6 className="font-bold text-slate-800 text-sm m-0 mb-1">{review.studentName}</h6>
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <div className="flex text-amber-400 text-xs">
+                                                                        {[...Array(5)].map((_, i) => (
+                                                                            <i key={i} className={i < review.rating ? "las la-star" : "lar la-star"}></i>
+                                                                        ))}
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                                </div>
+                                                                <p className="text-sm text-gray-600 leading-relaxed m-0">{review.content}</p>
+                                                            </div>
                                                         </div>
-                                                        <span className="text-xs text-gray-400">55 phút trước</span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Rất rõ ràng và có tổ chức với các hướng dẫn dễ làm theo, bài tập và giải pháp. Khóa học này bắt đầu từ mức cơ bản nhất với rất ít kiến thức và cung cấp cái nhìn tổng quan tuyệt vời về các công cụ phổ biến cho khoa học dữ liệu, tiến tới các khái niệm và ý tưởng phức tạp hơn.</p>
-                                                </div>
-                                            </div>
-
-                                            <hr className="border-gray-100 m-0" />
-
-                                            {/* Review 2 */}
-                                            <div className="flex gap-4">
-                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-1.jpg`} alt="Reviewer" className="w-12 h-12 rounded-full object-cover" />
-                                                <div>
-                                                    <h6 className="font-bold text-slate-800 text-sm m-0 mb-1">Samantha</h6>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <div className="flex text-amber-400 text-xs">
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                        </div>
-                                                        <span className="text-xs text-gray-400">45 phút trước</span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Khóa học giải thích rất tốt tư duy cơ bản của các khái niệm. Nó sẽ giúp bạn hiểu các nền tảng căn bản, điều làm khóa học này độc đáo là các phương pháp triển khai được định nghĩa rất rõ ràng. Cảm ơn đội ngũ !</p>
-                                                </div>
-                                            </div>
-
-                                            <hr className="border-gray-100 m-0" />
-
-                                            {/* Review 3 */}
-                                            <div className="flex gap-4">
-                                                <img src={process.env.PUBLIC_URL + `/assets/images/testimonial-3.jpg`} alt="Reviewer" className="w-12 h-12 rounded-full object-cover" />
-                                                <div>
-                                                    <h6 className="font-bold text-slate-800 text-sm m-0 mb-1">Michell Mariya</h6>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <div className="flex text-amber-400 text-xs">
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                            <i className="las la-star"></i>
-                                                        </div>
-                                                        <span className="text-xs text-gray-400">30 phút trước</span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 leading-relaxed m-0">Khóa học này thật tuyệt vời..! Tôi bắt đầu khóa học này như một người mới và đã học được rất nhiều điều. Giảng viên rất giỏi. Việc xử lý câu hỏi cần cải thiện đôi chút. Nhìn chung rất hài lòng với khóa học.</p>
-                                                </div>
-                                            </div>
+                                                        {idx < reviews.length - 1 && <hr className="border-gray-100 m-0" />}
+                                                    </Fragment>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-gray-500">Chưa có đánh giá nào cho khóa học này.</p>
+                                            )}
                                         </div>
 
                                         <button className="bg-blue-600 text-white font-medium py-2.5 px-6 rounded-lg hover:bg-blue-700 transition-colors mb-8 border-0">
@@ -399,38 +431,31 @@ function CourseDetails() {
 
                                         {/* Write Review Form */}
                                         <div>
-                                            <p className="text-sm text-gray-500 mb-6 m-0">Địa chỉ email của bạn sẽ không được công bố. Các trường bắt buộc được đánh dấu *</p>
+                                            <p className="text-sm text-gray-500 mb-6 m-0">Các trường bắt buộc được đánh dấu *</p>
                                             <div className="flex items-center gap-2 mb-6 mt-4">
-                                                <span className="text-sm font-medium text-gray-600">Đánh giá tổng quan</span>
+                                                <span className="text-sm font-medium text-gray-600">Đánh giá tổng quan *</span>
                                                 <div className="flex text-amber-400 cursor-pointer text-lg">
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="las la-star"></i>
-                                                    <i className="lar la-star"></i>
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <i 
+                                                            key={star} 
+                                                            className={star <= reviewForm.soSao ? "las la-star" : "lar la-star"}
+                                                            onClick={() => setReviewForm({ ...reviewForm, soSao: star })}
+                                                        ></i>
+                                                    ))}
                                                 </div>
                                             </div>
                                             
-                                            <form className="space-y-4">
+                                            <form className="space-y-4" onSubmit={handleReviewSubmit}>
                                                 <textarea 
                                                     rows={6} 
                                                     className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none mb-4" 
-                                                    placeholder="Nhận xét của bạn"
+                                                    placeholder="Nhận xét của bạn *"
+                                                    value={reviewForm.noiDung}
+                                                    onChange={(e) => setReviewForm({ ...reviewForm, noiDung: e.target.value })}
+                                                    required
                                                 ></textarea>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                    <input 
-                                                        type="text" 
-                                                        className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" 
-                                                        placeholder="Tên của bạn"
-                                                    />
-                                                    <input 
-                                                        type="email" 
-                                                        className="w-full bg-white border border-gray-300 rounded-lg p-4 text-sm text-slate-700 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" 
-                                                        placeholder="Email của bạn"
-                                                    />
-                                                </div>
-                                                <button type="button" className="bg-blue-600 text-white font-medium py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors mt-2 border-0">
-                                                    Gửi
+                                                <button type="submit" className="bg-blue-600 text-white font-medium py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors mt-2 border-0">
+                                                    Gửi đánh giá
                                                 </button>
                                             </form>
                                         </div>

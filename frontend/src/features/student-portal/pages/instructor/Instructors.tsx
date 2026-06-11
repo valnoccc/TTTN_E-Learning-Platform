@@ -22,6 +22,8 @@ interface InstructorData {
 const Instructor = () => {
     const [instructors, setInstructors] = useState<InstructorData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const instructorsPerPage = 8;
 
     useEffect(() => {
         const fetchInstructors = async () => {
@@ -37,6 +39,11 @@ const Instructor = () => {
 
         fetchInstructors();
     }, []);
+
+    const indexOfLastInstructor = currentPage * instructorsPerPage;
+    const indexOfFirstInstructor = indexOfLastInstructor - instructorsPerPage;
+    const currentInstructors = instructors.slice(indexOfFirstInstructor, indexOfLastInstructor);
+    const totalPages = Math.ceil(instructors.length / instructorsPerPage);
 
     return (
         <Styles>
@@ -59,7 +66,7 @@ const Instructor = () => {
                                     <p>Không có giảng viên nào.</p>
                                 </Col>
                             ) : (
-                                instructors.map((data, i) => (
+                                currentInstructors.map((data, i) => (
                                     <Col lg="3" md="4" sm="6" key={data.id || i}>
                                         <div className="instructor-item">
                                             <Link to={`/instructor-details/${data.id}`}>
@@ -96,7 +103,11 @@ const Instructor = () => {
                             )}
 
                             <Col md="12" className="text-center">
-                                <Pagination />
+                                <Pagination 
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                />
                             </Col>
                         </Row>
                     </Container>

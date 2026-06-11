@@ -8,6 +8,7 @@ import AuthControls from './common/AuthControls';
 import MobileMenu from './common/MobileMenu';
 import { Styles } from "./styles/headerTwo";
 import CartIcon from '../../cart/components/CartIcon';
+import { NotificationDropdown } from "./common/NotificationDropdown";
 import { CourseCategoryDropdown } from './common/CourseCategoryMenu';
 
 class HeaderTwo extends Component {
@@ -69,8 +70,8 @@ class HeaderTwo extends Component {
                                 </div>
                             </Col>
                             <Col md="9">
-                                <div className="menu-box d-flex">
-                                    <ul className="nav menu-nav justify-content-center flex-grow-1">
+                                <div className="menu-box d-flex align-items-center">
+                                    <ul className="nav menu-nav justify-content-center flex-grow-1 flex-nowrap" style={{ whiteSpace: 'nowrap' }}>
                                         <li className="nav-item active">
                                             <Link className="nav-link" to={"/"}>Trang chủ</Link>
                                             <ul className="dropdown list-unstyled d-none">
@@ -115,12 +116,15 @@ class HeaderTwo extends Component {
                                             </ul>
                                         </li>
                                     </ul>
-                                    <ul className="nav search-cart-bar d-flex align-items-center" style={{ gap: '25px' }}>
+                                    <ul className="nav search-cart-bar d-flex align-items-center flex-nowrap" style={{ gap: '15px' }}>
                                         <li className="nav-item search-box">
                                             <Search />
                                         </li>
                                         <li className="nav-item cart-box">
                                             <CartIcon />
+                                        </li>
+                                        <li className="nav-item notification-box">
+                                            <NotificationDropdown />
                                         </li>
                                         <li className="nav-item cart-box">
                                             <AuthControls />

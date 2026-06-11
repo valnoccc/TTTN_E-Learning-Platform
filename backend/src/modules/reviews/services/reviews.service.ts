@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { CreateReplyDto } from '../../courses/dto/create-reply.dto';
+import { CreateStudentReviewDto } from '../dto/create-student-review.dto';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 
 @Injectable()
@@ -112,6 +113,75 @@ export class ReviewsService {
       studentAvatar: course.giangVien?.anhDaiDien || null,
       courseId,
       courseTitle: course.tenKhoaHoc,
+    };
+  }
+
+  async getPublicCourseReviews(courseId: number) {
+    return await this.dataSource.query(
+      `
+      SELECT 
+        dg.MaDanhGia AS reviewId,
+        dg.SoSao AS rating,
+        dg.NoiDung AS content,
+        dg.ThoiGian AS createdAt,
+        dg.MaDanhGiaCha AS parentId,
+        u.MaND AS studentId,
+        u.HoTen AS studentName,
+        u.AnhDaiDien AS studentAvatar
+      FROM DanhGiaKhoaHoc dg
+      INNER JOIN NguoiDung u ON dg.MaND = u.MaND
+      WHERE dg.MaKH = ?
+      ORDER BY dg.ThoiGian DESC
+      `,
+      [courseId],
+    );
+  }
+
+  async createStudentReview(
+    courseId: number,
+    studentId: number,
+    payload: CreateStudentReviewDto,
+  ) {
+    // Check if course exists and is published
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId, trangThai: 'PUBLISHED' },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Khóa học không tồn tại hoặc chưa được xuất bản!');
+    }
+
+    // Check if the student has already reviewed this course
+    const existingReview = await this.dataSource.query(
+      `SELECT MaDanhGia FROM DanhGiaKhoaHoc WHERE MaKH = ? AND MaND = ? AND MaDanhGiaCha IS NULL`,
+      [courseId, studentId]
+    );
+
+    if (existingReview.length > 0) {
+      throw new BadRequestException('Bạn đã đánh giá khóa học này rồi!');
+    }
+
+    const result = await this.dataSource.query(
+      `INSERT INTO DanhGiaKhoaHoc (MaKH, MaND, SoSao, NoiDung, ThoiGian, MaDanhGiaCha) 
+       VALUES (?, ?, ?, ?, NOW(), NULL)`,
+      [courseId, studentId, payload.soSao, payload.noiDung],
+    );
+
+    const user = await this.dataSource.query(
+      `SELECT HoTen, AnhDaiDien FROM NguoiDung WHERE MaND = ?`,
+      [studentId]
+    );
+
+    return {
+      reviewId: result.insertId,
+      rating: payload.soSao,
+      content: payload.noiDung,
+      createdAt: new Date().toISOString(),
+      parentId: null,
+      studentId: studentId,
+      studentName: user[0]?.HoTen || 'Học viên',
+      studentAvatar: user[0]?.AnhDaiDien || null,
+      courseId,
     };
   }
 }
