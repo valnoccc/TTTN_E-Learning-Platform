@@ -8,7 +8,6 @@ import {
     FileEdit,
     Layers3,
     MessageSquare,
-    Star,
     Trash2,
     Bookmark,
 } from 'lucide-react';
@@ -24,7 +23,6 @@ const InstructorCourseContext = createContext<InstructorCourseContextValue | nul
 const detailTabs = [
     { key: 'overview', label: 'Tổng quan', to: 'overview', icon: <FileEdit size={15} /> },
     { key: 'lessons', label: 'Bài học', to: 'lessons', icon: <BookOpen size={15} /> },
-    { key: 'reviews', label: 'Đánh giá', to: 'reviews', icon: <Star size={15} /> },
     { key: 'discussions', label: 'Thảo luận', to: 'discussions', icon: <MessageSquare size={15} /> },
 ] as const;
 

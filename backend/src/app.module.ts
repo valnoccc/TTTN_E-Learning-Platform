@@ -17,6 +17,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { Admin } from 'typeorm';
 import { AdminDashboardModule } from './modules/admin/admin.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AdminDashboardModule } from './modules/admin/admin.module';
     }),
     UsersModule,
     AuthModule,
+    ReviewsModule,
     CoursesModule,
     LessonsModule,
     InstructorsModule,

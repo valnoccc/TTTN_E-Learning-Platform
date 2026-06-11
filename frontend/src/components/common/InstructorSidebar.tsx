@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { BookOpen, BarChart3, ChevronUp, GraduationCap, Users } from 'lucide-react';
+import { BookOpen, BarChart3, ChevronUp, GraduationCap, Star, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import UserDropdown from '../instructor/UserDropdown';
@@ -64,6 +64,7 @@ export default function InstructorSidebar() {
     { label: 'Báo cáo & Thống kê', path: '/instructor/reports', icon: <BarChart3 size={18} /> },
     { label: 'Khóa học của tôi', path: '/instructor/courses', icon: <BookOpen size={18} /> },
     { label: 'Đánh giá học viên', path: '/instructor/students', icon: <Users size={18} /> },
+    { label: 'Đánh giá khóa học', path: '/instructor/reviews', icon: <Star size={18} /> },
   ];
 
   const handleLogout = () => {
@@ -121,8 +122,8 @@ export default function InstructorSidebar() {
                 )}
               </div>
               <div className="min-w-0 text-left">
-                <div className="truncate text-[14px] font-bold text-white">{user?.fullName || 'Nguyễn Văn A'}</div>
-                <div className="text-[12px] text-[#a0aec0]">Giảng viên</div>
+                <div className="truncate text-[14px] font-bold text-white">{user?.fullName || 'Unknown'}</div>
+                <div className="text-[12px] text-[#a0aec0]">{user?.role || 'Giảng viên'}</div>
               </div>
             </div>
             <ChevronUp size={16} className={`text-[#a0aec0] transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />

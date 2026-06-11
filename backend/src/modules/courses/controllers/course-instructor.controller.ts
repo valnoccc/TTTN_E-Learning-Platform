@@ -21,11 +21,9 @@ import {
   type UploadedAsset,
 } from '../../cloudinary/cloudinary.service';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
-import { CreateReplyDto } from '../dto/create-reply.dto';
 import { serializeCourse } from '../services/course-response.util';
 import { CourseInstructorCurriculumService } from '../services/course-instructor-curriculum.service';
 import { CourseInstructorDiscussionsService } from '../services/course-instructor-discussions.service';
-import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
 import { CoursesService } from '../services/course-instructor.service';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
@@ -46,7 +44,6 @@ const parseArrayData = (data: any): string[] => {
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
-    private readonly reviewsService: CourseInstructorReviewsService,
     private readonly discussionsService: CourseInstructorDiscussionsService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
@@ -205,37 +202,6 @@ export class CoursesController {
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
     return this.coursesService.remove(Number(id), req.user.sub);
-  }
-
-  @Get(':id/reviews')
-  async getCourseReviews(@Param('id') id: string, @Request() req) {
-    const reviews = await this.reviewsService.getCourseReviews(
-      Number(id),
-      req.user.sub,
-    );
-
-    return {
-      message: 'Lấy danh sách đánh giá thành công',
-      data: reviews,
-    };
-  }
-
-  @Post(':id/reviews')
-  async replyToReview(
-    @Param('id') id: string,
-    @Request() req,
-    @Body() body: CreateReplyDto,
-  ) {
-    const replyData = await this.reviewsService.replyToReview(
-      Number(id),
-      req.user.sub,
-      body,
-    );
-
-    return {
-      message: 'Gửi phản hồi đánh giá thành công',
-      data: replyData,
-    };
   }
 
   @Get(':id/discussions')

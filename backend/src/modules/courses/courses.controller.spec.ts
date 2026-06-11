@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { CoursesController } from './controllers/course-instructor.controller';
+import { CourseInstructorCurriculumService } from './services/course-instructor-curriculum.service';
+import { CourseInstructorDiscussionsService } from './services/course-instructor-discussions.service';
 import { CoursesService } from './services/course-instructor.service';
-import { KhoaHoc } from './entities/course.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 describe('CoursesController', () => {
@@ -13,9 +12,9 @@ describe('CoursesController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CoursesController],
       providers: [
-        CoursesService,
-        { provide: getRepositoryToken(KhoaHoc), useValue: {} },
-        { provide: DataSource, useValue: {} },
+        { provide: CoursesService, useValue: {} },
+        { provide: CourseInstructorDiscussionsService, useValue: {} },
+        { provide: CourseInstructorCurriculumService, useValue: {} },
         { provide: CloudinaryService, useValue: {} },
       ],
     }).compile();

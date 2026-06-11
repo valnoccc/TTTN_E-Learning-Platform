@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KhoaHoc } from '../entities/course.entity';
@@ -16,16 +22,21 @@ export class PublicCoursesController {
     @Query('categoryId') categoryId?: string,
     @Query('price') price?: string,
   ) {
-    const query = this.khoaHocRepository.createQueryBuilder('khoaHoc')
+    const query = this.khoaHocRepository
+      .createQueryBuilder('khoaHoc')
       .leftJoinAndSelect('khoaHoc.giangVien', 'giangVien')
       .leftJoinAndSelect('khoaHoc.danhMuc', 'danhMuc');
 
     if (search) {
-      query.andWhere('khoaHoc.tenKhoaHoc LIKE :search', { search: `%${search}%` });
+      query.andWhere('khoaHoc.tenKhoaHoc LIKE :search', {
+        search: `%${search}%`,
+      });
     }
 
     if (categoryId) {
-      query.andWhere('khoaHoc.maDM = :categoryId', { categoryId: parseInt(categoryId) });
+      query.andWhere('khoaHoc.maDM = :categoryId', {
+        categoryId: parseInt(categoryId),
+      });
     }
 
     if (price === 'free') {

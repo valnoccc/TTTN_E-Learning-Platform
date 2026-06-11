@@ -6,16 +6,40 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import { CreateReplyDto } from '../dto/create-reply.dto';
-import { KhoaHoc } from '../entities/course.entity';
+import { CreateReplyDto } from '../../courses/dto/create-reply.dto';
+import { KhoaHoc } from '../../courses/entities/course.entity';
 
 @Injectable()
-export class CourseInstructorReviewsService {
+export class ReviewsService {
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getInstructorReviews(instructorId: number) {
+    return await this.dataSource.query(
+      `
+      SELECT 
+        dg.MaDanhGia AS reviewId,
+        dg.SoSao AS rating,
+        dg.NoiDung AS content,
+        dg.ThoiGian AS createdAt,
+        dg.MaDanhGiaCha AS parentId,
+        u.MaND AS studentId,
+        u.HoTen AS studentName,
+        u.AnhDaiDien AS studentAvatar,
+        kh.MaKH AS courseId,
+        kh.TenKhoaHoc AS courseTitle
+      FROM DanhGiaKhoaHoc dg
+      INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
+      INNER JOIN NguoiDung u ON dg.MaND = u.MaND
+      WHERE kh.MaND_GiangVien = ?
+      ORDER BY dg.ThoiGian DESC
+      `,
+      [instructorId],
+    );
+  }
 
   async getCourseReviews(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
@@ -23,9 +47,7 @@ export class CourseInstructorReviewsService {
     });
 
     if (!course) {
-      throw new ForbiddenException(
-        'Bạn không có quyền xem đánh giá của khóa học này',
-      );
+      throw new ForbiddenException('Khóa học không tồn tại!');
     }
 
     return await this.dataSource.query(
@@ -60,7 +82,7 @@ export class CourseInstructorReviewsService {
 
     if (!course) {
       throw new ForbiddenException(
-        'Bạn không có quyền thao tác trên khóa học này',
+        'Bạn không có quyền thao tác trên khóa học này!',
       );
     }
 
@@ -88,6 +110,8 @@ export class CourseInstructorReviewsService {
       studentId: instructorId,
       studentName: course.giangVien?.hoTen || 'Giảng viên',
       studentAvatar: course.giangVien?.anhDaiDien || null,
+      courseId,
+      courseTitle: course.tenKhoaHoc,
     };
   }
 }

@@ -173,9 +173,7 @@ export class LessonsController {
       choPhepXemTruoc:
         body.choPhepXemTruoc !== undefined ||
         body.cho_phep_xem_truoc !== undefined
-          ? parseBooleanLike(
-              body.choPhepXemTruoc ?? body.cho_phep_xem_truoc,
-            )
+          ? parseBooleanLike(body.choPhepXemTruoc ?? body.cho_phep_xem_truoc)
           : undefined,
     };
 

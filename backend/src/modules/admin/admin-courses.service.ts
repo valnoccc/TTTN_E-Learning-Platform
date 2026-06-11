@@ -78,7 +78,7 @@ export class AdminCoursesService {
 
   async getCourses(filters: AdminCourseFilters) {
     const { sql, params } = this.buildCourseListQuery(filters);
-    const rows = (await this.dataSource.query(sql, params)) as AdminCourseRow[];
+    const rows = await this.dataSource.query(sql, params);
 
     return rows.map((row: AdminCourseRow) => ({
       id: Number(row.id ?? 0),
@@ -105,15 +105,15 @@ export class AdminCoursesService {
       throw new NotFoundException('Không tìm thấy khóa học.');
     }
 
-    const mucTieuRows = (await this.dataSource.query(
+    const mucTieuRows = await this.dataSource.query(
       `SELECT NoiDung FROM MucTieuKhoaHoc WHERE MaKH = ? ORDER BY MaMT ASC`,
       [courseId],
-    )) as CourseGoalRow[];
-    const yeuCauRows = (await this.dataSource.query(
+    );
+    const yeuCauRows = await this.dataSource.query(
       `SELECT NoiDung FROM YeuCauKhoaHoc WHERE MaKH = ? ORDER BY MaYC ASC`,
       [courseId],
-    )) as CourseGoalRow[];
-    const curriculumRows = (await this.dataSource.query(
+    );
+    const curriculumRows = await this.dataSource.query(
       `
         SELECT
           ch.MaChuong as maChuong,
@@ -131,8 +131,8 @@ export class AdminCoursesService {
         ORDER BY ch.ThuTu ASC, bh.ThuTu ASC, bh.MaBH ASC
       `,
       [courseId],
-    )) as CurriculumRow[];
-    const reviewRows = (await this.dataSource.query(
+    );
+    const reviewRows = await this.dataSource.query(
       `
         SELECT
           dg.MaDanhGia as reviewId,
@@ -149,8 +149,8 @@ export class AdminCoursesService {
         ORDER BY dg.ThoiGian DESC, dg.MaDanhGia DESC
       `,
       [courseId],
-    )) as CourseReviewRow[];
-    const moderationRows = (await this.dataSource.query(
+    );
+    const moderationRows = await this.dataSource.query(
       `
         SELECT
           ls.MaLSKD as maLSKD,
@@ -165,7 +165,7 @@ export class AdminCoursesService {
         ORDER BY ls.ThoiGian DESC, ls.MaLSKD DESC
       `,
       [courseId],
-    )) as ModerationHistoryRow[];
+    );
 
     return {
       id: course.maKH,
@@ -311,16 +311,22 @@ export class AdminCoursesService {
     });
   }
 
-  async hidePublishedCourse(courseId: number, adminId: number, reason?: string) {
+  async hidePublishedCourse(
+    courseId: number,
+    adminId: number,
+    reason?: string,
+  ) {
     return this.moderatePublishedCourse({
       courseId,
       adminId,
       reason,
       nextStatus: 'DRAFT',
       action: CourseModerationAction.HIDE,
-      successMessage: 'Đã ẩn khóa học vi phạm tiêu chuẩn và chuyển về bản nháp.',
+      successMessage:
+        'Đã ẩn khóa học vi phạm tiêu chuẩn và chuyển về bản nháp.',
       notificationTitle: 'Khóa học vi phạm tiêu chuẩn',
-      actionText: 'đã bị ẩn do vi phạm tiêu chuẩn hệ thống và được chuyển về bản nháp',
+      actionText:
+        'đã bị ẩn do vi phạm tiêu chuẩn hệ thống và được chuyển về bản nháp',
     });
   }
 
@@ -393,7 +399,9 @@ export class AdminCoursesService {
   }) {
     const trimmedReason = params.reason?.trim();
     if (!trimmedReason) {
-      throw new BadRequestException('Lý do xử lý khóa học không được để trống.');
+      throw new BadRequestException(
+        'Lý do xử lý khóa học không được để trống.',
+      );
     }
 
     const course = await this.courseRepository.findOne({

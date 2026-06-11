@@ -189,7 +189,9 @@ describe('AdminCoursesService', () => {
       maND_GiangVien: 7,
     };
     courseRepository.findOne.mockResolvedValue(course);
-    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    courseRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
     notificationsService.createNotification.mockImplementation((value) =>
       resolveValue(value),
     );
@@ -227,7 +229,9 @@ describe('AdminCoursesService', () => {
       maND_GiangVien: 7,
     };
     courseRepository.findOne.mockResolvedValue(course);
-    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    courseRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
     notificationsService.createNotification.mockImplementation((value) =>
       resolveValue(value),
     );
@@ -271,7 +275,9 @@ describe('AdminCoursesService', () => {
       maND_GiangVien: 7,
     };
     courseRepository.findOne.mockResolvedValue(course);
-    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    courseRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
     notificationsService.createNotification.mockImplementation((value) =>
       resolveValue(value),
     );
@@ -315,7 +321,9 @@ describe('AdminCoursesService', () => {
       maND_GiangVien: 7,
     };
     courseRepository.findOne.mockResolvedValue(course);
-    courseRepository.save.mockImplementation((value: unknown) => resolveValue(value));
+    courseRepository.save.mockImplementation((value: unknown) =>
+      resolveValue(value),
+    );
     notificationsService.createNotification.mockImplementation((value) =>
       resolveValue(value),
     );

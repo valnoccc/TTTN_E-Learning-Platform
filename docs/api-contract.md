@@ -34,6 +34,7 @@ Instructor (Giang vien)
 - `PATCH /instructor/courses/:id` (Cap nhat noi dung khoa hoc)
 - `DELETE /instructor/courses/:id` (An/Xoa khoa hoc)
 - `POST /instructor/courses/:id/submit` (Gui yeu cau kiem duyet)
+- `GET /courses/reviews` (Instructor - Lay tat ca danh gia khoa hoc cua giang vien)
 
 Admin (Kiem duyet)
 - `GET /admin/courses` (Admin - Xem danh sach khoa hoc, ho tro `status` va `search`)
