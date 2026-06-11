@@ -49,7 +49,7 @@ function getStatusLabel(status: string) {
         BANNED: 'Đã ban',
         DRAFT: 'Bản nháp',
         ACTIVE: 'Đang hoạt động',
-        INACTIVE: 'Ngừng hoạt động',
+        DELETED: 'Đã xóa',
     };
 
     return labels[status] ?? status;

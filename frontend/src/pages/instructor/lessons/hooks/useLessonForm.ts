@@ -14,6 +14,7 @@ export interface LessonForm {
     id_khoa_hoc?: string | number | null;
     video_url?: string;
     video_file: File | null;
+    choPhepXemTruoc: boolean;
 }
 
 interface LessonApiData {
@@ -22,6 +23,8 @@ interface LessonApiData {
     thu_tu?: number;
     id_khoa_hoc?: string | number | null;
     video_url?: string;
+    choPhepXemTruoc?: boolean;
+    cho_phep_xem_truoc?: boolean;
 }
 
 interface LessonApiResponse {
@@ -39,6 +42,7 @@ export function useLessonCreateForm() {
         noi_dung: '',
         thu_tu: 1,
         video_file: null,
+        choPhepXemTruoc: false,
     });
 
     const handleChange = (field: keyof LessonForm, value: LessonForm[keyof LessonForm]) => {
@@ -73,6 +77,7 @@ export function useLessonCreateForm() {
         data.append('tieu_de', formData.tieu_de);
         data.append('noi_dung', formData.noi_dung);
         data.append('thu_tu', formData.thu_tu.toString());
+        data.append('choPhepXemTruoc', String(formData.choPhepXemTruoc));
         if (formData.video_file) {
             data.append('video', formData.video_file);
         }
@@ -123,6 +128,7 @@ export function useLessonDetailForm() {
         id_khoa_hoc: null,
         video_url: '',
         video_file: null,
+        choPhepXemTruoc: false,
     });
 
     useEffect(() => {
@@ -147,6 +153,8 @@ export function useLessonDetailForm() {
                     id_khoa_hoc: lesson.id_khoa_hoc || null,
                     video_url: lesson.video_url || '',
                     video_file: null,
+                    choPhepXemTruoc:
+                        lesson.choPhepXemTruoc ?? lesson.cho_phep_xem_truoc ?? false,
                 });
 
                 if (lesson.video_url) {
@@ -192,6 +200,7 @@ export function useLessonDetailForm() {
         data.append('tieu_de', formData.tieu_de);
         data.append('noi_dung', formData.noi_dung);
         data.append('thu_tu', formData.thu_tu.toString());
+        data.append('choPhepXemTruoc', String(formData.choPhepXemTruoc));
         if (formData.id_khoa_hoc) {
             data.append('id_khoa_hoc', formData.id_khoa_hoc.toString());
         }

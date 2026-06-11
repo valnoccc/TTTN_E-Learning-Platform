@@ -135,6 +135,37 @@ export default function LessonCreate() {
                                         Bài học có số nhỏ hơn sẽ hiển thị trước.
                                     </p>
                                 </div>
+                                <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="font-semibold text-slate-700">Cho phép xem trước</p>
+                                            <p className="mt-1 text-[10px] text-slate-400">
+                                                Bật để học viên có thể xem trước bài học này.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={formData.choPhepXemTruoc}
+                                            onClick={() =>
+                                                handleChange('choPhepXemTruoc', !formData.choPhepXemTruoc)
+                                            }
+                                            className={`relative inline-flex h-7 w-12 items-center rounded-full border transition-colors ${
+                                                formData.choPhepXemTruoc
+                                                    ? 'border-[#1dbf73] bg-[#1dbf73]'
+                                                    : 'border-slate-300 bg-slate-300'
+                                            }`}
+                                        >
+                                            <span
+                                                className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                                                    formData.choPhepXemTruoc
+                                                        ? 'translate-x-6'
+                                                        : 'translate-x-1'
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
