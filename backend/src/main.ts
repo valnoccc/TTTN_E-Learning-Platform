@@ -26,7 +26,7 @@ async function bootstrap() {
 
   // ---> THÊM ĐOẠN NÀY VÀO CUỐI HÀM <---
   console.log(`\n======================================================`);
-  console.log(`🚀 Backend đang chạy ổn định tại: http://localhost:${port}`);
+  console.log(`Backend running at: http://localhost:${port}`);
   console.log(`======================================================\n`);
 }
 bootstrap();

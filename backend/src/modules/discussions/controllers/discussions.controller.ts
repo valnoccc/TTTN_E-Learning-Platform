@@ -1,0 +1,58 @@
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
+
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
+import { DiscussionsService } from '../services/discussions.service';
+
+@Controller('courses')
+@UseGuards(JwtAuthGuard)
+export class DiscussionsController {
+  constructor(private readonly discussionsService: DiscussionsService) {}
+
+  @Get('discussions')
+  async getInstructorDiscussions(@Req() req: Request & { user: { sub: number } }) {
+    const discussions = await this.discussionsService.getInstructorDiscussions(
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy danh sách hỏi đáp khóa học thành công',
+      data: discussions,
+    };
+  }
+
+  @Get(':id/discussions')
+  async getCourseDiscussions(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const discussions = await this.discussionsService.getCourseDiscussions(
+      Number(id),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy danh sách thảo luận khóa học thành công',
+      data: discussions,
+    };
+  }
+
+  @Post(':id/discussions')
+  async replyToDiscussion(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { sub: number } },
+    @Body() body: CreateDiscussionReplyDto,
+  ) {
+    const replyData = await this.discussionsService.replyToDiscussion(
+      Number(id),
+      req.user.sub,
+      body,
+    );
+
+    return {
+      message: 'Gửi phản hồi thảo luận thành công',
+      data: replyData,
+    };
+  }
+}

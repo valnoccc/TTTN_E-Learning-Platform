@@ -3,10 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import InstructorCourseCreate from '../pages/instructor/courses/CourseCreate';
 import InstructorCourseDetail from '../pages/instructor/courses/CourseDetailShell';
 import InstructorCourses from '../pages/instructor/courses/CourseList';
-import InstructorCourseDiscussions from '../pages/instructor/courses/tabs/CourseDiscussions';
 import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
 import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
 import InstructorDashboard from '../pages/instructor/dashboard/Dashboard';
+import InstructorCourseDiscussionsPage from '../pages/instructor/discussions/CourseDiscussions';
 import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
 import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
 import InstructorProfile from '../pages/instructor/profile/InstructorProfile';
@@ -24,13 +24,13 @@ export default function InstructorRoutes() {
         <Route index element={<Navigate to="overview" replace />} />
         <Route path="overview" element={<InstructorCourseOverview />} />
         <Route path="lessons" element={<InstructorCourseLessons />} />
-        <Route path="discussions" element={<InstructorCourseDiscussions />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Route>
       <Route path="profile" element={<InstructorProfile />} />
       <Route path="courses/:id/lessons/new" element={<InstructorLessonCreate />} />
       <Route path="lessons/:lessonId/edit" element={<InstructorLessonEdit />} />
       <Route path="students" element={<InstructorStudents />} />
+      <Route path="discussions" element={<InstructorCourseDiscussionsPage />} />
       <Route path="reviews" element={<InstructorCourseReviewsPage />} />
       <Route path="reports" element={<InstructorReports />} />
     </Routes>

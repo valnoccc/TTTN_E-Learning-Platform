@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { BookOpen, BarChart3, ChevronUp, GraduationCap, Star, Users } from 'lucide-react';
+import { BookOpen, BarChart3, ChevronUp, GraduationCap, MessageSquare, Star, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import UserDropdown from '../instructor/UserDropdown';
@@ -63,6 +63,7 @@ export default function InstructorSidebar() {
   const items: SidebarItem[] = [
     { label: 'Báo cáo & Thống kê', path: '/instructor/reports', icon: <BarChart3 size={18} /> },
     { label: 'Khóa học của tôi', path: '/instructor/courses', icon: <BookOpen size={18} /> },
+    { label: 'Hỏi đáp', path: '/instructor/discussions', icon: <MessageSquare size={18} /> },
     { label: 'Đánh giá học viên', path: '/instructor/students', icon: <Users size={18} /> },
     { label: 'Đánh giá khóa học', path: '/instructor/reviews', icon: <Star size={18} /> },
   ];

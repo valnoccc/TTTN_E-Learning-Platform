@@ -15,9 +15,9 @@ import { LessonsModule } from './modules/lessons/lessons.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
-import { Admin } from 'typeorm';
 import { AdminDashboardModule } from './modules/admin/admin.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { DiscussionsModule } from './modules/discussions/discussions.module';
 
 @Module({
   imports: [
@@ -42,6 +42,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     UsersModule,
     AuthModule,
     ReviewsModule,
+    DiscussionsModule,
     CoursesModule,
     LessonsModule,
     InstructorsModule,
@@ -50,4 +51,4 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     AdminDashboardModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

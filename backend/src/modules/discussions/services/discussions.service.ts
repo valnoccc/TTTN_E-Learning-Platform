@@ -6,16 +6,40 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
-import { KhoaHoc } from '../entities/course.entity';
 
 @Injectable()
-export class CourseInstructorDiscussionsService {
+export class DiscussionsService {
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getInstructorDiscussions(instructorId: number) {
+    return await this.dataSource.query(
+      `
+      SELECT
+        tl.MaThaoLuan AS discussionId,
+        tl.NoiDung AS content,
+        tl.ThoiGian AS createdAt,
+        tl.MaThaoLuanCha AS parentId,
+        u.MaND AS userId,
+        u.HoTen AS userName,
+        u.AnhDaiDien AS userAvatar,
+        u.VaiTro AS userRole,
+        kh.MaKH AS courseId,
+        kh.TenKhoaHoc AS courseTitle
+      FROM ThaoLuanKhoaHoc tl
+      INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+      INNER JOIN NguoiDung u ON tl.MaND = u.MaND
+      WHERE kh.MaND_GiangVien = ?
+      ORDER BY tl.ThoiGian DESC
+      `,
+      [instructorId],
+    );
+  }
 
   async getCourseDiscussions(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
@@ -30,7 +54,7 @@ export class CourseInstructorDiscussionsService {
 
     return await this.dataSource.query(
       `
-      SELECT 
+      SELECT
         tl.MaThaoLuan AS discussionId,
         tl.NoiDung AS content,
         tl.ThoiGian AS createdAt,
@@ -74,7 +98,7 @@ export class CourseInstructorDiscussionsService {
     }
 
     const result = await this.dataSource.query(
-      `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha) 
+      `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha)
        VALUES (?, ?, ?, NOW(), ?)`,
       [courseId, instructorId, payload.noiDung, payload.parentId],
     );
@@ -88,6 +112,8 @@ export class CourseInstructorDiscussionsService {
       userName: course.giangVien?.hoTen || 'Giảng viên',
       userAvatar: course.giangVien?.anhDaiDien || null,
       userRole: 'INSTRUCTOR',
+      courseId,
+      courseTitle: course.tenKhoaHoc,
     };
   }
 }
