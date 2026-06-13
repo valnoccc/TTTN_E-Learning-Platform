@@ -75,7 +75,19 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
         <Fragment>
             {
                 currentItems.map((data: any, i: number) => {
-                    const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Giảng viên chưa rõ';
+                    const instructorName = data.giangVien?.hoTen || 'Giảng viên chưa rõ';
+                    const rawAvatar = data.giangVien?.anhDaiDien;
+                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=random`;
+                    let instructorAvatar = defaultAvatar;
+                    if (rawAvatar && rawAvatar !== 'null' && rawAvatar.trim() !== '') {
+                        if (rawAvatar.startsWith('http')) {
+                            instructorAvatar = rawAvatar;
+                        } else if (rawAvatar.includes('/')) {
+                            instructorAvatar = process.env.PUBLIC_URL + rawAvatar;
+                        } else {
+                            instructorAvatar = process.env.PUBLIC_URL + `/assets/images/${rawAvatar}`;
+                        }
+                    }
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const courseImage = data.hinhThuNho || process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
                     const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
@@ -167,12 +179,13 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                 <div className="p-5">
                                     <div className="mb-2 flex items-center justify-between">
                                         <div className="flex items-center space-x-1 text-amber-400">
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star"></i>
-                                            <i className="las la-star-half-alt"></i>
-                                            <span className="ml-1 text-sm text-gray-500">(4.5)</span>
+                                            {[1, 2, 3, 4, 5].map(star => {
+                                                const rating = parseFloat(data.averageRating || '0');
+                                                if (rating >= star) return <i key={star} className="las la-star"></i>;
+                                                if (rating >= star - 0.5) return <i key={star} className="las la-star-half-alt"></i>;
+                                                return <i key={star} className="lar la-star"></i>;
+                                            })}
+                                            <span className="ml-1 text-sm text-gray-500">({data.averageRating || '0.0'})</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-lg font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
@@ -185,7 +198,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
 
                                     <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-4">
                                         <div className="flex items-center space-x-2">
-                                            <img src={process.env.PUBLIC_URL + '/assets/images/author.jpg'} alt={instructorName} className="h-8 w-8 rounded-full object-cover" />
+                                            <img src={instructorAvatar} alt={instructorName} className="h-8 w-8 rounded-full object-cover" onError={(e: any) => { e.target.src = defaultAvatar; }} />
                                             <span className="text-sm font-medium text-gray-600">{instructorName}</span>
                                         </div>
                                     </div>
@@ -193,7 +206,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                     <div className="flex items-center justify-between text-sm font-medium text-gray-500">
                                         <div className="flex items-center space-x-1">
                                             <i className="las la-book text-emerald-500"></i>
-                                            <span>11 Bài giảng</span>
+                                            <span>{data.totalLessons || 0} Bài giảng</span>
                                         </div>
                                         <Link to={courseUrl} className="flex items-center text-emerald-500 hover:text-emerald-600 text-decoration-none hover:no-underline">
                                             Xem chi tiết <i className="las la-arrow-right ml-1"></i>

@@ -133,7 +133,7 @@ function CourseDetails() {
                         yeuCauKhoaHoc: parsedYeuCau,
                         baiHocs: response.data.baiHocs?.sort((a: any, b: any) => a.thuTu - b.thuTu) || [],
                         totalStudents: response.data.totalStudents || 0,
-                        updatedAt: response.data.updatedAt ? new Date(response.data.updatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Không có thông tin'
+                        updatedAt: response.data.updatedAt ? new Date(response.data.updatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Đang cập nhật'
                     });
                 }
             } catch (error) {
@@ -336,7 +336,20 @@ function CourseDetails() {
                                     
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                         <div className="flex items-center gap-3">
-                                            <img src={course.giangVien?.avatar ? (course.giangVien.avatar.startsWith('http') ? course.giangVien.avatar : process.env.PUBLIC_URL + course.giangVien.avatar) : process.env.PUBLIC_URL + `/assets/images/author.jpg`} alt={course.instructor} className="w-10 h-10 rounded-full object-cover" />
+                                            <img 
+                                                src={
+                                                    course.giangVien?.avatar 
+                                                        ? (course.giangVien.avatar.startsWith('http') 
+                                                            ? course.giangVien.avatar 
+                                                            : (course.giangVien.avatar.includes('/') 
+                                                                ? process.env.PUBLIC_URL + course.giangVien.avatar 
+                                                                : process.env.PUBLIC_URL + `/assets/images/${course.giangVien.avatar}`))
+                                                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`
+                                                } 
+                                                alt={course.instructor} 
+                                                className="w-10 h-10 rounded-full object-cover" 
+                                                onError={(e: any) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`; }}
+                                            />
                                             <div>
                                                 <p className="text-xs text-gray-500 mb-1">Được tạo bởi</p>
                                                 <h6 className="text-sm font-bold text-slate-800 m-0">{course.instructor}</h6>
@@ -730,13 +743,12 @@ function CourseDetails() {
                                             <div className="course-details-feature">
                                                 <h5 className="title">Chi tiết khóa học</h5>
                                                 <ul className="list-unstyled feature-list">
-                                                    <li><i className="las la-calendar"></i> Ngày bắt đầu: <span>21 Th08, 2020</span></li>
-                                                    <li><i className="las la-clock"></i> Thời lượng: <span>1 Năm</span></li>
-                                                    <li><i className="las la-globe"></i> Ngôn ngữ: <span>Tiếng Anh</span></li>
-                                                    <li><i className="las la-sort-amount-up"></i> Cấp độ: <span>Cơ bản</span></li>
-                                                    <li><i className="las la-graduation-cap"></i> Chủ đề: <span>Web</span></li>
-                                                    <li><i className="las la-book"></i> Bài giảng: <span>51</span></li>
-                                                    <li><i className="las la-bookmark"></i> Đã tham gia: <span>236</span></li>
+                                                    <li><i className="las la-calendar"></i> Ngày cập nhật: <span>{course?.updatedAt || 'N/A'}</span></li>
+                                                    <li><i className="las la-globe"></i> Ngôn ngữ: <span>{course?.language || 'Tiếng Việt'}</span></li>
+                                                    <li><i className="las la-sort-amount-up"></i> Cấp độ: <span>{course?.level || 'Mọi cấp độ'}</span></li>
+                                                    <li><i className="las la-graduation-cap"></i> Chủ đề: <span>{course?.category || 'Chung'}</span></li>
+                                                    <li><i className="las la-book"></i> Bài giảng: <span>{curriculum?.reduce((acc, curr) => acc + (curr.baiHocs?.length || 0), 0) || 0}</span></li>
+                                                    <li><i className="las la-bookmark"></i> Đã tham gia: <span>{course?.totalStudents ? new Intl.NumberFormat('vi-VN').format(course.totalStudents) : 0}</span></li>
                                                     <li><i className="las la-certificate"></i> Chứng chỉ: <span>Có</span></li>
                                                 </ul>
 
