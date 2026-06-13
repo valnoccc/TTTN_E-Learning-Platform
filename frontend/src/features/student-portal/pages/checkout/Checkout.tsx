@@ -72,7 +72,7 @@ export default function Checkout() {
       const data = await getCourseDetails(id);
       setCourses([data]);
     } catch (error) {
-      toast.error('Failed to load course details');
+      toast.error('Không thể tải thông tin khóa học');
     } finally {
       setLoading(false);
     }
@@ -97,11 +97,11 @@ export default function Checkout() {
         } else {
           setDiscountValue(res.discountValue);
         }
-        toast.success('Coupon applied successfully!');
+        toast.success('Áp dụng mã giảm giá thành công!');
       }
     } catch (error: any) {
       setDiscountValue(0);
-      toast.error(error.message || 'Invalid coupon code');
+      toast.error(error.message || 'Mã giảm giá không hợp lệ');
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -109,7 +109,7 @@ export default function Checkout() {
 
   const handlePayment = async () => {
     if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error('Please fill in all billing information');
+      toast.error('Vui lòng điền đầy đủ thông tin thanh toán');
       return;
     }
 
@@ -157,13 +157,13 @@ export default function Checkout() {
 
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
-        toast.success('Payment successful!');
+        toast.success('Thanh toán thành công!');
         setTimeout(() => {
           navigate('/student/profile'); // Changed to profile since my-courses is inside StudentProfile tab
         }, 3000);
       }
     } catch (error) {
-      toast.error('Payment failed. Please try again.');
+      toast.error('Thanh toán thất bại. Vui lòng thử lại.');
     } finally {
       setIsProcessing(false);
     }
@@ -181,14 +181,14 @@ export default function Checkout() {
     return (
       <Styles>
         <div className="main-wrapper checkout-page">
-<Container>
+          <Container>
             <div className="card-box text-center py-5">
               <i className="las la-check-circle text-success" style={{ fontSize: '80px' }}></i>
-              <h2 className="mt-3 mb-4">Payment Successful!</h2>
-              <p>Invoice ID: <strong>#{successData.invoiceId}</strong></p>
-              <p>Course: <strong>{courses.map(c => c.courseName).join(', ')}</strong></p>
-              <p>Payment Method: <strong>{paymentMethod}</strong></p>
-              <p className="text-muted mt-4">Redirecting to your courses in 3 seconds...</p>
+              <h2 className="mt-3 mb-4">Thanh toán thành công!</h2>
+              <p>Mã hóa đơn: <strong>#{successData.invoiceId}</strong></p>
+              <p>Khóa học: <strong>{courses.map(c => c.courseName).join(', ')}</strong></p>
+              <p>Phương thức thanh toán: <strong>{paymentMethod}</strong></p>
+              <p className="text-muted mt-4">Chuyển hướng đến khóa học của bạn trong 3 giây...</p>
             </div>
           </Container>
 </div>
@@ -202,7 +202,7 @@ export default function Checkout() {
   return (
     <Styles>
       <div className="main-wrapper checkout-page">
-<BreadcrumbBox title="Checkout" />
+<BreadcrumbBox title="Thanh toán" />
 
         <section className="checkout-area">
           <Container>
@@ -210,38 +210,38 @@ export default function Checkout() {
               {/* LEFT COLUMN */}
               <Col lg={7}>
                 <div className="card-box">
-                  <h4 className="title">Billing Information</h4>
+                  <h4 className="title">Thông tin thanh toán</h4>
                   <form className="billing-form">
                     <Row>
                       <Col md={12}>
-                        <label>Full Name *</label>
+                        <label>Họ và tên *</label>
                         <input
                           type="text"
                           name="fullName"
                           className="form-control"
-                          placeholder="Enter your full name"
+                          placeholder="Nhập họ và tên"
                           value={formData.fullName}
                           onChange={handleInputChange}
                         />
                       </Col>
                       <Col md={6}>
-                        <label>Email Address *</label>
+                        <label>Địa chỉ Email *</label>
                         <input
                           type="email"
                           name="email"
                           className="form-control"
-                          placeholder="Enter email address"
+                          placeholder="Nhập địa chỉ email"
                           value={formData.email}
                           onChange={handleInputChange}
                         />
                       </Col>
                       <Col md={6}>
-                        <label>Phone Number *</label>
+                        <label>Số điện thoại *</label>
                         <input
                           type="text"
                           name="phone"
                           className="form-control"
-                          placeholder="Enter phone number"
+                          placeholder="Nhập số điện thoại"
                           value={formData.phone}
                           onChange={handleInputChange}
                         />
@@ -251,7 +251,7 @@ export default function Checkout() {
                 </div>
 
                 <div className="card-box">
-                  <h4 className="title">Payment Method</h4>
+                  <h4 className="title">Phương thức thanh toán</h4>
                   <div className="payment-methods">
                     <div
                       className={`payment-card ${paymentMethod === 'MOMO' ? 'selected' : ''}`}
@@ -272,7 +272,7 @@ export default function Checkout() {
                       onClick={() => setPaymentMethod('BANK')}
                     >
                       <i className="las la-university text-primary" style={{ fontSize: '30px' }}></i>
-                      <span>Bank Transfer</span>
+                      <span>Chuyển khoản</span>
                     </div>
                     <div
                       className={`payment-card ${paymentMethod === 'PAYPAL' ? 'selected' : ''}`}
@@ -289,11 +289,11 @@ export default function Checkout() {
                         <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" />
                       </div>
                       <div className="info">
-                        <p>Bank: <strong>Vietcombank</strong></p>
-                        <p>Account Name: <strong>EDUMEO COMPANY</strong></p>
-                        <p>Account Number: <strong>123456789</strong></p>
+                        <p>Ngân hàng: <strong>Vietcombank</strong></p>
+                        <p>Tên tài khoản: <strong>EDUMEO COMPANY</strong></p>
+                        <p>Số tài khoản: <strong>123456789</strong></p>
                         <p className="text-muted mt-2 mb-0" style={{ fontSize: '13px' }}>
-                          Please scan the QR code and include your phone number in the transfer description.
+                          Vui lòng quét mã QR và ghi rõ số điện thoại của bạn trong nội dung chuyển khoản.
                         </p>
                       </div>
                     </div>
@@ -304,14 +304,14 @@ export default function Checkout() {
               {/* RIGHT COLUMN */}
               <Col lg={5}>
                 <div className="card-box order-summary">
-                  <h4 className="title">Order Summary</h4>
+                  <h4 className="title">Thông tin đơn hàng</h4>
                   
                   {courses.map((course, idx) => (
                     <div className="course-info mb-3" key={idx} style={{ display: 'flex', alignItems: 'center' }}>
                       <img src={process.env.PUBLIC_URL + course.thumbnail} alt={course.courseName} style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
                       <div className="details ml-3">
                         <h6 className="mb-1" style={{ fontSize: '15px' }}>{course.courseName}</h6>
-                        <p className="mb-0" style={{ fontSize: '13px' }}>By {course.instructor}</p>
+                        <p className="mb-0" style={{ fontSize: '13px' }}>Giảng viên: {course.instructor}</p>
                       </div>
                     </div>
                   ))}
@@ -319,7 +319,7 @@ export default function Checkout() {
                   <div className="coupon-box">
                     <input
                       type="text"
-                      placeholder="Coupon Code"
+                      placeholder="Mã giảm giá"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                     />
@@ -327,23 +327,23 @@ export default function Checkout() {
                       onClick={handleApplyCoupon}
                       disabled={!couponCode || isApplyingCoupon}
                     >
-                      {isApplyingCoupon ? '...' : 'Apply'}
+                      {isApplyingCoupon ? '...' : 'Áp dụng'}
                     </button>
                   </div>
 
                   <ul className="list-unstyled price-list">
                     <li>
-                      <span>Original Price</span>
+                      <span>Giá gốc</span>
                       <span>{totalOriginalPrice.toLocaleString('vi-VN')} đ</span>
                     </li>
                     {discountValue > 0 && (
                       <li className="discount">
-                        <span>Discount</span>
+                        <span>Giảm giá</span>
                         <span>-{discountValue.toLocaleString('vi-VN')} đ</span>
                       </li>
                     )}
                     <li className="total">
-                      <span>Total</span>
+                      <span>Tổng cộng</span>
                       <span>{finalPrice.toLocaleString('vi-VN')} đ</span>
                     </li>
                   </ul>
@@ -354,9 +354,9 @@ export default function Checkout() {
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
-                      <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> Processing...</>
+                      <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> Đang xử lý...</>
                     ) : (
-                      'Confirm Payment'
+                      'Xác nhận thanh toán'
                     )}
                   </button>
                 </div>

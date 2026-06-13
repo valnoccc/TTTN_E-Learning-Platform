@@ -22,6 +22,9 @@ export class User {
   @Column({ name: 'Email', type: 'varchar', length: 191, unique: true })
   email!: string;
 
+  @Column({ name: 'SoDienThoai', type: 'varchar', length: 15, nullable: true })
+  soDienThoai?: string;
+
   @Column({ name: 'MatKhau', type: 'varchar', length: 255, select: false })
   matKhau!: string;
 

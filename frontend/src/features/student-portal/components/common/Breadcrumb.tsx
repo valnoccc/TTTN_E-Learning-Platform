@@ -25,7 +25,7 @@ export class BreadcrumbBox extends Component<BreadcrumbBoxProps, BreadcrumbBoxSt
                                 <div className="breadcrumb-box">
                                     <h2 className="breadcrumb-title">{this.props.title}</h2>
                                     <Breadcrumb>
-                                        <Breadcrumb.Item>Home</Breadcrumb.Item>
+                                        <Breadcrumb.Item>Trang chủ</Breadcrumb.Item>
                                         <Breadcrumb.Item active>{this.props.title}</Breadcrumb.Item>
                                     </Breadcrumb>
                                 </div>

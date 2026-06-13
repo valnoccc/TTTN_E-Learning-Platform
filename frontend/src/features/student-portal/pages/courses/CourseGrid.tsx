@@ -29,7 +29,7 @@ const CourseGrid = () => {
         <div className="main-wrapper course-page">
 
             {/* Breadcroumb */}
-            <BreadcrumbBox title="Courses" />
+            <BreadcrumbBox title="Khóa học" />
 
             <Styles>
                 {/* Course Grid */}

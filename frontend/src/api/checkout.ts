@@ -32,22 +32,26 @@ export interface PaymentResponse {
   enrollmentId: number;
 }
 
-// Mock API calls using timeouts to simulate network delay
+import axiosClient from './axios';
+
+// ...
+
 export const getCourseDetails = async (courseId: number): Promise<CourseDetailsData> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        id: courseId,
-        courseName: 'Javascript Programming From Scratch For Beginners To Advanced',
-        thumbnail: '/assets/images/course-1.jpg',
-        instructor: 'Andy Robert',
-        price: 29.0,
-        duration: '1 Year',
-        level: 'Beginner',
-        category: 'Web Development',
-      });
-    }, 1000);
-  });
+  try {
+    const response: any = await axiosClient.get(`/public/courses/${courseId}`);
+    return {
+      id: parseInt(response.data.maKH),
+      courseName: response.data.tenKhoaHoc,
+      thumbnail: response.data.hinhThuNho || '/assets/images/course-1.jpg',
+      instructor: response.data.giangVien ? (response.data.giangVien.tenGiangVien || response.data.giangVien.hoTen || 'Unknown Instructor') : 'Unknown Instructor',
+      price: parseFloat(response.data.giaBan || '0'),
+      duration: '120 Min',
+      level: 'All Levels',
+      category: response.data.danhMuc?.tenDM || 'General',
+    };
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const validateCoupon = async (code: string, courseId: number): Promise<CouponResponse> => {

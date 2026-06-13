@@ -201,4 +201,43 @@ export class CoursesService {
 
     return updatedCourse;
   }
+
+  /**
+   * Tính toán tổng số lượng khóa học và tổng số học viên của một giảng viên
+   * Xử lý trường hợp dữ liệu rỗng và đảm bảo tính thống nhất của logic đếm.
+   */
+  async getInstructorStats(instructorId: number): Promise<{ totalCourses: number; totalStudents: number }> {
+    // Tính tổng số khóa học (bao gồm cả đang chờ duyệt và đã duyệt)
+    const totalCoursesResult = await this.dataSource.query(
+      `SELECT COUNT(*) as total FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING')`,
+      [instructorId],
+    );
+    const totalCourses = totalCoursesResult.length > 0 ? Number(totalCoursesResult[0].total || 0) : 0;
+
+    // Tính tổng số học viên (unique) đăng ký tất cả khóa học của giảng viên
+    // Đảm bảo chỉ đếm các giao dịch ACTIVE
+    const totalStudentsResult = await this.dataSource.query(
+      `SELECT COUNT(DISTINCT dk.MaND) as total 
+       FROM DangKyKhoaHoc dk 
+       JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH 
+       WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'`,
+      [instructorId],
+    );
+    const totalStudents = totalStudentsResult.length > 0 ? Number(totalStudentsResult[0].total || 0) : 0;
+
+    return { totalCourses, totalStudents };
+  }
+
+  /**
+   * Tính toán tổng số lượng học viên đã đăng ký thành công một khóa học cụ thể
+   */
+  async getCourseTotalStudents(courseId: number): Promise<number> {
+    const courseStudentsResult = await this.dataSource.query(
+      `SELECT COUNT(DISTINCT MaND) as total 
+       FROM DangKyKhoaHoc 
+       WHERE MaKH = ? AND TrangThai = 'ACTIVE'`,
+      [courseId],
+    );
+    return courseStudentsResult.length > 0 ? Number(courseStudentsResult[0].total || 0) : 0;
+  }
 }
