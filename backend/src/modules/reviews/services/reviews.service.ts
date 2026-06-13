@@ -151,6 +151,16 @@ export class ReviewsService {
       throw new BadRequestException('Khóa học không tồn tại hoặc chưa được xuất bản!');
     }
 
+    // Check if the student has enrolled in the course
+    const enrollment = await this.dataSource.query(
+      `SELECT MaDangKy FROM DangKyKhoaHoc WHERE MaKH = ? AND MaND = ? AND TrangThai = 'ACTIVE'`,
+      [courseId, studentId]
+    );
+
+    if (enrollment.length === 0) {
+      throw new ForbiddenException('Bạn cần đăng ký khóa học để thực hiện nhận xét');
+    }
+
     // Check if the student has already reviewed this course
     const existingReview = await this.dataSource.query(
       `SELECT MaDanhGia FROM DanhGiaKhoaHoc WHERE MaKH = ? AND MaND = ? AND MaDanhGiaCha IS NULL`,
