@@ -13,7 +13,7 @@ describe('InstructorsService', () => {
     dataSource.query.mockReset();
   });
 
-  it('groups purchased students by student and course for the instructor', async () => {
+  it('returns purchased students by student and course for the instructor', async () => {
     dataSource.query.mockResolvedValue([
       {
         studentId: 11,
@@ -50,26 +50,33 @@ describe('InstructorsService', () => {
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('hd.MaND'),
+      expect.stringContaining('dk.MaND'),
       [7],
     );
     expect(result.totalStudents).toBe(2);
     expect(result.totalPurchases).toBe(3);
     expect(result.totalRevenue).toBe(950000);
     expect(result.students[0]).toMatchObject({
-      studentId: 12,
-      studentName: 'Tran Thi B',
-      totalCourses: 1,
+      studentId: 11,
+      studentName: 'Nguyen Van A',
+      courseId: 101,
+      courseName: 'React Co Ban',
       totalSpent: 250000,
     });
-    expect(result.students[0].courses).toHaveLength(1);
     expect(result.students[1]).toMatchObject({
       studentId: 11,
       studentName: 'Nguyen Van A',
-      totalCourses: 2,
-      totalSpent: 700000,
+      courseId: 102,
+      courseName: 'NestJS Co Ban',
+      totalSpent: 450000,
     });
-    expect(result.students[1].courses).toHaveLength(2);
+    expect(result.students[2]).toMatchObject({
+      studentId: 12,
+      studentName: 'Tran Thi B',
+      courseId: 101,
+      courseName: 'React Co Ban',
+      totalSpent: 250000,
+    });
   });
 
   it('applies course and search filters when listing students', async () => {

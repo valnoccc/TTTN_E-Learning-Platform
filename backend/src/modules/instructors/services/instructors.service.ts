@@ -44,10 +44,10 @@ export interface InstructorStudentSummary {
   studentId: number;
   studentName: string;
   studentEmail: string;
-  totalCourses: number;
+  courseId: number;
+  courseName: string;
   totalSpent: number;
-  lastPurchasedAt: string;
-  courses: InstructorStudentCourse[];
+  purchasedAt: string;
 }
 
 export interface InstructorStudentBoard {
@@ -227,10 +227,6 @@ export class InstructorsService {
       totalSpent: this.toNumber(row.coursePrice),
       purchasedAt: row.purchasedAt,
       // Đảm bảo map thêm các trường cần cho việc chấm điểm
-      githubLink: row.githubLink || null,
-      status: row.status || 'NOT_SUBMITTED',
-      score: row.score ? Number(row.score) : undefined,
-      feedback: row.feedback || '',
     }));
 
     // Tính toán lại tổng quan
@@ -264,16 +260,10 @@ export class InstructorsService {
             dk.MaKH AS courseId,
             kh.TenKhoaHoc AS courseName,
             kh.GiaBan AS coursePrice,
-            dk.NgayDangKy AS purchasedAt,
-            bn.LinkGitHub AS githubLink,
-            IFNULL(bn.TrangThai, 'NOT_SUBMITTED') AS status,
-            bn.DiemSo AS score,
-            bn.NhanXet AS feedback
+            dk.NgayDangKy AS purchasedAt
         FROM DangKyKhoaHoc dk
         JOIN NguoiDung nd ON dk.MaND = nd.MaND
         JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
-        LEFT JOIN DuAnCuoiKhoa da ON kh.MaKH = da.MaKH
-        LEFT JOIN BaiNopDuAn bn ON da.MaDuAn = bn.MaDuAn AND bn.MaND = nd.MaND
         WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'
     `;
 
@@ -286,17 +276,7 @@ export class InstructorsService {
       params.push(filters.courseId);
     }
 
-    if (filters.status) {
-      if (filters.status === 'NOT_SUBMITTED') {
-        // Nếu chọn "Chưa nộp bài", nghĩa là chưa có record trong bảng BaiNopDuAn
-        sql += ` AND bn.TrangThai IS NULL`;
-      } else {
         // Các trạng thái khác: PENDING, PASSED, FAILED
-        sql += ` AND bn.TrangThai = ?`;
-        params.push(filters.status);
-      }
-    }
-
     if (filters.search) {
       // Tìm kiếm theo tên hoặc email học viên
       sql += ` AND (nd.HoTen LIKE ? OR nd.Email LIKE ?)`;

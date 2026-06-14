@@ -66,6 +66,10 @@ Admin (Kiem duyet)
 - `PATCH /submissions/:id/grade` (Instructor - Cham diem Dat/Khong dat & nhap nhan xet)
 - `GET /submissions/me` (Student - Xem ket qua & phan hoi tu giang vien)
 
+## Instructors (Giang vien)
+- `GET /instructors/me/courses` (Lay danh sach khoa hoc cua giang vien)
+- `GET /instructors/me/students` (Lay danh sach hoc vien da dang ky khoa hoc cua giang vien; khong tra ve link GitHub/bai nop)
+
 ## Notifications (Thong bao)
 - `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)
 - `GET /notifications/unread-count` (Dem thong bao chua doc)
