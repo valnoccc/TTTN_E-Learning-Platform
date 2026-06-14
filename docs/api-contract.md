@@ -74,6 +74,7 @@ Admin (Kiem duyet)
 ## Instructors (Giang vien)
 - `GET /instructors/me/courses` (Lay danh sach khoa hoc cua giang vien)
 - `GET /instructors/me/students` (Lay danh sach hoc vien da dang ky khoa hoc cua giang vien; khong tra ve link GitHub/bai nop)
+- `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
 
 ## Notifications (Thong bao)
 - `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)

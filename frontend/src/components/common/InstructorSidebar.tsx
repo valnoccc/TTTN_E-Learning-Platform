@@ -81,9 +81,9 @@ export default function InstructorSidebar() {
       icon: <BookOpen size={18} />,
     },
     {
-      label: 'Mã giảm giá',
-      path: '/instructor/coupons',
-      icon: <Ticket size={18} />,
+      label: 'Đánh giá học viên',
+      path: '/instructor/students',
+      icon: <Users size={18} />,
     },
     {
       label: 'Hỏi đáp',
@@ -91,14 +91,14 @@ export default function InstructorSidebar() {
       icon: <MessageSquare size={18} />,
     },
     {
-      label: 'Đánh giá học viên',
-      path: '/instructor/students',
-      icon: <Users size={18} />,
-    },
-    {
       label: 'Đánh giá khóa học',
       path: '/instructor/reviews',
       icon: <Star size={18} />,
+    },
+    {
+      label: 'Mã giảm giá',
+      path: '/instructor/coupons',
+      icon: <Ticket size={18} />,
     },
   ];
 
@@ -128,11 +128,10 @@ export default function InstructorSidebar() {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${
-                    isActive
+                  className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${isActive
                       ? 'border-l-[#1dbf73] bg-[#1a324b] font-bold text-white'
                       : 'border-l-transparent text-[#d0d6e2] hover:bg-[#1a324b] hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>
                     {item.icon}
@@ -150,11 +149,10 @@ export default function InstructorSidebar() {
           <button
             type="button"
             onClick={() => setShowUserMenu((value) => !value)}
-            className={`flex w-full items-center justify-between border px-3 py-2 transition ${
-              showUserMenu
+            className={`flex w-full items-center justify-between border px-3 py-2 transition ${showUserMenu
                 ? 'border-[#aeb8c6] bg-[#1a324b]'
                 : 'border-white/10 bg-[#112132] hover:bg-[#1a324b]'
-            }`}
+              }`}
           >
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-[2px] bg-[#1dbf73] text-[14px] font-bold text-white">
@@ -179,9 +177,8 @@ export default function InstructorSidebar() {
             </div>
             <ChevronUp
               size={16}
-              className={`text-[#a0aec0] transition-transform ${
-                showUserMenu ? 'rotate-180' : ''
-              }`}
+              className={`text-[#a0aec0] transition-transform ${showUserMenu ? 'rotate-180' : ''
+                }`}
             />
           </button>
 

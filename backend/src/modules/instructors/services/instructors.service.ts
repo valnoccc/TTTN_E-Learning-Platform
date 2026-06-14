@@ -5,13 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { UserRole } from '../../users/entities/user.entity';
 
-// LƯU Ý: Đảm bảo đường dẫn import các Entity và DTO này khớp với project của bạn
-import { User } from '../../users/entities/user.entity';
-import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
-import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { User, UserRole } from '../../users/entities/user.entity';
+import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
+import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
 
 export interface InstructorPrincipal {
   maND?: number;
@@ -57,6 +55,78 @@ export interface InstructorStudentBoard {
   students: InstructorStudentSummary[];
 }
 
+export type InstructorReportRange =
+  | '30days'
+  | 'this_month'
+  | 'last_month'
+  | 'this_year'
+  | 'all_time';
+
+export interface InstructorReportFilters {
+  courseId?: number;
+  range?: InstructorReportRange;
+}
+
+export interface InstructorRevenuePoint {
+  label: string;
+  revenue: number;
+  enrollments: number;
+}
+
+export interface InstructorTopCourseReport {
+  courseId: number;
+  courseName: string;
+  revenue: number;
+  enrollments: number;
+  ratingLabel: string;
+  imageUrl: string | null;
+}
+
+export interface InstructorRecentEnrollment {
+  enrollmentCode: string;
+  studentName: string;
+  studentEmail: string;
+  studentAvatar: string | null;
+  courseId: number;
+  courseName: string;
+  amount: number;
+  couponCode: string | null;
+  status: string;
+  purchasedAt: string;
+}
+
+export interface InstructorReportsBoard {
+  filters: {
+    courseId: number | null;
+    range: InstructorReportRange;
+  };
+  overview: {
+    totalRevenue: number;
+    revenueGrowth: number;
+    newEnrollments: number;
+    enrollmentGrowth: number;
+    averageRating: number | null;
+    averageRatingLabel: string;
+    averageRatingSource: 'mockdata';
+    completionRate: number | null;
+    completionRateLabel: string;
+    completionRateSource: 'mockdata';
+  };
+  revenueSeries: InstructorRevenuePoint[];
+  revenueSeriesSource: 'database';
+  topCourses: InstructorTopCourseReport[];
+  topCoursesSource: 'database';
+  recentEnrollments: InstructorRecentEnrollment[];
+  recentEnrollmentsSource: 'database';
+  revenueBySource: Array<{
+    label: string;
+    percentage: number;
+    color: string;
+  }>;
+  revenueBySourceLabel: string;
+  revenueBySourceSource: 'mockdata';
+}
+
 type RawStudentRow = {
   studentId: number | string;
   studentName: string;
@@ -64,6 +134,33 @@ type RawStudentRow = {
   courseId: number | string;
   courseName: string;
   coursePrice: number | string | null;
+  purchasedAt: string;
+};
+
+type RawRevenueSeriesRow = {
+  periodLabel: string;
+  revenue: number | string | null;
+  enrollments: number | string | null;
+};
+
+type RawTopCourseRow = {
+  courseId: number | string;
+  courseName: string;
+  revenue: number | string | null;
+  enrollments: number | string | null;
+  imageUrl: string | null;
+};
+
+type RawRecentEnrollmentRow = {
+  enrollmentCode: string;
+  studentName: string;
+  studentEmail: string;
+  studentAvatar: string | null;
+  courseId: number | string;
+  courseName: string;
+  amount: number | string | null;
+  couponCode: string | null;
+  status: string;
   purchasedAt: string;
 };
 
@@ -75,8 +172,6 @@ export class InstructorsService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(HoSoGiangVien)
     private readonly hoSoRepo: Repository<HoSoGiangVien>,
-
-    // THÊM: Inject dịch vụ Cloudinary vào đây
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -88,10 +183,9 @@ export class InstructorsService {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
-    // 1. Cập nhật bảng NguoiDung (User)
     const user = await this.userRepo.findOne({ where: { maND: instructorId } });
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException('Khong tim thay tai khoan nguoi dung.');
     }
 
     let isUserUpdated = false;
@@ -100,9 +194,7 @@ export class InstructorsService {
       isUserUpdated = true;
     }
 
-    // Nếu có file ảnh được truyền lên, tiến hành xóa ảnh cũ (nếu có) và đẩy ảnh mới lên Cloudinary
     if (file) {
-      // --- TÍNH NĂNG MỚI: XÓA ẢNH CŨ TRÁNH RÁC CLOUDINARY ---
       if (user.anhDaiDien) {
         const oldPublicId = this.cloudinaryService.extractPublicId(
           user.anhDaiDien,
@@ -111,15 +203,13 @@ export class InstructorsService {
           try {
             await this.cloudinaryService.deleteFile(oldPublicId, 'image');
           } catch (deleteError) {
-            // Log lỗi ra console để theo dõi nhưng không chặn luồng xử lý chính nếu lỡ xóa thất bại
             console.error(
-              'Lỗi khi xóa ảnh đại diện cũ trên Cloudinary:',
+              'Loi khi xoa anh dai dien cu tren Cloudinary:',
               deleteError,
             );
           }
         }
       }
-      // -----------------------------------------------------
 
       const uploadResult = await this.cloudinaryService.uploadFile(file);
       user.anhDaiDien = uploadResult.secure_url || uploadResult.url;
@@ -130,7 +220,6 @@ export class InstructorsService {
       await this.userRepo.save(user);
     }
 
-    // 2. Tìm hoặc Tạo mới HoSoGiangVien
     let profile = await this.hoSoRepo.findOne({
       where: { MaND: instructorId },
     });
@@ -138,7 +227,6 @@ export class InstructorsService {
       profile = this.hoSoRepo.create({ MaND: instructorId });
     }
 
-    // 3. Cập nhật các trường profile văn bản
     if (dto.TieuSu !== undefined) profile.TieuSu = dto.TieuSu;
     if (dto.ChuyenMon !== undefined) profile.ChuyenMon = dto.ChuyenMon;
     if (dto.SoTaiKhoan !== undefined) profile.SoTaiKhoan = dto.SoTaiKhoan;
@@ -150,7 +238,7 @@ export class InstructorsService {
     await this.hoSoRepo.save(profile);
 
     return {
-      message: 'Cập nhật trọn bộ hồ sơ thành công',
+      message: 'Cap nhat tron bo ho so thanh cong',
       user: {
         HoTen: user.hoTen,
         AnhDaiDien: user.anhDaiDien,
@@ -197,18 +285,17 @@ export class InstructorsService {
   async getMyStudents(
     principal: InstructorPrincipal,
     filters: InstructorStudentFilters,
-  ): Promise<any> {
-    // Có thể đổi kiểu trả về thành InstructorStudentBoard sau
+  ): Promise<InstructorStudentBoard> {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
-    let rows: any[] = [];
+    let rows: RawStudentRow[] = [];
 
     try {
       const { sql, params } = this.buildStudentQuery(instructorId, filters);
-      rows = await this.dataSource.query(sql, params);
+      rows = (await this.dataSource.query(sql, params)) as RawStudentRow[];
     } catch (error) {
-      console.error('Lỗi khi tải danh sách học viên:', error);
+      console.error('Loi khi tai danh sach hoc vien:', error);
       return {
         totalStudents: 0,
         totalPurchases: 0,
@@ -217,7 +304,6 @@ export class InstructorsService {
       };
     }
 
-    // KHÔNG gom nhóm (Group) bằng Map nữa. Tạo trực tiếp danh sách phẳng.
     const flatStudentsList = rows.map((row) => ({
       studentId: Number(row.studentId),
       studentName: row.studentName,
@@ -226,14 +312,9 @@ export class InstructorsService {
       courseName: row.courseName,
       totalSpent: this.toNumber(row.coursePrice),
       purchasedAt: row.purchasedAt,
-      // Đảm bảo map thêm các trường cần cho việc chấm điểm
     }));
 
-    // Tính toán lại tổng quan
-    // 1. Tính tổng số học viên duy nhất (dùng Set để đếm)
     const uniqueStudentIds = new Set(flatStudentsList.map((s) => s.studentId));
-
-    // 2. Tính tổng doanh thu
     const totalRevenue = flatStudentsList.reduce(
       (sum, current) => sum + current.totalSpent,
       0,
@@ -242,16 +323,175 @@ export class InstructorsService {
     return {
       totalStudents: uniqueStudentIds.size,
       totalPurchases: flatStudentsList.length,
-      totalRevenue: totalRevenue,
-      students: flatStudentsList, // Trả về danh sách phẳng để React dễ dàng lặp
+      totalRevenue,
+      students: flatStudentsList,
     };
   }
 
-  // =========================================================================
-  // PRIVATE HELPER METHODS
-  // =========================================================================
-  private buildStudentQuery(instructorId: number, filters: any) {
-    // 1. Câu lệnh SQL nền tảng y hệt như bạn vừa test thành công
+  async getMyReports(
+    principal: InstructorPrincipal,
+    filters: InstructorReportFilters,
+  ): Promise<InstructorReportsBoard> {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+    const range = filters.range ?? '30days';
+    const courseId = filters.courseId;
+
+    const whereClause = this.buildReportWhereClause(instructorId, courseId, range);
+    const previousWhereClause = this.buildPreviousReportWhereClause(
+      instructorId,
+      courseId,
+      range,
+    );
+
+    const [overviewRows, previousRows, revenueSeriesRows, topCourseRows, recentRows] =
+      await Promise.all([
+        this.dataSource.query(
+          `
+            SELECT
+              COUNT(*) AS enrollments,
+              COALESCE(SUM(kh.GiaBan), 0) AS revenue
+            FROM DangKyKhoaHoc dk
+            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            WHERE ${whereClause}
+          `,
+        ),
+        this.dataSource.query(
+          `
+            SELECT
+              COUNT(*) AS enrollments,
+              COALESCE(SUM(kh.GiaBan), 0) AS revenue
+            FROM DangKyKhoaHoc dk
+            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            WHERE ${previousWhereClause}
+          `,
+        ),
+        this.dataSource.query(
+          `
+            SELECT
+              ${this.buildPeriodSelect(range)} AS periodLabel,
+              COALESCE(SUM(kh.GiaBan), 0) AS revenue,
+              COUNT(*) AS enrollments
+            FROM DangKyKhoaHoc dk
+            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            WHERE ${whereClause}
+            GROUP BY periodLabel
+            ORDER BY MIN(dk.NgayDangKy) ASC
+          `,
+        ),
+        this.dataSource.query(
+          `
+            SELECT
+              kh.MaKH AS courseId,
+              kh.TenKhoaHoc AS courseName,
+              COALESCE(SUM(kh.GiaBan), 0) AS revenue,
+              COUNT(*) AS enrollments,
+              kh.HinhThuNho AS imageUrl
+            FROM DangKyKhoaHoc dk
+            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            WHERE ${whereClause}
+            GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.HinhThuNho
+            ORDER BY revenue DESC, enrollments DESC, kh.MaKH DESC
+            LIMIT 5
+          `,
+        ),
+        this.dataSource.query(
+          `
+            SELECT
+              CONCAT('#DK', dk.MaDangKy) AS enrollmentCode,
+              nd.HoTen AS studentName,
+              nd.Email AS studentEmail,
+              nd.AnhDaiDien AS studentAvatar,
+              kh.MaKH AS courseId,
+              kh.TenKhoaHoc AS courseName,
+              kh.GiaBan AS amount,
+              NULL AS couponCode,
+              dk.TrangThai AS status,
+              dk.NgayDangKy AS purchasedAt
+            FROM DangKyKhoaHoc dk
+            JOIN NguoiDung nd ON dk.MaND = nd.MaND
+            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            WHERE ${whereClause}
+            ORDER BY dk.NgayDangKy DESC
+            LIMIT 8
+          `,
+        ),
+      ]);
+
+    const overviewRow = (overviewRows as Array<{ enrollments?: number | string; revenue?: number | string }>)[0] ?? {
+      enrollments: 0,
+      revenue: 0,
+    };
+    const previousRow = (previousRows as Array<{ enrollments?: number | string; revenue?: number | string }>)[0] ?? {
+      enrollments: 0,
+      revenue: 0,
+    };
+
+    return {
+      filters: {
+        courseId: courseId ?? null,
+        range,
+      },
+      overview: {
+        totalRevenue: this.toNumber(overviewRow.revenue),
+        revenueGrowth: this.calculateGrowth(
+          this.toNumber(overviewRow.revenue),
+          this.toNumber(previousRow.revenue),
+        ),
+        newEnrollments: this.toNumber(overviewRow.enrollments),
+        enrollmentGrowth: this.calculateGrowth(
+          this.toNumber(overviewRow.enrollments),
+          this.toNumber(previousRow.enrollments),
+        ),
+        averageRating: null,
+        averageRatingLabel: 'MOCKDATA: Chua co du lieu danh gia that',
+        averageRatingSource: 'mockdata',
+        completionRate: null,
+        completionRateLabel: 'MOCKDATA: Chua co du lieu tien do that',
+        completionRateSource: 'mockdata',
+      },
+      revenueSeries: (revenueSeriesRows as RawRevenueSeriesRow[]).map((row) => ({
+        label: row.periodLabel,
+        revenue: this.toNumber(row.revenue),
+        enrollments: this.toNumber(row.enrollments),
+      })),
+      revenueSeriesSource: 'database',
+      topCourses: (topCourseRows as RawTopCourseRow[]).map((row) => ({
+        courseId: Number(row.courseId),
+        courseName: row.courseName,
+        revenue: this.toNumber(row.revenue),
+        enrollments: this.toNumber(row.enrollments),
+        ratingLabel: 'MOCKDATA',
+        imageUrl: row.imageUrl,
+      })),
+      topCoursesSource: 'database',
+      recentEnrollments: (recentRows as RawRecentEnrollmentRow[]).map((row) => ({
+        enrollmentCode: row.enrollmentCode,
+        studentName: row.studentName,
+        studentEmail: row.studentEmail,
+        studentAvatar: row.studentAvatar,
+        courseId: Number(row.courseId),
+        courseName: row.courseName,
+        amount: this.toNumber(row.amount),
+        couponCode: row.couponCode,
+        status: row.status,
+        purchasedAt: row.purchasedAt,
+      })),
+      recentEnrollmentsSource: 'database',
+      revenueBySource: [
+        { label: 'MOCKDATA: Tu nhien', percentage: 55, color: '#94a3b8' },
+        { label: 'MOCKDATA: Coupon', percentage: 30, color: '#10b981' },
+        { label: 'MOCKDATA: Social', percentage: 15, color: '#3b82f6' },
+      ],
+      revenueBySourceLabel: 'MOCKDATA: Chua co tracking nguon doanh thu that',
+      revenueBySourceSource: 'mockdata',
+    };
+  }
+
+  private buildStudentQuery(
+    instructorId: number,
+    filters: InstructorStudentFilters,
+  ) {
     let sql = `
         SELECT 
             dk.MaND AS studentId,
@@ -267,31 +507,112 @@ export class InstructorsService {
         WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'
     `;
 
-    // Tham số đầu tiên luôn là ID của giảng viên
-    const params: any[] = [instructorId];
+    const params: Array<number | string> = [instructorId];
 
-    // 2. Xử lý các bộ lọc từ Frontend truyền xuống
     if (filters.courseId) {
       sql += ` AND kh.MaKH = ?`;
       params.push(filters.courseId);
     }
 
-    // Các trạng thái khác: PENDING, PASSED, FAILED
     if (filters.search) {
-      // Tìm kiếm theo tên hoặc email học viên
       sql += ` AND (nd.HoTen LIKE ? OR nd.Email LIKE ?)`;
       params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 
-    // 3. Sắp xếp người mua mới nhất lên đầu
     sql += ` ORDER BY dk.NgayDangKy DESC`;
 
     return { sql, params };
   }
+
+  private buildReportWhereClause(
+    instructorId: number,
+    courseId: number | undefined,
+    range: InstructorReportRange,
+  ) {
+    const clauses = [`kh.MaND_GiangVien = ${instructorId}`, `dk.TrangThai = 'ACTIVE'`];
+
+    if (courseId) {
+      clauses.push(`kh.MaKH = ${courseId}`);
+    }
+
+    const rangeClause = this.getRangeClause(range, false);
+    if (rangeClause) {
+      clauses.push(rangeClause);
+    }
+
+    return clauses.join(' AND ');
+  }
+
+  private buildPreviousReportWhereClause(
+    instructorId: number,
+    courseId: number | undefined,
+    range: InstructorReportRange,
+  ) {
+    const clauses = [`kh.MaND_GiangVien = ${instructorId}`, `dk.TrangThai = 'ACTIVE'`];
+
+    if (courseId) {
+      clauses.push(`kh.MaKH = ${courseId}`);
+    }
+
+    const rangeClause = this.getRangeClause(range, true);
+    if (rangeClause) {
+      clauses.push(rangeClause);
+    } else {
+      clauses.push('1 = 0');
+    }
+
+    return clauses.join(' AND ');
+  }
+
+  private getRangeClause(range: InstructorReportRange, previous: boolean) {
+    switch (range) {
+      case '30days':
+        return previous
+          ? `dk.NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY) AND dk.NgayDangKy < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)`
+          : `dk.NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)`;
+      case 'this_month':
+        return previous
+          ? `DATE_FORMAT(dk.NgayDangKy, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m')`
+          : `DATE_FORMAT(dk.NgayDangKy, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')`;
+      case 'last_month':
+        return previous
+          ? `DATE_FORMAT(dk.NgayDangKy, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), '%Y-%m')`
+          : `DATE_FORMAT(dk.NgayDangKy, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m')`;
+      case 'this_year':
+        return previous
+          ? `YEAR(dk.NgayDangKy) = YEAR(CURRENT_DATE()) - 1`
+          : `YEAR(dk.NgayDangKy) = YEAR(CURRENT_DATE())`;
+      case 'all_time':
+      default:
+        return previous ? '' : '';
+    }
+  }
+
+  private buildPeriodSelect(range: InstructorReportRange) {
+    switch (range) {
+      case '30days':
+      case 'this_month':
+      case 'last_month':
+        return `DATE_FORMAT(dk.NgayDangKy, '%d/%m')`;
+      case 'this_year':
+      case 'all_time':
+      default:
+        return `DATE_FORMAT(dk.NgayDangKy, '%m/%Y')`;
+    }
+  }
+
+  private calculateGrowth(current: number, previous: number) {
+    if (previous === 0) {
+      return current > 0 ? 100 : 0;
+    }
+
+    return Number((((current - previous) / previous) * 100).toFixed(1));
+  }
+
   private assertInstructor(principal: InstructorPrincipal) {
     if (principal.vaiTro !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
-        'Chỉ giảng viên mới có quyền quản lý hồ sơ và học viên.',
+        'Chi giang vien moi co quyen quan ly ho so va hoc vien.',
       );
     }
   }
@@ -299,7 +620,7 @@ export class InstructorsService {
   private getInstructorId(principal: InstructorPrincipal) {
     const instructorId = principal.maND ?? principal.sub;
     if (!instructorId) {
-      throw new ForbiddenException('Không xác định được giảng viên hiện tại.');
+      throw new ForbiddenException('Khong xac dinh duoc giang vien hien tai.');
     }
     return instructorId;
   }
@@ -308,21 +629,19 @@ export class InstructorsService {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
 
-    // Lấy thông tin user (HoTen, AnhDaiDien)
     const user = await this.userRepo.findOne({ where: { maND: instructorId } });
-    if (!user)
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    if (!user) {
+      throw new NotFoundException('Khong tim thay tai khoan nguoi dung.');
+    }
 
-    // Lấy thông tin profile
     const profile = await this.hoSoRepo.findOne({
       where: { MaND: instructorId },
     });
 
-    // Gộp data lại và trả về cho Frontend
     return {
       hoTen: user.hoTen,
       anhDaiDien: user.anhDaiDien,
-      ...profile, // Trải phẳng TieuSu, ChuyenMon, FacebookURL... ra ngoài
+      ...profile,
     };
   }
 
@@ -340,7 +659,7 @@ export class InstructorsService {
         id: user.maND,
         personName: user.hoTen,
         personImage: user.anhDaiDien || 'team-3.jpg',
-        personTitle: profile?.ChuyenMon || 'Giảng viên',
+        personTitle: profile?.ChuyenMon || 'Giang vien',
         socialLinks: {
           facebook: profile?.FacebookURL || '',
           instagram: profile?.InstagramURL || '',
@@ -361,7 +680,6 @@ export class InstructorsService {
 
     const profile = await this.hoSoRepo.findOne({ where: { MaND: id } });
 
-    // Lấy danh sách khóa học của giảng viên này
     const courses = await this.dataSource.query(
       `
         SELECT 
@@ -381,10 +699,10 @@ export class InstructorsService {
       id: user.maND,
       personName: user.hoTen,
       personImage: user.anhDaiDien || 'team-3.jpg',
-      personTitle: profile?.ChuyenMon || 'Giảng viên',
+      personTitle: profile?.ChuyenMon || 'Giang vien',
       email: user.email,
-      phone: '', // Có thể thêm trường số điện thoại vào db sau
-      bio: profile?.TieuSu || 'Giảng viên chưa cập nhật tiểu sử.',
+      phone: '',
+      bio: profile?.TieuSu || 'Giang vien chua cap nhat tieu su.',
       socialLinks: {
         facebook: profile?.FacebookURL || '',
         instagram: profile?.InstagramURL || '',
@@ -401,10 +719,5 @@ export class InstructorsService {
 
   private toNumber(value: number | string | null | undefined) {
     return Number(value ?? 0);
-  }
-
-  private toTimestamp(value: string) {
-    const timestamp = new Date(value).getTime();
-    return Number.isNaN(timestamp) ? 0 : timestamp;
   }
 }
