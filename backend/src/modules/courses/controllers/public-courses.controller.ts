@@ -49,6 +49,22 @@ export class PublicCoursesController {
     query.orderBy('khoaHoc.maKH', 'DESC');
 
     const courses = await query.getMany();
+
+    // Lấy thêm aggregate data cho rating
+    for (const course of courses) {
+      const avgResult = await this.dataSource.query(
+        `SELECT AVG(SoSao) as avgRating FROM DanhGiaKhoaHoc WHERE MaKH = ? AND SoSao > 0`,
+        [course.maKH]
+      );
+      (course as any).averageRating = avgResult[0]?.avgRating ? parseFloat(avgResult[0].avgRating).toFixed(1) : '0.0';
+      
+      const lessonCountResult = await this.dataSource.query(
+        `SELECT COUNT(*) as count FROM BaiHoc bh JOIN ChuongHoc ch ON bh.MaChuong = ch.MaChuong WHERE ch.MaKH = ? AND bh.TrangThai = 'ACTIVE'`,
+        [course.maKH]
+      );
+      (course as any).totalLessons = lessonCountResult[0]?.count ? parseInt(lessonCountResult[0].count) : 0;
+    }
+
     return {
       message: 'Lấy danh sách khóa học thành công',
       data: courses,
