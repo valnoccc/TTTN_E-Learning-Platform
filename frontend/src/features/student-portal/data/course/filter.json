@@ -1,5 +1,5 @@
 {
-    "secTitle": "We Do What We Love To Do. Find the Best Course To Fit Your Needs.",
+    "secTitle": "Học những gì bạn đam mê. Tìm khóa học phù hợp nhất với nhu cầu của bạn.",
     "dataList": [
         {
             "id": "1",
@@ -7,10 +7,10 @@
             "imgUrl": "course-1.jpg",
             "authorImg": "author.jpg",
             "authorName": "John Doe",
-            "authorCourses": "13 Courses",
+            "authorCourses": "13 Khóa học",
             "price": "$20",
             "courseTitle": "Php & mySql Programming",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         },
         {
@@ -19,10 +19,10 @@
             "imgUrl": "course-2.jpg",
             "authorImg": "author.jpg",
             "authorName": "Jara Sen",
-            "authorCourses": "21 Courses",
+            "authorCourses": "21 Khóa học",
             "price": "$13",
             "courseTitle": "Microsoft Excel for Beginner",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         },
         {
@@ -31,10 +31,10 @@
             "imgUrl": "course-3.jpg",
             "authorImg": "author.jpg",
             "authorName": "Kim Chang",
-            "authorCourses": "26 Courses",
+            "authorCourses": "26 Khóa học",
             "price": "$19",
             "courseTitle": "Digital Marketing Course",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         },
         {
@@ -43,10 +43,10 @@
             "imgUrl": "course-4.jpg",
             "authorImg": "author.jpg",
             "authorName": "Jim Hunt",
-            "authorCourses": "09 Courses",
+            "authorCourses": "09 Khóa học",
             "price": "$15",
             "courseTitle": "Zero to Hero in Python 3",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         },
         {
@@ -55,10 +55,10 @@
             "imgUrl": "course-5.jpg",
             "authorImg": "author.jpg",
             "authorName": "Sara Kim",
-            "authorCourses": "17 Courses",
+            "authorCourses": "17 Khóa học",
             "price": "$21",
             "courseTitle": "React JS, Angular & Vue JS",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         },
         {
@@ -67,10 +67,10 @@
             "imgUrl": "course-6.jpg",
             "authorImg": "author.jpg",
             "authorName": "Shon Doe",
-            "authorCourses": "31 Courses",
+            "authorCourses": "31 Khóa học",
             "price": "$24",
             "courseTitle": "Laravel API Development",
-            "courseDesc": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tenetur accusamus hic ea in autem debitis minima.",
+            "courseDesc": "Khóa học chất lượng cao, cung cấp kiến thức nền tảng và nâng cao, giúp bạn làm chủ công nghệ một cách nhanh chóng.",
             "courseLink": "/course-details"
         }
     ]

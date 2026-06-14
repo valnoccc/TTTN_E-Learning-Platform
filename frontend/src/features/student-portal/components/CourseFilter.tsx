@@ -55,11 +55,11 @@ function CourseFilter() {
                         <Col md="12">
                             <div className="filter-btns text-center">
                                 <ul className="filter-btn-list list-unstyled list inline">
-                                    <li data-target="*" className="active list-inline-item">All Courses</li>
-                                    <li data-target="desi" className="list-inline-item">Web Design</li>
-                                    <li data-target="deve" className="list-inline-item">Web Development</li>
-                                    <li data-target="seo" className="list-inline-item">Seo</li>
-                                    <li data-target="prog" className="list-inline-item">Programming</li>
+                                    <li data-target="*" className="active list-inline-item">Tất cả khóa học</li>
+                                    <li data-target="desi" className="list-inline-item">Thiết kế Web</li>
+                                    <li data-target="deve" className="list-inline-item">Lập trình Web</li>
+                                    <li data-target="seo" className="list-inline-item">SEO</li>
+                                    <li data-target="prog" className="list-inline-item">Lập trình</li>
                                 </ul>
                             </div>
                             <Row className="filter-items">
@@ -114,7 +114,7 @@ function CourseFilter() {
                         </Col>
                         <Col md="12" className="text-center">
                             <div className="viewall-btn">
-                                <Link to={"/course-grid"}>View All Courses</Link>
+                                <Link to={"/course-grid"}>Xem tất cả khóa học</Link>
                             </div>
                         </Col>
                     </Row>

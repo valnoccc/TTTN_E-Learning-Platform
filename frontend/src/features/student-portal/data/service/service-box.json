@@ -1,41 +1,41 @@
 {
-    "secTitle": "Discover Our Features To Know Why We Are Best In This Business",
+    "secTitle": "Khám Phá Các Tính Năng Để Biết Vì Sao Chúng Tôi Tốt Nhất",
     "dataList": [
         {
             "id": "1",
             "boxIcon": "flaticon-thumbs-like",
-            "title": "Popular Courses",
-            "subTitle": "The most popular and highly anticipated courses today."
+            "title": "KHÓA HỌC PHỔ BIẾN",
+            "subTitle": "Những khóa học được quan tâm và đánh giá cao nhất."
         },
         {
             "id": "2",
             "boxIcon": "flaticon-reading",
-            "title": "Modern Library",
-            "subTitle": "Rich, modern, and continuously updated document library."
+            "title": "THƯ VIỆN HIỆN ĐẠI",
+            "subTitle": "Thư viện tài liệu phong phú, hiện đại và cập nhật liên tục."
         },
         {
             "id": "3",
             "boxIcon": "flaticon-teacher",
-            "title": "Qualified Teacher",
-            "subTitle": "Highly experienced and qualified teaching staff."
+            "title": "GIẢNG VIÊN CHẤT LƯỢNG",
+            "subTitle": "Đội ngũ giảng viên trình độ cao, giàu kinh nghiệm."
         },
         {
             "id": "4",
             "boxIcon": "flaticon-unlimited",
-            "title": "Unlimited Courses",
-            "subTitle": "Learn unlimitedly anytime, anywhere on any device."
+            "title": "KHÓA HỌC KHÔNG GIỚI HẠN",
+            "subTitle": "Học không giới hạn mọi lúc, mọi nơi trên mọi thiết bị."
         },
         {
             "id": "5",
             "boxIcon": "flaticon-locations",
-            "title": "Many Locations",
-            "subTitle": "Support and learning systems available in many locations."
+            "title": "NHIỀU ĐỊA ĐIỂM",
+            "subTitle": "Hỗ trợ và học tập tại nhiều địa điểm khác nhau."
         },
         {
             "id": "6",
             "boxIcon": "flaticon-support",
-            "title": "Online Support",
-            "subTitle": "24/7 online support to answer all your questions."
+            "title": "HỖ TRỢ TRỰC TUYẾN",
+            "subTitle": "Hỗ trợ 24/7 giúp giải đáp mọi thắc mắc của bạn."
         }
     ]
 }

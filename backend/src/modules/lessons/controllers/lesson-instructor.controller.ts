@@ -28,6 +28,28 @@ import { LessonsService } from '../services/lessons.service';
 
 const LESSON_TITLE_MAX_LENGTH = 60;
 
+function parseBooleanLike(value: unknown, fallback = false): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'on', 'yes'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'off', 'no'].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return fallback;
+}
+
 @Controller('lessons')
 @UseGuards(JwtAuthGuard)
 export class LessonsController {
@@ -59,6 +81,9 @@ export class LessonsController {
         tenBaiHoc: lessonData.tenBaiHoc ?? lessonData.tieu_de,
         noi_dung: lessonData.noi_dung || '',
         thuTu: Number(lessonData.thuTu ?? lessonData.thu_tu ?? 0),
+        choPhepXemTruoc: parseBooleanLike(
+          lessonData.choPhepXemTruoc ?? lessonData.cho_phep_xem_truoc,
+        ),
         videoURL: videoUrl,
       };
 
@@ -144,6 +169,11 @@ export class LessonsController {
       maKH:
         body.maKH !== undefined || body.id_khoa_hoc !== undefined
           ? Number(body.maKH ?? body.id_khoa_hoc)
+          : undefined,
+      choPhepXemTruoc:
+        body.choPhepXemTruoc !== undefined ||
+        body.cho_phep_xem_truoc !== undefined
+          ? parseBooleanLike(body.choPhepXemTruoc ?? body.cho_phep_xem_truoc)
           : undefined,
     };
 

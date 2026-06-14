@@ -36,7 +36,7 @@ class AboutUsTwo extends Component {
                                 <div className="about-image">
                                     <img src={`/assets/images/${Datas.aboutImageOne}`} className="main-img1" alt="" />
                                     <img src={`/assets/images/${Datas.aboutImageTwo}`} className="main-img2" alt="" />
-                                    <p className="exp-box"><span>{Datas.experianceYear}<i className="las la-plus"></i></span> Yrs Exprience</p>
+                                    <p className="exp-box"><span>{Datas.experianceYear}<i className="las la-plus"></i></span> Năm kinh nghiệm</p>
                                 </div>
                             </Col>
                         </Row>

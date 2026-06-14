@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, User } from 'lucide-react';
+import { ChevronDown, LogOut, User, Heart } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../../store/store';
 
 type StoredUser = {
   fullName?: string;
@@ -48,6 +50,7 @@ export default function AuthControls() {
   });
 
   const location = useLocation();
+  const wishlistItems = useSelector((state: RootState) => state.wishlist?.items || []);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -84,7 +87,7 @@ export default function AuthControls() {
       <Link
         to="/login"
         className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
-        title="Login / Register"
+        title="Đăng nhập / Đăng ký"
       >
         <User size={20} />
       </Link>
@@ -98,7 +101,8 @@ export default function AuthControls() {
     <Dropdown align="end">
       <Dropdown.Toggle
         as="button"
-        className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-gradient-to-b from-white to-slate-50 px-2.5 py-1.5 text-[13px] font-semibold text-slate-900 shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:border-sky-200 hover:no-underline"
+        bsPrefix="custom-dropdown-toggle"
+        className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-gradient-to-b from-white to-slate-50 px-2.5 py-1.5 text-[13px] font-semibold text-slate-900 shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:border-sky-200 hover:no-underline after:hidden"
         aria-label="Account menu"
       >
         <span className="flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-full bg-sky-100 ring-1 ring-sky-200/70">
@@ -116,19 +120,34 @@ export default function AuthControls() {
         <Dropdown.Item
           as={Link}
           to={getDashboardPath(user.vaiTro)}
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
         >
           <User size={14} className="me-2" />
-          Dashboard
+          Bảng điều khiển
+        </Dropdown.Item>
+        <Dropdown.Item
+          as={Link}
+          to="/student/wishlist"
+          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+        >
+          <div className="flex items-center">
+            <Heart size={14} className="me-2 text-rose-500" />
+            Yêu thích
+          </div>
+          {wishlistItems.length > 0 && (
+            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+              {wishlistItems.length}
+            </span>
+          )}
         </Dropdown.Item>
         <Dropdown.Divider className="my-1" />
         <Dropdown.Item
           as="button"
           onClick={handleLogout}
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50"
+          className="rounded-xl px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 flex items-center"
         >
           <LogOut size={14} className="me-2" />
-          Logout
+          Đăng xuất
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>

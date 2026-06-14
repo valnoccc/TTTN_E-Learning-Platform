@@ -1,19 +1,50 @@
 import { ForbiddenException } from '@nestjs/common';
-import { InstructorsService } from './services/instructors.service';
+
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserRole } from '../users/entities/user.entity';
+import { InstructorsService } from './services/instructors.service';
 
 describe('InstructorsService', () => {
   const dataSource = {
     query: jest.fn(),
   };
 
-  const service = new InstructorsService(dataSource as never);
+  const userRepo = {
+    findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
+  const hoSoRepo = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const cloudinaryService = {
+    extractPublicId: jest.fn(),
+    deleteFile: jest.fn(),
+    uploadFile: jest.fn(),
+  } as unknown as CloudinaryService;
+
+  const service = new InstructorsService(
+    dataSource as never,
+    userRepo as never,
+    hoSoRepo as never,
+    cloudinaryService,
+  );
 
   beforeEach(() => {
     dataSource.query.mockReset();
+    userRepo.findOne.mockReset();
+    userRepo.createQueryBuilder.mockReset();
+    hoSoRepo.findOne.mockReset();
+    hoSoRepo.find.mockReset();
+    hoSoRepo.create.mockReset();
+    hoSoRepo.save.mockReset();
   });
 
-  it('groups purchased students by student and course for the instructor', async () => {
+  it('returns purchased students by student and course for the instructor', async () => {
     dataSource.query.mockResolvedValue([
       {
         studentId: 11,
@@ -50,26 +81,19 @@ describe('InstructorsService', () => {
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('hd.MaND'),
+      expect.stringContaining('dk.MaND'),
       [7],
     );
     expect(result.totalStudents).toBe(2);
     expect(result.totalPurchases).toBe(3);
     expect(result.totalRevenue).toBe(950000);
     expect(result.students[0]).toMatchObject({
-      studentId: 12,
-      studentName: 'Tran Thi B',
-      totalCourses: 1,
-      totalSpent: 250000,
-    });
-    expect(result.students[0].courses).toHaveLength(1);
-    expect(result.students[1]).toMatchObject({
       studentId: 11,
       studentName: 'Nguyen Van A',
-      totalCourses: 2,
-      totalSpent: 700000,
+      courseId: 101,
+      courseName: 'React Co Ban',
+      totalSpent: 250000,
     });
-    expect(result.students[1].courses).toHaveLength(2);
   });
 
   it('applies course and search filters when listing students', async () => {
@@ -132,5 +156,57 @@ describe('InstructorsService', () => {
         createdAt: '2026-04-01 00:00:00',
       },
     ]);
+  });
+
+  it('returns instructor reports board with database and mockdata sections separated', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ enrollments: '4', revenue: '1800000' }])
+      .mockResolvedValueOnce([{ enrollments: '2', revenue: '900000' }])
+      .mockResolvedValueOnce([
+        { periodLabel: '05/2026', revenue: '900000', enrollments: '2' },
+        { periodLabel: '06/2026', revenue: '900000', enrollments: '2' },
+      ])
+      .mockResolvedValueOnce([
+        {
+          courseId: 10,
+          courseName: 'React Pro',
+          revenue: '1200000',
+          enrollments: '3',
+          imageUrl: 'react.png',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          enrollmentCode: '#DK22',
+          studentName: 'Nguyen Van C',
+          studentEmail: 'c@example.com',
+          studentAvatar: null,
+          courseId: 10,
+          courseName: 'React Pro',
+          amount: '400000',
+          couponCode: null,
+          status: 'ACTIVE',
+          purchasedAt: '2026-06-10 09:00:00',
+        },
+      ]);
+
+    const result = await service.getMyReports(
+      { maND: 7, vaiTro: UserRole.INSTRUCTOR },
+      { range: '30days' },
+    );
+
+    expect(result.overview.totalRevenue).toBe(1800000);
+    expect(result.overview.revenueGrowth).toBe(100);
+    expect(result.revenueSeriesSource).toBe('database');
+    expect(result.topCoursesSource).toBe('database');
+    expect(result.recentEnrollmentsSource).toBe('database');
+    expect(result.overview.averageRatingSource).toBe('mockdata');
+    expect(result.revenueBySourceSource).toBe('mockdata');
+    expect(result.topCourses[0]).toMatchObject({
+      courseId: 10,
+      courseName: 'React Pro',
+      revenue: 1200000,
+      ratingLabel: 'MOCKDATA',
+    });
   });
 });

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import AuthControls from './AuthControls';
 import { Styles } from "./styles/mobileMenu";
+import { CourseCategoryMobile } from './CourseCategoryMenu';
 
 class MobileMenu extends Component {
     componentDidMount() {
@@ -96,7 +97,7 @@ class MobileMenu extends Component {
                                     </div>
                                     <div className="mb-search-box">
                                         <form action="#">
-                                            <input type="text" name="search" placeholder="Search Here" />
+                                            <input type="text" name="search" placeholder="Nhập từ khóa tìm kiếm" />
                                             <button type="submit"><i className="las la-search"></i></button>
                                         </form>
                                     </div>
@@ -108,13 +109,13 @@ class MobileMenu extends Component {
 
                 <section className="mb-sidebar" id="mb-sidebar-body">
                     <div className="mb-sidebar-heading d-flex justify-content-between">
-                        <div><h5>Menu</h5></div>
+                        <div><h5>Danh Mục</h5></div>
                         <div><a href={"/"} id="close-mb-sidebar"><i className="las la-times"></i></a></div>
                     </div>
                     <div className="mb-sidebar-menu">
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
-                                <p><Link to={"/"} style={{ color: "inherit", textDecoration: "none" }}>Home</Link></p>
+                                <p><Link to={"/"} style={{ color: "inherit", textDecoration: "none" }}>Trang chủ</Link></p>
                             </button>
                             <div className="mb-menu-content show d-none">
                                 <ul className="list-unstyled">
@@ -140,43 +141,20 @@ class MobileMenu extends Component {
                                 </ul>
                             </div>
                         </div>
+                        <CourseCategoryMobile />
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
-                                <p>Courses <i className="las la-plus"></i></p>
+                                <p><Link to={"/instructors"} style={{ color: "inherit", textDecoration: "none" }}>Giảng viên</Link></p>
                             </button>
-                            <div className="mb-menu-content show">
-                                <ul className="list-unstyled">
-                                    <li><Link to={"/course-grid"}>Course Grid</Link></li>
-                                    <li><Link to={"/course-list"}>Course List</Link></li>
-                                    <li><Link to={"/course-details"}>Course Details</Link></li>
-                                </ul>
-                            </div>
+                        </div>
+                        <div className="mb-menu-item">
+                            <button className="mb-menu-button active">
+                                <p><Link to={"/events"} style={{ color: "inherit", textDecoration: "none" }}>Sự kiện</Link></p>
+                            </button>
                         </div>
                         <div className="mb-menu-item">
                             <button className="mb-menu-button">
-                                <p>Instructor <i className="las la-plus"></i></p>
-                            </button>
-                            <div className="mb-menu-content">
-                                <ul className="list-unstyled">
-                                    <li><Link to={"/instructors"}>Instructors</Link></li>
-                                    <li><Link to={"/instructor-details"}>Instructor Details</Link></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div className="mb-menu-item">
-                            <button className="mb-menu-button">
-                                <p>Event <i className="las la-plus"></i></p>
-                            </button>
-                            <div className="mb-menu-content">
-                                <ul className="list-unstyled">
-                                    <li><Link to={"/events"}>Events</Link></li>
-                                    <li><Link to={"/event-details"}>Event Details</Link></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div className="mb-menu-item">
-                            <button className="mb-menu-button">
-                                <p>Blog <i className="las la-plus"></i></p>
+                                <p>Bài viết <i className="las la-plus"></i></p>
                             </button>
                             <div className="mb-menu-content">
                                 <ul className="list-unstyled">

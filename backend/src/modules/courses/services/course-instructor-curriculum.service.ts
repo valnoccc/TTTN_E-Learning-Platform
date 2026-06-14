@@ -38,7 +38,7 @@ export class CourseInstructorCurriculumService {
 
     const lessons = await this.dataSource.query(
       `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc, 
-              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong
+              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc
        FROM BaiHoc
        WHERE MaChuong IN (${placeholders}) AND TrangThai = 'ACTIVE'
        ORDER BY ThuTu ASC`,

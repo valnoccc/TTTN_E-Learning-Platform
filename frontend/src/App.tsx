@@ -31,11 +31,12 @@ function AnimatedRoutes() {
         <Route path="/about" element={<About />} />
         <Route path="/course-grid" element={<CourseGrid />} />
         <Route path="/course-list" element={<CourseList />} />
-        <Route path="/course-details" element={<CourseDetails />} />
+        <Route path="/course-details/:id" element={<CourseDetails />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/instructors" element={<Instructors />} />
-        <Route path="/instructor-details" element={<InstructorDetails />} />
+        <Route path="/instructor-details/:id" element={<InstructorDetails />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/:courseId" element={<Checkout />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -73,7 +74,8 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <Toaster
-        position="top-center"
+        position="top-right"
+        containerStyle={{ top: '80px', zIndex: 999999 }}
         toastOptions={{ duration: 3000, style: { fontSize: '14px', borderRadius: '8px' } }}
       />
       <AnimatedRoutes />

@@ -33,6 +33,10 @@ export class UsersService {
     if (updateUserDto.fullName) updateData.hoTen = updateUserDto.fullName;
     if (updateUserDto.avatarUrl)
       updateData.anhDaiDien = updateUserDto.avatarUrl;
+    if (updateUserDto.soDienThoai !== undefined)
+      updateData.soDienThoai = updateUserDto.soDienThoai;
+
+    console.log('Update Data mapped in users.service.ts:', updateData);
 
     if (Object.keys(updateData).length > 0) {
       await this.userRepository.update(id, updateData);

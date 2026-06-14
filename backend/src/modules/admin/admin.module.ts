@@ -9,7 +9,10 @@ import { CourseModerationHistory } from './entities/course-moderation-history.en
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([KhoaHoc, CourseModerationHistory]), NotificationsModule],
+  imports: [
+    TypeOrmModule.forFeature([KhoaHoc, CourseModerationHistory]),
+    NotificationsModule,
+  ],
   controllers: [AdminDashboardController, AdminCoursesController],
   providers: [AdminService, AdminCoursesService],
 })

@@ -17,23 +17,23 @@ export const Styles = styled.div`
         left            : 0;
         width           : 100%;
         height          : 100%;
-        z-index         : 1000;
-        background-color: rgba(255, 255, 255, 0.96);
+        z-index         : 999999;
+        background-color: rgba(15, 23, 42, 0.95);
+        backdrop-filter : blur(8px);
         transform       : scale(1, 0);
         transform-origin: bottom center;
-        transition : transform 0.7s ease;
+        transition : transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
         .search-overlay {
             width           : 100%;
             height          : 100%;
-            background-color: rgba(255, 255, 255, 0.96);
+            background-color: transparent;
             position        : absolute;
             top             : 0;
             left            : 0;
             right           : 0;
             bottom          : 0;
             z-index         : 999;
-            opacity         : 0.7;
         }
 
         .search-inner {
@@ -55,20 +55,25 @@ export const Styles = styled.div`
                     width        : 100%;
                     height       : 65px;
                     border       : none;
-                    border-bottom: 2px solid ${colors.border3};
+                    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
                     font-size    : 26px;
                     padding      : 0 10px 0 10px;
                     margin-bottom: 0;
-                    color        : ${colors.black2};
+                    color        : #ffffff;
                     position     : relative;
                     box-shadow   : none;
                     border-radius: 0;
                     outline      : none;
                     background   : transparent;
+                    transition   : border-color 0.3s;
 
-                    @include input-placeholder {
+                    &:focus {
+                        border-bottom: 2px solid ${colors.green};
+                    }
+
+                    &::placeholder {
                         font-style : italic;
-                        color      : ${colors.black1};
+                        color      : rgba(255, 255, 255, 0.5);
                         font-weight: 300;
                     }
                 }
@@ -78,8 +83,13 @@ export const Styles = styled.div`
                     top      : 25px;
                     right    : -12px;
                     font-size: 26px;
-                    color    : ${colors.green};
+                    color    : rgba(255, 255, 255, 0.5);
                     cursor   : pointer;
+                    transition: color 0.3s;
+
+                    &:hover {
+                        color: #ffffff;
+                    }
                 }
             }
         }

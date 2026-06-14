@@ -20,12 +20,8 @@ import {
   CloudinaryService,
   type UploadedAsset,
 } from '../../cloudinary/cloudinary.service';
-import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
-import { CreateReplyDto } from '../dto/create-reply.dto';
 import { serializeCourse } from '../services/course-response.util';
 import { CourseInstructorCurriculumService } from '../services/course-instructor-curriculum.service';
-import { CourseInstructorDiscussionsService } from '../services/course-instructor-discussions.service';
-import { CourseInstructorReviewsService } from '../services/course-instructor-reviews.service';
 import { CoursesService } from '../services/course-instructor.service';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
@@ -46,8 +42,6 @@ const parseArrayData = (data: any): string[] => {
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
-    private readonly reviewsService: CourseInstructorReviewsService,
-    private readonly discussionsService: CourseInstructorDiscussionsService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -57,6 +51,7 @@ export class CoursesController {
     const instructorId = req.user.sub;
     const courses =
       await this.coursesService.getCoursesByInstructor(instructorId);
+
     return {
       message: 'Lấy danh sách khóa học thành công',
       data: courses.map(serializeCourse),
@@ -65,7 +60,6 @@ export class CoursesController {
 
   @Get(':id')
   async getCourseById(@Param('id') id: string, @Request() req) {
-    // Thêm `as any` ở cuối dòng này để vượt qua kiểm duyệt của TypeScript
     const course = await this.coursesService.getCourseById(
       Number(id),
       req.user.sub,
@@ -125,6 +119,7 @@ export class CoursesController {
       mucTieu,
       yeuCau,
     );
+
     return {
       message: 'Tạo khóa học thành công',
       data: serializeCourse(newCourse),
@@ -182,6 +177,7 @@ export class CoursesController {
       mucTieu,
       yeuCau,
     );
+
     return {
       message: 'Cập nhật khóa học thành công',
       data: serializeCourse(updatedCourse),
@@ -199,74 +195,16 @@ export class CoursesController {
       req.user.sub,
       statusData.trangThai ?? statusData.trang_thai,
     );
-    return { message: 'Cập nhật trạng thái thành công', data: updatedCourse };
+
+    return {
+      message: 'Cập nhật trạng thái thành công',
+      data: updatedCourse,
+    };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
     return this.coursesService.remove(Number(id), req.user.sub);
-  }
-
-  @Get(':id/reviews')
-  async getCourseReviews(@Param('id') id: string, @Request() req) {
-    const reviews = await this.reviewsService.getCourseReviews(
-      Number(id),
-      req.user.sub,
-    );
-
-    return {
-      message: 'Lấy danh sách đánh giá thành công',
-      data: reviews,
-    };
-  }
-
-  @Post(':id/reviews')
-  async replyToReview(
-    @Param('id') id: string,
-    @Request() req,
-    @Body() body: CreateReplyDto,
-  ) {
-    const replyData = await this.reviewsService.replyToReview(
-      Number(id),
-      req.user.sub,
-      body,
-    );
-
-    return {
-      message: 'Gửi phản hồi đánh giá thành công',
-      data: replyData,
-    };
-  }
-
-  @Get(':id/discussions')
-  async getCourseDiscussions(@Param('id') id: string, @Request() req) {
-    const discussions = await this.discussionsService.getCourseDiscussions(
-      Number(id),
-      req.user.sub,
-    );
-
-    return {
-      message: 'Lấy danh sách thảo luận khóa học thành công',
-      data: discussions,
-    };
-  }
-
-  @Post(':id/discussions')
-  async replyToDiscussion(
-    @Param('id') id: string,
-    @Request() req,
-    @Body() body: CreateDiscussionReplyDto,
-  ) {
-    const replyData = await this.discussionsService.replyToDiscussion(
-      Number(id),
-      req.user.sub,
-      body,
-    );
-
-    return {
-      message: 'Gửi phản hồi thảo luận thành công',
-      data: replyData,
-    };
   }
 
   @Get(':id/curriculum')
@@ -289,6 +227,7 @@ export class CoursesController {
       req.user.sub,
       body,
     );
+
     return { message: 'Tạo chương thành công', data };
   }
 
@@ -298,6 +237,7 @@ export class CoursesController {
       Number(chapterId),
       body,
     );
+
     return { message: 'Tạo bài học thành công', data };
   }
 }

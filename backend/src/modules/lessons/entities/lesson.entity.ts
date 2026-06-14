@@ -24,6 +24,13 @@ export class Lesson {
   @Column({ name: 'ThuTu', type: 'int' })
   thuTu!: number;
 
+  @Column({
+    name: 'choPhepXemTruoc',
+    type: 'boolean',
+    default: false,
+  })
+  choPhepXemTruoc!: boolean;
+
   @ManyToOne(() => KhoaHoc)
   @JoinColumn({ name: 'MaKH' })
   khoaHoc!: KhoaHoc;

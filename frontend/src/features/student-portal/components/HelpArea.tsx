@@ -28,21 +28,21 @@ function HelpArea() {
             const subjectValue = subjectInput.value.trim();
 
             if (nameValue === "") {
-                setError(nameInput, "Name can't be blank");
+                setError(nameInput, "Tên không được để trống");
             } else {
                 setSuccess(nameInput);
             }
 
             if (emailValue === "") {
-                setError(emailInput, "Email can't be blank");
+                setError(emailInput, "Email không được để trống");
             } else if (!isEmail(emailValue)) {
-                setError(emailInput, "Not a valid email");
+                setError(emailInput, "Email không hợp lệ");
             } else {
                 setSuccess(emailInput);
             }
 
             if (subjectValue === "") {
-                setError(subjectInput, "Subject can't be blank");
+                setError(subjectInput, "Tiêu đề không được để trống");
             } else {
                 setSuccess(subjectInput);
             }
@@ -87,24 +87,24 @@ function HelpArea() {
                                 <Row>
                                     <Col md="4">
                                         <p className="form-control">
-                                            <input type="text" placeholder="Enter your Name" id="name1" />
+                                            <input type="text" placeholder="Nhập Tên của bạn" id="name1" />
                                             <span className="input-msg1"></span>
                                         </p>
                                     </Col>
                                     <Col md="4">
                                         <p className="form-control">
-                                            <input type="email" placeholder="Enter your Email" id="email1" />
+                                            <input type="email" placeholder="Nhập Email của bạn" id="email1" />
                                             <span className="input-msg1"></span>
                                         </p>
                                     </Col>
                                     <Col md="4">
                                         <p className="form-control">
-                                            <input type="text" placeholder="Enter Subject" id="subject1" />
+                                            <input type="text" placeholder="Nhập Tiêu đề" id="subject1" />
                                             <span className="input-msg1"></span>
                                         </p>
                                     </Col>
                                     <Col md="12" className="text-center">
-                                        <button>Send Request</button>
+                                        <button>Gửi Yêu Cầu</button>
                                     </Col>
                                 </Row>
                             </form>

@@ -1,8 +1,8 @@
 import {
+  Body,
   Controller,
   Get,
   Patch,
-  Body,
   Query,
   Req,
   UseGuards,
@@ -10,10 +10,10 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { InstructorsService } from '../services/instructors.service';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
-import { Multer } from 'multer';
+import { InstructorsService } from '../services/instructors.service';
 
 @Controller('instructors')
 @UseGuards(JwtAuthGuard)
@@ -37,18 +37,34 @@ export class InstructorsController {
     });
   }
 
+  @Get('me/reports')
+  getMyReports(
+    @Req() req: any,
+    @Query('courseId') courseId?: string,
+    @Query('range') range?:
+      | '30days'
+      | 'this_month'
+      | 'last_month'
+      | 'this_year'
+      | 'all_time',
+  ) {
+    return this.instructorsService.getMyReports(req.user, {
+      courseId: courseId ? Number(courseId) : undefined,
+      range,
+    });
+  }
+
   @Get('me/profile')
   getProfile(@Req() req: any) {
     return this.instructorsService.getProfile(req.user);
   }
 
-  // THAY ĐỔI Ở ĐÂY: Hỗ trợ nhận cả file gộp chung với DTO text
   @Patch('me/profile')
   @UseInterceptors(FileInterceptor('file'))
   updateProfile(
     @Req() req: any,
     @Body() updateDto: UpdateInstructorProfileDto,
-    @UploadedFile() file?: Express.Multer.File, // Nhận file ảnh từ Frontend gửi lên nếu có
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.instructorsService.updateProfile(req.user, updateDto, file);
   }

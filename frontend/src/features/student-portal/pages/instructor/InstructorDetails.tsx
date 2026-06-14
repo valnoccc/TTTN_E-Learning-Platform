@@ -1,131 +1,171 @@
-import React, { Component } from 'react';
-import Datas from '../../data/instructor/details.json';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import Swiper from 'react-id-swiper';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Styles } from './styles/instructor';
+import axiosClient from '../../../../api/axios';
 
-class InstructorDetails extends Component {
-    render() {
-        // Fix for Vite CommonJS interop with react-id-swiper
-        const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
+// Fix for Vite CommonJS interop with react-id-swiper
+const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
 
-        const settings = {
-            slidesPerView: 3,
-            loop: true,
-            speed: 1000,
-            autoplay: false,
-            spaceBetween: 30,
-            watchSlidesVisibility: true,
-            pagination: {
-                el: '.slider-dot.text-center',
-                clickable: true
-            },
-            breakpoints: {
-                0: {
-                    slidesPerView: 1
-                },
-                576: {
-                    slidesPerView: 1
-                },
-                768: {
-                    slidesPerView: 2
-                },
-                992: {
-                    slidesPerView: 3
-                }
+const settings = {
+    slidesPerView: 3,
+    loop: true,
+    speed: 1000,
+    autoplay: false,
+    spaceBetween: 30,
+    watchSlidesVisibility: true,
+    pagination: {
+        el: '.slider-dot.text-center',
+        clickable: true
+    },
+    breakpoints: {
+        0: { slidesPerView: 1 },
+        576: { slidesPerView: 1 },
+        768: { slidesPerView: 2 },
+        992: { slidesPerView: 3 }
+    }
+};
+
+const InstructorDetails = () => {
+    const { id } = useParams<{ id: string }>();
+    const [instructor, setInstructor] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInstructor = async () => {
+            try {
+                const response = await axiosClient.get(`/public/instructors/${id}`);
+                setInstructor(response);
+            } catch (error) {
+                console.error('Lỗi khi tải chi tiết giảng viên:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
+        if (id) {
+            fetchInstructor();
+        }
+    }, [id]);
+
+    const formatVND = (price: number) => {
+        return new Intl.NumberFormat('vi-VN', { 
+            style: 'currency', 
+            currency: 'VND',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0 
+        }).format(price).replace('₫', 'đ');
+    };
+
+    if (loading) {
         return (
             <Styles>
-                {/* Main Wrapper */}
                 <div className="main-wrapper instructor-details-page">
-
-{/* Breadcroumb */}
-                    <BreadcrumbBox title="Instructor Details" />
-
-                    {/* Instructor Details Area */}
+                    <BreadcrumbBox title="Chi tiết giảng viên" />
                     <section className="instructor-details-area">
                         <Container>
-                            <Row>
-                                <Col md="4">
-                                    <div className="instructor-img">
-                                        <img src={`/assets/images/team-7.jpg`} alt="" className="img-fluid" />
-                                        <ul className="list-unstyled getintouch">
-                                            <li><i className="las la-phone"></i> +1 (396) 486 4709</li>
-                                            <li><i className="lar la-envelope"></i> mail@contactme.com</li>
-                                            <li><i className="lab la-skype"></i> contact.me</li>
-                                        </ul>
-                                        <ul className="social list-unstyled list-inline">
-                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>
-                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-twitter"></i></a></li>
-                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-linkedin-in"></i></a></li>
-                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-youtube"></i></a></li>
-                                            <li className="list-inline-item"><a href={"/"}><i className="fab fa-dribbble"></i></a></li>
-                                        </ul>
-                                    </div>
-                                </Col>
-                                <Col md="8">
-                                    <div className="instructor-content">
-                                        <h4>Kamal Sulaiman</h4>
-                                        <span>Senior Teacher</span>
-                                        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veritatis tenetur accusantium laudantium! Vitae libero voluptatum velit earum corrupti officia quo, magnam mollitia nam provident tempora. Ipsum quaerat tempora odit maxime. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Optio, molestiae. Quae illum non sit. In sapiente, reiciendis sunt aperiam repellendus quibusdam repudiandae, dolores tempore esse vero aliquid illum neque voluptatem.<br /><br />Lorem ipsum dolor, sit amet consectetur adipisicing elit. Corrupti, aliquid illo? Quia dolore obcaecati incidunt perferendis minus error repudiandae iure perspiciatis maxime assumenda? Sit dicta, odit sunt maiores incidunt culpa. Lorem ipsum dolor sit amet consectetur, adipisicing elit. Assumenda voluptate quisquam quis officiis.</p>
-                                    </div>
-                                    <div className="qual-expe d-flex">
-                                        <div className="qualification">
-                                            <h5>Qualifications</h5>
-                                            <div className="qual-expe-box">
-                                                <h6>University of California</h6>
-                                                <p>Bachelor of Computer Science & Engeniering</p>
-                                            </div>
-                                            <div className="qual-expe-box">
-                                                <h6>University of California</h6>
-                                                <p>Masters of Computer Science & Engeniering</p>
-                                            </div>
+                            <p className="text-center mt-5">Đang tải thông tin giảng viên...</p>
+                        </Container>
+                    </section>
+                </div>
+            </Styles>
+        );
+    }
+
+    if (!instructor) {
+        return (
+            <Styles>
+                <div className="main-wrapper instructor-details-page">
+                    <BreadcrumbBox title="Chi tiết giảng viên" />
+                    <section className="instructor-details-area">
+                        <Container>
+                            <p className="text-center mt-5">Không tìm thấy thông tin giảng viên.</p>
+                        </Container>
+                    </section>
+                </div>
+            </Styles>
+        );
+    }
+
+    const imgUrl = instructor.personImage?.startsWith('http') ? instructor.personImage : `/assets/images/${instructor.personImage}`;
+
+    return (
+        <Styles>
+            <div className="main-wrapper instructor-details-page">
+                <BreadcrumbBox title="Instructor Details" />
+                <section className="instructor-details-area">
+                    <Container>
+                        <Row>
+                            <Col md="4">
+                                <div className="instructor-img">
+                                    <img src={imgUrl} alt={instructor.personName} className="img-fluid" />
+                                    <ul className="list-unstyled getintouch">
+                                        {instructor.phone && <li><i className="las la-phone"></i> {instructor.phone}</li>}
+                                        {instructor.email && <li><i className="lar la-envelope"></i> {instructor.email}</li>}
+                                    </ul>
+                                    <ul className="social list-unstyled list-inline">
+                                        {instructor.socialLinks?.facebook && <li className="list-inline-item"><a href={instructor.socialLinks.facebook} target="_blank" rel="noopener noreferrer"><i className="fab fa-facebook-f"></i></a></li>}
+                                        {instructor.socialLinks?.instagram && <li className="list-inline-item"><a href={instructor.socialLinks.instagram} target="_blank" rel="noopener noreferrer"><i className="fab fa-instagram"></i></a></li>}
+                                        {instructor.socialLinks?.github && <li className="list-inline-item"><a href={instructor.socialLinks.github} target="_blank" rel="noopener noreferrer"><i className="fab fa-github"></i></a></li>}
+                                        {instructor.socialLinks?.website && <li className="list-inline-item"><a href={instructor.socialLinks.website} target="_blank" rel="noopener noreferrer"><i className="las la-globe"></i></a></li>}
+                                    </ul>
+                                </div>
+                            </Col>
+                            <Col md="8">
+                                <div className="instructor-content">
+                                    <h4>{instructor.personName}</h4>
+                                    <span>{instructor.personTitle}</span>
+                                    <p>{instructor.bio}</p>
+                                </div>
+                                <div className="qual-expe d-flex">
+                                    <div className="qualification">
+                                        <h5>Bằng cấp</h5>
+                                        <div className="qual-expe-box">
+                                            <h6>Chuyên môn</h6>
+                                            <p>{instructor.personTitle}</p>
                                         </div>
-                                        <div className="experiance">
-                                            <h5>Experiance</h5>
-                                            <div className="qual-expe-box">
-                                                <h6>SnazzyTheme.com</h6>
-                                                <p>2016 - 2019</p>
-                                            </div>
-                                            <div className="qual-expe-box">
-                                                <h6>Envato Market</h6>
-                                                <p>2019 - Present</p>
-                                            </div>
+                                    </div>
+                                    <div className="experiance">
+                                        <h5>Kinh nghiệm</h5>
+                                        <div className="qual-expe-box">
+                                            <h6>Giảng dạy tại EDUMEO</h6>
+                                            <p>2023 - Present</p>
                                         </div>
                                     </div>
-                                </Col>
-                                <Col md="12">
-                                    <div className="instructor-course-title">
-                                        <h5>Courses by Kamal Sulaiman</h5>
-                                    </div>
-                                    <div className="instructor-course-slider">
+                                </div>
+                            </Col>
+                            <Col md="12">
+                                <div className="instructor-course-title">
+                                    <h5>Khóa học của {instructor.personName}</h5>
+                                </div>
+                                <div className="instructor-course-slider">
+                                    {instructor.courses && instructor.courses.length > 0 ? (
                                         <SwiperComponent {...settings}>
-                                            {
-                                                Datas.map((data, i) => (
-                                                    <div className="course-item" key={i}>
-                                                        <Link to={data.courseLink}>
-                                                            <div className="course-image" style={{ backgroundImage: `url(/assets/images/${data.imgUrl})` }}>
+                                            {instructor.courses.map((course: any, i: number) => {
+                                                const courseImg = course.imgUrl?.startsWith('http') ? course.imgUrl : `/assets/images/${course.imgUrl}`;
+                                                return (
+                                                    <div className="course-item" key={course.id || i}>
+                                                        <Link to={`/course-details/${course.id}`}>
+                                                            <div className="course-image" style={{ backgroundImage: `url(${courseImg})` }}>
                                                                 <div className="author-img d-flex">
                                                                     <div className="img">
-                                                                        <img src={`/assets/images/${data.authorImg}`} alt="" />
+                                                                        <img src={imgUrl} alt="" />
                                                                     </div>
                                                                     <div className="title">
-                                                                        <p>{data.authorName}</p>
-                                                                        <span>{data.authorCourses}</span>
+                                                                        <p>{instructor.personName}</p>
+                                                                        <span>{instructor.courses.length} khóa học</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="course-price">
-                                                                    <p>{data.price}</p>
+                                                                    <p>{formatVND(course.price)}</p>
                                                                 </div>
                                                             </div>
                                                         </Link>
                                                         <div className="course-content">
-                                                            <h6 className="heading"><Link to={data.courseLink}>{data.courseTitle}</Link></h6>
-                                                            <p className="desc">{data.courseDesc}</p>
+                                                            <h6 className="heading"><Link to={`/course-details/${course.id}`}>{course.courseTitle}</Link></h6>
+                                                            <p className="desc">{course.courseDesc?.substring(0, 50)}...</p>
                                                             <div className="course-face d-flex justify-content-between">
                                                                 <div className="duration">
                                                                     <p><i className="las la-clock"></i>120</p>
@@ -136,30 +176,30 @@ class InstructorDetails extends Component {
                                                                         <li className="list-inline-item"><i className="las la-star"></i></li>
                                                                         <li className="list-inline-item"><i className="las la-star"></i></li>
                                                                         <li className="list-inline-item"><i className="las la-star"></i></li>
-                                                                        <li className="list-inline-item"><i className="las la-star-half-alt"></i>
-                                                                        </li>
+                                                                        <li className="list-inline-item"><i className="las la-star-half-alt"></i></li>
                                                                         <li className="list-inline-item">(4.5)</li>
                                                                     </ul>
                                                                 </div>
                                                                 <div className="student">
-                                                                    <p><i className="las la-chair"></i>60</p>
+                                                                    <p><i className="las la-eye"></i>{course.views || 0}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                ))
-                                            }
+                                                );
+                                            })}
                                         </SwiperComponent>
-                                    </div>
-                                </Col>
-                            </Row>
-                        </Container>
-                    </section>
+                                    ) : (
+                                        <p>Giảng viên này chưa có khóa học nào.</p>
+                                    )}
+                                </div>
+                            </Col>
+                        </Row>
+                    </Container>
+                </section>
+            </div>
+        </Styles>
+    );
+};
 
-</div>
-            </Styles>
-        )
-    }
-}
-
-export default InstructorDetails
+export default InstructorDetails;
