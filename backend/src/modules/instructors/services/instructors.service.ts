@@ -276,7 +276,7 @@ export class InstructorsService {
       params.push(filters.courseId);
     }
 
-        // Các trạng thái khác: PENDING, PASSED, FAILED
+    // Các trạng thái khác: PENDING, PASSED, FAILED
     if (filters.search) {
       // Tìm kiếm theo tên hoặc email học viên
       sql += ` AND (nd.HoTen LIKE ? OR nd.Email LIKE ?)`;
@@ -333,7 +333,7 @@ export class InstructorsService {
       .getMany();
 
     const profiles = await this.hoSoRepo.find();
-    
+
     return instructors.map((user) => {
       const profile = profiles.find((p) => p.MaND === user.maND);
       return {
@@ -352,7 +352,9 @@ export class InstructorsService {
   }
 
   async getPublicInstructorById(id: number) {
-    const user = await this.userRepo.findOne({ where: { maND: id, vaiTro: UserRole.INSTRUCTOR } });
+    const user = await this.userRepo.findOne({
+      where: { maND: id, vaiTro: UserRole.INSTRUCTOR },
+    });
     if (!user) {
       throw new NotFoundException('Instructor not found');
     }
@@ -372,7 +374,7 @@ export class InstructorsService {
         FROM KhoaHoc
         WHERE MaND_GiangVien = ? AND TrangThai = 'ACTIVE'
       `,
-      [id]
+      [id],
     );
 
     return {
@@ -392,8 +394,8 @@ export class InstructorsService {
       courses: courses.map((c: any) => ({
         ...c,
         price: Number(c.price),
-        imgUrl: c.imgUrl || 'course-1.jpg'
-      }))
+        imgUrl: c.imgUrl || 'course-1.jpg',
+      })),
     };
   }
 

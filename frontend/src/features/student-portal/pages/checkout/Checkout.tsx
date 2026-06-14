@@ -2,15 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Spinner } from 'react-bootstrap';
 import toast from 'react-hot-toast';
+import { useDispatch } from 'react-redux';
+
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Styles } from './styles/checkout';
 import {
-  getCourseDetails,
-  validateCoupon,
-  processPayment,
+  consumeCoupon,
+  CouponResponse,
   CourseDetailsData,
+  getCourseDetails,
+  processPayment,
+  validateCoupon,
 } from '../../../../api/checkout';
-import { useDispatch } from 'react-redux';
 import { removeFromCart } from '../../../cart/cartSlice';
 
 export default function Checkout() {
@@ -19,29 +22,22 @@ export default function Checkout() {
   const location = useLocation();
   const dispatch = useDispatch();
 
-  // Course State
   const [courses, setCourses] = useState<CourseDetailsData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Form State
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
   });
-
-  // Payment State
   const [paymentMethod, setPaymentMethod] = useState('MOMO');
   const [isProcessing, setIsProcessing] = useState(false);
   const [successData, setSuccessData] = useState<{ invoiceId: number } | null>(null);
-
-  // Coupon State
   const [couponCode, setCouponCode] = useState('');
   const [discountValue, setDiscountValue] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponResponse | null>(null);
 
   useEffect(() => {
-    // 1. Kiểm tra đăng nhập
     const user = localStorage.getItem('user');
     if (!user) {
       toast.error('Bạn cần đăng nhập để tiến hành thanh toán!');
@@ -53,7 +49,7 @@ export default function Checkout() {
       setCourses(location.state.selectedCourses);
       setLoading(false);
     } else if (courseId) {
-      loadCourseData(Number(courseId));
+      void loadCourseData(Number(courseId));
     } else {
       toast.error('Không có khóa học nào được chọn!');
       navigate('/student/cart');
@@ -71,7 +67,7 @@ export default function Checkout() {
       setLoading(true);
       const data = await getCourseDetails(id);
       setCourses([data]);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải thông tin khóa học');
     } finally {
       setLoading(false);
@@ -86,22 +82,28 @@ export default function Checkout() {
   };
 
   const handleApplyCoupon = async () => {
-    if (!couponCode) return;
+    if (!couponCode.trim()) {
+      return;
+    }
+
     try {
       setIsApplyingCoupon(true);
-      const res = await validateCoupon(couponCode, courses[0]?.id || Number(courseId));
+      const res = await validateCoupon(
+        couponCode.trim(),
+        courses.map((course) => course.id),
+      );
+
       if (res.valid) {
-        const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
-        if (res.discountType === 'PERCENT' && courses.length > 0) {
-          setDiscountValue(totalOriginalPrice * (res.discountValue / 100));
-        } else {
-          setDiscountValue(res.discountValue);
-        }
-        toast.success('Áp dụng mã giảm giá thành công!');
+        setAppliedCoupon(res);
+        setDiscountValue(res.discountAmount);
+        toast.success(res.message || 'Áp dụng mã giảm giá thành công!');
       }
     } catch (error: any) {
+      setAppliedCoupon(null);
       setDiscountValue(0);
-      toast.error(error.message || 'Mã giảm giá không hợp lệ');
+      toast.error(
+        error.response?.data?.message || 'Mã giảm giá không hợp lệ',
+      );
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -116,53 +118,58 @@ export default function Checkout() {
     try {
       setIsProcessing(true);
       const res = await processPayment({
-        courseIds: courses.map(c => c.id),
+        courseIds: courses.map((course) => course.id),
         paymentMethod,
         couponCode: discountValue > 0 ? couponCode : undefined,
         customerDetails: formData,
       });
 
       if (res.success) {
-        // Remove purchased items from cart
-        courses.forEach(c => dispatch(removeFromCart(c.id)));
+        if (appliedCoupon?.couponId) {
+          await consumeCoupon(appliedCoupon.couponId);
+        }
 
-        // Mock save to localStorage for StudentProfile
-        const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
+        courses.forEach((course) => dispatch(removeFromCart(course.id)));
+
+        const totalOriginalPrice = courses.reduce((sum, course) => sum + course.price, 0);
         const finalPrice = Math.max(0, totalOriginalPrice - discountValue);
 
         const myCourses = JSON.parse(localStorage.getItem('myCourses') || '[]');
-        const newCourses = courses.map(c => ({
-            id: c.id,
-            title: c.courseName,
-            progress: 0,
-            image: c.thumbnail
+        const newCourses = courses.map((course) => ({
+          id: course.id,
+          title: course.courseName,
+          progress: 0,
+          image: course.thumbnail,
         }));
-        // Avoid duplicates
+
         const updatedCourses = [...myCourses];
-        newCourses.forEach(nc => {
-            if (!updatedCourses.find(c => c.id === nc.id)) {
-                updatedCourses.push(nc);
-            }
+        newCourses.forEach((newCourse) => {
+          if (!updatedCourses.find((course) => course.id === newCourse.id)) {
+            updatedCourses.push(newCourse);
+          }
         });
         localStorage.setItem('myCourses', JSON.stringify(updatedCourses));
 
         const paymentHistory = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
         const newPayment = {
-            id: `INV-${res.invoiceId}`,
-            date: new Date().toISOString().split('T')[0],
-            amount: finalPrice,
-            status: 'Success'
+          id: `INV-${res.invoiceId}`,
+          date: new Date().toISOString().split('T')[0],
+          amount: finalPrice,
+          status: 'Success',
         };
-        localStorage.setItem('paymentHistory', JSON.stringify([newPayment, ...paymentHistory]));
+        localStorage.setItem(
+          'paymentHistory',
+          JSON.stringify([newPayment, ...paymentHistory]),
+        );
 
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
         toast.success('Thanh toán thành công!');
         setTimeout(() => {
-          navigate('/student/profile'); // Changed to profile since my-courses is inside StudentProfile tab
+          navigate('/student/profile');
         }, 3000);
       }
-    } catch (error) {
+    } catch {
       toast.error('Thanh toán thất bại. Vui lòng thử lại.');
     } finally {
       setIsProcessing(false);
@@ -171,7 +178,10 @@ export default function Checkout() {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: '100vh' }}
+      >
         <Spinner animation="border" variant="success" />
       </div>
     );
@@ -182,32 +192,43 @@ export default function Checkout() {
       <Styles>
         <div className="main-wrapper checkout-page">
           <Container>
-            <div className="card-box text-center py-5">
-              <i className="las la-check-circle text-success" style={{ fontSize: '80px' }}></i>
+            <div className="card-box py-5 text-center">
+              <i
+                className="las la-check-circle text-success"
+                style={{ fontSize: '80px' }}
+              />
               <h2 className="mt-3 mb-4">Thanh toán thành công!</h2>
-              <p>Mã hóa đơn: <strong>#{successData.invoiceId}</strong></p>
-              <p>Khóa học: <strong>{courses.map(c => c.courseName).join(', ')}</strong></p>
-              <p>Phương thức thanh toán: <strong>{paymentMethod}</strong></p>
-              <p className="text-muted mt-4">Chuyển hướng đến khóa học của bạn trong 3 giây...</p>
+              <p>
+                Mã hóa đơn: <strong>#{successData.invoiceId}</strong>
+              </p>
+              <p>
+                Khóa học:{' '}
+                <strong>{courses.map((course) => course.courseName).join(', ')}</strong>
+              </p>
+              <p>
+                Phương thức thanh toán: <strong>{paymentMethod}</strong>
+              </p>
+              <p className="text-muted mt-4">
+                Chuyển hướng đến khóa học của bạn trong 3 giây...
+              </p>
             </div>
           </Container>
-</div>
+        </div>
       </Styles>
     );
   }
 
-  const totalOriginalPrice = courses.reduce((sum, c) => sum + c.price, 0);
+  const totalOriginalPrice = courses.reduce((sum, course) => sum + course.price, 0);
   const finalPrice = Math.max(0, totalOriginalPrice - discountValue);
 
   return (
     <Styles>
       <div className="main-wrapper checkout-page">
-<BreadcrumbBox title="Thanh toán" />
+        <BreadcrumbBox title="Thanh toán" />
 
         <section className="checkout-area">
           <Container>
             <Row>
-              {/* LEFT COLUMN */}
               <Col lg={7}>
                 <div className="card-box">
                   <h4 className="title">Thông tin thanh toán</h4>
@@ -257,61 +278,99 @@ export default function Checkout() {
                       className={`payment-card ${paymentMethod === 'MOMO' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('MOMO')}
                     >
-                      <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-MoMo-Square.png" alt="MoMo" />
+                      <img
+                        src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-MoMo-Square.png"
+                        alt="MoMo"
+                      />
                       <span>MoMo</span>
                     </div>
                     <div
                       className={`payment-card ${paymentMethod === 'VNPAY' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('VNPAY')}
                     >
-                      <img src="https://vinadesign.vn/uploads/images/2023/05/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay" />
+                      <img
+                        src="https://vinadesign.vn/uploads/images/2023/05/vnpay-logo-vinadesign-25-12-57-55.jpg"
+                        alt="VNPay"
+                      />
                       <span>VNPay</span>
                     </div>
                     <div
                       className={`payment-card ${paymentMethod === 'BANK' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('BANK')}
                     >
-                      <i className="las la-university text-primary" style={{ fontSize: '30px' }}></i>
+                      <i
+                        className="las la-university text-primary"
+                        style={{ fontSize: '30px' }}
+                      />
                       <span>Chuyển khoản</span>
                     </div>
                     <div
                       className={`payment-card ${paymentMethod === 'PAYPAL' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('PAYPAL')}
                     >
-                      <i className="fab fa-paypal text-primary" style={{ fontSize: '30px' }}></i>
+                      <i
+                        className="fab fa-paypal text-primary"
+                        style={{ fontSize: '30px' }}
+                      />
                       <span>PayPal</span>
                     </div>
                   </div>
 
-                  {paymentMethod === 'BANK' && (
+                  {paymentMethod === 'BANK' ? (
                     <div className="bank-details">
                       <div className="qr-code">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" />
+                        <img
+                          src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"
+                          alt="QR Code"
+                        />
                       </div>
                       <div className="info">
-                        <p>Ngân hàng: <strong>Vietcombank</strong></p>
-                        <p>Tên tài khoản: <strong>EDUMEO COMPANY</strong></p>
-                        <p>Số tài khoản: <strong>123456789</strong></p>
+                        <p>
+                          Ngân hàng: <strong>Vietcombank</strong>
+                        </p>
+                        <p>
+                          Tên tài khoản: <strong>EDUMEO COMPANY</strong>
+                        </p>
+                        <p>
+                          Số tài khoản: <strong>123456789</strong>
+                        </p>
                         <p className="text-muted mt-2 mb-0" style={{ fontSize: '13px' }}>
-                          Vui lòng quét mã QR và ghi rõ số điện thoại của bạn trong nội dung chuyển khoản.
+                          Vui lòng quét mã QR và ghi rõ số điện thoại của bạn trong nội dung
+                          chuyển khoản.
                         </p>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </Col>
 
-              {/* RIGHT COLUMN */}
               <Col lg={5}>
                 <div className="card-box order-summary">
                   <h4 className="title">Thông tin đơn hàng</h4>
-                  
+
                   {courses.map((course, idx) => (
-                    <div className="course-info mb-3" key={idx} style={{ display: 'flex', alignItems: 'center' }}>
-                      <img src={process.env.PUBLIC_URL + course.thumbnail} alt={course.courseName} style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
+                    <div
+                      className="course-info mb-3"
+                      key={idx}
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      <img
+                        src={process.env.PUBLIC_URL + course.thumbnail}
+                        alt={course.courseName}
+                        style={{
+                          width: '80px',
+                          height: '60px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                        }}
+                      />
                       <div className="details ml-3">
-                        <h6 className="mb-1" style={{ fontSize: '15px' }}>{course.courseName}</h6>
-                        <p className="mb-0" style={{ fontSize: '13px' }}>Giảng viên: {course.instructor}</p>
+                        <h6 className="mb-1" style={{ fontSize: '15px' }}>
+                          {course.courseName}
+                        </h6>
+                        <p className="mb-0" style={{ fontSize: '13px' }}>
+                          Giảng viên: {course.instructor}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -336,12 +395,18 @@ export default function Checkout() {
                       <span>Giá gốc</span>
                       <span>{totalOriginalPrice.toLocaleString('vi-VN')} đ</span>
                     </li>
-                    {discountValue > 0 && (
+                    {appliedCoupon ? (
+                      <li>
+                        <span>Áp dụng cho</span>
+                        <span>{appliedCoupon.matchedCourseName}</span>
+                      </li>
+                    ) : null}
+                    {discountValue > 0 ? (
                       <li className="discount">
                         <span>Giảm giá</span>
                         <span>-{discountValue.toLocaleString('vi-VN')} đ</span>
                       </li>
-                    )}
+                    ) : null}
                     <li className="total">
                       <span>Tổng cộng</span>
                       <span>{finalPrice.toLocaleString('vi-VN')} đ</span>
@@ -354,7 +419,16 @@ export default function Checkout() {
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
-                      <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> Đang xử lý...</>
+                      <>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                        />{' '}
+                        Đang xử lý...
+                      </>
                     ) : (
                       'Xác nhận thanh toán'
                     )}
@@ -364,7 +438,7 @@ export default function Checkout() {
             </Row>
           </Container>
         </section>
-</div>
+      </div>
     </Styles>
   );
 }

@@ -18,6 +18,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { AdminDashboardModule } from './modules/admin/admin.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DiscussionsModule } from './modules/discussions/discussions.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DiscussionsModule } from './modules/discussions/discussions.module';
     AuthModule,
     ReviewsModule,
     DiscussionsModule,
+    CouponsModule,
     CoursesModule,
     LessonsModule,
     InstructorsModule,
@@ -51,4 +53,4 @@ import { DiscussionsModule } from './modules/discussions/discussions.module';
     AdminDashboardModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

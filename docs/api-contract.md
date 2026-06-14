@@ -34,6 +34,9 @@ Instructor (Giang vien)
 - `PATCH /instructor/courses/:id` (Cap nhat noi dung khoa hoc)
 - `DELETE /instructor/courses/:id` (An/Xoa khoa hoc)
 - `POST /instructor/courses/:id/submit` (Gui yeu cau kiem duyet)
+- `GET /instructor/coupons` (Instructor - Lay danh sach ma giam gia cua toi, ho tro `search` va `status`)
+- `POST /instructor/coupons` (Instructor - Tao ma giam gia moi cho khoa hoc do minh so huu)
+- `PATCH /instructor/coupons/:id/status` (Instructor - Bat/tat ma giam gia)
 - `GET /courses/reviews` (Instructor - Lay tat ca danh gia khoa hoc cua giang vien)
 - `GET /courses/discussions` (Instructor - Lay tat ca hoi dap/thao luan khoa hoc cua giang vien)
 - `GET /courses/:id/discussions` (Instructor - Lay hoi dap/thao luan cua mot khoa hoc)
@@ -59,6 +62,8 @@ Admin (Kiem duyet)
 - `GET /enrollments/me` (Xem danh sach khoa hoc da mua & lich su giao dich)
 - `GET /enrollments/:courseId/status` (Kiem tra trang thai mua khoa hoc)
 - `PATCH /enrollments/:courseId/progress` (He thong tu dong cap nhat tien do xem video)
+- `POST /coupons/validate` (Kiem tra ma giam gia cho gio hang dang checkout, body: `{ maCode: string, courseIds: number[] }`)
+- `POST /coupons/:id/consume` (Tam thoi cap nhat `SoLuongDaDung` sau khi frontend mock payment thanh cong; can thay bang luong payment backend that khi co)
 
 ## Submissions & Grading (Thuc hanh & Cham diem)
 - `POST /lessons/:lessonId/submissions` (Student - Nop bai tap qua link GitHub)
@@ -83,4 +88,5 @@ Admin (Kiem duyet)
 - Student enrollments & submissions require `STUDENT` role (hoac role mac dinh khi user dang ky).
 - Data Isolation: Giang vien chi duoc phep thao tac tren cac khoa hoc do chinh ho tao ra.
 - Data Integrity: Khong duoc phep xoa cung khoa hoc/bai hoc neu da co hoc vien dang ky (`enrollments > 0`). Chuyen sang trang thai an (Soft Delete/Deactivate).
+- Coupon rule: mot ma giam gia chi ap dung cho dung khoa hoc `MaKH` cua no; neu gio hang co nhieu khoa hoc thi chi giam tren khoa hoc khop ma.
 - `PATCH /admin/courses/:id/ban` (Ban khoa hoc da xuat ban, body: `{ lyDo: string }`, chuyen trang thai sang `BANNED`, tao thong bao va luu lich su kiem duyet)
