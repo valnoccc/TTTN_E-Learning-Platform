@@ -28,7 +28,8 @@ export class PublicCoursesController {
     const query = this.khoaHocRepository
       .createQueryBuilder('khoaHoc')
       .leftJoinAndSelect('khoaHoc.giangVien', 'giangVien')
-      .leftJoinAndSelect('khoaHoc.danhMuc', 'danhMuc');
+      .leftJoinAndSelect('khoaHoc.danhMuc', 'danhMuc')
+      .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
     if (search) {
       query.andWhere('khoaHoc.tenKhoaHoc LIKE :search', {
@@ -78,8 +79,8 @@ export class PublicCoursesController {
       relations: ['giangVien', 'danhMuc', 'baiHocs'],
     });
 
-    if (!course) {
-      throw new NotFoundException('Không tìm thấy khóa học');
+    if (!course || course.trangThai !== 'PUBLISHED') {
+      throw new NotFoundException('Khóa học không tồn tại hoặc chưa được kích hoạt');
     }
 
     let instructorData: any = null;
@@ -125,6 +126,16 @@ export class PublicCoursesController {
   @Get(':id/curriculum')
   async getCourseCurriculum(@Param('id') id: string) {
     const courseId = parseInt(id);
+
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId },
+      select: ['maKH', 'trangThai'],
+    });
+
+    if (!course || course.trangThai !== 'PUBLISHED') {
+      throw new NotFoundException('Khóa học không tồn tại hoặc chưa được kích hoạt');
+    }
+
     const chapters = await this.dataSource.query(
       `SELECT MaChuong AS maChuong, MaKH AS maKH, TenChuong AS tenChuong, ThuTu AS thuTu
        FROM ChuongHoc WHERE MaKH = ? ORDER BY ThuTu ASC`,
