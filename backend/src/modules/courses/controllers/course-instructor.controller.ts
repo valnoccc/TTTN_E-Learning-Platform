@@ -15,7 +15,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import {
   CloudinaryService,
   type UploadedAsset,
@@ -38,7 +40,8 @@ const parseArrayData = (data: any): string[] => {
 };
 
 @Controller('courses')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('INSTRUCTOR')
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,

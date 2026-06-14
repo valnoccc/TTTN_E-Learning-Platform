@@ -11,12 +11,15 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
 import { InstructorsService } from '../services/instructors.service';
 
 @Controller('instructors')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('INSTRUCTOR')
 export class InstructorsController {
   constructor(private readonly instructorsService: InstructorsService) {}
 

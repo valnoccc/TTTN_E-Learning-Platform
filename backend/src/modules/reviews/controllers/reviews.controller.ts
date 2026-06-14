@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateReplyDto } from '../../courses/dto/create-reply.dto';
 import { CreateStudentReviewDto } from '../dto/create-student-review.dto';
 import { ReviewsService } from '../services/reviews.service';
@@ -12,6 +14,8 @@ export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   @Get('reviews')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR')
   async getInstructorReviews(@Req() req: Request & { user: { sub: number } }) {
     const reviews = await this.reviewsService.getInstructorReviews(req.user.sub);
 
@@ -22,6 +26,8 @@ export class ReviewsController {
   }
 
   @Get(':id/reviews')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR')
   async getCourseReviews(
     @Param('id') id: string,
     @Req() req: Request & { user: { sub: number } },
@@ -38,6 +44,8 @@ export class ReviewsController {
   }
 
   @Post(':id/reviews')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR')
   async replyToReview(
     @Param('id') id: string,
     @Req() req: Request & { user: { sub: number } },

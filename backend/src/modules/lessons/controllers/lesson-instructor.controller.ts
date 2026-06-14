@@ -22,7 +22,9 @@ import {
   CloudinaryService,
   type UploadedAsset,
 } from '../../cloudinary/cloudinary.service';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { serializeLesson } from '../services/lesson-response.util';
 import { LessonsService } from '../services/lessons.service';
 
@@ -51,7 +53,8 @@ function parseBooleanLike(value: unknown, fallback = false): boolean {
 }
 
 @Controller('lessons')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('INSTRUCTOR')
 export class LessonsController {
   constructor(
     private readonly lessonsService: LessonsService,

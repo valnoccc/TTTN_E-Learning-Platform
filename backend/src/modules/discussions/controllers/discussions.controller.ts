@@ -1,12 +1,15 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
 import { DiscussionsService } from '../services/discussions.service';
 
 @Controller('courses')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('INSTRUCTOR')
 export class DiscussionsController {
   constructor(private readonly discussionsService: DiscussionsService) {}
 
