@@ -66,9 +66,9 @@ function FooterTwo() {
                                 <img src={"/assets/images/logo.png"} alt="" className="img-fluid" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px' }} />
                                 <p>Chúng tôi cung cấp các khóa học chất lượng cao giúp bạn nâng cao kỹ năng và phát triển sự nghiệp.</p>
                                 <ul className="list-unstyled">
-                                    <li><i className="las la-map-marker"></i>795 South Park Avenue, CA 94107</li>
-                                    <li><i className="las la-envelope"></i>enquery@domain.com</li>
-                                    <li><i className="las la-phone"></i>+1 908 875 7678</li>
+                                    <li><i className="las la-map-marker"></i>Tòa nhà Edumeo, Quận 1, TP.HCM</li>
+                                    <li><i className="las la-envelope"></i>lienhe@edumeo.vn</li>
+                                    <li><i className="las la-phone"></i>028 7300 8888</li>
                                 </ul>
                             </div>
                         </Col>

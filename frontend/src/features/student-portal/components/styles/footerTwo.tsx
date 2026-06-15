@@ -46,15 +46,19 @@ export const Styles = styled.div`
                 li {
                     color        : ${colors.text3};
                     margin-bottom: 12px;
+                    display      : flex;
+                    align-items  : flex-start;
 
                     i {
                         font-size     : 18px;
                         color         : ${colors.green};
                         width         : 35px;
-                        vertical-align: top;
+                        min-width     : 35px;
+                        margin-top    : 3px;
 
                         @media(max-width: 991px) {
-                            width : 20px;
+                            width     : 20px;
+                            min-width : 20px;
                         }
                     }
 

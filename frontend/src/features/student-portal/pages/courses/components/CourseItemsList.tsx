@@ -72,7 +72,8 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                 currentItems.map((data: any, i: number) => {
                     const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Giảng viên chưa rõ';
                     const categoryName = data.danhMuc?.tenDM || 'General';
-                    const courseImage = data.hinhThuNho || process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
+                    const rawImage = data.hinhThuNho;
+                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
                     const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
 
                     return (

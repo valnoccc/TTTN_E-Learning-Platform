@@ -115,12 +115,31 @@ function CourseDetails() {
                     try { if (response.data.ketQuaHocTap) parsedKetQua = JSON.parse(response.data.ketQuaHocTap); } catch(e){}
                     try { if (response.data.yeuCauKhoaHoc) parsedYeuCau = JSON.parse(response.data.yeuCauKhoaHoc); } catch(e){}
 
+                    const isEnglishDummyKetQua = parsedKetQua.some((str: string) => str.includes('Handle advanced') || str.includes('Machine Learning'));
+                    if (isEnglishDummyKetQua || parsedKetQua.length === 0) {
+                        parsedKetQua = [
+                            'Nắm vững các kiến thức nền tảng và chuyên sâu của khóa học',
+                            'Thành thạo các công cụ và kỹ năng thông qua bài tập thực tế',
+                            'Có khả năng giải quyết các tình huống và dự án độc lập',
+                            'Nâng cao tư duy logic và quy trình làm việc hiệu quả'
+                        ];
+                    }
+
+                    const isEnglishDummyYeuCau = parsedYeuCau.some((str: string) => str.toLowerCase().includes('python') || str.toLowerCase().includes('experience'));
+                    if (isEnglishDummyYeuCau || parsedYeuCau.length === 0) {
+                        parsedYeuCau = [
+                            'Máy tính có kết nối internet ổn định',
+                            'Tinh thần tự học và sẵn sàng hoàn thành các bài tập thực hành',
+                            'Không yêu cầu kinh nghiệm trước đó'
+                        ];
+                    }
+
                     setIsEnrolled(!!response.data.isEnrolled);
 
                     setCourse({
                         id: parseInt(response.data.maKH),
                         courseName: response.data.tenKhoaHoc,
-                        thumbnail: response.data.hinhThuNho || '/assets/images/course-1.jpg',
+                        thumbnail: response.data.hinhThuNho ? (response.data.hinhThuNho.startsWith('http') ? response.data.hinhThuNho : '/assets/images/' + response.data.hinhThuNho) : '/assets/images/course-1.jpg',
                         instructor: response.data.giangVien ? (response.data.giangVien.tenGiangVien || response.data.giangVien.hoTen || 'Unknown Instructor') : 'Unknown Instructor',
                         price: parseFloat(response.data.giaBan || '0'),
                         duration: '120 Min',
@@ -338,17 +357,20 @@ function CourseDetails() {
                                         <div className="flex items-center gap-3">
                                             <img 
                                                 src={
-                                                    course.giangVien?.avatar 
-                                                        ? (course.giangVien.avatar.startsWith('http') 
-                                                            ? course.giangVien.avatar 
-                                                            : (course.giangVien.avatar.includes('/') 
-                                                                ? process.env.PUBLIC_URL + course.giangVien.avatar 
-                                                                : process.env.PUBLIC_URL + `/assets/images/${course.giangVien.avatar}`))
+                                                    (course.giangVien?.anhDaiDien || course.giangVien?.avatar)
+                                                        ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
+                                                            ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                            : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
+                                                                ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
                                                         : `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`
                                                 } 
                                                 alt={course.instructor} 
                                                 className="w-10 h-10 rounded-full object-cover" 
-                                                onError={(e: any) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`; }}
+                                                onError={(e: any) => { 
+                                                    e.target.onerror = null; 
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`; 
+                                                }}
                                             />
                                             <div>
                                                 <p className="text-xs text-gray-500 mb-1">Được tạo bởi</p>
@@ -492,7 +514,23 @@ function CourseDetails() {
                                         <h3 className="text-xl font-bold text-slate-800 mb-6">{t('course.instructor', 'Giảng viên')}</h3>
                                         <div className="border border-gray-100 rounded-xl p-6 md:p-8 bg-white shadow-sm">
                                             <div className="flex flex-col md:flex-row gap-6 mb-6">
-                                                <img src={course?.giangVien?.avatar ? (course.giangVien.avatar.startsWith('http') ? course.giangVien.avatar : process.env.PUBLIC_URL + course.giangVien.avatar) : process.env.PUBLIC_URL + '/assets/images/instructor-3.jpg'} alt={course?.giangVien?.tenGiangVien || course?.instructor} className="w-28 h-28 object-cover rounded-lg" />
+                                                <img 
+                                                    src={
+                                                        (course?.giangVien?.anhDaiDien || course?.giangVien?.avatar)
+                                                            ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
+                                                                ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
+                                                                    ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                    : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
+                                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.giangVien?.tenGiangVien || course?.instructor || 'Giảng viên')}&background=random`
+                                                    } 
+                                                    alt={course?.giangVien?.tenGiangVien || course?.instructor} 
+                                                    className="w-28 h-28 object-cover rounded-lg" 
+                                                    onError={(e: any) => { 
+                                                        e.target.onerror = null; 
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.giangVien?.tenGiangVien || course?.instructor || 'Giảng viên')}&background=random`; 
+                                                    }}
+                                                />
                                                 <div>
                                                     <h4 className="text-lg font-bold text-slate-800 mb-1 m-0">{course?.giangVien?.tenGiangVien || course?.instructor}</h4>
                                                     <p className="text-sm text-gray-500 mb-3 m-0">{course?.giangVien?.chuyenMon || t('instructor.expert', 'Chuyên gia đào tạo')}</p>
