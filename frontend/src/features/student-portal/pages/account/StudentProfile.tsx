@@ -32,42 +32,35 @@ export default function StudentProfile() {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');
-    if (userString) {
-      try {
-        const parsedUser = JSON.parse(userString);
-        setUser(parsedUser);
-        setFormData({
-          name: parsedUser.fullName || parsedUser.name || '',
-          email: parsedUser.email || '',
-          phone: parsedUser.phone || '',
-          avatarUrl: parsedUser.avatarUrl || parsedUser.avatar || parsedUser.photoUrl || parsedUser.imageUrl || ''
-        });
-      } catch (e) {
-        console.error('Lỗi khi parse user', e);
+    const fetchUserData = async () => {
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        try {
+          const parsedUser = JSON.parse(userString);
+          setUser(parsedUser);
+          setFormData({
+            name: parsedUser.fullName || parsedUser.name || '',
+            email: parsedUser.email || '',
+            phone: parsedUser.phone || '',
+            avatarUrl: parsedUser.avatarUrl || parsedUser.avatar || parsedUser.photoUrl || parsedUser.imageUrl || ''
+          });
+
+          const userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
+          if (userId) {
+            const [coursesRes, paymentsRes] = await Promise.all([
+              axiosClient.get(`/users/${userId}/courses`),
+              axiosClient.get(`/users/${userId}/payments`),
+            ]);
+            setMyCourses(coursesRes?.data ?? coursesRes ?? []);
+            setPaymentHistory(paymentsRes?.data ?? paymentsRes ?? []);
+          }
+        } catch (e) {
+          console.error('Lỗi khi tải dữ liệu học viên', e);
+        }
       }
-    }
+    };
 
-    // Load mock data from localStorage
-    const savedCourses = localStorage.getItem('myCourses');
-    if (savedCourses) {
-        setMyCourses(JSON.parse(savedCourses));
-    } else {
-        setMyCourses([
-            { id: 1, title: 'ReactJS Masterclass', progress: 80, image: '/assets/images/course-1.jpg' },
-            { id: 2, title: 'Advanced Tailwind CSS', progress: 45, image: '/assets/images/course-2.jpg' },
-        ]);
-    }
-
-    const savedPayments = localStorage.getItem('paymentHistory');
-    if (savedPayments) {
-        setPaymentHistory(JSON.parse(savedPayments));
-    } else {
-        setPaymentHistory([
-            { id: 'INV-001', date: '2026-06-01', amount: 49.0, status: 'Success' },
-            { id: 'INV-002', date: '2026-06-05', amount: 99.0, status: 'Pending' },
-        ]);
-    }
+    fetchUserData();
   }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {

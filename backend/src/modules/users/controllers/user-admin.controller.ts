@@ -6,10 +6,14 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UsersService } from '../services/users.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -38,5 +42,37 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @Get(':id/courses')
+  @UseGuards(JwtAuthGuard)
+  getMyCourses(@Param('id') id: string, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    if (userId !== +id) throw new ForbiddenException('Access denied');
+    return this.usersService.getMyCourses(+id);
+  }
+
+  @Get(':id/payments')
+  @UseGuards(JwtAuthGuard)
+  getMyPayments(@Param('id') id: string, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    if (userId !== +id) throw new ForbiddenException('Access denied');
+    return this.usersService.getMyPayments(+id);
+  }
+
+  @Post(':id/lessons/:lessonId/complete')
+  @UseGuards(JwtAuthGuard)
+  markLessonComplete(@Param('id') id: string, @Param('lessonId') lessonId: string, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    if (userId !== +id) throw new ForbiddenException('Access denied');
+    return this.usersService.markLessonComplete(+id, +lessonId);
+  }
+
+  @Get(':id/progress')
+  @UseGuards(JwtAuthGuard)
+  getMyProgress(@Param('id') id: string, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    if (userId !== +id) throw new ForbiddenException('Access denied');
+    return this.usersService.getMyProgress(+id);
   }
 }

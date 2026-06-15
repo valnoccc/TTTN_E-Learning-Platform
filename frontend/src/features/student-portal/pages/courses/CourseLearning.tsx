@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText } from 'lucide-react';
+import ReactPlayer from 'react-player';
 import axiosClient from '../../../../api/axios';
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -35,29 +36,25 @@ export default function CourseLearning() {
   const [progress, setProgress] = useState<number>(0);
 
   useEffect(() => {
-    // Lấy tiến độ từ localStorage (mock) để đồng bộ với StudentProfile
-    try {
-      const savedCourses = localStorage.getItem('myCourses');
-      if (savedCourses) {
-        const courses = JSON.parse(savedCourses);
-        const currentCourse = courses.find((c: any) => String(c.id) === String(id));
-        if (currentCourse && currentCourse.progress) {
-          setProgress(currentCourse.progress);
-        }
-      } else {
-        // Fallback mock data
-        if (String(id) === '1') setProgress(80);
-        if (String(id) === '2') setProgress(45);
+    // Lấy ID người dùng
+    const userString = localStorage.getItem('user');
+    let userId = '';
+    if (userString) {
+      try {
+        const parsedUser = JSON.parse(userString);
+        userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
+      } catch (e) {
+        console.error("Error reading user", e);
       }
-    } catch (e) {
-      console.error("Error reading progress", e);
     }
 
     const fetchData = async () => {
       try {
-        const [courseRes, curriculumRes] = await Promise.all([
+        const [courseRes, curriculumRes, progressRes, completedLessonsRes] = await Promise.all([
           axiosClient.get(`/public/courses/${id}`),
-          axiosClient.get(`/public/courses/${id}/curriculum`)
+          axiosClient.get(`/public/courses/${id}/curriculum`),
+          userId ? axiosClient.get(`/users/${userId}/courses`) : Promise.resolve([]),
+          userId ? axiosClient.get(`/users/${userId}/progress`) : Promise.resolve([])
         ]);
 
         if (courseRes && (courseRes as any).data) {
@@ -65,7 +62,21 @@ export default function CourseLearning() {
         }
 
         if (curriculumRes && (curriculumRes as any).data) {
-          const data = (curriculumRes as any).data;
+          let data = (curriculumRes as any).data;
+          
+          // Merge completed lessons
+          const completedLessonIds = Array.isArray(completedLessonsRes) 
+            ? completedLessonsRes 
+            : (completedLessonsRes as any)?.data || [];
+            
+          data = data.map((module: any) => ({
+            ...module,
+            baiHocs: module.baiHocs?.map((lesson: any) => ({
+              ...lesson,
+              completed: completedLessonIds.includes(lesson.maBH)
+            }))
+          }));
+          
           setCurriculum(data);
           
           if (data.length > 0) {
@@ -74,6 +85,14 @@ export default function CourseLearning() {
               setActiveLesson(data[0].baiHocs[0]);
             }
           }
+        }
+
+        const myCourses = Array.isArray(progressRes) ? progressRes : (progressRes as any)?.data;
+        if (myCourses && Array.isArray(myCourses)) {
+           const currentCourse = myCourses.find((c: any) => String(c.id) === String(id));
+           if (currentCourse) {
+             setProgress(currentCourse.progress || 0);
+           }
         }
       } catch (error) {
         console.error("Error fetching course data", error);
@@ -91,6 +110,40 @@ export default function CourseLearning() {
     setExpandedModules(prev => 
       prev.includes(moduleId) ? prev.filter(m => m !== moduleId) : [...prev, moduleId]
     );
+  };
+
+  const handleVideoEnded = async () => {
+    if (!activeLesson) return;
+    
+    try {
+      const userString = localStorage.getItem('user');
+      if (!userString) return;
+      const parsedUser = JSON.parse(userString);
+      const userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
+      
+      if (!userId) return;
+
+      // Đánh dấu bài học hoàn thành
+      await axiosClient.post(`/users/${userId}/lessons/${activeLesson.maBH}/complete`);
+      
+      // Update local state temporarily
+      setCurriculum(prev => prev.map(m => ({
+        ...m,
+        baiHocs: m.baiHocs?.map((l: any) => l.maBH === activeLesson.maBH ? { ...l, completed: true } : l)
+      })));
+
+      // Refetch progress
+      const progressRes = await axiosClient.get(`/users/${userId}/courses`);
+      const myCourses = Array.isArray(progressRes) ? progressRes : (progressRes as any)?.data;
+      if (myCourses && Array.isArray(myCourses)) {
+        const currentCourse = myCourses.find((c: any) => String(c.id) === String(id));
+        if (currentCourse) {
+          setProgress(currentCourse.progress || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating lesson progress", error);
+    }
   };
 
   if (loading) {
@@ -121,16 +174,32 @@ export default function CourseLearning() {
       <div className="flex flex-1 overflow-hidden">
         {/* Main Content (Video Player) */}
         <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-          <div className="w-full bg-black aspect-video relative">
-            {activeLesson?.videoUrl && getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
-              <iframe
-                className="w-full h-full absolute inset-0"
-                src={getYouTubeEmbedUrl(activeLesson.videoUrl)}
-                title="Course Video Player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+          <div className="w-full bg-black aspect-video relative flex items-center justify-center">
+            {activeLesson?.videoUrl ? (
+              activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
+                <video
+                  src={activeLesson.videoUrl}
+                  controls
+                  className="w-full h-full absolute inset-0"
+                  onEnded={handleVideoEnded}
+                  controlsList="nodownload"
+                />
+              ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
+                <div className="absolute inset-0">
+                  <ReactPlayer
+                    url={activeLesson.videoUrl}
+                    width="100%"
+                    height="100%"
+                    controls={true}
+                    onEnded={handleVideoEnded}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800 absolute inset-0">
+                  <FileText size={64} className="mb-4 text-slate-600" />
+                  <h3 className="text-xl font-medium text-slate-300">Định dạng không được hỗ trợ</h3>
+                </div>
+              )
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
                 <FileText size={64} className="mb-4 text-slate-600" />

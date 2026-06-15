@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../entities/user.entity';
@@ -10,6 +10,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   create(createUserDto: CreateUserDto) {
@@ -46,5 +47,85 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async getMyCourses(userId: number) {
+    const courses = await this.dataSource.query(
+      `SELECT 
+        k.MaKH as id, 
+        k.TenKhoaHoc as title, 
+        k.HinhThuNho as image, 
+        IFNULL(
+          ROUND(
+            (
+              SELECT COUNT(*) 
+              FROM TienDoHocTap t 
+              JOIN BaiHoc b ON t.MaBH = b.MaBH 
+              WHERE b.MaKH = k.MaKH AND t.MaND = d.MaND AND t.DaHoanThanh = 1
+            ) * 100.0 / NULLIF((
+              SELECT COUNT(*) 
+              FROM BaiHoc b2 
+              WHERE b2.MaKH = k.MaKH
+            ), 0)
+          , 0)
+        , 0) as progress 
+       FROM DangKyKhoaHoc d
+       JOIN KhoaHoc k ON d.MaKH = k.MaKH
+       WHERE d.MaND = ? AND d.TrangThai = 'ACTIVE'`,
+      [userId]
+    );
+    return courses.map((c: any) => ({
+      ...c,
+      id: Number(c.id),
+      progress: Number(c.progress)
+    }));
+  }
+
+  async getMyPayments(userId: number) {
+    const payments = await this.dataSource.query(
+      `SELECT MaHD as id, NgayLap as date, TongTien as amount, TrangThaiThanhToan as status
+       FROM HoaDon
+       WHERE MaND = ?
+       ORDER BY NgayLap DESC`,
+      [userId]
+    );
+    return payments.map((p: any) => {
+      const d = new Date(p.date);
+      return {
+        id: `INV-${p.id}`,
+        date: d.toISOString().split('T')[0],
+        amount: Number(p.amount),
+        status: p.status === 'PAID' ? 'Success' : 'Pending',
+      };
+    });
+  }
+
+  async markLessonComplete(userId: number, lessonId: number) {
+    const existing = await this.dataSource.query(
+      `SELECT MaTienDo FROM TienDoHocTap WHERE MaND = ? AND MaBH = ?`, 
+      [userId, lessonId]
+    );
+    
+    if (existing.length > 0) {
+      await this.dataSource.query(
+        `UPDATE TienDoHocTap SET DaHoanThanh = 1, LanXemCuoi = NOW() WHERE MaTienDo = ?`, 
+        [existing[0].MaTienDo]
+      );
+    } else {
+      await this.dataSource.query(
+        `INSERT INTO TienDoHocTap (MaND, MaBH, DaHoanThanh, LanXemCuoi) VALUES (?, ?, 1, NOW())`, 
+        [userId, lessonId]
+      );
+    }
+    
+    return { success: true };
+  }
+
+  async getMyProgress(userId: number) {
+    const progress = await this.dataSource.query(
+      `SELECT MaBH FROM TienDoHocTap WHERE MaND = ? AND DaHoanThanh = 1`,
+      [userId]
+    );
+    return progress.map((p: any) => p.MaBH);
   }
 }

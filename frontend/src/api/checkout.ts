@@ -91,13 +91,11 @@ export const consumeCoupon = async (couponId: number) => {
 export const processPayment = async (
   data: PaymentRequest,
 ): Promise<PaymentResponse> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        invoiceId: Math.floor(Math.random() * 10000),
-        enrollmentId: Math.floor(Math.random() * 10000),
-      });
-    }, 2000);
-  });
+  try {
+    const response: any = await axiosClient.post('/checkout/process-payment', data);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
 };
+

@@ -7,7 +7,6 @@ import { useDispatch } from 'react-redux';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Styles } from './styles/checkout';
 import {
-  consumeCoupon,
   CouponResponse,
   CourseDetailsData,
   getCourseDetails,
@@ -15,6 +14,15 @@ import {
   validateCoupon,
 } from '../../../../api/checkout';
 import { removeFromCart } from '../../../cart/cartSlice';
+
+const BANKS = [
+  { id: 'vcb', name: 'Vietcombank', logo: '/assets/images/banks/VCB.png' },
+  { id: 'tcb', name: 'Techcombank', logo: '/assets/images/banks/TCB.png' },
+  { id: 'mbb', name: 'MBBank', logo: '/assets/images/banks/MB.png' },
+  { id: 'icb', name: 'VietinBank', logo: '/assets/images/banks/ICB.png' },
+  { id: 'bidv', name: 'BIDV', logo: '/assets/images/banks/BIDV.png' },
+  { id: 'acb', name: 'ACB', logo: '/assets/images/banks/ACB.png' },
+];
 
 export default function Checkout() {
   const { courseId } = useParams();
@@ -36,6 +44,14 @@ export default function Checkout() {
   const [discountValue, setDiscountValue] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponResponse | null>(null);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+  const [cardInfo, setCardInfo] = useState({
+    cardNumber: '',
+    cardName: '',
+    issueDate: '',
+  });
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -43,6 +59,16 @@ export default function Checkout() {
       toast.error('Bạn cần đăng nhập để tiến hành thanh toán!');
       navigate('/login');
       return;
+    } else {
+      try {
+        const parsedUser = JSON.parse(user);
+        setFormData(prev => ({
+          ...prev,
+          fullName: parsedUser.HoTen || '',
+          email: parsedUser.Email || '',
+          phone: parsedUser.SoDienThoai || '',
+        }));
+      } catch (e) {}
     }
 
     if (location.state?.selectedCourses && location.state.selectedCourses.length > 0) {
@@ -81,6 +107,13 @@ export default function Checkout() {
     });
   };
 
+  const handleCardInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCardInfo({
+      ...cardInfo,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       return;
@@ -110,10 +143,27 @@ export default function Checkout() {
   };
 
   const handlePayment = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error('Vui lòng điền đầy đủ thông tin thanh toán');
+    const errors: { [key: string]: string } = {};
+    
+    if (!formData.fullName) errors.fullName = 'Vui lòng nhập họ và tên';
+    if (!formData.email) errors.email = 'Vui lòng nhập địa chỉ email';
+    if (!formData.phone) errors.phone = 'Vui lòng nhập số điện thoại';
+
+    if (paymentMethod === 'VNPAY') {
+      if (!selectedBank) {
+        toast.error('Vui lòng chọn ngân hàng thanh toán');
+      }
+      if (!cardInfo.cardNumber) errors.cardNumber = 'Vui lòng nhập số thẻ';
+      if (!cardInfo.cardName) errors.cardName = 'Vui lòng nhập tên in trên thẻ';
+      if (!cardInfo.issueDate) errors.issueDate = 'Vui lòng nhập ngày phát hành (MM/YY)';
+    }
+
+    if (Object.keys(errors).length > 0 || (paymentMethod === 'VNPAY' && !selectedBank)) {
+      setFormErrors(errors);
       return;
     }
+    
+    setFormErrors({});
 
     try {
       setIsProcessing(true);
@@ -125,43 +175,7 @@ export default function Checkout() {
       });
 
       if (res.success) {
-        if (appliedCoupon?.couponId) {
-          await consumeCoupon(appliedCoupon.couponId);
-        }
-
         courses.forEach((course) => dispatch(removeFromCart(course.id)));
-
-        const totalOriginalPrice = courses.reduce((sum, course) => sum + course.price, 0);
-        const finalPrice = Math.max(0, totalOriginalPrice - discountValue);
-
-        const myCourses = JSON.parse(localStorage.getItem('myCourses') || '[]');
-        const newCourses = courses.map((course) => ({
-          id: course.id,
-          title: course.courseName,
-          progress: 0,
-          image: course.thumbnail,
-        }));
-
-        const updatedCourses = [...myCourses];
-        newCourses.forEach((newCourse) => {
-          if (!updatedCourses.find((course) => course.id === newCourse.id)) {
-            updatedCourses.push(newCourse);
-          }
-        });
-        localStorage.setItem('myCourses', JSON.stringify(updatedCourses));
-
-        const paymentHistory = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
-        const newPayment = {
-          id: `INV-${res.invoiceId}`,
-          date: new Date().toISOString().split('T')[0],
-          amount: finalPrice,
-          status: 'Success',
-        };
-        localStorage.setItem(
-          'paymentHistory',
-          JSON.stringify([newPayment, ...paymentHistory]),
-        );
-
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
         toast.success('Thanh toán thành công!');
@@ -169,8 +183,9 @@ export default function Checkout() {
           navigate('/student/profile');
         }, 3000);
       }
-    } catch {
-      toast.error('Thanh toán thất bại. Vui lòng thử lại.');
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Thanh toán thất bại. Vui lòng thử lại.';
+      toast.error(typeof errorMsg === 'string' ? errorMsg : 'Thanh toán thất bại. Vui lòng thử lại.');
     } finally {
       setIsProcessing(false);
     }
@@ -234,38 +249,41 @@ export default function Checkout() {
                   <h4 className="title">Thông tin thanh toán</h4>
                   <form className="billing-form">
                     <Row>
-                      <Col md={12}>
+                      <Col md={12} className="mb-3">
                         <label>Họ và tên *</label>
                         <input
                           type="text"
                           name="fullName"
-                          className="form-control"
+                          className={`form-control ${formErrors.fullName ? 'is-invalid' : ''}`}
                           placeholder="Nhập họ và tên"
                           value={formData.fullName}
                           onChange={handleInputChange}
                         />
+                        {formErrors.fullName && <small className="text-danger mt-1 d-block">{formErrors.fullName}</small>}
                       </Col>
-                      <Col md={6}>
+                      <Col md={6} className="mb-3">
                         <label>Địa chỉ Email *</label>
                         <input
                           type="email"
                           name="email"
-                          className="form-control"
+                          className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
                           placeholder="Nhập địa chỉ email"
                           value={formData.email}
                           onChange={handleInputChange}
                         />
+                        {formErrors.email && <small className="text-danger mt-1 d-block">{formErrors.email}</small>}
                       </Col>
-                      <Col md={6}>
+                      <Col md={6} className="mb-3">
                         <label>Số điện thoại *</label>
                         <input
                           type="text"
                           name="phone"
-                          className="form-control"
+                          className={`form-control ${formErrors.phone ? 'is-invalid' : ''}`}
                           placeholder="Nhập số điện thoại"
                           value={formData.phone}
                           onChange={handleInputChange}
                         />
+                        {formErrors.phone && <small className="text-danger mt-1 d-block">{formErrors.phone}</small>}
                       </Col>
                     </Row>
                   </form>
@@ -292,7 +310,7 @@ export default function Checkout() {
                         src="https://vinadesign.vn/uploads/images/2023/05/vnpay-logo-vinadesign-25-12-57-55.jpg"
                         alt="VNPay"
                       />
-                      <span>VNPay</span>
+                      <span>Thẻ ATM / VNPay</span>
                     </div>
                     <div
                       className={`payment-card ${paymentMethod === 'BANK' ? 'selected' : ''}`}
@@ -316,8 +334,117 @@ export default function Checkout() {
                     </div>
                   </div>
 
+                  {paymentMethod === 'VNPAY' ? (
+                    <div className="vnpay-details mt-4">
+                      <h6 className="mb-3">Chọn ngân hàng</h6>
+                      <div className="d-flex flex-wrap mb-4" style={{ gap: '10px' }}>
+                        {BANKS.map((bank) => (
+                          <div
+                            key={bank.id}
+                            className={`bank-card border rounded p-2 text-center`}
+                            style={{ 
+                              width: '100px', 
+                              cursor: 'pointer',
+                              borderColor: selectedBank === bank.id ? '#28a745' : '#dee2e6',
+                              borderWidth: selectedBank === bank.id ? '2px' : '1px',
+                              opacity: selectedBank && selectedBank !== bank.id ? 0.6 : 1,
+                              backgroundColor: selectedBank === bank.id ? '#f8fff9' : '#fff'
+                            }}
+                            onClick={() => setSelectedBank(bank.id)}
+                          >
+                            <img 
+                              src={process.env.PUBLIC_URL + bank.logo} 
+                              alt={bank.name} 
+                              style={{ width: '100%', height: '40px', objectFit: 'contain' }} 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://placehold.co/100x40/ffffff/333333?text=${bank.id.toUpperCase()}`;
+                              }}
+                            />
+                            <small className="d-block mt-1 text-muted" style={{ fontSize: '11px', fontWeight: selectedBank === bank.id ? 'bold' : 'normal' }}>{bank.name}</small>
+                          </div>
+                        ))}
+                      </div>
+
+                      {selectedBank && (
+                        <div className="card-info-form p-3 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                          <h6 className="mb-3">Thông tin thẻ</h6>
+                          <form>
+                            <Row>
+                              <Col md={12} className="mb-3">
+                                <label style={{ fontSize: '14px' }}>Số thẻ</label>
+                                <input
+                                  type="text"
+                                  name="cardNumber"
+                                  className={`form-control ${formErrors.cardNumber ? 'is-invalid' : ''}`}
+                                  placeholder="Nhập số thẻ (VD: 9704...)"
+                                  value={cardInfo.cardNumber}
+                                  onChange={handleCardInfoChange}
+                                />
+                                {formErrors.cardNumber && <small className="text-danger mt-1 d-block">{formErrors.cardNumber}</small>}
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <label style={{ fontSize: '14px' }}>Tên in trên thẻ</label>
+                                <input
+                                  type="text"
+                                  name="cardName"
+                                  className={`form-control ${formErrors.cardName ? 'is-invalid' : ''}`}
+                                  placeholder="Tên không dấu (VD: NGUYEN VAN A)"
+                                  value={cardInfo.cardName}
+                                  onChange={handleCardInfoChange}
+                                  style={{ textTransform: 'uppercase' }}
+                                />
+                                {formErrors.cardName && <small className="text-danger mt-1 d-block">{formErrors.cardName}</small>}
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <label style={{ fontSize: '14px' }}>Ngày phát hành</label>
+                                <input
+                                  type="text"
+                                  name="issueDate"
+                                  className={`form-control ${formErrors.issueDate ? 'is-invalid' : ''}`}
+                                  placeholder="MM/YY"
+                                  value={cardInfo.issueDate}
+                                  onChange={handleCardInfoChange}
+                                />
+                                {formErrors.issueDate && <small className="text-danger mt-1 d-block">{formErrors.issueDate}</small>}
+                              </Col>
+                            </Row>
+                            <p className="text-warning mt-2 mb-0" style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                              <i className="las la-info-circle mr-1" style={{ fontSize: '16px' }} />
+                              Lưu ý: Đây là môi trường Demo, thanh toán sẽ không bị trừ tiền thật.
+                            </p>
+                          </form>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {paymentMethod === 'MOMO' ? (
+                    <div className="momo-details mt-4 p-3 rounded" style={{ backgroundColor: '#fff0f6', border: '1px solid #f50057' }}>
+                      <div className="d-flex align-items-center">
+                        <div className="qr-code mr-4" style={{ width: '120px', height: '120px', flexShrink: 0 }}>
+                          <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"
+                            alt="MoMo QR Code"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                        </div>
+                        <div className="info">
+                          <p className="mb-1">Ví điện tử: <strong>MoMo</strong></p>
+                          <p className="mb-1">Số điện thoại: <strong>0901234567</strong></p>
+                          <p className="mb-1">Tên người nhận: <strong>EDUMEO COMPANY</strong></p>
+                          <p className="mb-0 text-muted" style={{ fontSize: '13px' }}>
+                            * Nội dung chuyển khoản: <strong className="text-danger">Thanh toan {courses.map(c => c.id).join('-')}</strong>
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-muted mt-3 mb-0" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                        💡 Hướng dẫn: Quý khách vui lòng mở ứng dụng MoMo, quét mã QR ở trên và kiểm tra đúng số tiền trước khi bấm "Xác nhận thanh toán".
+                      </p>
+                    </div>
+                  ) : null}
+
                   {paymentMethod === 'BANK' ? (
-                    <div className="bank-details">
+                    <div className="bank-details mt-4">
                       <div className="qr-code">
                         <img
                           src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"
