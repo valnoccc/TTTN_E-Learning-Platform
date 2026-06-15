@@ -690,7 +690,7 @@ export class InstructorsService {
           MoTa as courseDesc,
           0 as views
         FROM KhoaHoc
-        WHERE MaND_GiangVien = ? AND TrangThai = 'ACTIVE'
+        WHERE MaND_GiangVien = ? AND TrangThai = 'PUBLISHED'
       `,
       [id],
     );
