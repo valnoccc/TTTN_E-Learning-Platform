@@ -59,9 +59,12 @@ export class CheckoutService {
       }
 
       // 2. Validate and apply coupon
+      let coupon: any = null;
+      let discountAmount = 0;
+
       if (couponCode) {
         const coupons = await queryRunner.query(
-          `SELECT MaCoupon, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc 
+          `SELECT MaCoupon, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, LoaiMa, TiLeGiangVien 
            FROM MaGiamGia WHERE MaCode = ? LIMIT 1`,
           [couponCode]
         );
@@ -70,7 +73,7 @@ export class CheckoutService {
           throw new BadRequestException('Mã giảm giá không hợp lệ');
         }
 
-        const coupon = coupons[0];
+        coupon = coupons[0];
         
         if (coupon.TrangThai !== 'ACTIVE') {
           throw new BadRequestException('Mã giảm giá đã bị vô hiệu hóa');
@@ -89,16 +92,18 @@ export class CheckoutService {
           throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
         }
 
-        if (!courseIds.includes(Number(coupon.MaKH))) {
+        if (coupon.MaKH !== null && !courseIds.includes(Number(coupon.MaKH))) {
           throw new BadRequestException('Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng');
         }
 
         appliedCouponId = coupon.MaCoupon;
 
-        const targetCourse = courses.find((c: any) => Number(c.MaKH) === Number(coupon.MaKH));
-        const targetPrice = Number(targetCourse.GiaBan);
+        let targetPrice = totalOriginalPrice; // Default to total cart price for global coupons
+        if (coupon.MaKH !== null) {
+          const targetCourse = courses.find((c: any) => Number(c.MaKH) === Number(coupon.MaKH));
+          targetPrice = Number(targetCourse?.GiaBan || 0);
+        }
 
-        let discountAmount = 0;
         if (coupon.LoaiGiam === 'PERCENT') {
           discountAmount = (targetPrice * Number(coupon.GiaTriGiam)) / 100;
         } else {
@@ -118,10 +123,22 @@ export class CheckoutService {
       const invoiceId = insertHoaDonResult.insertId;
 
       // 4. Insert into ChiTietHoaDon and 5. Insert into DangKyKhoaHoc
+      const couponTiLe = appliedCouponId && coupon && coupon.TiLeGiangVien !== null ? Number(coupon.TiLeGiangVien) : 50.0;
+
       for (const course of courses) {
+        const giaGhiNhan = Number(course.GiaBan || 0);
+        let doanhThuGiangVien = 0;
+
+        if (appliedCouponId) {
+          const currentCourseDiscount = totalOriginalPrice > 0 ? (giaGhiNhan / totalOriginalPrice) * discountAmount : 0;
+          doanhThuGiangVien = (giaGhiNhan - currentCourseDiscount) * couponTiLe / 100;
+        } else {
+          doanhThuGiangVien = giaGhiNhan * couponTiLe / 100;
+        }
+
         await queryRunner.query(
-          `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan) VALUES (?, ?, ?)`,
-          [invoiceId, course.MaKH, Number(course.GiaBan || 0)]
+          `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
+          [invoiceId, course.MaKH, giaGhiNhan, couponTiLe, doanhThuGiangVien]
         );
 
         await queryRunner.query(
@@ -155,5 +172,40 @@ export class CheckoutService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getAvailableCoupons(courseIdsStr: string) {
+    if (!courseIdsStr) return [];
+    
+    const courseIds = courseIdsStr.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+    if (courseIds.length === 0) return [];
+
+    const coupons = await this.dataSource.query(
+      `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu 
+       FROM MaGiamGia 
+       WHERE TrangThai = 'ACTIVE' 
+         AND LoaiMa = 'PUBLIC'
+         AND (NgayBatDau IS NULL OR NgayBatDau <= NOW())
+         AND (NgayKetThuc IS NULL OR NgayKetThuc >= NOW())
+         AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`
+    );
+
+    return coupons.map((coupon: any) => {
+      const isAvailable = coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
+      return {
+        id: coupon.MaCoupon,
+        code: coupon.MaCode,
+        discountValue: Number(coupon.GiaTriGiam),
+        discountType: coupon.LoaiGiam,
+        courseId: coupon.MaKH,
+        startDate: coupon.NgayBatDau,
+        endDate: coupon.NgayKetThuc,
+        usageLimit: coupon.SoLuongGioiHan,
+        usageCount: coupon.SoLuongDaDung,
+        description: coupon.GhiChu,
+        isAvailable,
+        reason: isAvailable ? undefined : 'Mã không áp dụng cho khóa học trong giỏ hàng'
+      };
+    });
   }
 }

@@ -14,6 +14,8 @@ import {
   validateCoupon,
 } from '../../../../api/checkout';
 import { removeFromCart } from '../../../cart/cartSlice';
+import { CouponModal } from '../../components/checkout/CouponModal';
+import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
 
 const BANKS = [
   { id: 'vcb', name: 'Vietcombank', logo: '/assets/images/banks/VCB.png' },
@@ -45,6 +47,7 @@ export default function Checkout() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponResponse | null>(null);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [showCouponModal, setShowCouponModal] = useState(false);
 
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [cardInfo, setCardInfo] = useState({
@@ -88,6 +91,13 @@ export default function Checkout() {
     }
   }, [successData]);
 
+  // Handle auto-apply coupon from Cart
+  useEffect(() => {
+    if (courses.length > 0 && location.state?.appliedCouponCode && !couponCode) {
+      handleApplyCoupon(location.state.appliedCouponCode);
+    }
+  }, [courses, location.state?.appliedCouponCode, couponCode]);
+
   const loadCourseData = async (id: number) => {
     try {
       setLoading(true);
@@ -114,26 +124,29 @@ export default function Checkout() {
     });
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const code = typeof codeToApply === 'string' ? codeToApply : couponCode;
+    if (!code.trim()) {
       return;
     }
 
     try {
       setIsApplyingCoupon(true);
       const res = await validateCoupon(
-        couponCode.trim(),
+        code.trim(),
         courses.map((course) => course.id),
       );
 
       if (res.valid) {
         setAppliedCoupon(res);
         setDiscountValue(res.discountAmount);
+        setCouponCode(code.trim());
         toast.success(res.message || 'Áp dụng mã giảm giá thành công!');
       }
     } catch (error: any) {
       setAppliedCoupon(null);
       setDiscountValue(0);
+      setCouponCode('');
       toast.error(
         error.response?.data?.message || 'Mã giảm giá không hợp lệ',
       );
@@ -502,20 +515,10 @@ export default function Checkout() {
                     </div>
                   ))}
 
-                  <div className="coupon-box">
-                    <input
-                      type="text"
-                      placeholder="Mã giảm giá"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                    />
-                    <button
-                      onClick={handleApplyCoupon}
-                      disabled={!couponCode || isApplyingCoupon}
-                    >
-                      {isApplyingCoupon ? '...' : 'Áp dụng'}
-                    </button>
-                  </div>
+                  <VoucherTrigger 
+                    couponCode={couponCode}
+                    onClick={() => setShowCouponModal(true)}
+                  />
 
                   <ul className="list-unstyled price-list">
                     <li>
@@ -565,6 +568,14 @@ export default function Checkout() {
             </Row>
           </Container>
         </section>
+
+        {/* Coupon Modal */}
+        <CouponModal 
+          show={showCouponModal}
+          onHide={() => setShowCouponModal(false)}
+          courseIds={courses.map(c => c.id)}
+          onSelectCoupon={(code) => handleApplyCoupon(code)}
+        />
       </div>
     </Styles>
   );

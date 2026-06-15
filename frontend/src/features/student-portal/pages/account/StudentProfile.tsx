@@ -47,7 +47,7 @@ export default function StudentProfile() {
 
           const userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
           if (userId) {
-            const [coursesRes, paymentsRes] = await Promise.all([
+            const [coursesRes, paymentsRes] = await Promise.all<any>([
               axiosClient.get(`/users/${userId}/courses`),
               axiosClient.get(`/users/${userId}/payments`),
             ]);
@@ -313,7 +313,12 @@ export default function StudentProfile() {
                       <div key={course.id} className="border border-slate-100 rounded-2xl p-4 hover:shadow-md transition-shadow group">
                         <div className="h-40 bg-slate-200 rounded-xl mb-4 overflow-hidden relative">
                            {course.image ? (
-                             <img src={process.env.PUBLIC_URL + course.image} alt={course.title} className="w-full h-full object-cover" />
+                             <img 
+                               src={course.image.startsWith('http') ? course.image : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?/, '')}`} 
+                               alt={course.title} 
+                               className="w-full h-full object-cover" 
+                               onError={(e: any) => { e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`; }}
+                             />
                            ) : (
                              <div className="w-full h-full bg-slate-300 flex items-center justify-center text-slate-400">
                                <BookOpen size={40} />

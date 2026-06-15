@@ -99,3 +99,27 @@ export const processPayment = async (
   }
 };
 
+export interface AvailableCoupon {
+  id: number;
+  code: string;
+  discountValue: number;
+  discountType: 'PERCENT' | 'AMOUNT';
+  courseId: number;
+  startDate: string | null;
+  endDate: string | null;
+  usageLimit: number | null;
+  usageCount: number | null;
+  description: string | null;
+  isAvailable: boolean;
+  reason?: string;
+}
+
+export const getAvailableCoupons = async (courseIds: number[]): Promise<AvailableCoupon[]> => {
+  try {
+    const response: any = await axiosClient.get(`/checkout/available-coupons?courseIds=${courseIds.join(',')}`);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
+};
+

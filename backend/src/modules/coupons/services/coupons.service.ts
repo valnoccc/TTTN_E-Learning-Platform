@@ -277,7 +277,7 @@ export class CouponsService {
           kh.TenKhoaHoc AS tenKhoaHoc,
           kh.GiaBan AS giaBan
        FROM MaGiamGia mg
-       INNER JOIN KhoaHoc kh ON kh.MaKH = mg.MaKH
+       LEFT JOIN KhoaHoc kh ON kh.MaKH = mg.MaKH
        WHERE mg.MaCode = ?
        LIMIT 1`,
       [maCode],
@@ -290,16 +290,27 @@ export class CouponsService {
     const coupon = this.normalizeCouponValidationRow(rows[0]);
     this.ensureCouponIsUsable(coupon);
 
-    if (!courseIds.includes(coupon.maKH)) {
+    if (coupon.maKH !== null && !courseIds.includes(coupon.maKH)) {
       throw new BadRequestException(
         'Mã giảm giá không áp dụng cho khóa học trong giỏ hàng',
       );
     }
 
+    let applicablePrice = coupon.giaBan;
+    if (coupon.maKH === null) {
+      // Global coupon applies to the total price of the cart
+      const placeholders = courseIds.map(() => '?').join(',');
+      const courses = await this.dataSource.query(
+        `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        courseIds
+      );
+      applicablePrice = courses[0]?.TotalPrice ? Number(courses[0].TotalPrice) : 0;
+    }
+
     const discountAmount = this.calculateDiscountAmount(
       coupon.loaiGiam,
       coupon.giaTriGiam,
-      coupon.giaBan,
+      applicablePrice,
     );
 
     return {
@@ -311,7 +322,9 @@ export class CouponsService {
       discountType: coupon.loaiGiam,
       discountValue: coupon.giaTriGiam,
       discountAmount,
-      message: `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`,
+      message: coupon.maKH === null 
+        ? 'Áp dụng mã giảm giá toàn sàn thành công.' 
+        : `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`,
     };
   }
 
@@ -409,7 +422,7 @@ export class CouponsService {
       trangThai: row.trangThai,
       ngayBatDau: row.ngayBatDau ? new Date(row.ngayBatDau) : null,
       ngayKetThuc: row.ngayKetThuc ? new Date(row.ngayKetThuc) : null,
-      maKH: Number(row.maKH),
+      maKH: row.maKH === null ? null : Number(row.maKH),
       soLuongGioiHan:
         row.soLuongGioiHan === null ? null : Number(row.soLuongGioiHan),
       soLuongDaDung: Number(row.soLuongDaDung ?? 0),

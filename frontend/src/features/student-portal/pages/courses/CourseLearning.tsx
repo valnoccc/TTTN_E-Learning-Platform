@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText } from 'lucide-react';
 import ReactPlayer from 'react-player';
+const Player: any = ReactPlayer;
 import axiosClient from '../../../../api/axios';
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -186,7 +187,7 @@ export default function CourseLearning() {
                 />
               ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
                 <div className="absolute inset-0">
-                  <ReactPlayer
+                  <Player
                     url={activeLesson.videoUrl}
                     width="100%"
                     height="100%"
