@@ -7,6 +7,8 @@ import { Trash2, ShoppingBag } from 'lucide-react';
 import { RootState } from '../../../../store/store';
 import { removeFromCart, clearCart } from '../../../cart/cartSlice';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
+import { CouponModal } from '../../components/checkout/CouponModal';
+import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
 
 export default function Cart() {
   const { t } = useTranslation();
@@ -15,6 +17,8 @@ export default function Cart() {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [selectedCouponCode, setSelectedCouponCode] = useState<string>('');
 
   const handleRemove = (id: number, name: string) => {
     dispatch(removeFromCart(id));
@@ -162,6 +166,12 @@ export default function Cart() {
                   <span>VAT (0%)</span>
                   <span className="font-medium">0 đ</span>
                 </div>
+                <div className="border-t border-slate-100 pt-4 pb-2">
+                  <VoucherTrigger 
+                    couponCode={selectedCouponCode}
+                    onClick={() => setShowCouponModal(true)}
+                  />
+                </div>
                 <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
                   <span className="text-lg font-bold text-slate-800">{t('Grand Total')}</span>
                   <span className="text-2xl font-bold text-emerald-600">{totalSelectedAmount.toLocaleString('vi-VN')} đ</span>
@@ -173,7 +183,12 @@ export default function Cart() {
                 disabled={selectedIds.length === 0}
                 onClick={() => {
                   if (selectedItems.length > 0) {
-                    navigate('/checkout', { state: { selectedCourses: selectedItems } });
+                    navigate('/checkout', { 
+                      state: { 
+                        selectedCourses: selectedItems,
+                        appliedCouponCode: selectedCouponCode
+                      } 
+                    });
                   }
                 }}
               >
@@ -182,6 +197,13 @@ export default function Cart() {
             </div>
           </div>
 
+          {/* Coupon Modal */}
+          <CouponModal 
+            show={showCouponModal}
+            onHide={() => setShowCouponModal(false)}
+            courseIds={selectedIds}
+            onSelectCoupon={(code) => setSelectedCouponCode(code)}
+          />
         </div>
       </div>
     </div>

@@ -32,42 +32,35 @@ export default function StudentProfile() {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');
-    if (userString) {
-      try {
-        const parsedUser = JSON.parse(userString);
-        setUser(parsedUser);
-        setFormData({
-          name: parsedUser.fullName || parsedUser.name || '',
-          email: parsedUser.email || '',
-          phone: parsedUser.phone || '',
-          avatarUrl: parsedUser.avatarUrl || parsedUser.avatar || parsedUser.photoUrl || parsedUser.imageUrl || ''
-        });
-      } catch (e) {
-        console.error('Lỗi khi parse user', e);
+    const fetchUserData = async () => {
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        try {
+          const parsedUser = JSON.parse(userString);
+          setUser(parsedUser);
+          setFormData({
+            name: parsedUser.fullName || parsedUser.name || '',
+            email: parsedUser.email || '',
+            phone: parsedUser.phone || '',
+            avatarUrl: parsedUser.avatarUrl || parsedUser.avatar || parsedUser.photoUrl || parsedUser.imageUrl || ''
+          });
+
+          const userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
+          if (userId) {
+            const [coursesRes, paymentsRes] = await Promise.all<any>([
+              axiosClient.get(`/users/${userId}/courses`),
+              axiosClient.get(`/users/${userId}/payments`),
+            ]);
+            setMyCourses(coursesRes?.data ?? coursesRes ?? []);
+            setPaymentHistory(paymentsRes?.data ?? paymentsRes ?? []);
+          }
+        } catch (e) {
+          console.error('Lỗi khi tải dữ liệu học viên', e);
+        }
       }
-    }
+    };
 
-    // Load mock data from localStorage
-    const savedCourses = localStorage.getItem('myCourses');
-    if (savedCourses) {
-        setMyCourses(JSON.parse(savedCourses));
-    } else {
-        setMyCourses([
-            { id: 1, title: 'ReactJS Masterclass', progress: 80, image: '/assets/images/course-1.jpg' },
-            { id: 2, title: 'Advanced Tailwind CSS', progress: 45, image: '/assets/images/course-2.jpg' },
-        ]);
-    }
-
-    const savedPayments = localStorage.getItem('paymentHistory');
-    if (savedPayments) {
-        setPaymentHistory(JSON.parse(savedPayments));
-    } else {
-        setPaymentHistory([
-            { id: 'INV-001', date: '2026-06-01', amount: 49.0, status: 'Success' },
-            { id: 'INV-002', date: '2026-06-05', amount: 99.0, status: 'Pending' },
-        ]);
-    }
+    fetchUserData();
   }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -320,7 +313,12 @@ export default function StudentProfile() {
                       <div key={course.id} className="border border-slate-100 rounded-2xl p-4 hover:shadow-md transition-shadow group">
                         <div className="h-40 bg-slate-200 rounded-xl mb-4 overflow-hidden relative">
                            {course.image ? (
-                             <img src={process.env.PUBLIC_URL + course.image} alt={course.title} className="w-full h-full object-cover" />
+                             <img 
+                               src={course.image.startsWith('http') ? course.image : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?/, '')}`} 
+                               alt={course.title} 
+                               className="w-full h-full object-cover" 
+                               onError={(e: any) => { e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`; }}
+                             />
                            ) : (
                              <div className="w-full h-full bg-slate-300 flex items-center justify-center text-slate-400">
                                <BookOpen size={40} />
