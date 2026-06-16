@@ -1,12 +1,13 @@
 import {
   Controller,
   Get,
+  NotFoundException,
   Param,
   Query,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+
 import { KhoaHoc } from '../entities/course.entity';
 import { CoursesService } from '../services/course-instructor.service';
 
@@ -29,6 +30,31 @@ export class PublicCoursesController {
       .createQueryBuilder('khoaHoc')
       .leftJoinAndSelect('khoaHoc.giangVien', 'giangVien')
       .leftJoinAndSelect('khoaHoc.danhMuc', 'danhMuc')
+      .leftJoin(
+        qb =>
+          qb
+            .from('DanhGiaKhoaHoc', 'dg')
+            .select('dg.MaKH', 'maKH')
+            .addSelect('AVG(dg.SoSao)', 'avgRating')
+            .where('dg.SoSao > 0')
+            .groupBy('dg.MaKH'),
+        'ratings',
+        'ratings.maKH = khoaHoc.maKH',
+      )
+      .leftJoin(
+        qb =>
+          qb
+            .from('BaiHoc', 'bh')
+            .innerJoin('ChuongHoc', 'ch', 'bh.MaChuong = ch.MaChuong')
+            .select('ch.MaKH', 'maKH')
+            .addSelect('COUNT(*)', 'lessonCount')
+            .where(`bh.TrangThai = 'ACTIVE'`)
+            .groupBy('ch.MaKH'),
+        'lessonStats',
+        'lessonStats.maKH = khoaHoc.maKH',
+      )
+      .addSelect('ratings.avgRating', 'averageRating')
+      .addSelect('lessonStats.lessonCount', 'totalLessons')
       .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
     if (search) {
@@ -39,7 +65,7 @@ export class PublicCoursesController {
 
     if (categoryId) {
       query.andWhere('khoaHoc.maDM = :categoryId', {
-        categoryId: parseInt(categoryId),
+        categoryId: parseInt(categoryId, 10),
       });
     }
 
@@ -49,22 +75,16 @@ export class PublicCoursesController {
 
     query.orderBy('khoaHoc.maKH', 'DESC');
 
-    const courses = await query.getMany();
-
-    // Lấy thêm aggregate data cho rating
-    for (const course of courses) {
-      const avgResult = await this.dataSource.query(
-        `SELECT AVG(SoSao) as avgRating FROM DanhGiaKhoaHoc WHERE MaKH = ? AND SoSao > 0`,
-        [course.maKH]
-      );
-      (course as any).averageRating = avgResult[0]?.avgRating ? parseFloat(avgResult[0].avgRating).toFixed(1) : '0.0';
-      
-      const lessonCountResult = await this.dataSource.query(
-        `SELECT COUNT(*) as count FROM BaiHoc bh JOIN ChuongHoc ch ON bh.MaChuong = ch.MaChuong WHERE ch.MaKH = ? AND bh.TrangThai = 'ACTIVE'`,
-        [course.maKH]
-      );
-      (course as any).totalLessons = lessonCountResult[0]?.count ? parseInt(lessonCountResult[0].count) : 0;
-    }
+    const { entities, raw } = await query.getRawAndEntities();
+    const courses = entities.map((course, index) => ({
+      ...course,
+      averageRating: raw[index]?.averageRating
+        ? Number(raw[index].averageRating).toFixed(1)
+        : '0.0',
+      totalLessons: raw[index]?.totalLessons
+        ? Number(raw[index].totalLessons)
+        : 0,
+    }));
 
     return {
       message: 'Lấy danh sách khóa học thành công',
@@ -75,12 +95,14 @@ export class PublicCoursesController {
   @Get(':id')
   async getCourseById(@Param('id') id: string) {
     const course = await this.khoaHocRepository.findOne({
-      where: { maKH: parseInt(id) },
+      where: { maKH: parseInt(id, 10) },
       relations: ['giangVien', 'danhMuc', 'baiHocs'],
     });
 
     if (!course || course.trangThai !== 'PUBLISHED') {
-      throw new NotFoundException('Khóa học không tồn tại hoặc chưa được kích hoạt');
+      throw new NotFoundException(
+        'Khóa học không tồn tại hoặc chưa được kích hoạt',
+      );
     }
 
     let instructorData: any = null;
@@ -88,7 +110,6 @@ export class PublicCoursesController {
     if (course.giangVien) {
       const maND = course.giangVien.maND;
 
-      // Lấy thông tin hồ sơ giảng viên (ChuyenMon, TieuSu)
       const hoSoList = await this.dataSource.query(
         `SELECT ChuyenMon, TieuSu FROM HoSoGiangVien WHERE MaND = ?`,
         [maND],
@@ -108,8 +129,9 @@ export class PublicCoursesController {
       };
     }
 
-    // Tính tổng số học viên đăng ký khóa học NÀY thông qua CoursesService
-    const courseTotalStudents = await this.coursesService.getCourseTotalStudents(course.maKH);
+    const courseTotalStudents = await this.coursesService.getCourseTotalStudents(
+      course.maKH,
+    );
 
     const responseData = {
       ...course,
@@ -125,7 +147,7 @@ export class PublicCoursesController {
 
   @Get(':id/curriculum')
   async getCourseCurriculum(@Param('id') id: string) {
-    const courseId = parseInt(id);
+    const courseId = parseInt(id, 10);
 
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId },
@@ -133,7 +155,9 @@ export class PublicCoursesController {
     });
 
     if (!course || course.trangThai !== 'PUBLISHED') {
-      throw new NotFoundException('Khóa học không tồn tại hoặc chưa được kích hoạt');
+      throw new NotFoundException(
+        'Khóa học không tồn tại hoặc chưa được kích hoạt',
+      );
     }
 
     const chapters = await this.dataSource.query(
@@ -153,7 +177,7 @@ export class PublicCoursesController {
     const placeholders = chapterIds.map(() => '?').join(',');
 
     const lessons = await this.dataSource.query(
-      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc, 
+      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc,
               VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc
        FROM BaiHoc
        WHERE MaChuong IN (${placeholders}) AND TrangThai = 'ACTIVE'
