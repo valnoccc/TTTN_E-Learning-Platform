@@ -9,7 +9,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
-import { CoursesService } from '../services/course-instructor.service';
 
 @Controller('public/courses')
 export class PublicCoursesController {
@@ -17,7 +16,6 @@ export class PublicCoursesController {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
-    private readonly coursesService: CoursesService,
   ) {}
 
   @Get()
@@ -110,13 +108,26 @@ export class PublicCoursesController {
     if (course.giangVien) {
       const maND = course.giangVien.maND;
 
-      const hoSoList = await this.dataSource.query(
-        `SELECT ChuyenMon, TieuSu FROM HoSoGiangVien WHERE MaND = ?`,
-        [maND],
-      );
+      const [hoSoList, statsRows] = await Promise.all([
+        this.dataSource.query(
+          `SELECT ChuyenMon, TieuSu FROM HoSoGiangVien WHERE MaND = ?`,
+          [maND],
+        ),
+        this.dataSource.query(
+          `SELECT
+             (SELECT COUNT(*) FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING')) AS totalCourses,
+             (SELECT COUNT(DISTINCT dk.MaND)
+              FROM DangKyKhoaHoc dk
+              JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+              WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE') AS totalStudents,
+             (SELECT COUNT(DISTINCT dk2.MaND)
+              FROM DangKyKhoaHoc dk2
+              WHERE dk2.MaKH = ? AND dk2.TrangThai = 'ACTIVE') AS courseTotalStudents`,
+          [maND, maND, course.maKH],
+        ),
+      ]);
       const hoSo = hoSoList.length > 0 ? hoSoList[0] : {};
-
-      const stats = await this.coursesService.getInstructorStats(maND);
+      const stats = statsRows[0] ?? {};
 
       instructorData = {
         ...course.giangVien,
@@ -124,24 +135,29 @@ export class PublicCoursesController {
         avatar: course.giangVien.anhDaiDien,
         chuyenMon: hoSo.ChuyenMon || null,
         tieuSu: hoSo.TieuSu || null,
-        totalCourses: stats.totalCourses,
-        totalStudents: stats.totalStudents,
+        totalCourses: Number(stats.totalCourses ?? 0),
+        totalStudents: Number(stats.totalStudents ?? 0),
+      };
+
+      const responseData = {
+        ...course,
+        giangVien: instructorData,
+        totalStudents: Number(stats.courseTotalStudents ?? 0),
+      };
+
+      return {
+        message: 'Lấy chi tiết khóa học thành công',
+        data: responseData,
       };
     }
 
-    const courseTotalStudents = await this.coursesService.getCourseTotalStudents(
-      course.maKH,
-    );
-
-    const responseData = {
-      ...course,
-      giangVien: instructorData || course.giangVien,
-      totalStudents: courseTotalStudents,
-    };
-
     return {
       message: 'Lấy chi tiết khóa học thành công',
-      data: responseData,
+      data: {
+        ...course,
+        giangVien: course.giangVien,
+        totalStudents: 0,
+      },
     };
   }
 
