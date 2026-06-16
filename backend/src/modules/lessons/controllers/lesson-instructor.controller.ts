@@ -52,6 +52,15 @@ function parseBooleanLike(value: unknown, fallback = false): boolean {
   return fallback;
 }
 
+function parseVideoDuration(value: unknown): number {
+  const duration = Number(value ?? 0);
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return 0;
+  }
+
+  return Math.round(duration);
+}
+
 @Controller('lessons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('INSTRUCTOR')
@@ -70,6 +79,7 @@ export class LessonsController {
   ) {
     try {
       let videoUrl = null;
+      let videoDuration = 0;
 
       if (file) {
         const uploadResult = await this.cloudinaryService.uploadFile(
@@ -77,6 +87,7 @@ export class LessonsController {
           'video',
         );
         videoUrl = uploadResult.secure_url;
+        videoDuration = parseVideoDuration(uploadResult.duration);
       }
 
       const payload = {
@@ -88,6 +99,7 @@ export class LessonsController {
           lessonData.choPhepXemTruoc ?? lessonData.cho_phep_xem_truoc,
         ),
         videoURL: videoUrl,
+        thoiLuong: videoDuration,
       };
 
       if (!payload.tenBaiHoc || !String(payload.tenBaiHoc).trim()) {
@@ -199,6 +211,7 @@ export class LessonsController {
         'video',
       );
       updateData['videoURL'] = uploadResult.secure_url;
+      updateData['thoiLuong'] = parseVideoDuration(uploadResult.duration);
     }
 
     const lesson = await this.lessonsService.update(id, updateData);

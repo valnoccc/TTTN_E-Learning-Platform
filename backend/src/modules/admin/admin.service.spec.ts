@@ -27,7 +27,14 @@ describe('AdminDashboardService', () => {
       ])
       .mockResolvedValueOnce([{ total: '8' }])
       .mockResolvedValueOnce([
-        { total: '1250000', currentMonth: '500000', lastMonth: '250000' },
+        {
+          total: '750000',
+          grossRevenue: '1250000',
+          adminRevenue: '750000',
+          instructorPayout: '500000',
+          currentMonth: '300000',
+          lastMonth: '150000',
+        },
       ])
       .mockResolvedValueOnce([
         {
@@ -43,15 +50,34 @@ describe('AdminDashboardService', () => {
         { thang: 5, nam: 2026, doanhThu: 750000 },
       ])
       .mockResolvedValueOnce([
-        { totalOrders: '20', totalEarnings: '1250000', totalRefunds: '0' },
+        {
+          totalOrders: '20',
+          totalEarnings: '750000',
+          grossRevenue: '1250000',
+          adminRevenue: '750000',
+          instructorPayout: '500000',
+          totalRefunds: '0',
+        },
       ])
       .mockResolvedValueOnce([
-        { month: 5, year: 2026, orders: '8', earnings: '750000', refunds: '0' },
+        {
+          month: 5,
+          year: 2026,
+          orders: '8',
+          earnings: '450000',
+          grossRevenue: '750000',
+          adminRevenue: '450000',
+          instructorPayout: '300000',
+          refunds: '0',
+        },
         {
           month: 6,
           year: 2026,
           orders: '12',
-          earnings: '500000',
+          earnings: '300000',
+          grossRevenue: '500000',
+          adminRevenue: '300000',
+          instructorPayout: '200000',
           refunds: '0',
         },
       ])
@@ -63,6 +89,8 @@ describe('AdminDashboardService', () => {
           price: '399000',
           orders: '15',
           revenue: '5985000',
+          adminRevenue: '3591000',
+          instructorRevenue: '2394000',
           image: 'https://example.com/react.png',
         },
       ])
@@ -72,7 +100,9 @@ describe('AdminDashboardService', () => {
           name: 'Tran Van B',
           category: 'Frontend',
           students: '120',
-          revenue: '12500000',
+          revenue: '5000000',
+          grossRevenue: '12500000',
+          adminRevenue: '7500000',
           percentage: '32.5',
           avatar: 'https://example.com/avatar.png',
         },
@@ -85,7 +115,10 @@ describe('AdminDashboardService', () => {
       instructorGrowth: -50,
       totalCourses: 8,
       courseGrowth: 0,
-      totalRevenue: 1250000,
+      totalRevenue: 750000,
+      grossRevenue: 1250000,
+      adminRevenue: 750000,
+      instructorPayout: 500000,
       revenueGrowth: 100,
       recentOrders: [
         {
@@ -102,22 +135,25 @@ describe('AdminDashboardService', () => {
       ],
       salesOverview: {
         orders: 20,
-        earnings: 1250000,
+        earnings: 750000,
+        grossRevenue: 1250000,
+        adminRevenue: 750000,
+        instructorPayout: 500000,
         refunds: 0,
       },
       salesChart: [
-        { label: 'Jul', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Aug', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Sep', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Oct', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Nov', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Dec', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Jan', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Feb', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Mar', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'Apr', orders: 0, earnings: 0, refunds: 0 },
-        { label: 'May', orders: 8, earnings: 750000, refunds: 0 },
-        { label: 'Jun', orders: 12, earnings: 500000, refunds: 0 },
+        { label: 'Jul', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Aug', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Sep', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Oct', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Nov', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Dec', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Jan', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Feb', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Mar', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'Apr', orders: 0, earnings: 0, grossRevenue: 0, adminRevenue: 0, instructorPayout: 0, refunds: 0 },
+        { label: 'May', orders: 8, earnings: 450000, grossRevenue: 750000, adminRevenue: 450000, instructorPayout: 300000, refunds: 0 },
+        { label: 'Jun', orders: 12, earnings: 300000, grossRevenue: 500000, adminRevenue: 300000, instructorPayout: 200000, refunds: 0 },
       ],
       topCourses: [
         {
@@ -127,6 +163,8 @@ describe('AdminDashboardService', () => {
           price: 399000,
           orders: 15,
           revenue: 5985000,
+          adminRevenue: 3591000,
+          instructorRevenue: 2394000,
           image: 'https://example.com/react.png',
         },
       ],
@@ -136,7 +174,9 @@ describe('AdminDashboardService', () => {
           name: 'Tran Van B',
           category: 'Frontend',
           students: 120,
-          revenue: 12500000,
+          revenue: 5000000,
+          grossRevenue: 12500000,
+          adminRevenue: 7500000,
           percentage: 32.5,
           avatar: 'https://example.com/avatar.png',
         },

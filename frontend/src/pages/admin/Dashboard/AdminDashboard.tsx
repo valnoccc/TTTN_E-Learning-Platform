@@ -134,7 +134,14 @@ export default function AdminDashboard() {
 
     const latestOrders = stats?.recentOrders ?? [];
     const totalMembers = (stats?.totalStudents ?? 0) + (stats?.totalInstructors ?? 0);
-    const salesOverview = stats?.salesOverview ?? { orders: 0, earnings: 0, refunds: 0 };
+    const salesOverview = stats?.salesOverview ?? {
+        orders: 0,
+        earnings: 0,
+        grossRevenue: 0,
+        adminRevenue: 0,
+        instructorPayout: 0,
+        refunds: 0,
+    };
     const salesChart = stats?.salesChart ?? [];
     const topSellingCourses = stats?.topCourses ?? [];
     const topInstructors = stats?.topInstructors ?? [];
@@ -186,7 +193,7 @@ export default function AdminDashboard() {
                                 accentClass="bg-amber-500"
                             />
                             <StatCard
-                                label="Tổng doanh thu"
+                                label="Doanh thu admin (60%)"
                                 value={formatCurrency(stats.totalRevenue)}
                                 icon={<Wallet size={20} className="text-[#1dbf73]" />}
                                 iconClass="bg-emerald-50 text-[#1dbf73]"
@@ -209,18 +216,18 @@ export default function AdminDashboard() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-3">
                                     <RevenueMetric
-                                        value={salesOverview.orders.toLocaleString('vi-VN')}
-                                        label="Orders"
+                                        value={formatCompactCurrency(salesOverview.grossRevenue)}
+                                        label="Gross"
                                         dotClass="bg-blue-600"
                                     />
                                     <RevenueMetric
-                                        value={formatCompactCurrency(salesOverview.earnings)}
-                                        label="Earnings"
+                                        value={formatCompactCurrency(salesOverview.adminRevenue)}
+                                        label="Admin 60%"
                                         dotClass="bg-teal-500"
                                     />
                                     <RevenueMetric
-                                        value={salesOverview.refunds.toLocaleString('vi-VN')}
-                                        label="Refunds"
+                                        value={formatCompactCurrency(salesOverview.instructorPayout)}
+                                        label="Giảng viên 40%"
                                         dotClass="bg-orange-500"
                                         valueClass="text-teal-500"
                                     />
@@ -247,9 +254,12 @@ export default function AdminDashboard() {
                                                 <Tooltip
                                                     formatter={(value: any, name: string) => {
                                                         if (name === 'earnings') {
-                                                            return [formatCurrency(Number(value) || 0), 'Earnings'];
+                                                            return [formatCurrency(Number(value) || 0), 'Admin 60%'];
                                                         }
-                                                        return [Number(value).toLocaleString('vi-VN'), name === 'orders' ? 'Orders' : 'Refunds'];
+                                                        if (name === 'instructorPayout') {
+                                                            return [formatCurrency(Number(value) || 0), 'Giảng viên 40%'];
+                                                        }
+                                                        return [Number(value).toLocaleString('vi-VN'), 'Orders'];
                                                     }}
                                                     contentStyle={{
                                                         borderRadius: '14px',
@@ -268,7 +278,7 @@ export default function AdminDashboard() {
                                                 />
                                                 <Line
                                                     type="monotone"
-                                                    dataKey="refunds"
+                                                    dataKey="instructorPayout"
                                                     stroke="#f26743"
                                                     strokeWidth={3}
                                                     strokeDasharray="8 6"
@@ -285,11 +295,11 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="h-4 w-4 rounded-full bg-[#24b7aa]" />
-                                            <span>Earnings</span>
+                                            <span>Admin 60%</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="h-4 w-4 rounded-full bg-[#f26743]" />
-                                            <span>Refunds</span>
+                                            <span>Giảng viên 40%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -383,7 +393,7 @@ export default function AdminDashboard() {
                                                     </div>
                                                     <div className="w-[25%] text-right">
                                                         <p className="text-[14px] font-semibold text-slate-800">{formatCurrency(course.revenue)}</p>
-                                                        <p className="mt-0.5 text-[13px] text-slate-500">Doanh thu</p>
+                                                        <p className="mt-0.5 text-[13px] text-slate-500">Gross</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -424,7 +434,7 @@ export default function AdminDashboard() {
                                                     </div>
                                                     <div className="w-[25%] text-right">
                                                         <p className="text-[14px] font-semibold text-slate-800">{formatCurrency(instructor.revenue)}</p>
-                                                        <p className="mt-0.5 text-[13px] text-slate-500">Doanh thu</p>
+                                                        <p className="mt-0.5 text-[13px] text-slate-500">Giảng viên 40%</p>
                                                     </div>
                                                     <div className="flex w-[20%] items-center justify-end gap-2">
                                                         <span className="text-[14px] font-bold text-slate-800">{instructor.percentage}%</span>

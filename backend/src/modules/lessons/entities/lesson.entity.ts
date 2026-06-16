@@ -24,6 +24,9 @@ export class Lesson {
   @Column({ name: 'ThuTu', type: 'int' })
   thuTu!: number;
 
+  @Column({ name: 'ThoiLuong', type: 'int', default: 0 })
+  thoiLuong!: number;
+
   @Column({
     name: 'choPhepXemTruoc',
     type: 'boolean',
