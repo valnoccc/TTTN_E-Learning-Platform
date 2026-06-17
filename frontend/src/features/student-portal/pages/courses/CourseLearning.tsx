@@ -4,6 +4,10 @@ import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText } from 'lucide-re
 import ReactPlayer from 'react-player';
 const Player: any = ReactPlayer;
 import axiosClient from '../../../../api/axios';
+import CourseOverview from './components/CourseOverview';
+import CourseQA from './components/CourseQA';
+import CourseReviews from './components/CourseReviews';
+import FooterTwo from '../../components/FooterTwo';
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return '';
@@ -30,6 +34,8 @@ const getYouTubeEmbedUrl = (url: string) => {
 export default function CourseLearning() {
   const { id } = useParams<{ id: string }>();
   const [courseName, setCourseName] = useState<string>(`Không gian học tập (Khóa học: ${id})`);
+  const [courseData, setCourseData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('content');
   const [curriculum, setCurriculum] = useState<any[]>([]);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [expandedModules, setExpandedModules] = useState<number[]>([]);
@@ -60,6 +66,7 @@ export default function CourseLearning() {
 
         if (courseRes && (courseRes as any).data) {
           setCourseName((courseRes as any).data.tenKhoaHoc);
+          setCourseData((courseRes as any).data);
         }
 
         if (curriculumRes && (curriculumRes as any).data) {
@@ -155,8 +162,15 @@ export default function CourseLearning() {
     );
   }
 
+  const tabs = [
+    { id: 'content', label: 'Nội dung khóa học' },
+    { id: 'overview', label: 'Tổng quan' },
+    { id: 'qa', label: 'Hỏi đáp' },
+    { id: 'reviews', label: 'Đánh giá' },
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-slate-900 text-slate-200">
+    <div className="min-h-screen flex flex-col bg-slate-900 text-slate-200" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Top Navbar */}
       <div className="h-16 bg-slate-950 border-b border-slate-800 flex items-center px-4 shrink-0 justify-between">
         <div className="flex items-center gap-4">
@@ -172,112 +186,147 @@ export default function CourseLearning() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex-grow flex flex-col bg-white" style={{ flexGrow: 1 }}>
         {/* Main Content (Video Player) */}
-        <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-          <div className="w-full bg-black aspect-video relative flex items-center justify-center">
-            {activeLesson?.videoUrl ? (
-              activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
-                <video
-                  src={activeLesson.videoUrl}
-                  controls
-                  className="w-full h-full absolute inset-0"
+        <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
+          {activeLesson?.videoUrl ? (
+            activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
+              <video
+                src={activeLesson.videoUrl}
+                controls
+                className="w-full h-full absolute inset-0"
+                onEnded={handleVideoEnded}
+                controlsList="nodownload"
+              />
+            ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
+              <div className="absolute inset-0">
+                <Player
+                  url={activeLesson.videoUrl}
+                  width="100%"
+                  height="100%"
+                  controls={true}
                   onEnded={handleVideoEnded}
-                  controlsList="nodownload"
                 />
-              ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
-                <div className="absolute inset-0">
-                  <Player
-                    url={activeLesson.videoUrl}
-                    width="100%"
-                    height="100%"
-                    controls={true}
-                    onEnded={handleVideoEnded}
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800 absolute inset-0">
-                  <FileText size={64} className="mb-4 text-slate-600" />
-                  <h3 className="text-xl font-medium text-slate-300">Định dạng không được hỗ trợ</h3>
-                </div>
-              )
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
-                <FileText size={64} className="mb-4 text-slate-600" />
-                <h3 className="text-xl font-medium text-slate-300">
-                  {activeLesson?.videoUrl ? 'Video không hợp lệ' : 'Tài liệu học tập'}
-                </h3>
-                <p>
-                  {activeLesson?.videoUrl ? 'Đường dẫn video bị lỗi hoặc chưa được hỗ trợ.' : 'Vui lòng xem tài liệu bên dưới'}
-                </p>
               </div>
-            )}
-          </div>
-          <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
-            <h2 className="text-2xl font-bold text-white mb-4">{activeLesson?.tenBaiHoc}</h2>
-            {activeLesson?.noiDung ? (
-              <div className="text-slate-300 mb-8 prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.noiDung }}></div>
             ) : (
-              <p className="text-slate-400 mb-8">Bài học này cung cấp những kiến thức cần thiết để bạn nắm vững phần nội dung hiện tại. Hãy chú ý ghi chép và thực hành lại nhé.</p>
-            )}
-          </div>
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800 absolute inset-0">
+                <FileText size={64} className="mb-4 text-slate-600" />
+                <h3 className="text-xl font-medium text-slate-300">Định dạng không được hỗ trợ</h3>
+              </div>
+            )
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
+              <FileText size={64} className="mb-4 text-slate-600" />
+              <h3 className="text-xl font-medium text-slate-300">
+                {activeLesson?.videoUrl ? 'Video không hợp lệ' : 'Tài liệu học tập'}
+              </h3>
+              <p>
+                {activeLesson?.videoUrl ? 'Đường dẫn video bị lỗi hoặc chưa được hỗ trợ.' : 'Vui lòng xem tài liệu bên dưới'}
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Sidebar Curriculum */}
-        <div className="w-80 lg:w-96 bg-slate-950 border-l border-slate-800 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="font-bold text-lg text-white">Nội dung khóa học</h3>
-          </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-            {curriculum.map(module => (
-              <div key={module.maChuong} className="mb-2">
-                <button 
-                  onClick={() => toggleModule(module.maChuong)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-900 transition-colors text-left"
-                >
-                  <span className="font-semibold text-slate-300">{module.tenChuong}</span>
-                  <span className="text-xs text-slate-500 font-medium">0/{module.baiHocs?.length || 0}</span>
-                </button>
-                {expandedModules.includes(module.maChuong) && module.baiHocs && (
-                  <div className="mt-1 space-y-1">
-                    {module.baiHocs.map((lesson: any) => (
-                      <button
-                        key={lesson.maBH}
-                        onClick={() => setActiveLesson(lesson)}
-                        className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
-                          activeLesson?.maBH === lesson.maBH 
-                            ? 'bg-emerald-900/30 border border-emerald-900/50' 
-                            : 'hover:bg-slate-900/50 border border-transparent'
-                        }`}
-                      >
-                        <div className="mt-0.5 shrink-0">
-                          {lesson.completed ? (
-                            <CheckCircle size={16} className="text-emerald-500" />
-                          ) : lesson.videoUrl ? (
-                            <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-400' : 'text-slate-500'} />
-                          ) : (
-                            <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-400' : 'text-slate-500'} />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}>
-                            {lesson.tenBaiHoc}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
-                            <span className="text-xs text-slate-600">•</span>
-                            <span className="text-xs text-slate-500">{lesson.thoiLuong ? `${Math.round(lesson.thoiLuong/60)} phút` : ''}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {/* Tab Navigation Section */}
+        <div className="border-b border-slate-200 bg-white sticky top-0 z-10 px-4 sm:px-6 md:px-10 shrink-0 shadow-sm">
+          <div className="flex gap-6 overflow-x-auto custom-scrollbar pt-2">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 font-semibold whitespace-nowrap border-b-2 transition-all duration-300 ${
+                  activeTab === tab.id 
+                    ? 'border-emerald-500 text-emerald-600' 
+                    : 'border-transparent text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
         </div>
+
+        {/* Dynamic Tab Content Section */}
+        <div className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto w-full flex-1 pb-24">
+          {activeTab === 'content' && (
+            <div className="animate-fade-in space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-4">{activeLesson?.tenBaiHoc}</h2>
+                {activeLesson?.noiDung ? (
+                  <div className="text-slate-700 leading-relaxed prose max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.noiDung }}></div>
+                ) : (
+                  <p className="text-slate-500 italic">Bài học này cung cấp những kiến thức cần thiết để bạn nắm vững phần nội dung hiện tại. Hãy chú ý ghi chép và thực hành lại nhé.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-4">Danh sách bài học</h3>
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                  {curriculum.map(module => (
+                    <div key={module.maChuong} className="border-b border-slate-200 last:border-0">
+                      <button 
+                        onClick={() => toggleModule(module.maChuong)}
+                        className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <span className="font-semibold text-slate-800">{module.tenChuong}</span>
+                        <span className="text-sm text-slate-500 font-medium">0/{module.baiHocs?.length || 0}</span>
+                      </button>
+                      {expandedModules.includes(module.maChuong) && module.baiHocs && (
+                        <div className="bg-slate-50 p-2 space-y-1 border-t border-slate-100">
+                          {module.baiHocs.map((lesson: any) => (
+                            <button
+                              key={lesson.maBH}
+                              onClick={() => setActiveLesson(lesson)}
+                              className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
+                                activeLesson?.maBH === lesson.maBH 
+                                  ? 'bg-emerald-50 border border-emerald-200' 
+                                  : 'hover:bg-white border border-transparent'
+                              }`}
+                            >
+                              <div className="mt-0.5 shrink-0">
+                                {lesson.completed ? (
+                                  <CheckCircle size={16} className="text-emerald-500" />
+                                ) : lesson.videoUrl ? (
+                                  <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                                ) : (
+                                  <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-600 font-bold' : 'text-slate-700 font-medium'}`}>
+                                  {lesson.tenBaiHoc}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
+                                  <span className="text-xs text-slate-400">•</span>
+                                  <span className="text-xs text-slate-500">{lesson.thoiLuong ? `${Math.round(lesson.thoiLuong/60)} phút` : ''}</span>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'overview' && <CourseOverview courseData={courseData} />}
+          {activeTab === 'qa' && <CourseQA courseId={id || ''} />}
+          {activeTab === 'reviews' && <CourseReviews courseId={id || ''} />}
+
+          {/* Khoảng đệm an toàn chống tràn Footer */}
+          <div className="w-full h-40 clear-both" style={{ height: '160px' }}></div>
+        </div>
       </div>
+
+      {/* Footer được gỡ ghim nằm ở đây */}
+      <div style={{ position: 'relative', bottom: 'auto', zIndex: 10, width: '100%' }}>
+        <FooterTwo />
+      </div>
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;

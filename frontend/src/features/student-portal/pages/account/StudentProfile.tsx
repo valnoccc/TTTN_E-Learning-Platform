@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import axiosClient from '../../../../api/axios';
 
+import { Modal, Button } from 'react-bootstrap';
+
 type StoredUser = {
   id?: number | string;
   maND?: number | string;
@@ -30,6 +32,32 @@ export default function StudentProfile() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [invoiceDetails, setInvoiceDetails] = useState<any[]>([]);
+  const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
+
+  const handleViewInvoice = async (invoiceId: number) => {
+    if (!invoiceId || isNaN(invoiceId)) {
+      console.error('>>> LỖI: ID hóa đơn không hợp lệ, không thể gọi API!', invoiceId);
+      return;
+    }
+    console.log('>>> ID Hóa đơn truyền từ giao diện xuống:', invoiceId, typeof invoiceId);
+    try {
+      setIsInvoiceLoading(true);
+      setIsInvoiceModalOpen(true);
+      const res: any = await axiosClient.get(`/checkout/invoice/${invoiceId}`);
+      setSelectedInvoice(res?.invoice || res?.data?.invoice || null);
+      setInvoiceDetails(res?.details || res?.data?.details || []);
+    } catch (err: any) {
+      console.error('>>> Chi tiết lỗi API Invoice thật từ NestJS:', err.response?.data || err.message);
+      toast.error('Lỗi khi lấy chi tiết hóa đơn');
+      setIsInvoiceModalOpen(false);
+    } finally {
+      setIsInvoiceLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -365,7 +393,19 @@ export default function StudentProfile() {
                         {paymentHistory.map((invoice) => (
                           <tr key={invoice.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="p-4 text-slate-600">{invoice.date}</td>
-                            <td className="p-4 font-medium text-slate-800">{invoice.id}</td>
+                            <td className="p-4 font-medium">
+                              <span 
+                                className="text-emerald-600 font-semibold" 
+                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                onClick={() => {
+                                  const rawId = invoice.id || invoice.MaHD || invoice.maHD;
+                                  const cleanId = typeof rawId === 'string' ? rawId.replace(/\D/g, '') : rawId;
+                                  handleViewInvoice(Number(cleanId));
+                                }}
+                              >
+                                {invoice.id}
+                              </span>
+                            </td>
                             <td className="p-4 font-semibold text-slate-700">{invoice.amount.toLocaleString('vi-VN')} đ</td>
                             <td className="p-4 text-right">
                               <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
@@ -472,6 +512,62 @@ export default function StudentProfile() {
 
         </div>
       </div>
+
+      <Modal show={isInvoiceModalOpen} onHide={() => setIsInvoiceModalOpen(false)} size="lg" centered>
+        <Modal.Header closeButton className="border-b border-slate-100">
+          <Modal.Title className="font-bold text-slate-800">
+            Chi tiết hóa đơn {selectedInvoice && `#INV-${selectedInvoice.MaHD}`}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-6">
+          {isInvoiceLoading ? (
+            <div className="flex justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+            </div>
+          ) : (
+            <div>
+              <div className="space-y-4 mb-6">
+                {invoiceDetails.map((item, idx) => (
+                  <div key={idx} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl items-center">
+                    <div className="w-20 h-14 bg-slate-200 rounded-lg overflow-hidden shrink-0">
+                      {item.HinhAnhDaiDien ? (
+                        <img 
+                          src={item.HinhAnhDaiDien.startsWith('http') ? item.HinhAnhDaiDien : `${process.env.PUBLIC_URL || ''}/assets/images/${item.HinhAnhDaiDien.startsWith('/') ? item.HinhAnhDaiDien.substring(1) : item.HinhAnhDaiDien}`}
+                          alt={item.TenKhoaHoc}
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <BookOpen size={20} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{item.TenKhoaHoc}</h4>
+                    </div>
+                    <div className="font-semibold text-emerald-600 whitespace-nowrap">
+                      {Number(item.GiaGhiNhan).toLocaleString('vi-VN')} đ
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <span className="font-bold text-slate-700">Tổng thanh toán:</span>
+                <span className="font-bold text-xl text-emerald-600">
+                  {selectedInvoice ? Number(selectedInvoice.TongTien).toLocaleString('vi-VN') : 0} đ
+                </span>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="border-t border-slate-100">
+          <Button variant="secondary" onClick={() => setIsInvoiceModalOpen(false)} className="bg-slate-200 text-slate-700 border-0 hover:bg-slate-300 font-medium px-5">
+            Đóng
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 }

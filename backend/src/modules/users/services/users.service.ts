@@ -93,6 +93,7 @@ export class UsersService {
       const d = new Date(p.date);
       return {
         id: `INV-${p.id}`,
+        MaHD: p.id,
         date: d.toISOString().split('T')[0],
         amount: Number(p.amount),
         status: p.status === 'PAID' ? 'Success' : 'Pending',
