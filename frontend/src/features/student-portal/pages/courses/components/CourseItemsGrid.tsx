@@ -23,7 +23,28 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
     const dispatch = useDispatch();
     const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
     const [courses, setCourses] = useState<any[]>([]);
+    const [purchasedCourses, setPurchasedCourses] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPurchased = async () => {
+            const userString = localStorage.getItem('user');
+            if (userString) {
+                const user = JSON.parse(userString);
+                const userId = user.id || user.maND || user.sub;
+                if (userId) {
+                    try {
+                        const res: any = await axiosClient.get(`/users/${userId}/courses`);
+                        const userCourses = res?.data ?? res ?? [];
+                        setPurchasedCourses(userCourses.map((c: any) => Number(c.MaKH || c.maKH || c.id)));
+                    } catch (e) {
+                        console.error("Error fetching purchased courses", e);
+                    }
+                }
+            }
+        };
+        fetchPurchased();
+    }, []);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
     
@@ -114,29 +135,33 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                             <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Tài liệu tải xuống miễn phí</li>
                                             <li className="flex items-start"><i className="las la-check text-emerald-500 mr-2 mt-0.5"></i> Chứng chỉ hoàn thành</li>
                                         </ul>
-                                        <div className="flex gap-2">
-                                            <Link to={courseUrl} className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-emerald-600 hover:text-white text-decoration-none hover:no-underline">
-                                                Xem chi tiết
-                                            </Link>
-                                            <button 
-                                                className="rounded-lg bg-emerald-50 px-4 text-emerald-500 transition-colors hover:bg-emerald-500 hover:text-white"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    dispatch(addToCart({
-                                                        id: data.maKH,
-                                                        courseName: data.tenKhoaHoc,
-                                                        thumbnail: courseImage,
-                                                        instructor: instructorName,
-                                                        price: parseFloat(data.giaBan || '0'),
-                                                        duration: '120 Phút',
-                                                        level: 'Mọi cấp độ',
-                                                        category: categoryName
-                                                    }));
-                                                }}
-                                            >
-                                                <i className="las la-shopping-cart text-xl"></i>
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <Link to={courseUrl} className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-emerald-600 hover:text-white text-decoration-none hover:no-underline">
+                                                    {purchasedCourses.includes(Number(data.maKH)) ? 'Vào học' : 'Xem chi tiết'}
+                                                </Link>
+                                                {purchasedCourses.includes(Number(data.maKH)) ? (
+                                                    <span className="text-muted small self-center ml-2">Đã sở hữu</span>
+                                                ) : (
+                                                    <button 
+                                                        className="rounded-lg bg-emerald-50 px-4 text-emerald-500 transition-colors hover:bg-emerald-500 hover:text-white"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            dispatch(addToCart({
+                                                                id: data.maKH,
+                                                                courseName: data.tenKhoaHoc,
+                                                                thumbnail: courseImage,
+                                                                instructor: instructorName,
+                                                                price: parseFloat(data.giaBan || '0'),
+                                                                duration: '120 Phút',
+                                                                level: 'Mọi cấp độ',
+                                                                category: categoryName
+                                                            }));
+                                                        }}
+                                                    >
+                                                        <i className="las la-shopping-cart text-xl"></i>
+                                                    </button>
+                                                )}
                                             <button 
                                                 className={`rounded-lg border px-4 transition-colors ${wishlistItems.some(item => item.id === data.maKH) ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-200 text-gray-400 hover:text-red-500'}`}
                                                 onClick={(e) => {
@@ -153,6 +178,22 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                         level: 'Mọi cấp độ',
                                                         category: categoryName
                                                     }));
+                                                    // Gửi thông báo lên Backend
+                                                    const token = localStorage.getItem('access_token');
+                                                    if (token) {
+                                                        axiosClient.post('/notifications', {
+                                                            loaiThongBao: 'COURSE',
+                                                            tieuDe: isWishlisted
+                                                                ? `Đã gỡ khỏi yêu thích`
+                                                                : `Đã thêm vào yêu thích`,
+                                                            noiDung: isWishlisted
+                                                                ? `Bạn đã gỡ khóa học "${data.tenKhoaHoc}" khỏi danh sách yêu thích.`
+                                                                : `Bạn đã thêm khóa học "${data.tenKhoaHoc}" vào danh sách yêu thích. ❤️`,
+                                                        }).then(() => {
+                                                            // Refresh thông báo tức thì
+                                                            window.dispatchEvent(new Event('notification-refresh'));
+                                                        }).catch(() => {});
+                                                    }
                                                     if (isWishlisted) {
                                                         toast.success('Đã gỡ khỏi danh sách yêu thích!');
                                                     } else {

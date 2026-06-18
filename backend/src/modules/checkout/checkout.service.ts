@@ -1,5 +1,7 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 export interface PaymentRequest {
   courseIds: number[];
@@ -14,7 +16,10 @@ export interface PaymentRequest {
 
 @Injectable()
 export class CheckoutService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async processPayment(payload: PaymentRequest, userId: number) {
     const { courseIds, paymentMethod, couponCode } = payload;
@@ -45,17 +50,12 @@ export class CheckoutService {
 
       // 1.5. Check if user already owns any of the courses
       const existingEnrollments = await queryRunner.query(
-        `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders})`,
+        `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
         [userId, ...courseIds]
       );
 
       if (existingEnrollments.length > 0) {
-        const ownedCourseIds = existingEnrollments.map((e: any) => e.MaKH);
-        const ownedCourseNames = courses
-          .filter((c: any) => ownedCourseIds.includes(c.MaKH))
-          .map((c: any) => c.TenKhoaHoc)
-          .join(', ');
-        throw new BadRequestException(`Bạn đã sở hữu khóa học: ${ownedCourseNames}`);
+        throw new BadRequestException('Bạn đã sở hữu khóa học này!');
       }
 
       // 2. Validate and apply coupon
@@ -157,10 +157,33 @@ export class CheckoutService {
 
       await queryRunner.commitTransaction();
 
+      // Tạo thông báo tự động sau khi thanh toán thành công
+      const courseNames = courses.map((c: any) => c.TenKhoaHoc).join(', ');
+      try {
+        await this.notificationsService.createNotification({
+          maND: userId,
+          loaiThongBao: NotificationType.PAYMENT,
+          tieuDe: 'Thanh toán thành công!',
+          noiDung: `Bạn đã mua thành công ${courses.length} khóa học: ${courseNames}. Tổng thanh toán: ${finalPrice.toLocaleString('vi-VN')}đ. Chúc bạn học tập vui vẻ!`,
+        });
+
+        // Tạo thêm thông báo ghi danh cho từng khóa học
+        for (const course of courses) {
+          await this.notificationsService.createNotification({
+            maND: userId,
+            loaiThongBao: NotificationType.COURSE,
+            tieuDe: `Ghi danh thành công: ${course.TenKhoaHoc}`,
+            noiDung: `Bạn đã được ghi danh vào khóa học "${course.TenKhoaHoc}". Hãy bắt đầu học ngay!`,
+          });
+        }
+      } catch (notifError) {
+        console.error('Lỗi tạo thông báo (không ảnh hưởng thanh toán):', notifError);
+      }
+
       return {
         success: true,
         invoiceId: invoiceId,
-        enrollmentId: invoiceId, // Using invoiceId as enrollment reference
+        enrollmentId: invoiceId,
       };
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
@@ -207,5 +230,38 @@ export class CheckoutService {
         reason: isAvailable ? undefined : 'Mã không áp dụng cho khóa học trong giỏ hàng'
       };
     });
+  }
+
+  async getInvoiceDetails(invoiceId: number, userId: number) {
+    console.log('>>> Backend nhận Invoice ID:', invoiceId, typeof invoiceId, '| userId:', userId, typeof userId);
+    
+    try {
+      const invoice = await this.dataSource.query(
+        `SELECT MaHD, TongTien, TrangThaiThanhToan FROM HoaDon WHERE MaHD = ? AND MaND = ?`,
+        [invoiceId, userId]
+      );
+      console.log('>>> Kết quả query HoaDon:', JSON.stringify(invoice));
+
+      if (invoice.length === 0) {
+        throw new NotFoundException(`Không tìm thấy hóa đơn với ID bằng ${invoiceId} cho user ${userId}`);
+      }
+
+      const details = await this.dataSource.query(
+        `SELECT c.MaKH, c.GiaGhiNhan, k.TenKhoaHoc, k.HinhThuNho as HinhAnhDaiDien 
+         FROM ChiTietHoaDon c 
+         JOIN KhoaHoc k ON c.MaKH = k.MaKH 
+         WHERE c.MaHD = ?`,
+        [invoiceId]
+      );
+      console.log('>>> Kết quả query ChiTietHoaDon:', JSON.stringify(details));
+
+      return {
+        invoice: invoice[0],
+        details: details
+      };
+    } catch (error) {
+      console.error('>>> LỖI THẬT trong getInvoiceDetails:', error.message, error.query || '');
+      throw error;
+    }
   }
 }

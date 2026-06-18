@@ -84,13 +84,43 @@ export default function AuthControls() {
 
   if (!user) {
     return (
-      <Link
-        to="/login"
-        className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
-        title="Đăng nhập / Đăng ký"
-      >
-        <User size={20} />
-      </Link>
+      <div className="d-flex align-items-center justify-content-end gap-3" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        
+        {/* Nút Đăng nhập - Thẳng hàng, mượt mà */}
+        <button 
+          onClick={() => navigate('/login')}
+          className="btn d-flex align-items-center p-0 text-dark border-0 backend-login-btn"
+          style={{ background: 'none', cursor: 'pointer', gap: '8px', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+        >
+          <div className="icon-wrapper d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#eefbf4' }}>
+            <i className="las la-user text-success" style={{ fontSize: '18px', color: '#28a745' }}></i>
+          </div>
+          <span style={{ fontWeight: '500', fontSize: '15px' }}>Đăng nhập</span>
+        </button>
+
+        {/* Nút Đăng ký - Dạng hình Oval dài chuẩn UI Shopee/Udemy */}
+        <button 
+          onClick={() => navigate('/register')}
+          className="btn btn-success text-white px-4 py-2"
+          style={{ 
+            backgroundColor: '#28a745', 
+            border: 'none',
+            borderRadius: '50px', 
+            fontWeight: '500', 
+            fontSize: '14px', 
+            whiteSpace: 'nowrap', 
+            padding: '8px 20px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(40, 167, 69, 0.2)',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#218838')}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#28a745')}
+        >
+          Đăng ký
+        </button>
+
+      </div>
     );
   }
 

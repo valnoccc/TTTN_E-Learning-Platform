@@ -21,40 +21,40 @@ export const useNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      // SỬA Ở ĐÂY: Nếu API trả về { message, data: [...] } và axiosClient giữ nguyên vỏ response
-      // Hãy ép kiểu res thành dạng any hoặc cấu trúc chuẩn nếu bạn dùng Interceptors
+      
+      const token = localStorage.getItem('access_token') || JSON.parse(localStorage.getItem('user') || '{}').token;
+      if (token) {
+        axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } else {
+        // Không có token thì không gọi API
+        setNotifications([]);
+        setUnreadCount(0);
+        setLoading(false);
+        return;
+      }
+
       const res: any = await axiosClient.get('/notifications');
-
-      // Tùy thuộc vào cấu hình Axios interceptor của bạn:
-      // - Nếu interceptor KHÔNG bóc vỏ: dùng res.data.data (như hình)
-      // - Nếu interceptor ĐÃ bóc vỏ: dùng res.data (nếu API bọc bằng field data) hoặc chỉ res
-
-      // Cách an toàn nhất để tránh lỗi TypeScript:
       const notificationData = res.data?.data || res.data || res || [];
-      setNotifications(Array.isArray(notificationData) ? notificationData : []);
+      const list = Array.isArray(notificationData) ? notificationData : [];
+      setNotifications(list);
+      setUnreadCount(list.filter((n: Notification) => !n.daDoc).length);
       setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch notifications');
+      if (err.response?.status === 401) {
+        // Token hết hạn - không spam lỗi
+        setNotifications([]);
+        setUnreadCount(0);
+      } else {
+        setError(err.response?.data?.message || 'Failed to fetch notifications');
+      }
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const res: any = await axiosClient.get('/notifications/unread-count');
-      // SỬA TƯƠNG TỰ: Xử lý linh hoạt việc bóc vỏ dữ liệu
-      const count = res.data?.unreadCount ?? res.unreadCount ?? 0;
-      setUnreadCount(count);
-    } catch (err) {
-      console.error('Failed to fetch unread count:', err);
     }
   }, []);
 
   const markAsRead = async (id: number) => {
     try {
       await axiosClient.patch(`/notifications/${id}/read`);
-      // Update local state instead of refetching to be faster
       setNotifications(prev => prev.map(n => n.maTB === id ? { ...n, daDoc: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
@@ -73,10 +73,25 @@ export const useNotifications = () => {
   };
 
   useEffect(() => {
-    // Initial fetch
+    // Fetch lần đầu
     fetchNotifications();
-    fetchUnreadCount();
-  }, [fetchNotifications, fetchUnreadCount]);
+
+    // Polling mỗi 15 giây
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 15000);
+
+    // Lắng nghe custom event để refresh tức thì khi có thông báo mới
+    const handleRefresh = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('notification-refresh', handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notification-refresh', handleRefresh);
+    };
+  }, [fetchNotifications]);
 
   return {
     notifications,
@@ -84,8 +99,7 @@ export const useNotifications = () => {
     loading,
     error,
     fetchNotifications,
-    fetchUnreadCount,
     markAsRead,
     markAllAsRead,
   };
-};
+};
