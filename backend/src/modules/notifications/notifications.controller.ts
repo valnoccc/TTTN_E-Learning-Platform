@@ -1,19 +1,44 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
+import { NotificationType } from './entities/notification.entity';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Post()
+  async createNotification(
+    @Req() req: any,
+    @Body() body: { loaiThongBao?: string; tieuDe: string; noiDung: string },
+  ) {
+    const userId = req.user.sub;
+    const loai =
+      body.loaiThongBao &&
+      Object.values(NotificationType).includes(body.loaiThongBao as NotificationType)
+        ? (body.loaiThongBao as NotificationType)
+        : NotificationType.SYSTEM;
+
+    const notification = await this.notificationsService.createNotification({
+      maND: userId,
+      loaiThongBao: loai,
+      tieuDe: body.tieuDe,
+      noiDung: body.noiDung,
+    });
+
+    return { message: 'Tạo thông báo thành công.', data: notification };
+  }
 
   @Get()
   async getMyNotifications(@Req() req: any, @Query('limit') limit?: string) {

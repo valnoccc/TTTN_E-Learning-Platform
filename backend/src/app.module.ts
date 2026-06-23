@@ -19,6 +19,8 @@ import { AdminDashboardModule } from './modules/admin/admin.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DiscussionsModule } from './modules/discussions/discussions.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { CheckoutModule } from './modules/checkout/checkout.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     CategoriesModule,
     CloudinaryModule,
     AdminDashboardModule,
+    CheckoutModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

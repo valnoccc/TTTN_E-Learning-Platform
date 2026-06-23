@@ -149,7 +149,7 @@ export default function CouponManagement() {
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="ACTIVE">Đang hoạt động</option>
-              <option value="INACTIVE">Đã tắt</option>
+              <option value="INACTIVE">Đã vô hiệu</option>
             </select>
           </div>
 
@@ -228,7 +228,7 @@ export default function CouponManagement() {
                                 : 'border-slate-200 bg-slate-100 text-slate-600'
                             }`}
                           >
-                            {coupon.trangThai === 'ACTIVE' ? 'Đang hoạt động' : 'Đã tắt'}
+                            {coupon.trangThai === 'ACTIVE' ? 'Đang hoạt động' : 'Đã vô hiệu'}
                           </span>
                         </td>
                         <td className="p-4">

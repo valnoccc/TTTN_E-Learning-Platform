@@ -115,12 +115,31 @@ function CourseDetails() {
                     try { if (response.data.ketQuaHocTap) parsedKetQua = JSON.parse(response.data.ketQuaHocTap); } catch(e){}
                     try { if (response.data.yeuCauKhoaHoc) parsedYeuCau = JSON.parse(response.data.yeuCauKhoaHoc); } catch(e){}
 
+                    const isEnglishDummyKetQua = parsedKetQua.some((str: string) => str.includes('Handle advanced') || str.includes('Machine Learning'));
+                    if (isEnglishDummyKetQua || parsedKetQua.length === 0) {
+                        parsedKetQua = [
+                            'Nắm vững các kiến thức nền tảng và chuyên sâu của khóa học',
+                            'Thành thạo các công cụ và kỹ năng thông qua bài tập thực tế',
+                            'Có khả năng giải quyết các tình huống và dự án độc lập',
+                            'Nâng cao tư duy logic và quy trình làm việc hiệu quả'
+                        ];
+                    }
+
+                    const isEnglishDummyYeuCau = parsedYeuCau.some((str: string) => str.toLowerCase().includes('python') || str.toLowerCase().includes('experience'));
+                    if (isEnglishDummyYeuCau || parsedYeuCau.length === 0) {
+                        parsedYeuCau = [
+                            'Máy tính có kết nối internet ổn định',
+                            'Tinh thần tự học và sẵn sàng hoàn thành các bài tập thực hành',
+                            'Không yêu cầu kinh nghiệm trước đó'
+                        ];
+                    }
+
                     setIsEnrolled(!!response.data.isEnrolled);
 
                     setCourse({
                         id: parseInt(response.data.maKH),
                         courseName: response.data.tenKhoaHoc,
-                        thumbnail: response.data.hinhThuNho || '/assets/images/course-1.jpg',
+                        thumbnail: response.data.hinhThuNho ? (response.data.hinhThuNho.startsWith('http') ? response.data.hinhThuNho : '/assets/images/' + response.data.hinhThuNho) : '/assets/images/course-1.jpg',
                         instructor: response.data.giangVien ? (response.data.giangVien.tenGiangVien || response.data.giangVien.hoTen || 'Unknown Instructor') : 'Unknown Instructor',
                         price: parseFloat(response.data.giaBan || '0'),
                         duration: '120 Min',
@@ -146,6 +165,31 @@ function CourseDetails() {
         if (id) {
             fetchCourseDetails();
         }
+    }, [id]);
+
+    const [isOwned, setIsOwned] = useState<boolean>(false);
+
+    useEffect(() => {
+        const fetchUserCourses = async () => {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const u = JSON.parse(userStr);
+                    const userId = u.id || u.maND || u.sub;
+                    if (userId) {
+                        const res: any = await axiosClient.get(`/users/${userId}/courses`);
+                        const courses = res?.data ?? res ?? [];
+                        console.log("Danh sách khóa học đã mua trả về:", courses);
+                        // Đảm bảo so sánh chính xác MaKH
+                        const owned = courses.some((c: any) => Number(c.MaKH || c.maKH || c.id) === Number(id));
+                        setIsOwned(owned);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user courses", error);
+                }
+            }
+        };
+        fetchUserCourses();
     }, [id]);
 
     useEffect(() => {
@@ -338,17 +382,20 @@ function CourseDetails() {
                                         <div className="flex items-center gap-3">
                                             <img 
                                                 src={
-                                                    course.giangVien?.avatar 
-                                                        ? (course.giangVien.avatar.startsWith('http') 
-                                                            ? course.giangVien.avatar 
-                                                            : (course.giangVien.avatar.includes('/') 
-                                                                ? process.env.PUBLIC_URL + course.giangVien.avatar 
-                                                                : process.env.PUBLIC_URL + `/assets/images/${course.giangVien.avatar}`))
+                                                    (course.giangVien?.anhDaiDien || course.giangVien?.avatar)
+                                                        ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
+                                                            ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                            : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
+                                                                ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
                                                         : `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`
                                                 } 
                                                 alt={course.instructor} 
                                                 className="w-10 h-10 rounded-full object-cover" 
-                                                onError={(e: any) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`; }}
+                                                onError={(e: any) => { 
+                                                    e.target.onerror = null; 
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`; 
+                                                }}
                                             />
                                             <div>
                                                 <p className="text-xs text-gray-500 mb-1">Được tạo bởi</p>
@@ -492,7 +539,23 @@ function CourseDetails() {
                                         <h3 className="text-xl font-bold text-slate-800 mb-6">{t('course.instructor', 'Giảng viên')}</h3>
                                         <div className="border border-gray-100 rounded-xl p-6 md:p-8 bg-white shadow-sm">
                                             <div className="flex flex-col md:flex-row gap-6 mb-6">
-                                                <img src={course?.giangVien?.avatar ? (course.giangVien.avatar.startsWith('http') ? course.giangVien.avatar : process.env.PUBLIC_URL + course.giangVien.avatar) : process.env.PUBLIC_URL + '/assets/images/instructor-3.jpg'} alt={course?.giangVien?.tenGiangVien || course?.instructor} className="w-28 h-28 object-cover rounded-lg" />
+                                                <img 
+                                                    src={
+                                                        (course?.giangVien?.anhDaiDien || course?.giangVien?.avatar)
+                                                            ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
+                                                                ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
+                                                                    ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                    : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
+                                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.giangVien?.tenGiangVien || course?.instructor || 'Giảng viên')}&background=random`
+                                                    } 
+                                                    alt={course?.giangVien?.tenGiangVien || course?.instructor} 
+                                                    className="w-28 h-28 object-cover rounded-lg" 
+                                                    onError={(e: any) => { 
+                                                        e.target.onerror = null; 
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.giangVien?.tenGiangVien || course?.instructor || 'Giảng viên')}&background=random`; 
+                                                    }}
+                                                />
                                                 <div>
                                                     <h4 className="text-lg font-bold text-slate-800 mb-1 m-0">{course?.giangVien?.tenGiangVien || course?.instructor}</h4>
                                                     <p className="text-sm text-gray-500 mb-3 m-0">{course?.giangVien?.chuyenMon || t('instructor.expert', 'Chuyên gia đào tạo')}</p>
@@ -756,53 +819,69 @@ function CourseDetails() {
                                                     <h3 className="text-3xl font-bold text-[#30263f] mb-4">
                                                         {formatPrice(course.price)}
                                                     </h3>
-                                                    <div className="d-flex align-items-center gap-2 mb-3">
-                                                        <button 
-                                                            type="button" 
-                                                            className="flex-grow-1 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
-                                                            style={{ height: '48px', borderRadius: '8px' }}
-                                                            onClick={() => {
-                                                                dispatch(addToCart(course));
-                                                                toast.success('Đã thêm vào giỏ hàng!');
-                                                            }}
-                                                        >
-                                                            Thêm vào giỏ hàng
-                                                        </button>
-                                                        <button 
-                                                            type="button" 
-                                                            className={`d-flex align-items-center justify-content-center transition-colors border ${wishlistItems.some(item => item.id === course?.id) ? 'bg-[#5a31a8] hover:bg-[#4a278a] text-white border-[#5a31a8]' : 'bg-white hover:bg-purple-50 text-[#5a31a8] border-[#5a31a8]'}`} 
-                                                            style={{ width: '48px', height: '48px', borderRadius: '8px', padding: '0' }} 
-                                                            onClick={(e) => {
-                                                                e.currentTarget.blur();
-                                                                const isWishlisted = wishlistItems.some(item => item.id === course?.id);
-                                                                dispatch(toggleWishlist(course));
-                                                                if (isWishlisted) {
-                                                                    toast.success('Đã gỡ khỏi danh sách yêu thích!');
-                                                                } else {
-                                                                    toast.success('Đã thêm vào danh sách yêu thích!');
-                                                                }
-                                                            }}
-                                                            title="Thêm vào yêu thích"
-                                                        >
-                                                            <i className={wishlistItems.some(item => item.id === course?.id) ? "las la-heart" : "lar la-heart"} style={{ fontSize: '24px' }}></i>
-                                                        </button>
-                                                    </div>
-                                                    <button 
-                                                        type="button" 
-                                                        className="w-100 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
-                                                        style={{ height: '48px', borderRadius: '8px' }}
-                                                        onClick={() => {
-                                                            const user = localStorage.getItem('user');
-                                                            if (!user) {
-                                                                toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
-                                                                navigate('/login', { state: { from: `/checkout/${course.id}` } });
-                                                            } else {
-                                                                navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } });
-                                                            }
-                                                        }}
-                                                    >
-                                                        Mua ngay
-                                                    </button>
+                                                    {isOwned ? (
+                                                        <div className="d-flex flex-column gap-3 mb-3">
+                                                            <button 
+                                                                type="button" 
+                                                                className="w-100 bg-[#10B981] hover:bg-[#059669] text-white font-bold border-0 transition-colors shadow-sm" 
+                                                                style={{ height: '54px', borderRadius: '12px', fontSize: '18px' }}
+                                                                onClick={() => navigate(`/student/learn/${course.id}`)}
+                                                            >
+                                                                <i className="las la-play-circle mr-2 text-2xl align-middle"></i>
+                                                                Vào học ngay
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="d-flex align-items-center gap-2 mb-3">
+                                                                <button 
+                                                                    type="button" 
+                                                                    className="flex-grow-1 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
+                                                                    style={{ height: '48px', borderRadius: '8px' }}
+                                                                    onClick={() => {
+                                                                        dispatch(addToCart(course));
+                                                                        toast.success('Đã thêm vào giỏ hàng!');
+                                                                    }}
+                                                                >
+                                                                    Thêm vào giỏ hàng
+                                                                </button>
+                                                                <button 
+                                                                    type="button" 
+                                                                    className={`d-flex align-items-center justify-content-center transition-colors border ${wishlistItems.some(item => item.id === course?.id) ? 'bg-[#5a31a8] hover:bg-[#4a278a] text-white border-[#5a31a8]' : 'bg-white hover:bg-purple-50 text-[#5a31a8] border-[#5a31a8]'}`} 
+                                                                    style={{ width: '48px', height: '48px', borderRadius: '8px', padding: '0' }} 
+                                                                    onClick={(e) => {
+                                                                        e.currentTarget.blur();
+                                                                        const isWishlisted = wishlistItems.some(item => item.id === course?.id);
+                                                                        dispatch(toggleWishlist(course));
+                                                                        if (isWishlisted) {
+                                                                            toast.success('Đã gỡ khỏi danh sách yêu thích!');
+                                                                        } else {
+                                                                            toast.success('Đã thêm vào danh sách yêu thích!');
+                                                                        }
+                                                                    }}
+                                                                    title="Thêm vào yêu thích"
+                                                                >
+                                                                    <i className={wishlistItems.some(item => item.id === course?.id) ? "las la-heart" : "lar la-heart"} style={{ fontSize: '24px' }}></i>
+                                                                </button>
+                                                            </div>
+                                                            <button 
+                                                                type="button" 
+                                                                className="w-100 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
+                                                                style={{ height: '48px', borderRadius: '8px' }}
+                                                                onClick={() => {
+                                                                    const user = localStorage.getItem('user');
+                                                                    if (!user) {
+                                                                        toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
+                                                                        navigate('/login', { state: { from: `/checkout/${course.id}` } });
+                                                                    } else {
+                                                                        navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Mua ngay
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </Col>

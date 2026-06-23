@@ -160,17 +160,40 @@ describe('InstructorsService', () => {
 
   it('returns instructor reports board with database and mockdata sections separated', async () => {
     dataSource.query
-      .mockResolvedValueOnce([{ enrollments: '4', revenue: '1800000' }])
-      .mockResolvedValueOnce([{ enrollments: '2', revenue: '900000' }])
+      .mockResolvedValueOnce([{
+        enrollments: '4',
+        grossRevenue: '1800000',
+        adminRevenue: '1080000',
+        instructorRevenue: '720000',
+        revenue: '720000',
+      }])
+      .mockResolvedValueOnce([{ enrollments: '2', revenue: '360000' }])
       .mockResolvedValueOnce([
-        { periodLabel: '05/2026', revenue: '900000', enrollments: '2' },
-        { periodLabel: '06/2026', revenue: '900000', enrollments: '2' },
+        {
+          periodLabel: '05/2026',
+          grossRevenue: '900000',
+          adminRevenue: '540000',
+          instructorRevenue: '360000',
+          revenue: '360000',
+          enrollments: '2',
+        },
+        {
+          periodLabel: '06/2026',
+          grossRevenue: '900000',
+          adminRevenue: '540000',
+          instructorRevenue: '360000',
+          revenue: '360000',
+          enrollments: '2',
+        },
       ])
       .mockResolvedValueOnce([
         {
           courseId: 10,
           courseName: 'React Pro',
-          revenue: '1200000',
+          grossRevenue: '1200000',
+          adminRevenue: '720000',
+          instructorRevenue: '480000',
+          revenue: '480000',
           enrollments: '3',
           imageUrl: 'react.png',
         },
@@ -183,7 +206,10 @@ describe('InstructorsService', () => {
           studentAvatar: null,
           courseId: 10,
           courseName: 'React Pro',
-          amount: '400000',
+          grossAmount: '400000',
+          adminAmount: '240000',
+          instructorAmount: '160000',
+          amount: '160000',
           couponCode: null,
           status: 'ACTIVE',
           purchasedAt: '2026-06-10 09:00:00',
@@ -195,7 +221,10 @@ describe('InstructorsService', () => {
       { range: '30days' },
     );
 
-    expect(result.overview.totalRevenue).toBe(1800000);
+    expect(result.overview.totalRevenue).toBe(720000);
+    expect(result.overview.grossRevenue).toBe(1800000);
+    expect(result.overview.adminRevenue).toBe(1080000);
+    expect(result.overview.instructorRevenue).toBe(720000);
     expect(result.overview.revenueGrowth).toBe(100);
     expect(result.revenueSeriesSource).toBe('database');
     expect(result.topCoursesSource).toBe('database');
@@ -205,7 +234,10 @@ describe('InstructorsService', () => {
     expect(result.topCourses[0]).toMatchObject({
       courseId: 10,
       courseName: 'React Pro',
-      revenue: 1200000,
+      revenue: 480000,
+      grossRevenue: 1200000,
+      adminRevenue: 720000,
+      instructorRevenue: 480000,
       ratingLabel: 'MOCKDATA',
     });
   });

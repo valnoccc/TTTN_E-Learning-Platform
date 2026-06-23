@@ -7,6 +7,8 @@ import PageTransition from '../../../components/PageTransition';
 
 const StudentLayout: React.FC = () => {
   const location = useLocation();
+  const isLearningPage = location.pathname.includes('/learn/');
+
   return (
     <div className="main-wrapper">
       {/* Persistent Header */}
@@ -20,7 +22,7 @@ const StudentLayout: React.FC = () => {
       </AnimatePresence>
 
       {/* Persistent Footer */}
-      <FooterTwo />
+      {!isLearningPage && <FooterTwo />}
     </div>
   );
 };

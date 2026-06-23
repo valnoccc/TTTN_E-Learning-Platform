@@ -8,10 +8,17 @@ type CountGrowthRow = {
   lastMonth?: string | number;
 };
 
-type RevenueGrowthRow = CountGrowthRow;
+type RevenueGrowthRow = CountGrowthRow & {
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
+};
 type OrdersOverviewRow = {
   totalOrders?: string | number;
   totalEarnings?: string | number;
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
   totalRefunds?: string | number;
 };
 type SalesChartRow = {
@@ -19,6 +26,9 @@ type SalesChartRow = {
   year?: string | number;
   orders?: string | number;
   earnings?: string | number;
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
   refunds?: string | number;
 };
 type TopCourseRow = {
@@ -28,6 +38,8 @@ type TopCourseRow = {
   price?: string | number;
   orders?: string | number;
   revenue?: string | number;
+  adminRevenue?: string | number;
+  instructorRevenue?: string | number;
   image?: string | null;
 };
 
@@ -37,6 +49,8 @@ type TopInstructorRow = {
   category?: string | null;
   students?: string | number;
   revenue?: string | number;
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
   percentage?: string | number;
   avatar?: string | null;
 };
@@ -44,6 +58,21 @@ type TopInstructorRow = {
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly dataSource: DataSource) {}
+
+  private buildLineNetRevenueSql() {
+    return `
+      CASE
+        WHEN invoiceTotals.invoiceGross > 0 AND hd.TongTien IS NOT NULL THEN
+          CASE
+            WHEN mg.MaCoupon IS NULL THEN COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+            WHEN mg.MaKH IS NULL THEN COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0) * hd.TongTien / invoiceTotals.invoiceGross
+            WHEN mg.MaKH = cthd.MaKH THEN GREATEST(COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0) - GREATEST(invoiceTotals.invoiceGross - hd.TongTien, 0), 0)
+            ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+          END
+        ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+      END
+    `;
+  }
 
   private calculateGrowth(
     currentMonth?: string | number,
@@ -60,6 +89,8 @@ export class AdminDashboardService {
   }
 
   async getOverviewStats(): Promise<DashboardStatsDto> {
+    const lineNetRevenueSql = this.buildLineNetRevenueSql();
+
     const [
       studentStats,
       instructorStats,
@@ -105,13 +136,16 @@ export class AdminDashboardService {
       this.queryWithFallback<RevenueGrowthRow[]>(
         `
           SELECT 
-            IFNULL(SUM(TongTien), 0) as total,
-            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m') THEN TongTien ELSE 0 END), 0) as currentMonth,
-            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m') THEN TongTien ELSE 0 END), 0) as lastMonth
+            IFNULL(SUM(TongTien), 0) as grossRevenue,
+            IFNULL(SUM(TongTien) * 0.6, 0) as adminRevenue,
+            IFNULL(SUM(TongTien) * 0.4, 0) as instructorPayout,
+            IFNULL(SUM(TongTien) * 0.6, 0) as total,
+            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m') THEN TongTien ELSE 0 END) * 0.6, 0) as currentMonth,
+            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m') THEN TongTien ELSE 0 END) * 0.6, 0) as lastMonth
           FROM HoaDon
           WHERE TrangThaiThanhToan = 'PAID'
         `,
-        [{ total: '0', currentMonth: '0', lastMonth: '0' }],
+        [{ total: '0', currentMonth: '0', lastMonth: '0', grossRevenue: '0', adminRevenue: '0', instructorPayout: '0' }],
       ),
       this.queryWithFallback<any[]>(
         `
@@ -134,7 +168,10 @@ export class AdminDashboardService {
           SELECT 
             MONTH(NgayLap) as thang,
             YEAR(NgayLap) as nam,
-            SUM(TongTien) as doanhThu
+            SUM(TongTien) * 0.6 as doanhThu,
+            SUM(TongTien) as grossRevenue,
+            SUM(TongTien) * 0.6 as adminRevenue,
+            SUM(TongTien) * 0.4 as instructorPayout
           FROM HoaDon
           WHERE TrangThaiThanhToan = 'PAID'
           GROUP BY YEAR(NgayLap), MONTH(NgayLap)
@@ -147,11 +184,14 @@ export class AdminDashboardService {
         `
           SELECT
             COUNT(*) as totalOrders,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as totalEarnings,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.4, 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as totalEarnings,
             0 as totalRefunds
           FROM HoaDon
         `,
-        [{ totalOrders: '0', totalEarnings: '0', totalRefunds: '0' }],
+        [{ totalOrders: '0', totalEarnings: '0', grossRevenue: '0', adminRevenue: '0', instructorPayout: '0', totalRefunds: '0' }],
       ),
       this.queryWithFallback<SalesChartRow[]>(
         `
@@ -159,7 +199,10 @@ export class AdminDashboardService {
             MONTH(NgayLap) as month,
             YEAR(NgayLap) as year,
             COUNT(*) as orders,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as earnings,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.4, 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as earnings,
             0 as refunds
           FROM HoaDon
           WHERE NgayLap >= DATE_SUB(CURRENT_DATE(), INTERVAL 11 MONTH)
@@ -176,11 +219,19 @@ export class AdminDashboardService {
             MAX(IFNULL(hd.NgayThanhToan, hd.NgayLap)) as date,
             kh.GiaBan as price,
             COUNT(*) as orders,
-            COUNT(*) * kh.GiaBan as revenue,
+            SUM(${lineNetRevenueSql}) as revenue,
+            SUM((${lineNetRevenueSql}) * 0.6) as adminRevenue,
+            SUM((${lineNetRevenueSql}) * 0.4) as instructorRevenue,
             kh.HinhThuNho as image
           FROM ChiTietHoaDon cthd
           JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
           JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
           WHERE hd.TrangThaiThanhToan = 'PAID'
           GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.GiaBan, kh.HinhThuNho
           ORDER BY revenue DESC, orders DESC
@@ -195,12 +246,14 @@ export class AdminDashboardService {
             nd.HoTen as name,
             COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') as category,
             COUNT(DISTINCT hd.MaND) as students,
-            COUNT(*) * AVG(kh.GiaBan) as revenue,
+            SUM(${lineNetRevenueSql}) as grossRevenue,
+            SUM((${lineNetRevenueSql}) * 0.6) as adminRevenue,
+            SUM((${lineNetRevenueSql}) * 0.4) as revenue,
             ROUND(
               (
-                (COUNT(*) * AVG(kh.GiaBan)) /
+                SUM((${lineNetRevenueSql}) * 0.4) /
                 NULLIF((
-                  SELECT IFNULL(SUM(hd2.TongTien), 0)
+                  SELECT IFNULL(SUM(hd2.TongTien) * 0.4, 0)
                   FROM HoaDon hd2
                   WHERE hd2.TrangThaiThanhToan = 'PAID'
                 ), 0)
@@ -212,6 +265,12 @@ export class AdminDashboardService {
           JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
           JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
           JOIN NguoiDung nd ON kh.MaND_GiangVien = nd.MaND
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
           LEFT JOIN HoSoGiangVien hsgv ON nd.MaND = hsgv.MaND
           LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
           WHERE hd.TrangThaiThanhToan = 'PAID'
@@ -239,6 +298,9 @@ export class AdminDashboardService {
       totalCourses: parseInt(String(courseStats[0]?.total ?? 0), 10),
       courseGrowth: 0,
       totalRevenue: parseFloat(String(revenueStats[0]?.total ?? 0)),
+      grossRevenue: parseFloat(String(revenueStats[0]?.grossRevenue ?? 0)),
+      adminRevenue: parseFloat(String(revenueStats[0]?.adminRevenue ?? 0)),
+      instructorPayout: parseFloat(String(revenueStats[0]?.instructorPayout ?? 0)),
       revenueGrowth: this.calculateGrowth(
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
@@ -248,6 +310,9 @@ export class AdminDashboardService {
       salesOverview: {
         orders: Number(ordersOverview[0]?.totalOrders ?? 0),
         earnings: Number(ordersOverview[0]?.totalEarnings ?? 0),
+        grossRevenue: Number(ordersOverview[0]?.grossRevenue ?? 0),
+        adminRevenue: Number(ordersOverview[0]?.adminRevenue ?? 0),
+        instructorPayout: Number(ordersOverview[0]?.instructorPayout ?? 0),
         refunds: Number(ordersOverview[0]?.totalRefunds ?? 0),
       },
       salesChart,
@@ -258,6 +323,8 @@ export class AdminDashboardService {
         price: Number(row.price ?? 0),
         orders: Number(row.orders ?? 0),
         revenue: Number(row.revenue ?? 0),
+        adminRevenue: Number(row.adminRevenue ?? 0),
+        instructorRevenue: Number(row.instructorRevenue ?? 0),
         image: row.image ?? '',
       })),
       topInstructors: topInstructorRows.map((row) => ({
@@ -266,6 +333,8 @@ export class AdminDashboardService {
         category: row.category ?? 'Giang vien',
         students: Number(row.students ?? 0),
         revenue: Number(row.revenue ?? 0),
+        grossRevenue: Number(row.grossRevenue ?? 0),
+        adminRevenue: Number(row.adminRevenue ?? 0),
         percentage: Number(row.percentage ?? 0),
         avatar: row.avatar ?? '',
       })),
@@ -320,6 +389,9 @@ export class AdminDashboardService {
         label: item.label,
         orders: Number(row?.orders ?? 0),
         earnings: Number(row?.earnings ?? 0),
+        grossRevenue: Number(row?.grossRevenue ?? 0),
+        adminRevenue: Number(row?.adminRevenue ?? 0),
+        instructorPayout: Number(row?.instructorPayout ?? 0),
         refunds: Number(row?.refunds ?? 0),
       };
     });

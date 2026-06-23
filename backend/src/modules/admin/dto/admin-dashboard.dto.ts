@@ -6,6 +6,9 @@ export class DashboardStatsDto {
   totalCourses!: number;
   courseGrowth!: number;
   totalRevenue!: number;
+  grossRevenue!: number;
+  adminRevenue!: number;
+  instructorPayout!: number;
   revenueGrowth!: number;
   recentOrders!: any[];
   revenueChart!: {
@@ -16,12 +19,18 @@ export class DashboardStatsDto {
   salesOverview!: {
     orders: number;
     earnings: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
     refunds: number;
   };
   salesChart!: {
     label: string;
     orders: number;
     earnings: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
     refunds: number;
   }[];
   topCourses!: {
@@ -31,6 +40,8 @@ export class DashboardStatsDto {
     price: number;
     orders: number;
     revenue: number;
+    adminRevenue: number;
+    instructorRevenue: number;
     image: string;
   }[];
   topInstructors!: {
@@ -39,6 +50,8 @@ export class DashboardStatsDto {
     category: string;
     students: number;
     revenue: number;
+    grossRevenue: number;
+    adminRevenue: number;
     percentage: number;
     avatar: string;
   }[];
