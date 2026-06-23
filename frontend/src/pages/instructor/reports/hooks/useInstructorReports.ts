@@ -21,6 +21,9 @@ export interface InstructorCourseOption {
 export interface InstructorRevenuePoint {
   label: string;
   revenue: number;
+  grossRevenue: number;
+  adminRevenue: number;
+  instructorRevenue: number;
   enrollments: number;
 }
 
@@ -28,6 +31,9 @@ export interface InstructorTopCourseReport {
   courseId: number;
   courseName: string;
   revenue: number;
+  grossRevenue: number;
+  adminRevenue: number;
+  instructorRevenue: number;
   enrollments: number;
   ratingLabel: string;
   imageUrl: string | null;
@@ -41,6 +47,9 @@ export interface InstructorRecentEnrollment {
   courseId: number;
   courseName: string;
   amount: number;
+  grossAmount: number;
+  adminAmount: number;
+  instructorAmount: number;
   couponCode: string | null;
   status: string;
   purchasedAt: string;
@@ -53,6 +62,9 @@ export interface InstructorReportsBoard {
   };
   overview: {
     totalRevenue: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorRevenue: number;
     revenueGrowth: number;
     newEnrollments: number;
     enrollmentGrowth: number;
@@ -85,6 +97,9 @@ const DEFAULT_BOARD: InstructorReportsBoard = {
   },
   overview: {
     totalRevenue: 0,
+    grossRevenue: 0,
+    adminRevenue: 0,
+    instructorRevenue: 0,
     revenueGrowth: 0,
     newEnrollments: 0,
     enrollmentGrowth: 0,

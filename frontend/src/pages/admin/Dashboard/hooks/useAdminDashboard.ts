@@ -11,6 +11,9 @@ export interface RevenueChartData {
 export interface SalesOverview {
     orders: number;
     earnings: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
     refunds: number;
 }
 
@@ -18,6 +21,9 @@ export interface SalesChartData {
     label: string;
     orders: number;
     earnings: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
     refunds: number;
 }
 
@@ -36,6 +42,8 @@ export interface TopCourse {
     price: number;
     orders: number;
     revenue: number;
+    adminRevenue: number;
+    instructorRevenue: number;
     image: string;
 }
 
@@ -45,6 +53,8 @@ export interface TopInstructor {
     category: string;
     students: number;
     revenue: number;
+    grossRevenue: number;
+    adminRevenue: number;
     percentage: number;
     avatar: string;
 }
@@ -57,6 +67,9 @@ export interface DashboardStats {
     totalCourses: number;
     courseGrowth: number;
     totalRevenue: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
     revenueGrowth: number;
     recentOrders: RecentOrder[];
     revenueChart: RevenueChartData[];

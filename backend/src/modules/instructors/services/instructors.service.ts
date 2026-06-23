@@ -70,6 +70,9 @@ export interface InstructorReportFilters {
 export interface InstructorRevenuePoint {
   label: string;
   revenue: number;
+  grossRevenue: number;
+  adminRevenue: number;
+  instructorRevenue: number;
   enrollments: number;
 }
 
@@ -77,6 +80,9 @@ export interface InstructorTopCourseReport {
   courseId: number;
   courseName: string;
   revenue: number;
+  grossRevenue: number;
+  adminRevenue: number;
+  instructorRevenue: number;
   enrollments: number;
   ratingLabel: string;
   imageUrl: string | null;
@@ -90,6 +96,9 @@ export interface InstructorRecentEnrollment {
   courseId: number;
   courseName: string;
   amount: number;
+  grossAmount: number;
+  adminAmount: number;
+  instructorAmount: number;
   couponCode: string | null;
   status: string;
   purchasedAt: string;
@@ -102,6 +111,9 @@ export interface InstructorReportsBoard {
   };
   overview: {
     totalRevenue: number;
+    grossRevenue: number;
+    adminRevenue: number;
+    instructorRevenue: number;
     revenueGrowth: number;
     newEnrollments: number;
     enrollmentGrowth: number;
@@ -140,6 +152,9 @@ type RawStudentRow = {
 type RawRevenueSeriesRow = {
   periodLabel: string;
   revenue: number | string | null;
+  grossRevenue?: number | string | null;
+  adminRevenue?: number | string | null;
+  instructorRevenue?: number | string | null;
   enrollments: number | string | null;
 };
 
@@ -147,6 +162,9 @@ type RawTopCourseRow = {
   courseId: number | string;
   courseName: string;
   revenue: number | string | null;
+  grossRevenue?: number | string | null;
+  adminRevenue?: number | string | null;
+  instructorRevenue?: number | string | null;
   enrollments: number | string | null;
   imageUrl: string | null;
 };
@@ -159,6 +177,9 @@ type RawRecentEnrollmentRow = {
   courseId: number | string;
   courseName: string;
   amount: number | string | null;
+  grossAmount?: number | string | null;
+  adminAmount?: number | string | null;
+  instructorAmount?: number | string | null;
   couponCode: string | null;
   status: string;
   purchasedAt: string;
@@ -343,6 +364,10 @@ export class InstructorsService {
       courseId,
       range,
     );
+    const paidRevenueJoins = this.buildPaidRevenueJoins();
+    const grossRevenueSql = this.buildLineNetRevenueSql();
+    const instructorRevenueSql = `(${grossRevenueSql}) * 0.4`;
+    const adminRevenueSql = `(${grossRevenueSql}) * 0.6`;
 
     const [overviewRows, previousRows, revenueSeriesRows, topCourseRows, recentRows] =
       await Promise.all([
@@ -350,9 +375,12 @@ export class InstructorsService {
           `
             SELECT
               COUNT(*) AS enrollments,
-              COALESCE(SUM(kh.GiaBan), 0) AS revenue
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
+              COALESCE(SUM(${adminRevenueSql}), 0) AS adminRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS instructorRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS revenue
             FROM DangKyKhoaHoc dk
-            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            ${paidRevenueJoins}
             WHERE ${whereClause}
           `,
         ),
@@ -360,9 +388,12 @@ export class InstructorsService {
           `
             SELECT
               COUNT(*) AS enrollments,
-              COALESCE(SUM(kh.GiaBan), 0) AS revenue
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
+              COALESCE(SUM(${adminRevenueSql}), 0) AS adminRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS instructorRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS revenue
             FROM DangKyKhoaHoc dk
-            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            ${paidRevenueJoins}
             WHERE ${previousWhereClause}
           `,
         ),
@@ -370,10 +401,13 @@ export class InstructorsService {
           `
             SELECT
               ${this.buildPeriodSelect(range)} AS periodLabel,
-              COALESCE(SUM(kh.GiaBan), 0) AS revenue,
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
+              COALESCE(SUM(${adminRevenueSql}), 0) AS adminRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS instructorRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS revenue,
               COUNT(*) AS enrollments
             FROM DangKyKhoaHoc dk
-            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            ${paidRevenueJoins}
             WHERE ${whereClause}
             GROUP BY periodLabel
             ORDER BY MIN(dk.NgayDangKy) ASC
@@ -384,11 +418,14 @@ export class InstructorsService {
             SELECT
               kh.MaKH AS courseId,
               kh.TenKhoaHoc AS courseName,
-              COALESCE(SUM(kh.GiaBan), 0) AS revenue,
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
+              COALESCE(SUM(${adminRevenueSql}), 0) AS adminRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS instructorRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS revenue,
               COUNT(*) AS enrollments,
               kh.HinhThuNho AS imageUrl
             FROM DangKyKhoaHoc dk
-            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            ${paidRevenueJoins}
             WHERE ${whereClause}
             GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.HinhThuNho
             ORDER BY revenue DESC, enrollments DESC, kh.MaKH DESC
@@ -404,13 +441,16 @@ export class InstructorsService {
               nd.AnhDaiDien AS studentAvatar,
               kh.MaKH AS courseId,
               kh.TenKhoaHoc AS courseName,
-              kh.GiaBan AS amount,
-              NULL AS couponCode,
+              ${grossRevenueSql} AS grossAmount,
+              ${adminRevenueSql} AS adminAmount,
+              ${instructorRevenueSql} AS instructorAmount,
+              ${instructorRevenueSql} AS amount,
+              mg.MaCode AS couponCode,
               dk.TrangThai AS status,
               dk.NgayDangKy AS purchasedAt
             FROM DangKyKhoaHoc dk
             JOIN NguoiDung nd ON dk.MaND = nd.MaND
-            JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+            ${paidRevenueJoins}
             WHERE ${whereClause}
             ORDER BY dk.NgayDangKy DESC
             LIMIT 8
@@ -418,9 +458,18 @@ export class InstructorsService {
         ),
       ]);
 
-    const overviewRow = (overviewRows as Array<{ enrollments?: number | string; revenue?: number | string }>)[0] ?? {
+    const overviewRow = (overviewRows as Array<{
+      enrollments?: number | string;
+      revenue?: number | string;
+      grossRevenue?: number | string;
+      adminRevenue?: number | string;
+      instructorRevenue?: number | string;
+    }>)[0] ?? {
       enrollments: 0,
       revenue: 0,
+      grossRevenue: 0,
+      adminRevenue: 0,
+      instructorRevenue: 0,
     };
     const previousRow = (previousRows as Array<{ enrollments?: number | string; revenue?: number | string }>)[0] ?? {
       enrollments: 0,
@@ -434,6 +483,9 @@ export class InstructorsService {
       },
       overview: {
         totalRevenue: this.toNumber(overviewRow.revenue),
+        grossRevenue: this.toNumber(overviewRow.grossRevenue),
+        adminRevenue: this.toNumber(overviewRow.adminRevenue),
+        instructorRevenue: this.toNumber(overviewRow.instructorRevenue),
         revenueGrowth: this.calculateGrowth(
           this.toNumber(overviewRow.revenue),
           this.toNumber(previousRow.revenue),
@@ -453,6 +505,9 @@ export class InstructorsService {
       revenueSeries: (revenueSeriesRows as RawRevenueSeriesRow[]).map((row) => ({
         label: row.periodLabel,
         revenue: this.toNumber(row.revenue),
+        grossRevenue: this.toNumber(row.grossRevenue),
+        adminRevenue: this.toNumber(row.adminRevenue),
+        instructorRevenue: this.toNumber(row.instructorRevenue),
         enrollments: this.toNumber(row.enrollments),
       })),
       revenueSeriesSource: 'database',
@@ -460,6 +515,9 @@ export class InstructorsService {
         courseId: Number(row.courseId),
         courseName: row.courseName,
         revenue: this.toNumber(row.revenue),
+        grossRevenue: this.toNumber(row.grossRevenue),
+        adminRevenue: this.toNumber(row.adminRevenue),
+        instructorRevenue: this.toNumber(row.instructorRevenue),
         enrollments: this.toNumber(row.enrollments),
         ratingLabel: 'MOCKDATA',
         imageUrl: row.imageUrl,
@@ -473,6 +531,9 @@ export class InstructorsService {
         courseId: Number(row.courseId),
         courseName: row.courseName,
         amount: this.toNumber(row.amount),
+        grossAmount: this.toNumber(row.grossAmount),
+        adminAmount: this.toNumber(row.adminAmount),
+        instructorAmount: this.toNumber(row.instructorAmount),
         couponCode: row.couponCode,
         status: row.status,
         purchasedAt: row.purchasedAt,
@@ -486,6 +547,35 @@ export class InstructorsService {
       revenueBySourceLabel: 'MOCKDATA: Chua co tracking nguon doanh thu that',
       revenueBySourceSource: 'mockdata',
     };
+  }
+
+  private buildPaidRevenueJoins() {
+    return `
+      JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+      JOIN HoaDon hd ON hd.MaHD = dk.MaHD AND hd.TrangThaiThanhToan = 'PAID'
+      JOIN ChiTietHoaDon cthd ON cthd.MaHD = hd.MaHD AND cthd.MaKH = kh.MaKH
+      LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+      JOIN (
+        SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+        FROM ChiTietHoaDon
+        GROUP BY MaHD
+      ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+    `;
+  }
+
+  private buildLineNetRevenueSql() {
+    return `
+      CASE
+        WHEN invoiceTotals.invoiceGross > 0 AND hd.TongTien IS NOT NULL THEN
+          CASE
+            WHEN mg.MaCoupon IS NULL THEN COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+            WHEN mg.MaKH IS NULL THEN COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0) * hd.TongTien / invoiceTotals.invoiceGross
+            WHEN mg.MaKH = cthd.MaKH THEN GREATEST(COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0) - GREATEST(invoiceTotals.invoiceGross - hd.TongTien, 0), 0)
+            ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+          END
+        ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+      END
+    `;
   }
 
   private buildStudentQuery(

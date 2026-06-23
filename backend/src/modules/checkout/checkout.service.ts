@@ -123,7 +123,7 @@ export class CheckoutService {
       const invoiceId = insertHoaDonResult.insertId;
 
       // 4. Insert into ChiTietHoaDon and 5. Insert into DangKyKhoaHoc
-      const couponTiLe = appliedCouponId && coupon && coupon.TiLeGiangVien !== null ? Number(coupon.TiLeGiangVien) : 50.0;
+      const instructorRevenueRate = 40.0;
 
       for (const course of courses) {
         const giaGhiNhan = Number(course.GiaBan || 0);
@@ -131,14 +131,14 @@ export class CheckoutService {
 
         if (appliedCouponId) {
           const currentCourseDiscount = totalOriginalPrice > 0 ? (giaGhiNhan / totalOriginalPrice) * discountAmount : 0;
-          doanhThuGiangVien = (giaGhiNhan - currentCourseDiscount) * couponTiLe / 100;
+          doanhThuGiangVien = (giaGhiNhan - currentCourseDiscount) * instructorRevenueRate / 100;
         } else {
-          doanhThuGiangVien = giaGhiNhan * couponTiLe / 100;
+          doanhThuGiangVien = giaGhiNhan * instructorRevenueRate / 100;
         }
 
         await queryRunner.query(
           `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
-          [invoiceId, course.MaKH, giaGhiNhan, couponTiLe, doanhThuGiangVien]
+          [invoiceId, course.MaKH, giaGhiNhan, instructorRevenueRate, doanhThuGiangVien]
         );
 
         await queryRunner.query(

@@ -1,138 +1,200 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank">
-    <img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" />
-  </a>
-</p>
+# E-Learning Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A full-stack e-learning platform for programming courses, built for a three-role workflow:
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- Students can discover courses, enroll, learn through lessons, and track progress.
+- Instructors can create and manage course content, lessons, and learner interactions.
+- Admins can review content, manage users, and operate the platform.
 
-## Description
+This repository contains both the frontend and backend applications used to run the platform.
 
-**E-Learning Platform for Programming Courses** is a robust, full-stack web application designed to provide a seamless online learning experience. Built with modern technologies, this platform empowers instructors to manage high-quality programming content and enables students to browse, enroll, and track their learning progress effectively.
+## Highlights
 
-### Key Features
-* **Course Management**: Comprehensive tools for creating, updating, and managing programming courses with multiple lessons.
-* **Role-based Access Control**: Secured authentication system with distinct permissions for Students, Instructors, and Administrators.
-* **Intuitive Dashboard**: User-friendly interface for students to track enrolled courses and instructors to manage their curriculum.
-* **Responsive Design**: Optimized for various devices to ensure a consistent learning experience.
+- Role-based access control for `STUDENT`, `INSTRUCTOR`, and `ADMIN`
+- Course lifecycle management from draft to review and publication
+- Lesson-based learning flow with progress tracking
+- Instructor dashboards for course, student, and reporting workflows
+- Admin moderation and operational management tools
+- Modern frontend and backend stack with clear separation of concerns
 
----
+## Tech Stack
 
-### Technical Stack
+### Frontend
 
-| Category | Technologies |
-| :--- | :--- |
-| **Frontend** | React.js, Vite, Tailwind CSS |
-| **Backend** | Node.js, NestJS |
-| **Database** | MySQL |
-| **Tools** | Git, GitHub, Antigravity |
+- React 18
+- Vite
+- TypeScript
+- Tailwind CSS
+- Redux Toolkit
+- React Router
 
----
+### Backend
 
-### Project Team - Students
+- NestJS
+- TypeScript
+- TypeORM
+- MySQL / TiDB
+- JWT-based authentication
 
-| No. | Full Name | Student ID | Class | Role |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | **Chu Van Loc** | DH52200992 | D22_TH14 | Project Manager / Full-stack Developer |
-| 2 | **Le Duc Anh** | DH52200322 | D22_TH15 | Full-stack Developer |
+## Repository Structure
 
-**University**: Saigon Technology University  
-**Major**: Information Technology
+```text
+.
+|- frontend/   React + Vite client application
+|- backend/    NestJS API server
+|- docs/       Project docs, requirements, and architecture notes
 
----
+```
 
-## Installation & Setup
+## Core Roles
+
+### Student
+
+- Browse and search courses
+- Enroll in paid courses
+- Watch lessons and follow learning progress
+- Join course discussions and Q&A
+
+### Instructor
+
+- Create and edit courses
+- Manage lessons and curriculum
+- Review learner activity
+- View instructor-side reports and dashboards
+
+### Admin
+
+- Moderate and publish course content
+- Manage users and permissions
+- Review platform-level reporting data
+
+## Getting Started
 
 ### Prerequisites
-* **Node.js** (v18.0 or higher)
-* **MySQL** (v8.0 or higher)
-* **NPM** or **Yarn**
 
-## Project setup
+- Node.js 18+
+- npm
+- MySQL or TiDB
 
-```bash
-$ npm install
-```
-
-## Compile and run the project
+### 1. Clone the repository
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/valnoccc/TTTN_E-Learning-Platform.git
+cd TTTN_E-Learning-Platform
 ```
 
-## Run tests
+### 2. Install dependencies
+
+Install frontend dependencies:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cd frontend
+npm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Install backend dependencies:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cd ../backend
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. Configure environment variables
 
-## Resources
+Create the environment files required by the frontend and backend before running locally.
 
-Check out a few resources that may come in handy when working with NestJS:
+At minimum, you should prepare:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- backend database connection settings
+- backend JWT or auth-related secrets
+- frontend API base URL
+- any cloud storage or media settings if your local flow depends on them
 
-## Support
+Because this repository does not currently ship a complete public `.env.example`, review the backend and frontend config usage before first run.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 4. Run the applications
 
-## Stay in touch
+Start the backend:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+cd backend
+npm run start:dev
+```
+
+Start the frontend in a second terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Typical local URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+
+## Available Scripts
+
+### Frontend
+
+```bash
+cd frontend
+npm run dev
+npm run build
+npm run lint
+npm run preview
+```
+
+### Backend
+
+```bash
+cd backend
+npm run start:dev
+npm run build
+npm run lint
+npm run test
+npm run test:e2e
+```
+
+## Development Notes
+
+- The frontend and backend are versioned in the same repository.
+- The project uses a role-based route structure for different actor experiences.
+- The backend is organized by NestJS modules such as `auth`, `users`, `courses`, `lessons`, and `enrollments`.
+- Most project-specific documentation lives in the `docs/` directory.
+
+## Documentation
+
+Useful project documents:
+
+- [Project Overview](./docs/project-overview.md)
+- [Requirements](./docs/requirements.md)
+- [Architecture](./docs/architecture.md)
+- [AI Agent Workflow](./docs/ai-agent-workflow.md)
+- [Frontend State Management](./docs/frontend-state-management.md)
+- [API Contract](./docs/api-contract.md)
+
+## Contributing
+
+Contributions are welcome. If you want to contribute:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make focused changes with clear commit messages.
+4. Run relevant checks before opening a pull request.
+5. Open a pull request describing the problem, solution, and validation steps.
+
+For larger changes, it helps to open an issue or discussion first so scope and direction are aligned early.
+
+## Roadmap Ideas
+
+- Improve public setup documentation with a complete `.env.example`
+- Expand automated testing coverage
+- Improve deployment guidance for frontend and backend
+- Continue refining student, instructor, and admin user flows
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This repository is currently marked as `UNLICENSED` in the backend package metadata.
+
+If the project is intended to be published as a true open-source repository, add a top-level `LICENSE` file and update this section accordingly.
