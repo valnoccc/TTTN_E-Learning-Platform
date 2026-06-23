@@ -51,24 +51,28 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
     useEffect(() => {
         const fetchCourses = async () => {
             setLoading(true);
+            // Reset trang 1 mỗi khi filter/search thay đổi
+            setCurrentPage(1);
             try {
                 const params = new URLSearchParams();
                 if (filters?.search) params.append('search', filters.search);
                 if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
                 if (filters?.price) params.append('price', filters.price);
 
+                console.log('[CourseItemsGrid] Fetching with params:', params.toString());
                 const response: any = await axiosClient.get(`/public/courses?${params.toString()}`);
                 if (response && response.data) {
                     setCourses(response.data);
+                    console.log('[CourseItemsGrid] Loaded', response.data.length, 'courses for search:', filters?.search || '(all)');
                 }
             } catch (error) {
-                console.error("Error fetching courses", error);
+                console.error('[CourseItemsGrid] Error fetching courses', error);
             } finally {
                 setLoading(false);
             }
         };
         fetchCourses();
-    }, [filters]);
+    }, [filters?.search, filters?.categoryId, filters?.price]);
 
     const totalPages = Math.ceil(courses.length / itemsPerPage);
     
@@ -157,6 +161,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                                 level: 'Mọi cấp độ',
                                                                 category: categoryName
                                                             }));
+                                                            toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                         }}
                                                     >
                                                         <i className="las la-shopping-cart text-xl"></i>

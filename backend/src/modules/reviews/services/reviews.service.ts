@@ -117,24 +117,38 @@ export class ReviewsService {
   }
 
   async getPublicCourseReviews(courseId: number) {
-    return await this.dataSource.query(
+    const allReviews = await this.dataSource.query(
       `
       SELECT 
-        dg.MaDanhGia AS reviewId,
-        dg.SoSao AS rating,
-        dg.NoiDung AS content,
-        dg.ThoiGian AS createdAt,
+        dg.MaDanhGia    AS reviewId,
+        dg.SoSao        AS rating,
+        dg.NoiDung      AS content,
+        dg.ThoiGian     AS createdAt,
         dg.MaDanhGiaCha AS parentId,
-        u.MaND AS studentId,
-        u.HoTen AS studentName,
-        u.AnhDaiDien AS studentAvatar
+        u.MaND          AS studentId,
+        u.HoTen         AS studentName,
+        u.AnhDaiDien    AS studentAvatar
       FROM DanhGiaKhoaHoc dg
       INNER JOIN NguoiDung u ON dg.MaND = u.MaND
       WHERE dg.MaKH = ?
-      ORDER BY dg.ThoiGian DESC
+      ORDER BY dg.ThoiGian ASC
       `,
       [courseId],
     );
+
+    const rootReviews = allReviews.filter((r: any) => !r.parentId || r.parentId === null);
+    
+    // Reverse root reviews so newest is first
+    rootReviews.reverse();
+
+    rootReviews.forEach((root: any) => {
+      // Replies stay sorted by oldest first due to original ASC order
+      root.replies = allReviews.filter(
+        (r: any) => Number(r.parentId) === Number(root.reviewId)
+      );
+    });
+
+    return rootReviews;
   }
 
   async createStudentReview(

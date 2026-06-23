@@ -116,4 +116,72 @@ export class DiscussionsService {
       courseTitle: course.tenKhoaHoc,
     };
   }
+
+  /**
+   * Lấy danh sách thảo luận công khai của khóa học (không yêu cầu quyền INSTRUCTOR)
+   * Dùng cho học viên xem và đặt câu hỏi
+   */
+  async getPublicCourseDiscussions(courseId: number) {
+    return await this.dataSource.query(
+      `
+      SELECT
+        tl.MaThaoLuan AS discussionId,
+        tl.NoiDung AS content,
+        tl.ThoiGian AS createdAt,
+        tl.MaThaoLuanCha AS parentId,
+        u.MaND AS userId,
+        u.HoTen AS userName,
+        u.AnhDaiDien AS userAvatar,
+        u.VaiTro AS userRole
+      FROM ThaoLuanKhoaHoc tl
+      INNER JOIN NguoiDung u ON tl.MaND = u.MaND
+      WHERE tl.MaKH = ?
+        AND tl.MaThaoLuanCha IS NULL
+      ORDER BY tl.ThoiGian DESC
+      `,
+      [courseId],
+    );
+  }
+
+  /**
+   * Học viên đăng câu hỏi mới (không cần là giảng viên của khóa học)
+   * Yêu cầu: user đã đăng nhập
+   */
+  async createStudentDiscussion(
+    courseId: number,
+    userId: number,
+    noiDung: string,
+  ) {
+    // Kiểm tra khóa học tồn tại
+    const course = await this.khoaHocRepository.findOne({
+      where: { maKH: courseId },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Khóa học không tồn tại');
+    }
+
+    const result = await this.dataSource.query(
+      `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha)
+       VALUES (?, ?, ?, NOW(), NULL)`,
+      [courseId, userId, noiDung],
+    );
+
+    const user = await this.dataSource.query(
+      `SELECT HoTen, AnhDaiDien, VaiTro FROM NguoiDung WHERE MaND = ?`,
+      [userId],
+    );
+
+    return {
+      discussionId: result.insertId,
+      content: noiDung,
+      createdAt: new Date().toISOString(),
+      parentId: null,
+      userId,
+      userName: user[0]?.HoTen || 'Học viên',
+      userAvatar: user[0]?.AnhDaiDien || null,
+      userRole: user[0]?.VaiTro || 'STUDENT',
+      courseId,
+    };
+  }
 }

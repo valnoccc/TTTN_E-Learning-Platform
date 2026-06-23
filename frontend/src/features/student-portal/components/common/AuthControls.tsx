@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, User, Heart } from 'lucide-react';
+import { ChevronDown, LogOut, User, Heart, BookOpen } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../../../store/store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../../../store/store';
+import { loadUserCart } from '../../../cart/cartSlice';
 
 type StoredUser = {
   fullName?: string;
@@ -35,22 +36,12 @@ function getAvatarUrl(user: StoredUser | null) {
 }
 
 export default function AuthControls() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<StoredUser | null>(() => {
-    const userString = localStorage.getItem('user');
-    if (userString) {
-      try {
-        const parsedUser = JSON.parse(userString) as StoredUser;
-        return { ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) };
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = useState<StoredUser | null>(null);
 
+  const navigate = useNavigate();
   const location = useLocation();
   const wishlistItems = useSelector((state: RootState) => state.wishlist?.items || []);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -66,6 +57,8 @@ export default function AuthControls() {
       } else {
         setUser(null);
       }
+      // Nạp lại giỏ hàng tương ứng với user hiện tại hoặc guest
+      dispatch(loadUserCart());
     };
 
     // Chạy mỗi khi chuyển trang (ví dụ từ /login sang /)
@@ -73,7 +66,7 @@ export default function AuthControls() {
 
     window.addEventListener('auth-change', handleAuthChange);
     return () => window.removeEventListener('auth-change', handleAuthChange);
-  }, [location]);
+  }, [location, dispatch]);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -154,6 +147,14 @@ export default function AuthControls() {
         >
           <User size={14} className="me-2" />
           Bảng điều khiển
+        </Dropdown.Item>
+        <Dropdown.Item
+          as={Link}
+          to="/student/my-courses"
+          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
+        >
+          <BookOpen size={14} className="me-2 text-emerald-500" />
+          Khóa học của tôi
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}

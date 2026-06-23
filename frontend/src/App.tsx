@@ -18,6 +18,8 @@ import InstructorDetails from './features/student-portal/pages/instructor/Instru
 import Checkout from './features/student-portal/pages/checkout/Checkout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import BlogGrid from './features/student-portal/pages/blog/BlogGrid';
+import BlogDetails from './features/student-portal/pages/blog/BlogDetails';
 
 import StudentLayout from './features/student-portal/components/StudentLayout';
 
@@ -41,6 +43,8 @@ function AnimatedRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/registration" element={<RegisterPage />} />
+        <Route path="/blog-grid" element={<BlogGrid />} />
+        <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/student/*" element={<StudentRoutes />} />
       </Route>
 
