@@ -129,4 +129,25 @@ export class UsersService {
     );
     return progress.map((p: any) => p.MaBH);
   }
+
+  // ─── Lưu bài học gần nhất đang xem ─────────────────────────────────────────
+  async updateCurrentLesson(userId: number, courseId: number, lessonId: number) {
+    console.log(`[updateCurrentLesson] userId=${userId} | courseId=${courseId} | lessonId=${lessonId}`);
+    await this.dataSource.query(
+      `UPDATE DangKyKhoaHoc SET MaBaiHocGanNhat = ? WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'`,
+      [lessonId, userId, courseId],
+    );
+    return { success: true, lessonId };
+  }
+
+  // ─── Lấy bài học gần nhất của học viên trong khóa học ─────────────────────
+  async getCourseLastLesson(userId: number, courseId: number) {
+    console.log(`[getCourseLastLesson] userId=${userId} | courseId=${courseId}`);
+    const rows = await this.dataSource.query(
+      `SELECT MaBaiHocGanNhat as lastLessonId FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE' LIMIT 1`,
+      [userId, courseId],
+    );
+    if (rows.length === 0) return { lastLessonId: null };
+    return { lastLessonId: rows[0].lastLessonId ? Number(rows[0].lastLessonId) : null };
+  }
 }

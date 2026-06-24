@@ -11,6 +11,7 @@ import Contact from '../features/student-portal/pages/contact/Contact';
 import StudentProfile from '../features/student-portal/pages/account/StudentProfile';
 import Cart from '../features/student-portal/pages/shop/Cart';
 import Wishlist from '../features/student-portal/pages/shop/Wishlist';
+import CheckoutSuccess from '../features/student-portal/pages/checkout/CheckoutSuccess';
 
 export default function StudentRoutes() {
   return (
@@ -28,6 +29,7 @@ export default function StudentRoutes() {
       <Route path="profile" element={<StudentProfile />} />
       <Route path="cart" element={<Cart />} />
       <Route path="wishlist" element={<Wishlist />} />
+      <Route path="checkout/success" element={<CheckoutSuccess />} />
       <Route path="*" element={<Navigate to="/student" replace />} />
     </Routes>
   );
