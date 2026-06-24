@@ -144,6 +144,11 @@ class MobileMenu extends Component {
                         <CourseCategoryMobile />
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
+                                <p><Link to={"/student/my-courses"} style={{ color: "inherit", textDecoration: "none" }}>Khóa học của tôi</Link></p>
+                            </button>
+                        </div>
+                        <div className="mb-menu-item">
+                            <button className="mb-menu-button active">
                                 <p><Link to={"/instructors"} style={{ color: "inherit", textDecoration: "none" }}>Giảng viên</Link></p>
                             </button>
                         </div>
@@ -153,16 +158,9 @@ class MobileMenu extends Component {
                             </button>
                         </div>
                         <div className="mb-menu-item">
-                            <button className="mb-menu-button">
-                                <p>Bài viết <i className="las la-plus"></i></p>
+                            <button className="mb-menu-button active">
+                                <p><Link to={"/blog-grid"} style={{ color: "inherit", textDecoration: "none" }}>Bài viết</Link></p>
                             </button>
-                            <div className="mb-menu-content">
-                                <ul className="list-unstyled">
-                                    <li><Link to={"/blog-classic"}>Blog Classic</Link></li>
-                                    <li><Link to={"/blog-grid"}>Blog Grid</Link></li>
-                                    <li><Link to={"/blog-details"}>Blog Details</Link></li>
-                                </ul>
-                            </div>
                         </div>
                         <div className="mb-menu-item d-none">
                             <button className="mb-menu-button">

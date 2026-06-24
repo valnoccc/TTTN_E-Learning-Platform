@@ -56,9 +56,15 @@ export class PublicCoursesController {
       .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
     if (search) {
-      query.andWhere('khoaHoc.tenKhoaHoc LIKE :search', {
-        search: `%${search}%`,
-      });
+      const normalizedSearch = `%${search.trim().toLowerCase()}%`;
+      query.andWhere(
+        `(
+          LOWER(khoaHoc.tenKhoaHoc) LIKE :search
+          OR LOWER(khoaHoc.moTa)    LIKE :search
+          OR LOWER(giangVien.hoTen) LIKE :search
+        )`,
+        { search: normalizedSearch },
+      );
     }
 
     if (categoryId) {

@@ -5,6 +5,7 @@ import Pagination from './../../../components/Pagination';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../../cart/cartSlice';
 import axiosClient from '../../../../../api/axios';
+import toast from 'react-hot-toast';
 
 const formatPrice = (price: any) => {
     return new Intl.NumberFormat('en-US', { 
@@ -70,7 +71,20 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
         <Fragment>
             {
                 currentItems.map((data: any, i: number) => {
-                    const instructorName = data.giangVien ? `${data.giangVien.firstName || ''} ${data.giangVien.lastName || ''}`.trim() : 'Giảng viên chưa rõ';
+                    // Task 3: Lấy tên giảng viên từ trường đúng trong DB (hoTen), không dùng firstName/lastName
+                    const instructorName = data.giangVien?.hoTen || data.giangVien?.tenGiangVien || 'Chưa có giảng viên';
+                    const rawAvatar = data.giangVien?.anhDaiDien;
+                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=random`;
+                    let instructorAvatar = defaultAvatar;
+                    if (rawAvatar && rawAvatar !== 'null' && rawAvatar.trim() !== '') {
+                        if (rawAvatar.startsWith('http')) {
+                            instructorAvatar = rawAvatar;
+                        } else if (rawAvatar.includes('/')) {
+                            instructorAvatar = process.env.PUBLIC_URL + rawAvatar;
+                        } else {
+                            instructorAvatar = process.env.PUBLIC_URL + `/assets/images/${rawAvatar}`;
+                        }
+                    }
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const rawImage = data.hinhThuNho;
                     const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
@@ -113,7 +127,12 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                     <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4">
                                         <div className="flex items-center space-x-4">
                                             <div className="flex items-center space-x-2">
-                                                <img src={process.env.PUBLIC_URL + '/assets/images/author.jpg'} alt={instructorName} className="h-8 w-8 rounded-full object-cover" />
+                                                <img
+                                                    src={instructorAvatar}
+                                                    alt={instructorName}
+                                                    className="h-8 w-8 rounded-full object-cover"
+                                                    onError={(e: any) => { e.target.src = defaultAvatar; }}
+                                                />
                                                 <span className="text-sm font-medium text-gray-600">{instructorName}</span>
                                             </div>
                                             <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
@@ -141,6 +160,7 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                         level: 'Mọi cấp độ',
                                                         category: categoryName
                                                     }));
+                                                    toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                 }}
                                             >
                                                 <i className="las la-shopping-cart mr-1 text-lg"></i> Thêm vào giỏ

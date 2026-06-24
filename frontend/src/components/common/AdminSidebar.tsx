@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 // Dùng lại UserDropdown của giảng viên (hoặc bạn có thể tạo một bản copy tên AdminDropdown nếu cần đổi link bên trong)
@@ -50,6 +50,7 @@ export default function AdminSidebar() {
         { label: 'Quản lý người dùng', path: '/admin/users', icon: <Users size={18} /> },
         { label: 'Quản lý khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
         { label: 'Quản lý danh mục', path: '/admin/categories', icon: <Layers size={18} /> },
+        { label: 'Quản lý bài viết', path: '/admin/posts', icon: <FileText size={18} /> },
     ];
 
     const handleLogout = () => {
