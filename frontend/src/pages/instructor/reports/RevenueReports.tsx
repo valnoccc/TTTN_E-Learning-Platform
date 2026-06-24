@@ -84,7 +84,7 @@ export default function InstructorReports() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
                         <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
-                            Báo cáo doanh thu
+                            {/* Báo cáo doanh thu */}
                         </h1>
                     </div>
 
@@ -269,7 +269,7 @@ export default function InstructorReports() {
                                                     {course.courseName}
                                                 </h3>
                                                 <p className="text-[12px] text-slate-500">
-                                                    {course.enrollments} HV •{' '}
+                                                    {course.enrollments} Lượt mua • {' '}
                                                     <span className="font-medium text-amber-500">
                                                         {course.ratingLabel}
                                                     </span>
