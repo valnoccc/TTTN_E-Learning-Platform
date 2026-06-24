@@ -42,6 +42,8 @@ Instructor (Giang vien)
 - `GET /courses/discussions` (Instructor - Lay tat ca hoi dap/thao luan khoa hoc cua giang vien)
 - `GET /courses/:id/discussions` (Instructor - Lay hoi dap/thao luan cua mot khoa hoc)
 - `POST /courses/:id/discussions` (Instructor - Tra loi mot cau hoi thao luan, body: `{ noiDung: string, parentId: number }`)
+- `DELETE /courses/discussions/:discussionId` (Instructor - Xoa binh luan/phan hoi cua chinh minh trong khoa hoc do minh so huu)
+- `DELETE /courses/reviews/:reviewId` (Instructor - Xoa phan hoi danh gia cua chinh minh trong khoa hoc do minh so huu)
 
 Admin (Kiem duyet)
 - `GET /admin/courses` (Admin - Xem danh sach khoa hoc, ho tro `status` va `search`)

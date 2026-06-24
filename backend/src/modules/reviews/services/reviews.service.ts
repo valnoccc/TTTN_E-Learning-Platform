@@ -116,6 +116,31 @@ export class ReviewsService {
     };
   }
 
+  async deleteOwnReview(reviewId: number, instructorId: number) {
+    const ownedReview = await this.dataSource.query(
+      `
+      SELECT dg.MaDanhGia
+      FROM DanhGiaKhoaHoc dg
+      INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
+      WHERE dg.MaDanhGia = ?
+        AND dg.MaND = ?
+        AND kh.MaND_GiangVien = ?
+      `,
+      [reviewId, instructorId, instructorId],
+    );
+
+    if (ownedReview.length === 0) {
+      throw new ForbiddenException('Bạn không có quyền xóa bình luận này');
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM DanhGiaKhoaHoc WHERE MaDanhGia = ?`,
+      [reviewId],
+    );
+
+    return { deleted: true };
+  }
+
   async getPublicCourseReviews(courseId: number) {
     return await this.dataSource.query(
       `

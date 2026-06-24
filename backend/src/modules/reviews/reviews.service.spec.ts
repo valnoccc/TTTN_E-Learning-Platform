@@ -50,4 +50,33 @@ describe('ReviewsService', () => {
       },
     ]);
   });
+
+  it('deletes only a review reply owned by the instructor on their course', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ MaDanhGia: 2 }])
+      .mockResolvedValueOnce({ affectedRows: 1 });
+
+    await expect(service.deleteOwnReview(2, 99)).resolves.toEqual({
+      deleted: true,
+    });
+
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('dg.MaDanhGia = ?'),
+      [2, 99, 99],
+    );
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('DELETE FROM DanhGiaKhoaHoc'),
+      [2],
+    );
+  });
+
+  it('rejects deleting a review reply not owned by the instructor', async () => {
+    dataSource.query.mockResolvedValueOnce([]);
+
+    await expect(service.deleteOwnReview(2, 99)).rejects.toThrow(
+      'Bạn không có quyền xóa bình luận này',
+    );
+  });
 });

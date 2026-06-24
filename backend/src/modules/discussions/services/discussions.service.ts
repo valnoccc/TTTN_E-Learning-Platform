@@ -116,4 +116,29 @@ export class DiscussionsService {
       courseTitle: course.tenKhoaHoc,
     };
   }
+
+  async deleteOwnDiscussion(discussionId: number, instructorId: number) {
+    const ownedDiscussion = await this.dataSource.query(
+      `
+      SELECT tl.MaThaoLuan
+      FROM ThaoLuanKhoaHoc tl
+      INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+      WHERE tl.MaThaoLuan = ?
+        AND tl.MaND = ?
+        AND kh.MaND_GiangVien = ?
+      `,
+      [discussionId, instructorId, instructorId],
+    );
+
+    if (ownedDiscussion.length === 0) {
+      throw new ForbiddenException('Bạn không có quyền xóa bình luận này');
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ?`,
+      [discussionId],
+    );
+
+    return { deleted: true };
+  }
 }
