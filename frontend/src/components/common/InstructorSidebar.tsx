@@ -81,7 +81,7 @@ export default function InstructorSidebar() {
       icon: <BookOpen size={18} />,
     },
     {
-      label: 'Đánh giá học viên',
+      label: 'Danh sách học viên',
       path: '/instructor/students',
       icon: <Users size={18} />,
     },

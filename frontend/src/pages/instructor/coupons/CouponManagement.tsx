@@ -82,15 +82,9 @@ export default function CouponManagement() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              Phân hệ giảng viên
-            </p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
               Quản lý mã giảm giá
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Tạo coupon cho từng khóa học và đồng bộ trực tiếp với checkout của học viên.
-            </p>
           </div>
           <button
             type="button"

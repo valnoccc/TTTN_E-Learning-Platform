@@ -83,15 +83,9 @@ export default function InstructorReports() {
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                            Phân hệ giảng viên
-                        </p>
                         <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
                             Báo cáo doanh thu
                         </h1>
-                        <p className="mt-2 text-[14px] text-slate-500">
-                            Theo dõi tăng trưởng doanh thu và số lượng học viên đăng ký theo bộ lọc hiện tại.
-                        </p>
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">

@@ -98,15 +98,9 @@ export default function InstructorCourseReviewsPage() {
             <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                            Phân hệ giảng viên
-                        </p>
                         <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
                             Đánh giá khóa học
                         </h1>
-                        <p className="mt-2 text-[14px] text-slate-500">
-                            Theo dõi và phản hồi nhận xét của học viên để nâng cao chất lượng khóa học.
-                        </p>
                     </div>
                     <div className="flex items-center gap-2 rounded border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium shadow-sm">
                         <span className="text-slate-500">Đang xem:</span>
