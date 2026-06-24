@@ -13,13 +13,20 @@ export default function InstructorCourseLessons() {
         newLessonTitle,
         showAddChapterForm,
         newChapterTitle,
+        editingChapterId,
+        editingChapterTitle,
         setNewLessonTitle,
         setActiveAddLessonChapterId,
         setShowAddChapterForm,
         setNewChapterTitle,
+        setEditingChapterTitle,
         toggleChapter,
         handleAddChapter,
         handleAddLesson,
+        handleStartEditChapter,
+        handleCancelEditChapter,
+        handleSaveChapter,
+        handleDeleteChapter,
         handleDeleteLesson,
     } = useCourseCurriculum();
 
@@ -55,13 +62,13 @@ export default function InstructorCourseLessons() {
                                     onClick={() => setShowAddChapterForm(false)}
                                     className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                                 >
-                                    Huy
+                                    Hủy
                                 </button>
                                 <button
                                     onClick={() => void handleAddChapter()}
                                     className="rounded-sm bg-[#1dbf73] px-4 py-2 text-sm font-bold text-white hover:bg-[#169b5c]"
                                 >
-                                    Xac nhan tao
+                                    Xác nhận
                                 </button>
                             </div>
                         </div>
@@ -141,15 +148,50 @@ export default function InstructorCourseLessons() {
                                                 >
                                                     <Plus size={16} /> Thêm bài
                                                 </button>
-                                                <button className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                                                <button
+                                                    onClick={() => handleStartEditChapter(chapter.maChuong, chapter.tenChuong)}
+                                                    className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                                                >
                                                     <Edit3 size={16} />
                                                 </button>
-                                                <button className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500">
+                                                <button
+                                                    onClick={() => void handleDeleteChapter(chapter.maChuong)}
+                                                    className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                                                >
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         ) : null}
                                     </div>
+
+                                    {editingChapterId === chapter.maChuong ? (
+                                        <div className="animate-in slide-in-from-top-2 border-y border-emerald-200 bg-emerald-50/40 p-4 fade-in duration-200">
+                                            <h4 className="mb-3 text-sm font-bold text-slate-800">Sửa tên chương</h4>
+                                            <div className="flex flex-col gap-3 sm:flex-row">
+                                                <input
+                                                    type="text"
+                                                    value={editingChapterTitle}
+                                                    onChange={(e) => setEditingChapterTitle(e.target.value)}
+                                                    placeholder="Ví dụ: Chương 1: Kiến thức nền tảng và thiết lập môi trường"
+                                                    className="flex-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                                                />
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={handleCancelEditChapter}
+                                                        className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                                                    >
+                                                        Hủy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => void handleSaveChapter()}
+                                                        className="rounded-sm bg-[#1dbf73] px-4 py-2 text-sm font-bold text-white hover:bg-[#169b5c]"
+                                                    >
+                                                        Xác nhận
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
 
                                     <div
                                         className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
@@ -162,7 +204,7 @@ export default function InstructorCourseLessons() {
                                                         type="text"
                                                         value={newLessonTitle}
                                                         onChange={(e) => setNewLessonTitle(e.target.value)}
-                                                        placeholder="Nhap ten bai hoc moi..."
+                                                        placeholder="Nhập tên bài học mới..."
                                                         className="flex-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                                                         autoFocus
                                                     />
@@ -170,13 +212,13 @@ export default function InstructorCourseLessons() {
                                                         onClick={() => setActiveAddLessonChapterId(null)}
                                                         className="rounded-sm px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100"
                                                     >
-                                                        Huy
+                                                        Hủy
                                                     </button>
                                                     <button
                                                         onClick={() => void handleAddLesson(chapter.maChuong)}
                                                         className="rounded-sm bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
                                                     >
-                                                        Luu bai
+                                                        Lưu bài
                                                     </button>
                                                 </div>
                                             ) : null}

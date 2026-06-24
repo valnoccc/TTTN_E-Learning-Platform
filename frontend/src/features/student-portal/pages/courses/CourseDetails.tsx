@@ -179,13 +179,17 @@ function CourseDetails() {
                     if (userId) {
                         const res: any = await axiosClient.get(`/users/${userId}/courses`);
                         const courses = res?.data ?? res ?? [];
-                        console.log("Danh sách khóa học đã mua trả về:", courses);
-                        // Đảm bảo so sánh chính xác MaKH
+                        console.log('[CourseDetails] User courses:', courses);
                         const owned = courses.some((c: any) => Number(c.MaKH || c.maKH || c.id) === Number(id));
                         setIsOwned(owned);
+                        // Đồng bộ: nếu đã sở hữu thì cũng đặt isEnrolled = true
+                        // để tránh hiện nút 'Đăng ký ngay' ảo
+                        if (owned) {
+                            setIsEnrolled(true);
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching user courses", error);
+                    console.error('[CourseDetails] Error fetching user courses', error);
                 }
             }
         };
@@ -218,11 +222,19 @@ function CourseDetails() {
                 if (response && response.data) {
                     const fetchedData = response.data;
                     
-                    const parents = fetchedData.filter((r: any) => !r.parentId);
-                    const replies = fetchedData.filter((r: any) => r.parentId);
+                    // Backend already returns a nested tree structure (root reviews with .replies array)
+                    const parents = fetchedData;
                     
                     setAllParentReviews(parents);
                     setReviews(parents); // Initial display
+                    
+                    // If you still need a flat replies array for something else, you can extract it:
+                    const replies: any[] = [];
+                    parents.forEach((p: any) => {
+                        if (p.replies && p.replies.length > 0) {
+                            replies.push(...p.replies);
+                        }
+                    });
                     setRepliesData(replies);
                     
                     let totalRating = 0;
@@ -621,7 +633,8 @@ function CourseDetails() {
                                         <div className="rounded-xl border border-slate-200 bg-white shadow-sm mb-10 divide-y divide-slate-100">
                                             {currentReviews.length > 0 ? (
                                                 currentReviews.map((review: any, idx: number) => {
-                                                    const reviewReplies = repliesData.filter((r: any) => r.parentId === review.reviewId);
+                                                    const reviewReplies = review.replies || [];
+                                                    console.log('>>> Data Review kèm Replies ngoài sàn:', reviewReplies);
                                                     return (
                                                         <div key={review.reviewId || idx} className="p-6 transition hover:bg-slate-50/30">
                                                             <div className="flex gap-4">
@@ -661,31 +674,53 @@ function CourseDetails() {
                                                                     {/* Replies Thread */}
                                                                     {reviewReplies.length > 0 && (
                                                                         <div className="mt-4 space-y-3">
-                                                                            {reviewReplies.map((reply: any, rIdx: number) => (
-                                                                                <div 
-                                                                                    key={reply.reviewId || rIdx} 
-                                                                                    className="ml-6 md:ml-8 p-4 rounded-xl space-y-3 transition-all duration-300"
-                                                                                    style={{
-                                                                                        backgroundColor: isDarkMode ? '#062f1d' : '#f0fdf4',
-                                                                                        borderColor: isDarkMode ? 'rgba(6, 78, 59, 0.3)' : '#d1fae5',
-                                                                                        borderStyle: 'solid',
-                                                                                        borderWidth: '1px'
-                                                                                    }}
-                                                                                >
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        {course?.instructorAvatar ? (
-                                                                                            <img src={course.instructorAvatar.startsWith('http') ? course.instructorAvatar : process.env.PUBLIC_URL + course.instructorAvatar} alt={course.instructor} className="w-6 h-6 rounded-full object-cover shrink-0" />
-                                                                                        ) : (
-                                                                                            <div className="flex w-6 h-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
-                                                                                                {(course?.instructor || 'G').charAt(0).toUpperCase()}
-                                                                                            </div>
-                                                                                        )}
-                                                                                        <span style={{ color: isDarkMode ? '#34d399' : '#059669', fontWeight: 600 }}>{t('reviews.instructor_reply', 'Phản hồi từ Giảng viên')}</span>
-                                                                                        <span className="text-[11px] text-slate-400 font-medium">{getTimeAgo(reply.createdAt)}</span>
+                                                                            {reviewReplies.map((reply: any, rIdx: number) => {
+                                                                                const instructorName = (reply.studentName || 'Giảng viên').trim();
+                                                                                const rawAvatar = reply.studentAvatar;
+                                                                                const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=04a557&color=fff&bold=true&size=80`;
+                                                                                
+                                                                                let avatarSrc = avatarFallback;
+                                                                                if (rawAvatar && rawAvatar !== 'null' && rawAvatar.trim() !== '') {
+                                                                                    avatarSrc = rawAvatar.startsWith('http') ? rawAvatar : `/assets/images/${rawAvatar}`;
+                                                                                }
+
+                                                                                return (
+                                                                                    <div 
+                                                                                        key={reply.reviewId || reply.id || rIdx} 
+                                                                                        className="ml-6 md:ml-8 p-4 rounded-xl transition-all duration-300"
+                                                                                        style={{
+                                                                                            backgroundColor: isDarkMode ? '#062f1d' : '#f0fbf5',
+                                                                                            borderColor: isDarkMode ? 'rgba(6, 78, 59, 0.3)' : '#d4edda',
+                                                                                            borderStyle: 'solid',
+                                                                                            borderWidth: '1px'
+                                                                                        }}
+                                                                                    >
+                                                                                        <div className="d-flex align-items-center gap-2 mb-2 flex flex-row items-center">
+                                                                                            <img 
+                                                                                                src={avatarSrc} 
+                                                                                                alt="Giảng viên" 
+                                                                                                className="rounded-circle rounded-full"
+                                                                                                style={{ width: '28px', height: '28px', objectFit: 'cover' }}
+                                                                                                onError={(e: any) => {
+                                                                                                    if ((e.target as HTMLImageElement).src !== avatarFallback) {
+                                                                                                        (e.target as HTMLImageElement).src = avatarFallback;
+                                                                                                    }
+                                                                                                }}
+                                                                                            />
+                                                                                            <strong className="text-emerald-700" style={{ color: isDarkMode ? '#34d399' : '#04a557', fontSize: '14px' }}>
+                                                                                                {instructorName}
+                                                                                            </strong>
+                                                                                            <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: isDarkMode ? 'rgba(5, 150, 105, 0.2)' : '#d1e7dd', color: isDarkMode ? '#6ee7b7' : '#0f5132', borderColor: isDarkMode ? 'transparent' : '#badbcc' }}>
+                                                                                                Giảng viên
+                                                                                            </span>
+                                                                                            <span className="text-muted text-slate-500 small ms-auto ml-auto text-xs">
+                                                                                                {getTimeAgo(reply.createdAt || reply.ngayTao)}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155', margin: '4px 0 0 0', fontSize: '14px', lineHeight: '1.6' }}>{reply.content || reply.noiDung}</p>
                                                                                     </div>
-                                                                                    <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155', margin: '4px 0 0 0' }}>{reply.content}</p>
-                                                                                </div>
-                                                                            ))}
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -746,17 +781,7 @@ function CourseDetails() {
                                                             {t('reviews.login_btn', 'Đăng nhập để nhận xét')}
                                                         </Link>
                                                     </div>
-                                                ) : !isEnrolled ? (
-                                                    <div className="text-center py-8">
-                                                        <p className="text-slate-600 mb-4">{t('reviews.enroll_required', 'Vui lòng đăng ký khóa học để chia sẻ cảm nhận của bạn.')}</p>
-                                                        <button 
-                                                            onClick={() => navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } })}
-                                                            className="inline-block bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-8 rounded-lg transition-colors border-0"
-                                                        >
-                                                            {t('reviews.enroll_btn', 'Đăng ký ngay')}
-                                                        </button>
-                                                    </div>
-                                                ) : (
+                                                ) : isOwned || isEnrolled ? (
                                                     <>
                                                         <h3 className="text-lg font-bold text-slate-800 mb-2 m-0">{t('reviews.write_review', 'Viết đánh giá của bạn')}</h3>
                                                         <p className="text-sm text-slate-500 mb-6 m-0">{t('reviews.required_fields', 'Các trường bắt buộc được đánh dấu *')}</p>
@@ -784,12 +809,23 @@ function CourseDetails() {
                                                                 value={reviewForm.noiDung}
                                                                 onChange={(e) => setReviewForm({ ...reviewForm, noiDung: e.target.value })}
                                                                 required
+                                                                style={{ color: '#334155' }}
                                                             ></textarea>
                                                             <button type="submit" className="bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-8 rounded-lg transition-colors border-0">
                                                                 {t('reviews.submit', 'Gửi đánh giá')}
                                                             </button>
                                                         </form>
                                                     </>
+                                                ) : (
+                                                    <div className="text-center py-8">
+                                                        <p className="text-slate-600 mb-4">{t('reviews.enroll_required', 'Vui lòng đăng ký khóa học để chia sẻ cảm nhận của bạn.')}</p>
+                                                        <button 
+                                                            onClick={() => navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } })}
+                                                            className="inline-block bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-8 rounded-lg transition-colors border-0"
+                                                        >
+                                                            {t('reviews.enroll_btn', 'Đăng ký ngay')}
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}

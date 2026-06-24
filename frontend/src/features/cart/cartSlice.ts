@@ -6,10 +6,23 @@ interface CartState {
   totalAmount: number;
 }
 
+const getUserIdentifier = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user.maND || user.id || user.email || 'guest';
+    }
+  } catch (e) {}
+  return 'guest';
+};
+
+const getCartKey = () => `cart_${getUserIdentifier()}`;
+
 // Lấy giỏ hàng từ LocalStorage
 const loadCartFromStorage = (): CartState => {
   try {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem(getCartKey());
     if (savedCart) {
       return JSON.parse(savedCart);
     }
@@ -24,7 +37,7 @@ const initialState: CartState = loadCartFromStorage();
 // Hàm hỗ trợ lưu vào LocalStorage
 const saveCartToStorage = (state: CartState) => {
   try {
-    localStorage.setItem('cart', JSON.stringify(state));
+    localStorage.setItem(getCartKey(), JSON.stringify(state));
   } catch (error) {
     console.error('Failed to save cart to storage', error);
   }
@@ -55,8 +68,13 @@ const cartSlice = createSlice({
       state.totalAmount = 0;
       saveCartToStorage(state);
     },
+    loadUserCart(state) {
+      const newState = loadCartFromStorage();
+      state.items = newState.items;
+      state.totalAmount = newState.totalAmount;
+    }
   },
 });
 
-export const { addToCart, removeFromCart, clearCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, clearCart, loadUserCart } = cartSlice.actions;
 export default cartSlice.reducer;

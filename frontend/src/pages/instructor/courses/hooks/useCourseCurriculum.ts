@@ -35,6 +35,8 @@ export function useCourseCurriculum() {
     const [newLessonTitle, setNewLessonTitle] = useState('');
     const [showAddChapterForm, setShowAddChapterForm] = useState(false);
     const [newChapterTitle, setNewChapterTitle] = useState('');
+    const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
+    const [editingChapterTitle, setEditingChapterTitle] = useState('');
 
     useEffect(() => {
         if (isNewCourse || !id) {
@@ -149,6 +151,75 @@ export function useCourseCurriculum() {
         }
     };
 
+    const handleStartEditChapter = (chapterId: number, currentTitle: string) => {
+        setEditingChapterId(chapterId);
+        setEditingChapterTitle(currentTitle);
+        setShowAddChapterForm(false);
+    };
+
+    const handleCancelEditChapter = () => {
+        setEditingChapterId(null);
+        setEditingChapterTitle('');
+    };
+
+    const handleSaveChapter = async () => {
+        if (!editingChapterId) {
+            return;
+        }
+
+        const nextTitle = editingChapterTitle.trim();
+        if (!nextTitle) {
+            toast.error('Ten chuong khong duoc de trong!');
+            return;
+        }
+
+        try {
+            const response = await axiosClient.patch<ChapterData | CurriculumApiResponse<ChapterData>>(
+                `/courses/chapters/${editingChapterId}`,
+                { tenChuong: nextTitle },
+            );
+            const updatedChapter = normalizeChapter(unwrapPayload(response));
+
+            setChapters((prev) =>
+                prev.map((chapter) =>
+                    chapter.maChuong === editingChapterId ? updatedChapter : chapter,
+                ),
+            );
+            handleCancelEditChapter();
+            toast.success('Da cap nhat chuong hoc!');
+        } catch {
+            toast.error('Loi khi cap nhat chuong hoc.');
+        }
+    };
+
+    const handleDeleteChapter = async (chapterId: number) => {
+        if (!window.confirm('Ban co chac chan muon xoa chuong hoc nay?')) {
+            return;
+        }
+
+        try {
+            await axiosClient.delete(`/courses/chapters/${chapterId}`);
+            const nextChapters = chapters.filter((chapter) => chapter.maChuong !== chapterId);
+
+            setChapters(nextChapters);
+            setActiveAddLessonChapterId((current) => (current === chapterId ? null : current));
+            setEditingChapterId((current) => (current === chapterId ? null : current));
+            if (editingChapterId === chapterId) {
+                setEditingChapterTitle('');
+            }
+            setExpandedChapterId((current) => {
+                if (current !== chapterId) {
+                    return current;
+                }
+
+                return nextChapters[0]?.maChuong ?? null;
+            });
+            toast.success('Da xoa chuong hoc thanh cong!');
+        } catch {
+            toast.error('Loi khi xoa chuong hoc.');
+        }
+    };
+
     return {
         loading,
         chapters,
@@ -157,13 +228,20 @@ export function useCourseCurriculum() {
         newLessonTitle,
         showAddChapterForm,
         newChapterTitle,
+        editingChapterId,
+        editingChapterTitle,
         setNewLessonTitle,
         setActiveAddLessonChapterId,
         setShowAddChapterForm,
         setNewChapterTitle,
+        setEditingChapterTitle,
         toggleChapter,
         handleAddChapter,
         handleAddLesson,
+        handleStartEditChapter,
+        handleCancelEditChapter,
+        handleSaveChapter,
+        handleDeleteChapter,
         handleDeleteLesson,
     };
 }

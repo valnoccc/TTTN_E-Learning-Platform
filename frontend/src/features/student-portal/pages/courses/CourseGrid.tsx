@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import CourseSidebar from './components/CourseSidebar';
@@ -7,29 +7,34 @@ import CourseItemGrid from './components/CourseItemsGrid';
 import { Styles } from './styles/course';
 
 const CourseGrid = () => {
-    const location = useLocation();
-    
+    const [searchParams] = useSearchParams();
+
+    // Bóc tách tham số search từ URL (?search=từ_khóa)
+    const searchQuery = searchParams.get('search') || '';
+    const categoryIdParam = searchParams.get('categoryId');
+
     const [filters, setFilters] = useState<any>({
-        search: '',
-        categoryId: null,
+        search: searchQuery,
+        categoryId: categoryIdParam ? Number(categoryIdParam) : null,
         price: null
     });
 
+    // Đồng bộ filters mỗi khi URL thay đổi (click keyword, submit form search)
     useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        const categoryId = queryParams.get('categoryId');
-        
+        const newSearch = searchParams.get('search') || '';
+        const newCategoryId = searchParams.get('categoryId');
         setFilters((prev: any) => ({
             ...prev,
-            categoryId: categoryId ? Number(categoryId) : null
+            search: newSearch,
+            categoryId: newCategoryId ? Number(newCategoryId) : prev.categoryId,
         }));
-    }, [location.search]);
+    }, [searchParams]);
 
     return (
         <div className="main-wrapper course-page">
 
-            {/* Breadcroumb */}
-            <BreadcrumbBox title="Khóa học" />
+            {/* Breadcrumb */}
+            <BreadcrumbBox title={searchQuery ? `Kết quả: "${searchQuery}"` : 'Khóa học'} />
 
             <Styles>
                 {/* Course Grid */}

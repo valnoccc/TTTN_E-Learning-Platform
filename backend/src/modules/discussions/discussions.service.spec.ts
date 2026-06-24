@@ -63,4 +63,33 @@ describe('DiscussionsService', () => {
       courseTitle: 'React căn bản',
     });
   });
+
+  it('deletes only a discussion comment owned by the instructor on their course', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ MaThaoLuan: 2 }])
+      .mockResolvedValueOnce({ affectedRows: 1 });
+
+    await expect(service.deleteOwnDiscussion(2, 30001)).resolves.toEqual({
+      deleted: true,
+    });
+
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('tl.MaThaoLuan = ?'),
+      [2, 30001, 30001],
+    );
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('DELETE FROM ThaoLuanKhoaHoc'),
+      [2],
+    );
+  });
+
+  it('rejects deleting a discussion comment not owned by the instructor', async () => {
+    dataSource.query.mockResolvedValueOnce([]);
+
+    await expect(service.deleteOwnDiscussion(2, 30001)).rejects.toThrow(
+      'Bạn không có quyền xóa bình luận này',
+    );
+  });
 });

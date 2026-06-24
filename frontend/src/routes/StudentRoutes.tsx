@@ -5,6 +5,7 @@ import CourseGrid from '../features/student-portal/pages/courses/CourseGrid';
 import CourseList from '../features/student-portal/pages/courses/CourseList';
 import CourseDetails from '../features/student-portal/pages/courses/CourseDetails';
 import CourseLearning from '../features/student-portal/pages/courses/CourseLearning';
+import MyCourses from '../features/student-portal/pages/courses/MyCourses';
 import Faq from '../features/student-portal/pages/faq/Faq';
 import Contact from '../features/student-portal/pages/contact/Contact';
 import StudentProfile from '../features/student-portal/pages/account/StudentProfile';
@@ -20,6 +21,7 @@ export default function StudentRoutes() {
       <Route path="course-grid" element={<CourseGrid />} />
       <Route path="course-list" element={<CourseList />} />
       <Route path="course-details/:id" element={<CourseDetails />} />
+      <Route path="my-courses" element={<MyCourses />} />
       <Route path="learn/:id" element={<CourseLearning />} />
       <Route path="faq" element={<Faq />} />
       <Route path="contact" element={<Contact />} />

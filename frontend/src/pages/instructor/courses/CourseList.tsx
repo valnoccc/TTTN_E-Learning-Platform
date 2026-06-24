@@ -19,7 +19,11 @@ export default function InstructorCourses() {
         <InstructorLayout>
             <div className="space-y-6">
                 <div className="mb-5 flex items-center justify-between">
-                    <h1 className="m-0 text-[1.8rem] font-bold text-slate-800">Khóa học của tôi</h1>
+                   <div>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
+              Khóa học của tôi
+            </h1>
+          </div>
                     <Link
                         to="/instructor/courses/new"
                         className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"

@@ -219,6 +219,22 @@ export function useInstructorCourseReviews() {
         }
     };
 
+    const handleDeleteReview = async (reviewId: number) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) {
+            return;
+        }
+
+        try {
+            await axiosClient.delete(`/courses/reviews/${reviewId}`);
+            setReviews((current) =>
+                current.filter((review) => review.reviewId !== reviewId),
+            );
+            toast.success('Đã xóa phản hồi đánh giá');
+        } catch {
+            toast.error('Không thể xóa phản hồi này');
+        }
+    };
+
     const toggleReplies = (reviewId: number) => {
         setExpandedReplies((current) => ({
             ...current,
@@ -252,6 +268,7 @@ export function useInstructorCourseReviews() {
         setReplyContent,
         handleStartReply,
         handleSubmitReply,
+        handleDeleteReview,
         getReplies,
         toggleReplies,
     };

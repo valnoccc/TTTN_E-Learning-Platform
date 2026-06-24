@@ -93,19 +93,17 @@ class HeaderTwo extends Component {
                                             </ul>
                                         </li>
                                         <CourseCategoryDropdown />
+                                        {/* <li className="nav-item">
+                                            <Link className="nav-link" to={"/student/my-courses"}>Khóa học của tôi</Link>
+                                        </li> */}
                                         <li className="nav-item">
                                             <Link className="nav-link" to={"/instructors"}>Giảng viên</Link>
                                         </li>
                                         <li className="nav-item">
                                             <Link className="nav-link" to={"/events"}>Sự kiện</Link>
                                         </li>
-                                        <li className="nav-item dropdown">
-                                            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Bài viết <i className="las la-angle-down"></i></Link>
-                                            <ul className="dropdown list-unstyled">
-                                                <li className="nav-item"><Link className="nav-link" to={"/blog-classic"}>Blog Classic</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/blog-grid"}>Blog Grid</Link></li>
-                                                <li className="nav-item"><Link className="nav-link" to={"/blog-details"}>Blog Details</Link></li>
-                                            </ul>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to={"/blog-grid"}>Bài viết</Link>
                                         </li>
                                         <li className="nav-item dropdown d-none">
                                             <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Shop <i className="las la-angle-down"></i></Link>

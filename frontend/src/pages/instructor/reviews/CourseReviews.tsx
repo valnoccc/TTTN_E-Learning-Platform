@@ -1,12 +1,12 @@
 import {
     AlertCircle,
-    Check,
     Filter,
     MessageSquare,
     Reply,
     Search,
     Send,
     Star,
+    Trash2,
     X,
 } from 'lucide-react';
 import { type ReactNode } from 'react';
@@ -88,6 +88,7 @@ export default function InstructorCourseReviewsPage() {
         setReplyContent,
         handleStartReply,
         handleSubmitReply,
+        handleDeleteReview,
         getReplies,
         toggleReplies,
     } = useInstructorCourseReviews();
@@ -97,15 +98,9 @@ export default function InstructorCourseReviewsPage() {
             <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                            Phân hệ giảng viên
-                        </p>
                         <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
                             Đánh giá khóa học
                         </h1>
-                        <p className="mt-2 text-[14px] text-slate-500">
-                            Theo dõi và phản hồi nhận xét của học viên để nâng cao chất lượng khóa học.
-                        </p>
                     </div>
                     <div className="flex items-center gap-2 rounded border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium shadow-sm">
                         <span className="text-slate-500">Đang xem:</span>
@@ -262,22 +257,35 @@ export default function InstructorCourseReviewsPage() {
                                                                 {replies.map((reply) => (
                                                                     <div
                                                                         key={reply.reviewId}
-                                                                        className="rounded border border-emerald-100 bg-emerald-50/50 p-4"
+                                                                        className="flex items-start gap-3 rounded border border-emerald-100 bg-emerald-50/50 p-4"
                                                                     >
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                                                                <Check size={12} strokeWidth={3} />
+                                                                        <Avatar review={reply} />
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                                    <span className="text-[13px] font-bold text-slate-900">
+                                                                                        {reply.studentName}
+                                                                                    </span>
+                                                                                    <span className="rounded border border-emerald-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                                                                                        Giảng viên
+                                                                                    </span>
+                                                                                    <span className="text-[11px] text-slate-400">
+                                                                                        {formatDate(reply.createdAt)}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => void handleDeleteReview(reply.reviewId)}
+                                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-100 bg-white text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                                                                    title="Xóa phản hồi"
+                                                                                >
+                                                                                    <Trash2 size={14} />
+                                                                                </button>
                                                                             </div>
-                                                                            <span className="text-[13px] font-bold text-emerald-800">
-                                                                                Phản hồi của bạn
-                                                                            </span>
-                                                                            <span className="text-[11px] text-slate-400">
-                                                                                {formatDate(reply.createdAt)}
-                                                                            </span>
+                                                                            <p className="mt-2 text-[14px] text-slate-700">
+                                                                                {reply.content}
+                                                                            </p>
                                                                         </div>
-                                                                        <p className="mt-2 text-[14px] text-slate-700">
-                                                                            {reply.content}
-                                                                        </p>
                                                                     </div>
                                                                 ))}
                                                             </div>

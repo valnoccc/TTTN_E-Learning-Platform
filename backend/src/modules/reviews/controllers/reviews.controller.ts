@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -60,6 +69,24 @@ export class ReviewsController {
     return {
       message: 'Gửi phản hồi đánh giá thành công',
       data: replyData,
+    };
+  }
+
+  @Delete('reviews/:reviewId')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR')
+  async deleteOwnReview(
+    @Param('reviewId') reviewId: string,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.reviewsService.deleteOwnReview(
+      Number(reviewId),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Xóa phản hồi đánh giá thành công',
+      data: result,
     };
   }
 

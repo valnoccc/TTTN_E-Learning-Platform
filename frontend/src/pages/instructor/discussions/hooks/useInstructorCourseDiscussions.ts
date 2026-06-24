@@ -278,6 +278,22 @@ export function useInstructorCourseDiscussions() {
         }
     };
 
+    const handleDeleteDiscussion = async (discussionId: number) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này?')) {
+            return;
+        }
+
+        try {
+            await axiosClient.delete(`/courses/discussions/${discussionId}`);
+            setDiscussions((current) =>
+                current.filter((discussion) => discussion.discussionId !== discussionId),
+            );
+            toast.success('Đã xóa bình luận');
+        } catch {
+            toast.error('Không thể xóa bình luận này');
+        }
+    };
+
     const toggleReplies = (discussionId: number) => {
         setExpandedReplies((current) => ({
             ...current,
@@ -310,6 +326,7 @@ export function useInstructorCourseDiscussions() {
         setReplyContent,
         handleStartReply,
         handleSubmitReply,
+        handleDeleteDiscussion,
         getReplies,
         toggleReplies,
     };

@@ -9,6 +9,7 @@ describe('DiscussionsController', () => {
     getInstructorDiscussions: jest.Mock;
     getCourseDiscussions: jest.Mock;
     replyToDiscussion: jest.Mock;
+    deleteOwnDiscussion: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -16,6 +17,7 @@ describe('DiscussionsController', () => {
       getInstructorDiscussions: jest.fn(),
       getCourseDiscussions: jest.fn(),
       replyToDiscussion: jest.fn(),
+      deleteOwnDiscussion: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -71,5 +73,17 @@ describe('DiscussionsController', () => {
       parentId: 1,
       noiDung: 'Câu trả lời mẫu',
     });
+  });
+
+  it('deletes an instructor owned discussion comment', async () => {
+    service.deleteOwnDiscussion.mockResolvedValue({ deleted: true });
+
+    await expect(
+      controller.deleteOwnDiscussion('2', { user: { sub: 30001 } } as any),
+    ).resolves.toEqual({
+      message: 'Xóa bình luận hỏi đáp thành công',
+      data: { deleted: true },
+    });
+    expect(service.deleteOwnDiscussion).toHaveBeenCalledWith(2, 30001);
   });
 });

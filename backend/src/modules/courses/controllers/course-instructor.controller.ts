@@ -234,6 +234,27 @@ export class CoursesController {
     return { message: 'Tạo chương thành công', data };
   }
 
+  @Patch('chapters/:chapterId')
+  async updateChapter(
+    @Param('chapterId') chapterId: string,
+    @Request() req,
+    @Body() body: any,
+  ) {
+    const data = await this.curriculumService.updateChapter(
+      Number(chapterId),
+      req.user.sub,
+      body,
+    );
+
+    return { message: 'Cap nhat chuong thanh cong', data };
+  }
+
+  @Delete('chapters/:chapterId')
+  async deleteChapter(@Param('chapterId') chapterId: string, @Request() req) {
+    await this.curriculumService.deleteChapter(Number(chapterId), req.user.sub);
+    return { message: 'Xoa chuong thanh cong' };
+  }
+
   @Post('chapters/:chapterId/lessons')
   async addLesson(@Param('chapterId') chapterId: string, @Body() body: any) {
     const data = await this.curriculumService.addLesson(

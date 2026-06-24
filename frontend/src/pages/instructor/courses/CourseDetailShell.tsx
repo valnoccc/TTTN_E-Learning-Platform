@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+﻿import { createContext, useContext, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
     AlertTriangle,
@@ -56,16 +56,9 @@ export default function InstructorCourseDetail({
                         <div className="border-b border-slate-200 px-6 py-5 sm:px-8">
                             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="min-w-0">
-                                    <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">
-                                        <Layers3 size={14} />
-                                        Quản lý khóa học
-                                    </div>
                                     <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
                                         {isNewCourse ? 'Tạo khóa học mới' : formData.title || 'Đang tải...'}
                                     </h1>
-                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
-                                        Cập nhật nội dung, chương trình học và điều phối xuất bản cho học viên.
-                                    </p>
                                 </div>
 
                                 <div className="flex flex-col items-start gap-4 xl:items-end">

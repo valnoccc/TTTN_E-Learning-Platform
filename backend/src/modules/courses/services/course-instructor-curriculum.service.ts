@@ -4,6 +4,24 @@ import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
 
+interface ChapterRecord {
+  maChuong: number;
+  maKH: number;
+  tenChuong: string;
+  thuTu: number;
+}
+
+interface LessonRecord {
+  maBH: number;
+  maChuong: number;
+  tenBaiHoc: string;
+  videoUrl: string | null;
+  noiDung: string | null;
+  thuTu: number;
+  thoiLuong: number;
+  choPhepXemTruoc?: number | boolean;
+}
+
 @Injectable()
 export class CourseInstructorCurriculumService {
   constructor(
@@ -101,5 +119,67 @@ export class CourseInstructorCurriculumService {
       noiDung: null,
       thoiLuong: 0,
     };
+  }
+
+  async updateChapter(
+    chapterId: number,
+    instructorId: number,
+    payload: { tenChuong?: string },
+  ) {
+    const chapter = await this.getOwnedChapter(chapterId, instructorId);
+    const nextTitle = payload.tenChuong?.trim();
+
+    await this.dataSource.query(
+      `UPDATE ChuongHoc SET TenChuong = ? WHERE MaChuong = ?`,
+      [nextTitle || chapter.tenChuong, chapterId],
+    );
+
+    const lessons = await this.dataSource.query(
+      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc,
+              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc
+       FROM BaiHoc
+       WHERE MaChuong = ? AND TrangThai = 'ACTIVE'
+       ORDER BY ThuTu ASC`,
+      [chapterId],
+    );
+
+    return {
+      ...chapter,
+      tenChuong: nextTitle || chapter.tenChuong,
+      baiHocs: lessons.sort(
+        (a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu,
+      ),
+    };
+  }
+
+  async deleteChapter(chapterId: number, instructorId: number) {
+    await this.getOwnedChapter(chapterId, instructorId);
+
+    await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaChuong = ?`, [
+      chapterId,
+    ]);
+    await this.dataSource.query(`DELETE FROM ChuongHoc WHERE MaChuong = ?`, [
+      chapterId,
+    ]);
+  }
+
+  private async getOwnedChapter(chapterId: number, instructorId: number) {
+    const chapters = await this.dataSource.query(
+      `SELECT ch.MaChuong AS maChuong, ch.MaKH AS maKH, ch.TenChuong AS tenChuong, ch.ThuTu AS thuTu
+       FROM ChuongHoc ch
+       INNER JOIN KhoaHoc kh ON kh.MaKH = ch.MaKH
+       WHERE ch.MaChuong = ? AND kh.MaND_GiangVien = ?
+       LIMIT 1`,
+      [chapterId, instructorId],
+    );
+
+    const chapter = chapters[0] as ChapterRecord | undefined;
+    if (!chapter) {
+      throw new ForbiddenException(
+        'Bạn không có quyền để thực hiện thao tác này!',
+      );
+    }
+
+    return chapter;
   }
 }

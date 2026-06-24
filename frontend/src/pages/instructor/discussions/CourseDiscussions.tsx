@@ -5,6 +5,7 @@ import {
     Reply,
     Search,
     Send,
+    Trash2,
     X,
 } from 'lucide-react';
 import { type ReactNode } from 'react';
@@ -70,6 +71,7 @@ export default function InstructorCourseDiscussionsPage() {
         setReplyContent,
         handleStartReply,
         handleSubmitReply,
+        handleDeleteDiscussion,
         getReplies,
         toggleReplies,
     } = useInstructorCourseDiscussions();
@@ -79,15 +81,9 @@ export default function InstructorCourseDiscussionsPage() {
             <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                            Phân hệ giảng viên
-                        </p>
                         <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
                             Hỏi đáp & Thảo luận
-                        </h1>
-                        <p className="mt-2 text-[14px] text-slate-500">
-                            Quản lý và giải đáp toàn bộ thắc mắc từ tất cả khóa học của bạn.
-                        </p>
+                        </h1>                      
                     </div>
 
                     <div className="flex gap-3">
@@ -113,7 +109,6 @@ export default function InstructorCourseDiscussionsPage() {
                                 className="w-full rounded border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-[13px] outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
                             />
                         </div>
-
                         <div className="flex flex-col gap-3 sm:flex-row">
                             <select
                                 value={selectedCourseId}
@@ -151,6 +146,20 @@ export default function InstructorCourseDiscussionsPage() {
                     </div>
                 </div>
 
+<div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <SummaryCard
+                        label="Tổng câu hỏi"
+                        value={totalDiscussions.toLocaleString('vi-VN')}
+                        icon={<MessageSquare size={20} className="text-emerald-500" />}
+                    />
+                    <SummaryCard
+                        label="Cần phản hồi"
+                        value={unrepliedCount.toLocaleString('vi-VN')}
+                        valueClassName="text-rose-600"
+                        icon={<AlertCircle size={20} className="text-rose-500" />}
+                    />
+                </div>
+                
                 <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
                         <h2 className="text-[14px] font-bold text-slate-800">
@@ -256,8 +265,9 @@ export default function InstructorCourseDiscussionsPage() {
                                                                                 : (reply.userName || 'H').charAt(0).toUpperCase()}
                                                                         </div>
                                                                     )}
-                                                                    <div>
-                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                            <div className="flex flex-wrap items-center gap-2">
                                                                             <span className="text-[13px] font-bold text-slate-900">
                                                                                 {reply.userName}
                                                                             </span>
@@ -266,9 +276,20 @@ export default function InstructorCourseDiscussionsPage() {
                                                                                     Giảng viên
                                                                                 </span>
                                                                             )}
-                                                                            <span className="text-[11px] text-slate-400">
-                                                                                {formatDate(reply.createdAt)}
-                                                                            </span>
+                                                                                <span className="text-[11px] text-slate-400">
+                                                                                    {formatDate(reply.createdAt)}
+                                                                                </span>
+                                                                            </div>
+                                                                            {reply.userRole === 'INSTRUCTOR' && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => void handleDeleteDiscussion(reply.discussionId)}
+                                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-100 bg-white text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                                                                    title="Xóa bình luận"
+                                                                                >
+                                                                                    <Trash2 size={14} />
+                                                                                </button>
+                                                                            )}
                                                                         </div>
                                                                         <p className="mt-1 text-[14px] text-slate-700">
                                                                             {reply.content}
@@ -353,21 +374,7 @@ export default function InstructorCourseDiscussionsPage() {
                             </p>
                         </div>
                     )}
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <SummaryCard
-                        label="Tổng câu hỏi"
-                        value={totalDiscussions.toLocaleString('vi-VN')}
-                        icon={<MessageSquare size={20} className="text-emerald-500" />}
-                    />
-                    <SummaryCard
-                        label="Cần phản hồi"
-                        value={unrepliedCount.toLocaleString('vi-VN')}
-                        valueClassName="text-rose-600"
-                        icon={<AlertCircle size={20} className="text-rose-500" />}
-                    />
-                </div>
+                </div>              
             </div>
         </InstructorLayout>
     );

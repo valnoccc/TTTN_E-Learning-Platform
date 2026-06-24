@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -56,6 +65,22 @@ export class DiscussionsController {
     return {
       message: 'Gửi phản hồi thảo luận thành công',
       data: replyData,
+    };
+  }
+
+  @Delete('discussions/:discussionId')
+  async deleteOwnDiscussion(
+    @Param('discussionId') discussionId: string,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.discussionsService.deleteOwnDiscussion(
+      Number(discussionId),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Xóa bình luận hỏi đáp thành công',
+      data: result,
     };
   }
 }
