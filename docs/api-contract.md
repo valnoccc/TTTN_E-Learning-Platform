@@ -19,10 +19,11 @@ Source of truth:
 - `PATCH /users/:id/roles` (Cap quyen he thong)
 
 ## Categories (Quan ly danh muc)
-- `GET /categories` (Public - Hien thi danh muc)
-- `POST /categories` (Admin - Them danh muc moi)
-- `PATCH /categories/:id` (Admin - Sua danh muc)
-- `DELETE /categories/:id` (Admin - Xoa danh muc)
+- `GET /categories` (Public - Hien thi danh muc, ho tro `search`)
+- `GET /admin/categories` (Admin - Xem danh sach danh muc, ho tro `search`)
+- `POST /admin/categories` (Admin - Them danh muc moi, body: `{ TenDM: string, MoTa?: string }`)
+- `PATCH /admin/categories/:id` (Admin - Sua danh muc, body: `{ TenDM?: string, MoTa?: string }`)
+- `DELETE /admin/categories/:id` (Admin - Xoa danh muc; khong cho phep xoa neu danh muc dang duoc khoa hoc su dung)
 
 ## Courses (Quan ly khoa hoc)
 Public & Student (Kham pha & Hoc tap)
