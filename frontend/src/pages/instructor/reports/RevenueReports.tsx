@@ -173,9 +173,6 @@ export default function InstructorReports() {
                              <CheckCircle2 size={16} className='text-purple-600'/>
                         </div>
                         <p className="mt-4 text-2xl font-bold text-slate-900">--</p>
-                        <div className="mt-2 text-[12px] font-medium text-violet-600">
-                            {board.overview.completionRateLabel}
-                        </div>
                     </div>
                 </div>
 
@@ -233,9 +230,8 @@ export default function InstructorReports() {
                     <div className="flex flex-col rounded-md border border-slate-200 bg-white shadow-sm">
                         <div className="border-b border-slate-100 p-6">
                             <h2 className="text-[15px] font-bold text-slate-800">
-                                Top khóa học doanh thu cao
+                                Top khóa học nổi bật
                             </h2>
-                            <p className="mt-1 text-xs text-emerald-600">Source: DATABASE</p>
                         </div>
                         <div className="flex-1">
                             <div className="divide-y divide-slate-100">
@@ -263,10 +259,7 @@ export default function InstructorReports() {
                                                     {course.courseName}
                                                 </h3>
                                                 <p className="text-[12px] text-slate-500">
-                                                    {course.enrollments} Lượt mua • {' '}
-                                                    <span className="font-medium text-amber-500">
-                                                        {course.ratingLabel}
-                                                    </span>
+                                                    {course.enrollments} Lượt mua
                                                 </p>
                                             </div>
                                             <div className="shrink-0 text-right">
@@ -291,10 +284,6 @@ export default function InstructorReports() {
                         </div>
 
                         <div className="flex flex-1 flex-col justify-center">
-                            <p className="mb-4 text-[12px] font-medium text-slate-500">
-                                {board.revenueBySourceLabel}
-                            </p>
-
                             {board.revenueBySource.length === 0 ? (
                                 <div className="rounded border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                                     Chưa có dữ liệu coupon trong bộ lọc hiện tại.
@@ -334,7 +323,7 @@ export default function InstructorReports() {
                                             </div>
 
                                             <div className="flex items-center justify-between text-[11px] text-slate-500">
-                                                <span>Gross {formatCurrency(item.grossRevenue)}</span>
+                                                <span>Tổng {formatCurrency(item.grossRevenue)}</span>
                                                 <span>{formatCompactCurrency(item.orderCount)} lượt</span>
                                             </div>
                                         </div>
@@ -409,7 +398,7 @@ export default function InstructorReports() {
                                                 <td className="p-4 text-right font-bold text-emerald-600">
                                                     {formatCurrency(item.amount)}
                                                     <div className="text-[11px] font-medium text-slate-400">
-                                                        Gross {formatCurrency(item.grossAmount)}
+                                                        Trên {formatCurrency(item.grossAmount)}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">

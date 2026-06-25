@@ -26,6 +26,7 @@ export interface Lesson {
 interface CourseDetailApiData {
     ten_khoa_hoc?: string;
     mo_ta?: string;
+    giaBan?: number;
     gia?: number;
     id_danh_muc?: number;
     hinh_thu_nho?: string | null;
@@ -121,7 +122,7 @@ export function useCourseDetail(
                 setFormData({
                     title: courseData.ten_khoa_hoc || '',
                     description: courseData.mo_ta || '',
-                    price: courseData.gia || 0,
+                    price: courseData.giaBan ?? courseData.gia ?? 0,
                     category: courseData.id_danh_muc ?? '',
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
@@ -210,9 +211,7 @@ export function useCourseDetail(
     ) => {
         const { name, value } = event.target;
         setFormData((current) => ({ ...current, [name]: value }));
-        if (name === 'title') {
-            setErrorText('');
-        }
+        setErrorText('');
     };
 
     const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +226,8 @@ export function useCourseDetail(
 
     const handleSave = async () => {
         const trimmedTitle = formData.title.trim();
+        const selectedCategory = Number(formData.category);
+        const coursePrice = Number(formData.price);
 
         if (!trimmedTitle) {
             setErrorText('Tên khóa học không được để trống!');
@@ -236,13 +237,22 @@ export function useCourseDetail(
             setErrorText(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
             return;
         }
+        if (!Number.isFinite(selectedCategory) || selectedCategory <= 0) {
+            setErrorText('Vui lòng chọn danh mục khóa học!');
+            return;
+        }
+        if (!Number.isFinite(coursePrice) || coursePrice < 0) {
+            setErrorText('Giá khóa học không hợp lệ!');
+            return;
+        }
 
         try {
             const data = new FormData();
             data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
-            data.append('gia', formData.price.toString());
-            data.append('id_danh_muc', String(formData.category || ''));
+            data.append('giaBan', coursePrice.toString());
+            data.append('gia', coursePrice.toString());
+            data.append('id_danh_muc', String(selectedCategory));
 
             // Gắn mảng Mục tiêu và Yêu cầu vào request dưới dạng JSON string
             data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
@@ -298,12 +308,22 @@ export function useCourseDetail(
 
         // 1. KIỂM TRA RÀNG BUỘC DỮ LIỆU TRƯỚC KHI LƯU VÀ GỬI DUYỆT
         const trimmedTitle = formData.title.trim();
+        const selectedCategory = Number(formData.category);
+        const coursePrice = Number(formData.price);
         if (!trimmedTitle) {
             toast.error('Tên khóa học không được để trống!');
             return;
         }
         if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
             toast.error(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
+            return;
+        }
+        if (!Number.isFinite(selectedCategory) || selectedCategory <= 0) {
+            toast.error('Vui lòng chọn danh mục khóa học!');
+            return;
+        }
+        if (!Number.isFinite(coursePrice) || coursePrice < 0) {
+            toast.error('Giá khóa học không hợp lệ!');
             return;
         }
 
@@ -327,8 +347,9 @@ export function useCourseDetail(
             const data = new FormData();
             data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
-            data.append('gia', formData.price.toString());
-            data.append('id_danh_muc', String(formData.category || ''));
+            data.append('giaBan', coursePrice.toString());
+            data.append('gia', coursePrice.toString());
+            data.append('id_danh_muc', String(selectedCategory));
             data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
             data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
             if (imageFile) {
