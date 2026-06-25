@@ -39,6 +39,15 @@ const parseArrayData = (data: any): string[] => {
   }
 };
 
+const parseNumberOrNull = (value: unknown): number | null => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 @Controller('courses')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('INSTRUCTOR')
@@ -95,6 +104,11 @@ export class CoursesController {
       );
     }
 
+    const maDM = parseNumberOrNull(courseData.maDM ?? courseData.id_danh_muc);
+    if (maDM === null || maDM <= 0) {
+      throw new BadRequestException('Vui lòng chọn danh mục khóa học');
+    }
+
     let imageUrl = null;
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadFile(
@@ -105,11 +119,11 @@ export class CoursesController {
     }
 
     const payload = {
-      maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
+      maDM,
       maND_GiangVien: req.user.sub,
       tenKhoaHoc: tenKhoaHoc.trim(),
       moTa: courseData.moTa ?? courseData.mo_ta,
-      giaBan: Number(courseData.giaBan ?? 0),
+      giaBan: parseNumberOrNull(courseData.giaBan ?? courseData.gia) ?? 0,
       trangThai: courseData.trangThai ?? 'DRAFT',
       hinhThuNho: imageUrl,
     };
@@ -150,6 +164,11 @@ export class CoursesController {
       }
     }
 
+    const maDM = parseNumberOrNull(courseData.maDM ?? courseData.id_danh_muc);
+    if (maDM === null || maDM <= 0) {
+      throw new BadRequestException('Vui lòng chọn danh mục khóa học');
+    }
+
     let imageUrl = courseData.hinhThuNho;
 
     if (file) {
@@ -161,11 +180,11 @@ export class CoursesController {
     }
 
     const payload: any = {
-      maDM: Number(courseData.maDM ?? courseData.id_danh_muc ?? 0),
+      maDM,
       tenKhoaHoc:
         typeof tenKhoaHoc === 'string' ? tenKhoaHoc.trim() : tenKhoaHoc,
       moTa: courseData.moTa ?? courseData.mo_ta,
-      giaBan: Number(courseData.giaBan ?? courseData.gia ?? 0),
+      giaBan: parseNumberOrNull(courseData.giaBan ?? courseData.gia) ?? 0,
       trangThai: courseData.trangThai ?? courseData.trang_thai,
       hinhThuNho: imageUrl,
     };

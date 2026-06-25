@@ -214,6 +214,24 @@ describe('InstructorsService', () => {
           status: 'ACTIVE',
           purchasedAt: '2026-06-10 09:00:00',
         },
+      ])
+      .mockResolvedValueOnce([
+        {
+          couponLabel: 'SAVE20',
+          orderCount: '7',
+          grossRevenue: '1400000',
+        },
+        {
+          couponLabel: 'Khong dung ma',
+          orderCount: '5',
+          grossRevenue: '800000',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          averageRating: '4.6',
+          reviewCount: '12',
+        },
       ]);
 
     const result = await service.getMyReports(
@@ -229,8 +247,15 @@ describe('InstructorsService', () => {
     expect(result.revenueSeriesSource).toBe('database');
     expect(result.topCoursesSource).toBe('database');
     expect(result.recentEnrollmentsSource).toBe('database');
-    expect(result.overview.averageRatingSource).toBe('mockdata');
-    expect(result.revenueBySourceSource).toBe('mockdata');
+    expect(result.overview.averageRating).toBe(4.6);
+    expect(result.overview.averageRatingLabel).toBe('Tu 12 luot danh gia that');
+    expect(result.overview.averageRatingSource).toBe('database');
+    expect(result.revenueBySourceSource).toBe('database');
+    expect(result.revenueBySource[0]).toMatchObject({
+      label: 'SAVE20',
+      orderCount: 7,
+      grossRevenue: 1400000,
+    });
     expect(result.topCourses[0]).toMatchObject({
       courseId: 10,
       courseName: 'React Pro',

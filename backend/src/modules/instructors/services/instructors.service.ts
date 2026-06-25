@@ -119,7 +119,7 @@ export interface InstructorReportsBoard {
     enrollmentGrowth: number;
     averageRating: number | null;
     averageRatingLabel: string;
-    averageRatingSource: 'mockdata';
+    averageRatingSource: 'mockdata' | 'database';
     completionRate: number | null;
     completionRateLabel: string;
     completionRateSource: 'mockdata';
@@ -134,9 +134,11 @@ export interface InstructorReportsBoard {
     label: string;
     percentage: number;
     color: string;
+    orderCount: number;
+    grossRevenue: number;
   }>;
   revenueBySourceLabel: string;
-  revenueBySourceSource: 'mockdata';
+  revenueBySourceSource: 'database' | 'mockdata';
 }
 
 type RawStudentRow = {
@@ -183,6 +185,12 @@ type RawRecentEnrollmentRow = {
   couponCode: string | null;
   status: string;
   purchasedAt: string;
+};
+
+type RawCouponSourceRow = {
+  couponLabel: string | null;
+  orderCount: number | string | null;
+  grossRevenue: number | string | null;
 };
 
 @Injectable()
@@ -369,7 +377,7 @@ export class InstructorsService {
     const instructorRevenueSql = `(${grossRevenueSql}) * 0.4`;
     const adminRevenueSql = `(${grossRevenueSql}) * 0.6`;
 
-    const [overviewRows, previousRows, revenueSeriesRows, topCourseRows, recentRows] =
+    const [overviewRows, previousRows, revenueSeriesRows, topCourseRows, recentRows, couponRows, ratingRows] =
       await Promise.all([
         this.dataSource.query(
           `
@@ -456,6 +464,36 @@ export class InstructorsService {
             LIMIT 8
           `,
         ),
+        this.dataSource.query(
+          `
+            SELECT
+              COALESCE(
+                CASE
+                  WHEN mg.MaND_GiangVien = ${instructorId} THEN mg.MaCode
+                  ELSE NULL
+                END,
+                'Khong dung ma'
+              ) AS couponLabel,
+              COUNT(*) AS orderCount,
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue
+            FROM DangKyKhoaHoc dk
+            ${paidRevenueJoins}
+            WHERE ${whereClause}
+            GROUP BY couponLabel
+            ORDER BY orderCount DESC, grossRevenue DESC
+            LIMIT 5
+          `,
+        ),
+        this.dataSource.query(
+          `
+            SELECT
+              COALESCE(AVG(dg.SoSao), 0) AS averageRating,
+              COUNT(*) AS reviewCount
+            FROM DanhGiaKhoaHoc dg
+            INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
+            WHERE ${this.buildReviewReportWhereClause(instructorId, courseId, range)}
+          `,
+        ),
       ]);
 
     const overviewRow = (overviewRows as Array<{
@@ -475,6 +513,15 @@ export class InstructorsService {
       enrollments: 0,
       revenue: 0,
     };
+    const ratingRow = (ratingRows as Array<{
+      averageRating?: number | string;
+      reviewCount?: number | string;
+    }>)[0] ?? {
+      averageRating: 0,
+      reviewCount: 0,
+    };
+    const ratingValue = this.toNumber(ratingRow.averageRating);
+    const reviewCount = this.toNumber(ratingRow.reviewCount);
 
     return {
       filters: {
@@ -495,9 +542,12 @@ export class InstructorsService {
           this.toNumber(overviewRow.enrollments),
           this.toNumber(previousRow.enrollments),
         ),
-        averageRating: null,
-        averageRatingLabel: 'MOCKDATA: Chua co du lieu danh gia that',
-        averageRatingSource: 'mockdata',
+        averageRating: reviewCount > 0 ? Number(ratingValue.toFixed(1)) : null,
+        averageRatingLabel:
+          reviewCount > 0
+            ? `Tu ${reviewCount} luot danh gia that`
+            : 'Chua co du lieu danh gia that',
+        averageRatingSource: reviewCount > 0 ? 'database' : 'mockdata',
         completionRate: null,
         completionRateLabel: 'MOCKDATA: Chua co du lieu tien do that',
         completionRateSource: 'mockdata',
@@ -539,13 +589,24 @@ export class InstructorsService {
         purchasedAt: row.purchasedAt,
       })),
       recentEnrollmentsSource: 'database',
-      revenueBySource: [
-        { label: 'MOCKDATA: Tu nhien', percentage: 55, color: '#94a3b8' },
-        { label: 'MOCKDATA: Coupon', percentage: 30, color: '#10b981' },
-        { label: 'MOCKDATA: Social', percentage: 15, color: '#3b82f6' },
-      ],
-      revenueBySourceLabel: 'MOCKDATA: Chua co tracking nguon doanh thu that',
-      revenueBySourceSource: 'mockdata',
+      revenueBySource: (couponRows as RawCouponSourceRow[]).map((row, index) => {
+        const colors = ['#94a3b8', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'];
+        const orderCount = this.toNumber(row.orderCount);
+        const totalOrders = this.toNumber(overviewRow.enrollments);
+
+        return {
+          label: row.couponLabel ?? 'Khong dung ma',
+          percentage: totalOrders > 0 ? Number(((orderCount * 100) / totalOrders).toFixed(0)) : 0,
+          color: colors[index % colors.length],
+          orderCount,
+          grossRevenue: this.toNumber(row.grossRevenue),
+        };
+      }),
+      revenueBySourceLabel:
+        this.toNumber(overviewRow.enrollments) > 0
+          ? `Du lieu nay dua tren ${this.toNumber(overviewRow.enrollments)} luot dang ky`
+          : 'Chua co du lieu coupon that',
+      revenueBySourceSource: 'database',
     };
   }
 
@@ -652,6 +713,49 @@ export class InstructorsService {
     }
 
     return clauses.join(' AND ');
+  }
+
+  private buildReviewReportWhereClause(
+    instructorId: number,
+    courseId: number | undefined,
+    range: InstructorReportRange,
+  ) {
+    const clauses = [`kh.MaND_GiangVien = ${instructorId}`, `dg.SoSao > 0`];
+
+    if (courseId) {
+      clauses.push(`kh.MaKH = ${courseId}`);
+    }
+
+    const rangeClause = this.getReviewRangeClause(range, false);
+    if (rangeClause) {
+      clauses.push(rangeClause);
+    }
+
+    return clauses.join(' AND ');
+  }
+
+  private getReviewRangeClause(range: InstructorReportRange, previous: boolean) {
+    switch (range) {
+      case '30days':
+        return previous
+          ? `dg.ThoiGian >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY) AND dg.ThoiGian < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)`
+          : `dg.ThoiGian >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)`;
+      case 'this_month':
+        return previous
+          ? `DATE_FORMAT(dg.ThoiGian, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m')`
+          : `DATE_FORMAT(dg.ThoiGian, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')`;
+      case 'last_month':
+        return previous
+          ? `DATE_FORMAT(dg.ThoiGian, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), '%Y-%m')`
+          : `DATE_FORMAT(dg.ThoiGian, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m')`;
+      case 'this_year':
+        return previous
+          ? `YEAR(dg.ThoiGian) = YEAR(CURRENT_DATE()) - 1`
+          : `YEAR(dg.ThoiGian) = YEAR(CURRENT_DATE())`;
+      case 'all_time':
+      default:
+        return previous ? '' : '';
+    }
   }
 
   private getRangeClause(range: InstructorReportRange, previous: boolean) {

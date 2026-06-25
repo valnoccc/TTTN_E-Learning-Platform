@@ -48,7 +48,7 @@ export default function AdminSidebar() {
     const items: SidebarItem[] = [
         { label: 'Tổng quan', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
         { label: 'Quản lý người dùng', path: '/admin/users', icon: <Users size={18} /> },
-        { label: 'Quản lý khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
+        { label: 'Phê duyệt khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
         { label: 'Quản lý danh mục', path: '/admin/categories', icon: <Layers size={18} /> },
         { label: 'Quản lý bài viết', path: '/admin/posts', icon: <FileText size={18} /> },
     ];

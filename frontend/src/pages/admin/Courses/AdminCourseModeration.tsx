@@ -96,10 +96,6 @@ export default function AdminCourseModeration() {
             <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        {/* <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
-                            <Layers3 size={14} />
-                            Quản lý khóa học
-                        </div> */}
                         <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
                             Phê duyệt khóa học
                         </h1>
