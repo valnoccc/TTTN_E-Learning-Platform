@@ -12,8 +12,22 @@ export default function CheckoutSuccess() {
     const resultCode = searchParams.get('resultCode');
     const message = searchParams.get('message');
     const orderId = searchParams.get('orderId');
+    // courseId có thể được truyền qua URL trong một số flow — guard NaN tại đây
+    const rawCourseId = searchParams.get('courseId');
 
-    console.log('[CheckoutSuccess] resultCode:', resultCode, '| message:', message, '| orderId:', orderId);
+    console.log('[CheckoutSuccess] resultCode:', resultCode, '| message:', message, '| orderId:', orderId, '| rawCourseId:', rawCourseId);
+
+    // ── PHÒNG VỆ NaN: Chỉ sử dụng courseId nếu thực sự là số hợp lệ ──
+    if (rawCourseId !== null) {
+      const parsedCourseId = Number(rawCourseId);
+      if (!rawCourseId || isNaN(parsedCourseId)) {
+        console.warn('[CheckoutSuccess] ⚠️ courseId không hợp lệ, bỏ qua:', rawCourseId);
+        // KHÔNG gọi bất kỳ API nào với giá trị NaN này
+      } else {
+        console.log('[CheckoutSuccess] courseId hợp lệ:', parsedCourseId);
+        // Nếu cần gọi API lấy chi tiết khóa học, thực hiện ở đây với parsedCourseId
+      }
+    }
 
     if (resultCode === '0') {
       setIsSuccess(true);
@@ -31,18 +45,21 @@ export default function CheckoutSuccess() {
     if (isSuccess !== true) return;
 
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/student/profile');
-          return 0;
-        }
-        return prev - 1;
-      });
+      // ── CHỈ cập nhật state ở đây, KHÔNG gọi side effect như navigate() ──
+      // Gọi navigate() trong state updater sẽ gây lỗi:
+      // "Cannot update a component while rendering a different component"
+      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isSuccess, navigate]);
+  }, [isSuccess]);
+
+  // ── navigate được kích hoạt sau khi countdown = 0, NGOÀI render cycle ──
+  useEffect(() => {
+    if (countdown === 0 && isSuccess === true) {
+      navigate('/student/profile');
+    }
+  }, [countdown, isSuccess, navigate]);
 
   if (isSuccess === null) {
     return (

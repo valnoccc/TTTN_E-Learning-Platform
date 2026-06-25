@@ -79,7 +79,15 @@ export default function Checkout() {
       setCourses(location.state.selectedCourses);
       setLoading(false);
     } else if (courseId) {
-      void loadCourseData(Number(courseId));
+      // ── PHÒNG VỆ NaN: ép kiểu & validate trước khi gọi API ──────────────────
+      const targetId = parseInt(courseId, 10);
+      if (isNaN(targetId)) {
+        console.warn('>>> [GUARD] Bỏ qua fetch khóa học vì courseId không hợp lệ (NaN):', courseId);
+        toast.error('Mã khóa học không hợp lệ!');
+        navigate('/student/cart');
+        return;
+      }
+      void loadCourseData(targetId);
     } else {
       toast.error('Không có khóa học nào được chọn!');
       navigate('/student/cart');

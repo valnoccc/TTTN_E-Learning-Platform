@@ -290,8 +290,8 @@ export class CheckoutService {
       .update(rawSignature)
       .digest('hex');
 
-    console.log('[MoMo IPN] Chữ ký nhận:', signature);
-    console.log('[MoMo IPN] Chữ ký tính lại:', expectedSignature);
+    console.log('>>> [SIGNATURE CHECK] Chữ ký nhận được:', signature);
+    console.log('>>> [SIGNATURE CHECK] Chữ ký tự tính lại:', expectedSignature);
 
     if (signature !== expectedSignature) {
       console.error('[MoMo IPN] Chữ ký KHÔNG hợp lệ! Có thể là giả mạo.');
@@ -323,14 +323,42 @@ export class CheckoutService {
     // 3. Decode extraData để lấy invoiceId, userId, courseIds
     let extraDecoded: any;
     try {
-      extraDecoded = JSON.parse(Buffer.from(extraData, 'base64').toString('utf8'));
+      extraDecoded = JSON.parse(Buffer.from(extraData || '', 'base64').toString('utf8'));
     } catch (e) {
       console.error('[MoMo IPN] Lỗi decode extraData:', e);
       throw new BadRequestException('extraData không hợp lệ');
     }
 
-    const { invoiceId, userId, courseIds, appliedCouponId } = extraDecoded;
-    console.log('[MoMo IPN] extraData decoded:', { invoiceId, userId, courseIds, appliedCouponId });
+    console.log('[MoMo IPN] extraData RAW decoded (trước khi validate):', JSON.stringify(extraDecoded));
+
+    // ── PHÒNG VỆ: Bóc tách & validate từng trường từ extraDecoded ──────────────
+    const rawCourseIds = extraDecoded.courseIds;
+    const rawInvoiceId = extraDecoded.invoiceId;
+    const rawUserId = extraDecoded.userId;
+    const appliedCouponId = extraDecoded.appliedCouponId ?? null;
+
+    console.log('[MoMo IPN] extraData decoded fields:', {
+      rawInvoiceId, rawUserId, rawCourseIds, appliedCouponId,
+    });
+
+    // Validate invoiceId & userId thành số nguyên an toàn
+    const invoiceId = parseInt(rawInvoiceId, 10);
+    const userId = parseInt(rawUserId, 10);
+    if (isNaN(invoiceId)) throw new BadRequestException(`invoiceId không hợp lệ (NaN): "${rawInvoiceId}"`);
+    if (isNaN(userId)) throw new BadRequestException(`userId không hợp lệ (NaN): "${rawUserId}"`);
+
+    // Validate & ép kiểu toàn bộ courseIds — đây là nguồn gốc lỗi ER_BAD_FIELD_ERROR
+    if (!rawCourseIds || !Array.isArray(rawCourseIds) || rawCourseIds.length === 0) {
+      throw new BadRequestException(`Không tìm thấy danh sách mã khóa học trong extraData! rawCourseIds = ${JSON.stringify(rawCourseIds)}`);
+    }
+    const validCourseIds: number[] = rawCourseIds.map((id: any) => {
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId)) {
+        throw new BadRequestException(`Mã khóa học không hợp lệ (NaN): "${id}"`);
+      }
+      return parsedId;
+    });
+    console.log('[MoMo IPN] validCourseIds sau khi ép kiểu parseInt:', validCourseIds);
 
     // 4. Dùng transaction để cập nhật DB
     const queryRunner = this.dataSource.createQueryRunner();
@@ -361,24 +389,24 @@ export class CheckoutService {
       );
       console.log('[MoMo IPN] Đã cập nhật HoaDon', invoiceId, 'thành PAID');
 
-      // 4c. Ghi danh học viên vào từng khóa học
-      if (courseIds && courseIds.length > 0) {
-        const placeholders = courseIds.map(() => '?').join(',');
-        // Kiểm tra đã ghi danh chưa (idempotency)
-        const existing = await queryRunner.query(
-          `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
-          [userId, ...courseIds],
-        );
-        const existingCourseIds = existing.map((e: any) => Number(e.MaKH));
+      // 4c. Ghi danh học viên — dùng validCourseIds đã được làm sạch
+      const placeholders = validCourseIds.map(() => '?').join(',');
+      // Kiểm tra đã ghi danh chưa (idempotency)
+      const existing = await queryRunner.query(
+        `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
+        [userId, ...validCourseIds],
+      );
+      const existingCourseIds = existing.map((e: any) => Number(e.MaKH));
 
-        for (const courseId of courseIds) {
-          if (!existingCourseIds.includes(Number(courseId))) {
-            await queryRunner.query(
-              `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, ?)`,
-              [userId, courseId, invoiceId, 'ACTIVE'],
-            );
-            console.log('[MoMo IPN] Đã ghi danh userId:', userId, '| courseId:', courseId);
-          }
+      for (const courseId of validCourseIds) {
+        if (!existingCourseIds.includes(courseId)) {
+          await queryRunner.query(
+            `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, ?)`,
+            [userId, courseId, invoiceId, 'ACTIVE'],
+          );
+          console.log('[MoMo IPN] Đã ghi danh userId:', userId, '| courseId:', courseId);
+        } else {
+          console.log('[MoMo IPN] Bỏ qua ghi danh (đã tồn tại) userId:', userId, '| courseId:', courseId);
         }
       }
 
@@ -424,7 +452,9 @@ export class CheckoutService {
       return { message: 'IPN processed successfully', invoiceId };
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
-      console.error('[MoMo IPN] Lỗi trong transaction, đã rollback:', error.message);
+      console.error('>>> [IPN CRASH] Lỗi xử lý DB Transaction:', error);
+      console.error('>>> [IPN CRASH] error.message:', error?.message);
+      console.error('>>> [IPN CRASH] error.stack:', error?.stack);
       throw new InternalServerErrorException(`Lỗi xử lý IPN: ${error.message}`);
     } finally {
       await queryRunner.release();

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   NotFoundException,
@@ -98,8 +99,14 @@ export class PublicCoursesController {
 
   @Get(':id')
   async getCourseById(@Param('id') id: string) {
+    // ── PHÒNG VỆ NaN: chặn trước khi TypeORM truyền NaN vào SQL WHERE ──
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId)) {
+      throw new BadRequestException(`Mã khóa học (courseId) không hợp lệ hoặc bị rỗng (NaN): "${id}"`);
+    }
+
     const course = await this.khoaHocRepository.findOne({
-      where: { maKH: parseInt(id, 10) },
+      where: { maKH: parsedId },
       relations: ['giangVien', 'danhMuc', 'baiHocs'],
     });
 
@@ -169,7 +176,11 @@ export class PublicCoursesController {
 
   @Get(':id/curriculum')
   async getCourseCurriculum(@Param('id') id: string) {
+    // ── PHÒNG VỆ NaN: chặn trước khi query ChuongHoc với NaN ──
     const courseId = parseInt(id, 10);
+    if (isNaN(courseId)) {
+      throw new BadRequestException(`Mã khóa học (courseId) không hợp lệ hoặc bị rỗng (NaN): "${id}"`);
+    }
 
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId },

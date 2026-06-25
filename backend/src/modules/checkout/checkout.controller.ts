@@ -6,6 +6,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Req,
   Param,
   HttpCode,
   HttpStatus,
@@ -36,7 +37,8 @@ export class CheckoutController {
   // ─── IPN Webhook từ MoMo (PUBLIC - Không dùng JwtAuthGuard) ──────────────
   @Post('momo-ipn')
   @HttpCode(HttpStatus.OK)
-  async handleMomoIPN(@Body() body: any) {
+  async handleMomoIPN(@Body() body: any, @Req() req: any) {
+    console.log('>>> [IPN TOUCH] Đã nhận được tín hiệu Webhook từ MoMo Server!', req.body);
     console.log('[Controller] handleMomoIPN | body:', JSON.stringify(body));
     return this.checkoutService.handleMomoIPN(body);
   }

@@ -42,10 +42,14 @@ import axiosClient from './axios';
 export const getCourseDetails = async (
   courseId: number,
 ): Promise<CourseDetailsData> => {
+  // ── PHÒNG VỆ NaN tại tầng API: tuyến phòng thủ thứ 2 ──────────────────────
+  if (!courseId || isNaN(courseId)) {
+    throw new Error(`[checkout.ts] getCourseDetails nhận courseId không hợp lệ: ${courseId}`);
+  }
   try {
     const response: any = await axiosClient.get(`/public/courses/${courseId}`);
     return {
-      id: parseInt(response.data.maKH),
+      id: parseInt(response.data.maKH, 10),
       courseName: response.data.tenKhoaHoc,
       thumbnail: response.data.hinhThuNho || '/assets/images/course-1.jpg',
       instructor: response.data.giangVien
