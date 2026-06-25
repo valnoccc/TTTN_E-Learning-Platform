@@ -19,12 +19,18 @@ export default function MyCourses() {
       }
 
       try {
-        const user = JSON.parse(userString);
-        const userId = user.id || user.maND || user.sub;
-        if (userId) {
-          const res: any = await axiosClient.get(`/users/${userId}/courses`);
-          setMyCourses(res?.data ?? res ?? []);
-        }
+        const res: any = await axiosClient.get('/users/me/courses');
+        
+        const extractArray = (res: any): any[] => {
+          if (!res) return [];
+          if (res.data && res.data.data && Array.isArray(res.data.data)) return res.data.data;
+          if (res.data && Array.isArray(res.data)) return res.data;
+          if (Array.isArray(res)) return res;
+          return [];
+        };
+
+        const coursesArray = extractArray(res);
+        setMyCourses(coursesArray);
       } catch (e) {
         console.error('Lỗi khi tải khóa học đã đăng ký', e);
       } finally {
