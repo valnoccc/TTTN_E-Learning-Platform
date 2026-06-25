@@ -47,6 +47,10 @@ function formatDate(value: string) {
     }).format(new Date(value));
 }
 
+function formatCouponLabel(label: string) {
+    return label === 'Khong dung ma' ? 'Không dùng mã' : label;
+}
+
 function renderGrowth(value: number, suffix: string) {
     const positive = value >= 0;
     const Icon = positive ? ArrowUpRight : ArrowDownRight;
@@ -125,16 +129,14 @@ export default function InstructorReports() {
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <p className="text-[13px] font-semibold text-slate-500">Doanh thu giảng viên (40%)</p>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
-                                <DollarSign size={16} />
-                            </div>
+                            <p className="text-[13px] font-semibold text-slate-500">Doanh thu của bạn (40%)</p>
+                            <DollarSign size={16} className='text-emerald-600'/>
                         </div>
                         <p className="mt-4 text-2xl font-bold text-slate-900">
                             {formatCurrency(board.overview.totalRevenue)}
                         </p>
                         <p className="mt-1 text-[11px] font-medium text-slate-500">
-                            Gross {formatCurrency(board.overview.grossRevenue)} · Admin 60% {formatCurrency(board.overview.adminRevenue)}
+                            Tổng {formatCurrency(board.overview.grossRevenue)}
                         </p>
                         {renderGrowth(board.overview.revenueGrowth, 'so với kỳ trước')}
                     </div>
@@ -142,9 +144,7 @@ export default function InstructorReports() {
                     <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <p className="text-[13px] font-semibold text-slate-500">Lượt đăng ký mới</p>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                                <Users size={16} />
-                            </div>
+                                <Users size={16} className='text-blue-600'/>
                         </div>
                         <p className="mt-4 text-2xl font-bold text-slate-900">
                             {board.overview.newEnrollments}
@@ -154,26 +154,23 @@ export default function InstructorReports() {
 
                     <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <p className="text-[13px] font-semibold text-slate-500">Điểm trung bình</p>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-50 text-amber-500">
-                                <Star size={16} />
-                            </div>
+                            <p className="text-[13px] font-semibold text-slate-500">Đánh giá trung bình</p>
+                            <Star size={16} className=" text-amber-500"/>
                         </div>
                         <div className="mt-4 flex items-baseline gap-1">
-                            <p className="text-2xl font-bold text-slate-900">--</p>
+                            <p className="text-2xl font-bold text-slate-900">
+                                {board.overview.averageRating !== null
+                                    ? board.overview.averageRating.toFixed(1)
+                                    : '--'}
+                            </p>
                             <span className="text-[13px] text-slate-500">/ 5.0</span>
-                        </div>
-                        <div className="mt-2 text-[12px] font-medium text-amber-600">
-                            {board.overview.averageRatingLabel}
                         </div>
                     </div>
 
                     <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <p className="text-[13px] font-semibold text-slate-500">Tỷ lệ hoàn thành</p>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-50 text-violet-600">
-                                <CheckCircle2 size={16} />
-                            </div>
+                             <CheckCircle2 size={16} className='text-purple-600'/>
                         </div>
                         <p className="mt-4 text-2xl font-bold text-slate-900">--</p>
                         <div className="mt-2 text-[12px] font-medium text-violet-600">
@@ -187,11 +184,8 @@ export default function InstructorReports() {
                         <div className="mb-6 flex items-center justify-between">
                             <div>
                                 <h2 className="text-[15px] font-bold text-slate-800">
-                                    Biểu đồ doanh thu giảng viên 40% (dữ liệu thật)
+                                    Biểu đồ doanh thu của bạn
                                 </h2>
-                                <p className="mt-1 text-xs text-emerald-600">
-                                    Source: DATABASE
-                                </p>
                             </div>
                         </div>
                         <div className="min-h-[300px] flex-1 rounded border border-slate-100 bg-slate-50/50 p-4">
@@ -292,53 +286,61 @@ export default function InstructorReports() {
                     <div className="flex flex-col rounded-md border border-slate-200 bg-white p-6 shadow-sm">
                         <div className="mb-6">
                             <h2 className="text-[15px] font-bold text-slate-800">
-                                Doanh thu theo nguồn
+                                Top mã giảm giá
                             </h2>
-                            <p className="mt-1 text-xs text-amber-600">
-                                Source: MOCKDATA
-                            </p>
                         </div>
 
-                        <div className="flex flex-1 flex-col items-center justify-center">
-                            <div
-                                className="relative mb-6 h-48 w-48 rounded-full"
-                                style={{
-                                    background: `conic-gradient(${board.revenueBySource
-                                        .map((item, index, array) => {
-                                            const start = array
-                                                .slice(0, index)
-                                                .reduce((sum, current) => sum + current.percentage, 0);
-                                            const end = start + item.percentage;
-                                            return `${item.color} ${start}% ${end}%`;
-                                        })
-                                        .join(', ')})`,
-                                }}
-                            >
-                                <div className="absolute inset-0 m-auto flex h-28 w-28 items-center justify-center rounded-full bg-white text-center shadow-inner">
-                                    <span className="text-xs font-bold text-slate-400">MOCKDATA</span>
-                                </div>
-                            </div>
+                        <div className="flex flex-1 flex-col justify-center">
+                            <p className="mb-4 text-[12px] font-medium text-slate-500">
+                                {board.revenueBySourceLabel}
+                            </p>
 
-                            <div className="w-full px-4 text-[12px] font-medium text-slate-600">
-                                <p className="mb-3 text-amber-600">{board.revenueBySourceLabel}</p>
-                                <div className="flex flex-col gap-2">
+                            {board.revenueBySource.length === 0 ? (
+                                <div className="rounded border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                                    Chưa có dữ liệu coupon trong bộ lọc hiện tại.
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
                                     {board.revenueBySource.map((item) => (
-                                        <div
-                                            key={item.label}
-                                            className="flex items-center justify-between"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className="h-3 w-3 rounded-sm"
-                                                    style={{ backgroundColor: item.color }}
-                                                />
-                                                {item.label}
+                                        <div key={item.label} className="space-y-2">
+                                            <div className="flex items-center justify-between gap-3 text-[13px]">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <span
+                                                        className="h-3 w-3 shrink-0 rounded-sm"
+                                                        style={{ backgroundColor: item.color }}
+                                                    />
+                                                    <span className="truncate font-medium text-slate-700">
+                                                        {formatCouponLabel(item.label)}
+                                                    </span>
+                                                </div>
+                                                <div className="shrink-0 text-right">
+                                                    <span className="font-bold text-slate-900">
+                                                        {item.orderCount} đơn
+                                                    </span>
+                                                    <span className="ml-2 text-[11px] text-slate-500">
+                                                        {item.percentage}%
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="font-bold text-slate-900">{item.percentage}%</span>
+
+                                            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                                <div
+                                                    className="h-full rounded-full"
+                                                    style={{
+                                                        width: `${Math.max(item.percentage, item.orderCount > 0 ? 6 : 0)}%`,
+                                                        backgroundColor: item.color,
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between text-[11px] text-slate-500">
+                                                <span>Gross {formatCurrency(item.grossRevenue)}</span>
+                                                <span>{formatCompactCurrency(item.orderCount)} lượt</span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -348,7 +350,6 @@ export default function InstructorReports() {
                                 <h2 className="text-[15px] font-bold text-slate-800">
                                     Lượt đăng ký mới nhất
                                 </h2>
-                                <p className="mt-1 text-xs text-emerald-600">Source: DATABASE</p>
                             </div>
                         </div>
 
@@ -418,7 +419,7 @@ export default function InstructorReports() {
                                                         </span>
                                                     ) : (
                                                         <span className="text-xs italic text-slate-400">
-                                                            Tự nhiên (Không dùng mã)
+                                                            Không dùng
                                                         </span>
                                                     )}
                                                 </td>
