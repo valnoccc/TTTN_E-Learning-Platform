@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserRole } from '../users/entities/user.entity';
+import { UserRole } from '../entities/user.entity';
 
 export type AdminUserStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
 export type AdminUserRole = UserRole;
@@ -39,7 +39,7 @@ const USER_STATUSES: AdminUserStatus[] = ['ACTIVE', 'INACTIVE', 'DELETED'];
 const USER_ROLES: AdminUserRole[] = [UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.STUDENT];
 
 @Injectable()
-export class AdminUsersService {
+export class UserAdminService {
   constructor(private readonly dataSource: DataSource) {}
 
   async getUsers(query: AdminUsersQuery) {

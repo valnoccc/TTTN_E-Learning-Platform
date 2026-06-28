@@ -433,5 +433,3 @@ export class AdminDashboardService {
     });
   }
 }
-
-export { AdminDashboardService as AdminService };

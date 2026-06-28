@@ -1,4 +1,4 @@
-import { AdminDashboardService } from './admin.service';
+import { AdminDashboardService } from './admin-dashboard.service';
 
 describe('AdminDashboardService', () => {
   const dataSource = {

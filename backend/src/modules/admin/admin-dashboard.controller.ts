@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AdminService } from './admin.service';
+import { AdminDashboardService } from './admin-dashboard.service';
 import { DashboardStatsDto } from './dto/admin-dashboard.dto';
 
 // Import đầy đủ các file Guard và Decorator
@@ -11,7 +11,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 // KÍCH HOẠT CẢ 2 LỚP BẢO VỆ TẠI ĐÂY
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminDashboardController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminDashboardService) {}
 
   @Get('stats')
   // BẮT BUỘC TÀI KHOẢN PHẢI CÓ VaiTro LÀ 'ADMIN'

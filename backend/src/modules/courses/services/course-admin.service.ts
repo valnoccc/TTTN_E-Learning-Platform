@@ -5,13 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { KhoaHoc } from '../courses/entities/course.entity';
+import { KhoaHoc } from '../entities/course.entity';
 import {
   CourseModerationAction,
   CourseModerationHistory,
-} from './entities/course-moderation-history.entity';
-import { NotificationType } from '../notifications/entities/notification.entity';
-import { NotificationsService } from '../notifications/notifications.service';
+} from '../entities/course-moderation-history.entity';
+import { NotificationType } from '../../notifications/entities/notification.entity';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 type AdminCourseRow = {
   id?: string | number;
@@ -66,7 +66,7 @@ export interface AdminCourseFilters {
 }
 
 @Injectable()
-export class AdminCoursesService {
+export class CourseAdminService {
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly courseRepository: Repository<KhoaHoc>,

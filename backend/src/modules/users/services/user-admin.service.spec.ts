@@ -1,12 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { AdminUsersService } from './admin-users.service';
+import { UserAdminService } from './user-admin.service';
 
-describe('AdminUsersService', () => {
+describe('UserAdminService', () => {
   const dataSource = {
     query: jest.fn(),
   };
 
-  const service = new AdminUsersService(dataSource as never);
+  const service = new UserAdminService(dataSource as never);
 
   beforeEach(() => {
     dataSource.query.mockReset();
