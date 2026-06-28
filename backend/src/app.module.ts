@@ -16,6 +16,7 @@ import { InstructorsModule } from './modules/instructors/instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { AdminDashboardModule } from './modules/admin/admin-dashboard.module';
+import { InstructorDashboardModule } from './modules/instructor-dashboard/instructor-dashboard.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DiscussionsModule } from './modules/discussions/discussions.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
@@ -54,6 +55,7 @@ import { PostsModule } from './modules/posts/posts.module';
     CategoriesModule,
     CloudinaryModule,
     AdminDashboardModule,
+    InstructorDashboardModule,
     CheckoutModule,
     NotificationsModule,
     PostsModule,
