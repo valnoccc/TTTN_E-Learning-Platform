@@ -44,12 +44,8 @@ export class InstructorsController {
   getMyReports(
     @Req() req: any,
     @Query('courseId') courseId?: string,
-    @Query('range') range?:
-      | '30days'
-      | 'this_month'
-      | 'last_month'
-      | 'this_year'
-      | 'all_time',
+    @Query('range')
+    range?: '30days' | 'this_month' | 'last_month' | 'this_year' | 'all_time',
   ) {
     return this.instructorsService.getMyReports(req.user, {
       courseId: courseId ? Number(courseId) : undefined,

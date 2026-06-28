@@ -70,7 +70,7 @@ export interface InstructorReportsBoard {
     enrollmentGrowth: number;
     averageRating: number | null;
     averageRatingLabel: string;
-    averageRatingSource: 'mockdata';
+    averageRatingSource: 'mockdata' | 'database';
     completionRate: number | null;
     completionRateLabel: string;
     completionRateSource: 'mockdata';
@@ -85,9 +85,11 @@ export interface InstructorReportsBoard {
     label: string;
     percentage: number;
     color: string;
+    orderCount: number;
+    grossRevenue: number;
   }>;
   revenueBySourceLabel: string;
-  revenueBySourceSource: 'mockdata';
+  revenueBySourceSource: 'database' | 'mockdata';
 }
 
 const DEFAULT_BOARD: InstructorReportsBoard = {

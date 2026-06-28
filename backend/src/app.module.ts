@@ -15,7 +15,7 @@ import { LessonsModule } from './modules/lessons/lessons.module';
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
-import { AdminDashboardModule } from './modules/admin/admin.module';
+import { AdminDashboardModule } from './modules/admin/admin-dashboard.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DiscussionsModule } from './modules/discussions/discussions.module';
 import { CouponsModule } from './modules/coupons/coupons.module';

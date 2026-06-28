@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { AdminCoursesService } from './admin-courses.service';
+import { CourseAdminService } from './course-admin.service';
 
-describe('AdminCoursesService', () => {
+describe('CourseAdminService', () => {
   const resolveValue = <T>(value: T) => Promise.resolve(value);
 
   const dataSource = {
@@ -22,7 +22,7 @@ describe('AdminCoursesService', () => {
     save: jest.fn(),
   };
 
-  const service = new AdminCoursesService(
+  const service = new CourseAdminService(
     courseRepository as never,
     moderationHistoryRepository as never,
     notificationsService as never,

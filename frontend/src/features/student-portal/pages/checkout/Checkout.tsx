@@ -12,6 +12,7 @@ import {
   getCourseDetails,
   processPayment,
   validateCoupon,
+  createMomoPayment,
 } from '../../../../api/checkout';
 import { removeFromCart } from '../../../cart/cartSlice';
 import { CouponModal } from '../../components/checkout/CouponModal';
@@ -78,7 +79,15 @@ export default function Checkout() {
       setCourses(location.state.selectedCourses);
       setLoading(false);
     } else if (courseId) {
-      void loadCourseData(Number(courseId));
+      // ── PHÒNG VỆ NaN: ép kiểu & validate trước khi gọi API ──────────────────
+      const targetId = parseInt(courseId, 10);
+      if (isNaN(targetId)) {
+        console.warn('>>> [GUARD] Bỏ qua fetch khóa học vì courseId không hợp lệ (NaN):', courseId);
+        toast.error('Mã khóa học không hợp lệ!');
+        navigate('/student/cart');
+        return;
+      }
+      void loadCourseData(targetId);
     } else {
       toast.error('Không có khóa học nào được chọn!');
       navigate('/student/cart');
@@ -157,15 +166,13 @@ export default function Checkout() {
 
   const handlePayment = async () => {
     const errors: { [key: string]: string } = {};
-    
+
     if (!formData.fullName) errors.fullName = 'Vui lòng nhập họ và tên';
     if (!formData.email) errors.email = 'Vui lòng nhập địa chỉ email';
     if (!formData.phone) errors.phone = 'Vui lòng nhập số điện thoại';
 
     if (paymentMethod === 'VNPAY') {
-      if (!selectedBank) {
-        toast.error('Vui lòng chọn ngân hàng thanh toán');
-      }
+      if (!selectedBank) toast.error('Vui lòng chọn ngân hàng thanh toán');
       if (!cardInfo.cardNumber) errors.cardNumber = 'Vui lòng nhập số thẻ';
       if (!cardInfo.cardName) errors.cardName = 'Vui lòng nhập tên in trên thẻ';
       if (!cardInfo.issueDate) errors.issueDate = 'Vui lòng nhập ngày phát hành (MM/YY)';
@@ -175,11 +182,33 @@ export default function Checkout() {
       setFormErrors(errors);
       return;
     }
-    
+
     setFormErrors({});
 
     try {
       setIsProcessing(true);
+
+      // ── MoMo: Tạo QR động & chuyển hướng ─────────────────────────────────
+      if (paymentMethod === 'MOMO') {
+        toast.loading('Đang kết nối MoMo...', { id: 'momo-loading' });
+        const res = await createMomoPayment({
+          courseIds: courses.map((c) => c.id),
+          couponCode: discountValue > 0 ? couponCode : undefined,
+          customerDetails: formData,
+        });
+        toast.dismiss('momo-loading');
+        if (res.payUrl) {
+          toast.success('Đang chuyển đến MoMo...');
+          // Xóa giỏ hàng trước khi rời trang
+          courses.forEach((course) => dispatch(removeFromCart(course.id)));
+          window.location.href = res.payUrl;
+        } else {
+          toast.error('Không nhận được link thanh toán MoMo.');
+        }
+        return;
+      }
+
+      // ── Các phương thức khác (BANK / VNPAY / PAYPAL) ──────────────────────
       const res = await processPayment({
         courseIds: courses.map((course) => course.id),
         paymentMethod,
@@ -197,7 +226,11 @@ export default function Checkout() {
         }, 3000);
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Thanh toán thất bại. Vui lòng thử lại.';
+      toast.dismiss('momo-loading');
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Thanh toán thất bại. Vui lòng thử lại.';
       toast.error(typeof errorMsg === 'string' ? errorMsg : 'Thanh toán thất bại. Vui lòng thử lại.');
     } finally {
       setIsProcessing(false);
@@ -432,27 +465,25 @@ export default function Checkout() {
                   ) : null}
 
                   {paymentMethod === 'MOMO' ? (
-                    <div className="momo-details mt-4 p-3 rounded" style={{ backgroundColor: '#fff0f6', border: '1px solid #f50057' }}>
-                      <div className="d-flex align-items-center">
-                        <div className="qr-code mr-4" style={{ width: '120px', height: '120px', flexShrink: 0 }}>
-                          <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"
-                            alt="MoMo QR Code"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                          />
-                        </div>
-                        <div className="info">
-                          <p className="mb-1">Ví điện tử: <strong>MoMo</strong></p>
-                          <p className="mb-1">Số điện thoại: <strong>0901234567</strong></p>
-                          <p className="mb-1">Tên người nhận: <strong>EDUMEO COMPANY</strong></p>
-                          <p className="mb-0 text-muted" style={{ fontSize: '13px' }}>
-                            * Nội dung chuyển khoản: <strong className="text-danger">Thanh toan {courses.map(c => c.id).join('-')}</strong>
+                    <div className="momo-details mt-4 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, #fff0f6 0%, #ffe4f0 100%)', border: '1.5px solid #d82d8b' }}>
+                      <div className="d-flex align-items-center gap-3">
+                        <img
+                          src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-MoMo-Square.png"
+                          alt="MoMo"
+                          style={{ width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0 }}
+                        />
+                        <div>
+                          <h6 className="mb-1 fw-bold" style={{ color: '#a5006b' }}>Thanh toán qua Ví MoMo</h6>
+                          <p className="mb-0" style={{ fontSize: '13px', color: '#555' }}>
+                            Bấm <strong>"Xác nhận thanh toán"</strong> để được chuyển đến trang thanh toán
+                            chính thức của MoMo Sandbox. Quét mã QR hoặc xác nhận trên app.
                           </p>
                         </div>
                       </div>
-                      <p className="text-muted mt-3 mb-0" style={{ fontSize: '12px', fontStyle: 'italic' }}>
-                        💡 Hướng dẫn: Quý khách vui lòng mở ứng dụng MoMo, quét mã QR ở trên và kiểm tra đúng số tiền trước khi bấm "Xác nhận thanh toán".
-                      </p>
+                      <div className="mt-3 p-2 rounded" style={{ background: 'rgba(168, 0, 107, 0.07)', fontSize: '13px' }}>
+                        <span style={{ color: '#a5006b' }}>🔒</span>{' '}
+                        <span style={{ color: '#555' }}>Giao dịch được bảo mật bởi MoMo. Hệ thống sẽ tự động ghi danh khóa học sau khi thanh toán thành công.</span>
+                      </div>
                     </div>
                   ) : null}
 

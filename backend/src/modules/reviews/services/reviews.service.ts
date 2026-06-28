@@ -161,15 +161,17 @@ export class ReviewsService {
       [courseId],
     );
 
-    const rootReviews = allReviews.filter((r: any) => !r.parentId || r.parentId === null);
-    
+    const rootReviews = allReviews.filter(
+      (r: any) => !r.parentId || r.parentId === null,
+    );
+
     // Reverse root reviews so newest is first
     rootReviews.reverse();
 
     rootReviews.forEach((root: any) => {
       // Replies stay sorted by oldest first due to original ASC order
       root.replies = allReviews.filter(
-        (r: any) => Number(r.parentId) === Number(root.reviewId)
+        (r: any) => Number(r.parentId) === Number(root.reviewId),
       );
     });
 
@@ -187,23 +189,27 @@ export class ReviewsService {
     });
 
     if (!course) {
-      throw new BadRequestException('Khóa học không tồn tại hoặc chưa được xuất bản!');
+      throw new BadRequestException(
+        'Khóa học không tồn tại hoặc chưa được xuất bản!',
+      );
     }
 
     // Check if the student has enrolled in the course
     const enrollment = await this.dataSource.query(
       `SELECT MaDangKy FROM DangKyKhoaHoc WHERE MaKH = ? AND MaND = ? AND TrangThai = 'ACTIVE'`,
-      [courseId, studentId]
+      [courseId, studentId],
     );
 
     if (enrollment.length === 0) {
-      throw new ForbiddenException('Bạn cần đăng ký khóa học để thực hiện nhận xét');
+      throw new ForbiddenException(
+        'Bạn cần đăng ký khóa học để thực hiện nhận xét',
+      );
     }
 
     // Check if the student has already reviewed this course
     const existingReview = await this.dataSource.query(
       `SELECT MaDanhGia FROM DanhGiaKhoaHoc WHERE MaKH = ? AND MaND = ? AND MaDanhGiaCha IS NULL`,
-      [courseId, studentId]
+      [courseId, studentId],
     );
 
     if (existingReview.length > 0) {
@@ -218,7 +224,7 @@ export class ReviewsService {
 
     const user = await this.dataSource.query(
       `SELECT HoTen, AnhDaiDien FROM NguoiDung WHERE MaND = ?`,
-      [studentId]
+      [studentId],
     );
 
     return {

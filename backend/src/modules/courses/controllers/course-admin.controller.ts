@@ -9,17 +9,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { AdminCoursesService } from './admin-courses.service';
-import { RejectCourseDto } from './dto/reject-course.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { CourseAdminService } from '../services/course-admin.service';
+import { RejectCourseDto } from '../dto/reject-course.dto';
 
 @Controller('admin/courses')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
-export class AdminCoursesController {
-  constructor(private readonly adminCoursesService: AdminCoursesService) {}
+export class CourseAdminController {
+  constructor(private readonly courseAdminService: CourseAdminService) {}
 
   private getAdminId(request: Request & { user: { sub: number } }) {
     return request.user.sub;
@@ -30,7 +30,7 @@ export class AdminCoursesController {
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
-    const data = await this.adminCoursesService.getCourses({ status, search });
+    const data = await this.courseAdminService.getCourses({ status, search });
     return {
       message: 'Lấy danh sách khóa học thành công.',
       data,
@@ -39,7 +39,7 @@ export class AdminCoursesController {
 
   @Get('pending')
   async getPendingCourses() {
-    const data = await this.adminCoursesService.getCourses({
+    const data = await this.courseAdminService.getCourses({
       status: 'PENDING',
     });
     return {
@@ -50,7 +50,7 @@ export class AdminCoursesController {
 
   @Get(':id')
   async getCourseDetail(@Param('id') id: string) {
-    const data = await this.adminCoursesService.getCourseDetail(Number(id));
+    const data = await this.courseAdminService.getCourseDetail(Number(id));
     return {
       message: 'Lấy chi tiết khóa học thành công.',
       data,
@@ -62,7 +62,7 @@ export class AdminCoursesController {
     @Param('id') id: string,
     @Req() req: Request & { user: { sub: number } },
   ) {
-    return this.adminCoursesService.approveCourse(
+    return this.courseAdminService.approveCourse(
       Number(id),
       this.getAdminId(req),
     );
@@ -74,7 +74,7 @@ export class AdminCoursesController {
     @Body() body: RejectCourseDto,
     @Req() req: Request & { user: { sub: number } },
   ) {
-    return this.adminCoursesService.rejectCourse(
+    return this.courseAdminService.rejectCourse(
       Number(id),
       this.getAdminId(req),
       body.lyDo,
@@ -87,7 +87,7 @@ export class AdminCoursesController {
     @Body() body: RejectCourseDto,
     @Req() req: Request & { user: { sub: number } },
   ) {
-    return this.adminCoursesService.banPublishedCourse(
+    return this.courseAdminService.banPublishedCourse(
       Number(id),
       this.getAdminId(req),
       body.lyDo,
@@ -100,7 +100,7 @@ export class AdminCoursesController {
     @Body() body: RejectCourseDto,
     @Req() req: Request & { user: { sub: number } },
   ) {
-    return this.adminCoursesService.hidePublishedCourse(
+    return this.courseAdminService.hidePublishedCourse(
       Number(id),
       this.getAdminId(req),
       body.lyDo,

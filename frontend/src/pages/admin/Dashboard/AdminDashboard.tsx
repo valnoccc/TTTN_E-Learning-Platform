@@ -127,8 +127,8 @@ export default function AdminDashboard() {
 
     const memberPieData = stats
         ? [
-            { name: 'Hoc vien', value: stats.totalStudents, color: '#3b82f6' },
-            { name: 'Giang vien', value: stats.totalInstructors, color: '#10b981' },
+            { name: 'Học viên', value: stats.totalStudents, color: '#3b82f6' },
+            { name: 'Giảng viên', value: stats.totalInstructors, color: '#10b981' },
         ]
         : [];
 
@@ -217,12 +217,12 @@ export default function AdminDashboard() {
                                 <div className="grid grid-cols-1 md:grid-cols-3">
                                     <RevenueMetric
                                         value={formatCompactCurrency(salesOverview.grossRevenue)}
-                                        label="Gross"
+                                        label="Tổng"
                                         dotClass="bg-blue-600"
                                     />
                                     <RevenueMetric
                                         value={formatCompactCurrency(salesOverview.adminRevenue)}
-                                        label="Admin 60%"
+                                        label="Quản trị viên 60%"
                                         dotClass="bg-teal-500"
                                     />
                                     <RevenueMetric
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                                                     </div>
                                                     <div className="w-[20%]">
                                                         <p className="text-[14px] font-semibold text-slate-800">{formatCurrency(course.price)}</p>
-                                                        <p className="mt-0.5 text-[13px] text-slate-500">Giá</p>
+                                                        {/* <p className="mt-0.5 text-[13px] text-slate-500">Giá</p> */}
                                                     </div>
                                                     <div className="w-[15%]">
                                                         <p className="text-[14px] font-semibold text-slate-800">{course.orders}</p>
@@ -393,7 +393,7 @@ export default function AdminDashboard() {
                                                     </div>
                                                     <div className="w-[25%] text-right">
                                                         <p className="text-[14px] font-semibold text-slate-800">{formatCurrency(course.revenue)}</p>
-                                                        <p className="mt-0.5 text-[13px] text-slate-500">Gross</p>
+                                                        {/* <p className="mt-0.5 text-[13px] text-slate-500">Tổng</p> */}
                                                     </div>
                                                 </div>
                                             ))}
@@ -434,12 +434,12 @@ export default function AdminDashboard() {
                                                     </div>
                                                     <div className="w-[25%] text-right">
                                                         <p className="text-[14px] font-semibold text-slate-800">{formatCurrency(instructor.revenue)}</p>
-                                                        <p className="mt-0.5 text-[13px] text-slate-500">Giảng viên 40%</p>
+                                                        <p className="mt-0.5 text-[13px] text-slate-500">Doanh thu</p>
                                                     </div>
-                                                    <div className="flex w-[20%] items-center justify-end gap-2">
+                                                    {/* <div className="flex w-[20%] items-center justify-end gap-2">
                                                         <span className="text-[14px] font-bold text-slate-800">{instructor.percentage}%</span>
                                                         <BarChart3 size={16} className="text-emerald-500" />
-                                                    </div>
+                                                    </div> */}
                                                 </div>
                                             ))}
                                         </div>

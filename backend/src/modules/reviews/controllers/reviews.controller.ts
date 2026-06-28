@@ -26,7 +26,9 @@ export class ReviewsController {
   @UseGuards(RolesGuard)
   @Roles('INSTRUCTOR')
   async getInstructorReviews(@Req() req: Request & { user: { sub: number } }) {
-    const reviews = await this.reviewsService.getInstructorReviews(req.user.sub);
+    const reviews = await this.reviewsService.getInstructorReviews(
+      req.user.sub,
+    );
 
     return {
       message: 'Lấy danh sách đánh giá khóa học thành công',

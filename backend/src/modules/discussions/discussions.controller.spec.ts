@@ -60,11 +60,10 @@ describe('DiscussionsController', () => {
     service.replyToDiscussion.mockResolvedValue(reply);
 
     await expect(
-      controller.replyToDiscussion(
-        '100',
-        { user: { sub: 30001 } } as any,
-        { parentId: 1, noiDung: 'Câu trả lời mẫu' },
-      ),
+      controller.replyToDiscussion('100', { user: { sub: 30001 } } as any, {
+        parentId: 1,
+        noiDung: 'Câu trả lời mẫu',
+      }),
     ).resolves.toEqual({
       message: 'Gửi phản hồi thảo luận thành công',
       data: reply,

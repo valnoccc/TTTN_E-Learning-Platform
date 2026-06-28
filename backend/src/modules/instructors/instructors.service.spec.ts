@@ -52,7 +52,7 @@ describe('InstructorsService', () => {
         studentEmail: 'a@example.com',
         courseId: 101,
         courseName: 'React Co Ban',
-        coursePrice: '250000.00',
+        coursePrice: '200000.00',
         purchasedAt: '2026-05-01 10:00:00',
       },
       {
@@ -61,7 +61,7 @@ describe('InstructorsService', () => {
         studentEmail: 'a@example.com',
         courseId: 102,
         courseName: 'NestJS Co Ban',
-        coursePrice: '450000.00',
+        coursePrice: '360000.00',
         purchasedAt: '2026-05-02 12:00:00',
       },
       {
@@ -70,7 +70,7 @@ describe('InstructorsService', () => {
         studentEmail: 'b@example.com',
         courseId: 101,
         courseName: 'React Co Ban',
-        coursePrice: '250000.00',
+        coursePrice: '200000.00',
         purchasedAt: '2026-05-03 08:00:00',
       },
     ]);
@@ -86,13 +86,13 @@ describe('InstructorsService', () => {
     );
     expect(result.totalStudents).toBe(2);
     expect(result.totalPurchases).toBe(3);
-    expect(result.totalRevenue).toBe(950000);
+    expect(result.totalRevenue).toBe(760000);
     expect(result.students[0]).toMatchObject({
       studentId: 11,
       studentName: 'Nguyen Van A',
       courseId: 101,
       courseName: 'React Co Ban',
-      totalSpent: 250000,
+      totalSpent: 200000,
     });
   });
 
@@ -160,29 +160,31 @@ describe('InstructorsService', () => {
 
   it('returns instructor reports board with database and mockdata sections separated', async () => {
     dataSource.query
-      .mockResolvedValueOnce([{
-        enrollments: '4',
-        grossRevenue: '1800000',
-        adminRevenue: '1080000',
-        instructorRevenue: '720000',
-        revenue: '720000',
-      }])
-      .mockResolvedValueOnce([{ enrollments: '2', revenue: '360000' }])
+      .mockResolvedValueOnce([
+        {
+          enrollments: '4',
+          grossRevenue: '1800000',
+          adminRevenue: '360000',
+          instructorRevenue: '1440000',
+          revenue: '1440000',
+        },
+      ])
+      .mockResolvedValueOnce([{ enrollments: '2', revenue: '720000' }])
       .mockResolvedValueOnce([
         {
           periodLabel: '05/2026',
           grossRevenue: '900000',
-          adminRevenue: '540000',
-          instructorRevenue: '360000',
-          revenue: '360000',
+          adminRevenue: '180000',
+          instructorRevenue: '720000',
+          revenue: '720000',
           enrollments: '2',
         },
         {
           periodLabel: '06/2026',
           grossRevenue: '900000',
-          adminRevenue: '540000',
-          instructorRevenue: '360000',
-          revenue: '360000',
+          adminRevenue: '180000',
+          instructorRevenue: '720000',
+          revenue: '720000',
           enrollments: '2',
         },
       ])
@@ -191,9 +193,9 @@ describe('InstructorsService', () => {
           courseId: 10,
           courseName: 'React Pro',
           grossRevenue: '1200000',
-          adminRevenue: '720000',
-          instructorRevenue: '480000',
-          revenue: '480000',
+          adminRevenue: '240000',
+          instructorRevenue: '960000',
+          revenue: '960000',
           enrollments: '3',
           imageUrl: 'react.png',
         },
@@ -207,12 +209,30 @@ describe('InstructorsService', () => {
           courseId: 10,
           courseName: 'React Pro',
           grossAmount: '400000',
-          adminAmount: '240000',
-          instructorAmount: '160000',
-          amount: '160000',
+          adminAmount: '80000',
+          instructorAmount: '320000',
+          amount: '320000',
           couponCode: null,
           status: 'ACTIVE',
           purchasedAt: '2026-06-10 09:00:00',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          couponLabel: 'SAVE20',
+          orderCount: '7',
+          grossRevenue: '1400000',
+        },
+        {
+          couponLabel: 'Khong dung ma',
+          orderCount: '5',
+          grossRevenue: '800000',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          averageRating: '4.6',
+          reviewCount: '12',
         },
       ]);
 
@@ -221,24 +241,34 @@ describe('InstructorsService', () => {
       { range: '30days' },
     );
 
-    expect(result.overview.totalRevenue).toBe(720000);
+    expect(result.overview.totalRevenue).toBe(1440000);
     expect(result.overview.grossRevenue).toBe(1800000);
-    expect(result.overview.adminRevenue).toBe(1080000);
-    expect(result.overview.instructorRevenue).toBe(720000);
+    expect(result.overview.adminRevenue).toBe(360000);
+    expect(result.overview.instructorRevenue).toBe(1440000);
     expect(result.overview.revenueGrowth).toBe(100);
     expect(result.revenueSeriesSource).toBe('database');
     expect(result.topCoursesSource).toBe('database');
     expect(result.recentEnrollmentsSource).toBe('database');
-    expect(result.overview.averageRatingSource).toBe('mockdata');
-    expect(result.revenueBySourceSource).toBe('mockdata');
+    expect(result.overview.averageRating).toBe(4.6);
+    expect(result.overview.averageRatingLabel).toBe('Tu 12 luot danh gia that');
+    expect(result.overview.averageRatingSource).toBe('database');
+    expect(result.revenueBySourceSource).toBe('database');
+    expect(result.revenueBySource[0]).toMatchObject({
+      label: 'SAVE20',
+      orderCount: 7,
+      grossRevenue: 1400000,
+    });
     expect(result.topCourses[0]).toMatchObject({
       courseId: 10,
       courseName: 'React Pro',
-      revenue: 480000,
+      revenue: 960000,
       grossRevenue: 1200000,
-      adminRevenue: 720000,
-      instructorRevenue: 480000,
+      adminRevenue: 240000,
+      instructorRevenue: 960000,
       ratingLabel: 'MOCKDATA',
     });
+    const queryCalls = dataSource.query.mock.calls as Array<[string]>;
+    expect(queryCalls[0]?.[0]).toContain('* 0.2');
+    expect(queryCalls[0]?.[0]).toContain('* 0.8');
   });
 });

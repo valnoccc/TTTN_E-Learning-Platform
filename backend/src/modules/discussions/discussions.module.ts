@@ -13,4 +13,3 @@ import { DiscussionsService } from './services/discussions.service';
   exports: [DiscussionsService],
 })
 export class DiscussionsModule {}
-

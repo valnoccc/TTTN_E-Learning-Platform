@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -14,9 +22,8 @@ export class PublicDiscussionsController {
    */
   @Get(':id/discussions')
   async getPublicCourseDiscussions(@Param('id') id: string) {
-    const discussions = await this.discussionsService.getPublicCourseDiscussions(
-      Number(id),
-    );
+    const discussions =
+      await this.discussionsService.getPublicCourseDiscussions(Number(id));
 
     return {
       message: 'Lấy danh sách thảo luận thành công',

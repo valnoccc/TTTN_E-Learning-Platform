@@ -42,10 +42,14 @@ import axiosClient from './axios';
 export const getCourseDetails = async (
   courseId: number,
 ): Promise<CourseDetailsData> => {
+  // ── PHÒNG VỆ NaN tại tầng API: tuyến phòng thủ thứ 2 ──────────────────────
+  if (!courseId || isNaN(courseId)) {
+    throw new Error(`[checkout.ts] getCourseDetails nhận courseId không hợp lệ: ${courseId}`);
+  }
   try {
     const response: any = await axiosClient.get(`/public/courses/${courseId}`);
     return {
-      id: parseInt(response.data.maKH),
+      id: parseInt(response.data.maKH, 10),
       courseName: response.data.tenKhoaHoc,
       thumbnail: response.data.hinhThuNho || '/assets/images/course-1.jpg',
       instructor: response.data.giangVien
@@ -123,3 +127,31 @@ export const getAvailableCoupons = async (courseIds: number[]): Promise<Availabl
   }
 };
 
+export interface MomoPaymentRequest {
+  courseIds: number[];
+  couponCode?: string;
+  customerDetails: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface MomoPaymentResponse {
+  success: boolean;
+  payUrl: string;
+  invoiceId: number;
+  orderId: string;
+  qrCodeUrl?: string;
+}
+
+export const createMomoPayment = async (
+  data: MomoPaymentRequest,
+): Promise<MomoPaymentResponse> => {
+  try {
+    const response: any = await axiosClient.post('/checkout/momo/create-payment', data);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
+};
