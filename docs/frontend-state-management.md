@@ -12,6 +12,7 @@ Use RTK Query for server state and API caching.
 - Enrollment status
 - My Learning courses
 - Admin course management
+- Admin user management
 
 ## Use Local Component State For
 - Form input before submit

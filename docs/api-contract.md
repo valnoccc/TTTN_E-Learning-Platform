@@ -14,9 +14,11 @@ Source of truth:
 
 ## Users (Admin - Quan ly nguoi dung)
 - `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/adminRevenue = 20%`, `instructorPayout = 80%`, `grossRevenue = 100%`)
-- `GET /users` (Xem danh sach tai khoan)
-- `PATCH /users/:id/status` (Khoa/Mo khoa tai khoan)
-- `PATCH /users/:id/roles` (Cap quyen he thong)
+- `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
+- `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
+- `PATCH /admin/users/:id/role` (Admin - Cap vai tro he thong, body: `{ role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)
+- `PATCH /admin/users/bulk/status` (Admin - Cap nhat trang thai hang loat, body: `{ ids: number[], status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
+- `PATCH /admin/users/bulk/role` (Admin - Cap nhat vai tro hang loat, body: `{ ids: number[], role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)
 
 ## Categories (Quan ly danh muc)
 - `GET /categories` (Public - Hien thi danh muc, ho tro `search`)
