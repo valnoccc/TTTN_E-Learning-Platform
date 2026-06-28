@@ -60,7 +60,7 @@ function getRoleLabel(role: AdminUserRecord['role']) {
 function getRoleClass(role: AdminUserRecord['role']) {
   switch (role) {
     case 'ADMIN':
-      return 'border-slate-900 bg-slate-900 text-white shadow-[0_10px_20px_-12px_rgba(15,23,42,0.8)]';
+      return 'border-indigo-200 bg-indigo-50 text-indigo-700'; // Đã đổi từ đen sang Indigo
     case 'INSTRUCTOR':
       return 'border-sky-200 bg-sky-50 text-sky-700';
     default:
@@ -82,11 +82,11 @@ function getStatusLabel(status: AdminUserStatus) {
 function getStatusClass(status: AdminUserStatus) {
   switch (status) {
     case 'ACTIVE':
-      return 'border-emerald-500 bg-emerald-500 text-white shadow-[0_10px_20px_-12px_rgba(16,185,129,0.8)]';
+      return 'border-emerald-500 bg-emerald-500 text-white shadow-sm';
     case 'INACTIVE':
-      return 'border-amber-500 bg-amber-500 text-white shadow-[0_10px_20px_-12px_rgba(245,158,11,0.8)]';
+      return 'border-amber-500 bg-amber-500 text-white shadow-sm';
     default:
-      return 'border-rose-600 bg-rose-600 text-white shadow-[0_10px_20px_-12px_rgba(244,63,94,0.8)]';
+      return 'border-rose-500 bg-rose-500 text-white shadow-sm';
   }
 }
 
@@ -102,14 +102,15 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.38)]">
+    <div className="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-          <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+          <p className="mt-2 text-3xl font-black tracking-tight text-slate-900">{value}</p>
           <p className="mt-2 text-sm text-slate-500">{description}</p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-sky-700 text-white shadow-lg shadow-slate-200">
+        {/* Đổi icon sang tone xanh ngọc sáng */}
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100/50">
           {icon}
         </div>
       </div>
@@ -216,34 +217,26 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 animate-fade-in">
-        <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-r from-white via-[#f8fbff] to-[#eefcf8] px-6 py-6 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.35)]">
-          <div className="absolute inset-y-0 right-0 w-[240px] bg-[radial-gradient(circle_at_center,rgba(29,191,115,0.16),transparent_72%)]" />
+      <div className="space-y-6 animate-fade-in relative">
+          <div className="absolute inset-y-0 right-0 w-[240px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08),transparent_72%)] pointer-events-none" />
           <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
-                <Users size={12} />
-                User management
-              </div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
+              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
                 Quản lý người dùng
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Tìm kiếm, phân loại, khóa/mở khóa và chỉnh vai trò tài khoản trong một màn hình.
-              </p>
             </div>
 
+            {/* Đổi màu Nút Xuất CSV */}
             <button
               onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-800"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-800"
             >
               <Download size={16} />
               Xuất CSV
             </button>
           </div>
-        </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 relative">
           <StatCard
             label="Tổng tài khoản"
             value={summary.totalUsers.toLocaleString('vi-VN')}
@@ -270,30 +263,32 @@ export default function AdminUsers() {
           />
         </section>
 
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.4)]">
-          <div className="grid gap-4 lg:grid-cols-[1.5fr_0.9fr_0.9fr]">
-            <label className="relative block">
+       <section className="rounded-[24px] border border-slate-100 bg-white p-6 shadow-sm relative">
+          <div className="flex flex-col gap-4 md:flex-row">
+            {/* Ô tìm kiếm chiếm phần lớn không gian còn lại (flex-1) */}
+            <label className="relative block flex-1">
               <Search
                 size={16}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Tìm theo tên, email hoặc số điện thoại..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-[14px] font-medium text-slate-800 outline-none transition focus:border-slate-950 focus:bg-white focus:ring-1 focus:ring-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] font-medium text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
               />
             </label>
 
-            <label className="relative block">
+            {/* Ô chọn Vai trò (độ rộng cố định trên màn hình to) */}
+            <label className="relative block md:w-[200px]">
               <Filter
                 size={16}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <select
                 value={role}
                 onChange={(event) => setRole(event.target.value as AdminUserRole)}
-                className="w-full cursor-pointer appearance-none rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-[14px] font-semibold text-slate-800 outline-none transition focus:border-slate-950 focus:bg-white focus:ring-1 focus:ring-slate-950"
+                className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
               >
                 <option value="ALL">Tất cả vai trò</option>
                 <option value="ADMIN">Quản trị</option>
@@ -302,15 +297,16 @@ export default function AdminUsers() {
               </select>
             </label>
 
-            <label className="relative block">
+            {/* Ô chọn Trạng thái (độ rộng cố định trên màn hình to) */}
+            <label className="relative block md:w-[200px]">
               <Filter
                 size={16}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as AdminUserStatus)}
-                className="w-full cursor-pointer appearance-none rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-[14px] font-semibold text-slate-800 outline-none transition focus:border-slate-950 focus:bg-white focus:ring-1 focus:ring-slate-950"
+                className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
               >
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="ACTIVE">Hoạt động</option>
@@ -321,11 +317,12 @@ export default function AdminUsers() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_-30px_rgba(15,23,42,0.4)]">
-          <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-6 py-5 text-white">
+        <section className="overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-sm relative">
+          {/* Đổi nền Header Bảng thành trắng sáng */}
+          <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
             <div>
-              <h2 className="text-[18px] font-bold text-white">Danh sách người dùng</h2>
-              <p className="mt-1 text-sm text-slate-300">
+              <h2 className="text-[18px] font-bold text-slate-900">Danh sách người dùng</h2>
+              <p className="mt-1 text-sm text-slate-500">
                 {loading ? 'Đang tải dữ liệu...' : `${users.length} tài khoản trong bộ lọc hiện tại`}
               </p>
             </div>
@@ -339,7 +336,7 @@ export default function AdminUsers() {
             </div>
           ) : users.length === 0 ? (
             <div className="px-6 py-20 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
                 <UserCog size={28} strokeWidth={1.6} />
               </div>
               <h3 className="mt-4 text-[16px] font-semibold text-slate-900">
@@ -382,25 +379,25 @@ export default function AdminUsers() {
                           onClick={() => setSelectedUser(user)}
                           className="flex w-full items-start gap-4 text-left"
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-100 to-white">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
                             {user.avatar ? (
                               <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
                             ) : (
-                              <span className="text-sm font-bold text-slate-600">
+                              <span className="text-sm font-bold text-slate-500">
                                 {user.fullName.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-[14px] font-semibold text-slate-900">
+                            <h3 className="truncate text-[14px] font-bold text-slate-900 transition hover:text-emerald-600">
                               {user.fullName}
                             </h3>
-                            <p className="mt-1 flex items-center gap-1 truncate text-[13px] text-slate-500">
-                              <Mail size={12} />
+                            <p className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-slate-500">
+                              <Mail size={12} className="text-slate-400" />
                               <span>{user.email}</span>
                             </p>
-                            <p className="mt-1 flex items-center gap-1 truncate text-[13px] text-slate-500">
-                              <Phone size={12} />
+                            <p className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-slate-500">
+                              <Phone size={12} className="text-slate-400" />
                               <span>{user.phone || 'Chưa cập nhật số điện thoại'}</span>
                             </p>
                           </div>
@@ -408,32 +405,32 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-6 py-5 align-middle">
                         <span
-                          className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold ${getRoleClass(user.role)}`}
+                          className={`inline-flex items-center whitespace-nowrap rounded-md border px-2.5 py-1 text-[11px] font-bold ${getRoleClass(user.role)}`}
                         >
                           {getRoleLabel(user.role)}
                         </span>
                       </td>
                       <td className="px-6 py-5 align-middle">
                         <span
-                          className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold ${getStatusClass(user.status)}`}
+                          className={`inline-flex items-center whitespace-nowrap rounded-md border px-2.5 py-1 text-[11px] font-bold ${getStatusClass(user.status)}`}
                         >
                           {getStatusLabel(user.status)}
                         </span>
                       </td>
                       <td className="px-6 py-5 align-middle">
-                        <p className="text-[14px] font-semibold text-slate-950">
+                        <p className="text-[13px] font-bold text-slate-900">
                           {user.purchaseCount.toLocaleString('vi-VN')} lượt mua
                         </p>
-                        <p className="mt-1 text-[13px] text-slate-500">
-                          {user.activeEnrollments.toLocaleString('vi-VN')} khóa học đang học
+                        <p className="mt-1 text-[12px] font-medium text-slate-500">
+                          {user.activeEnrollments.toLocaleString('vi-VN')} khóa học
                         </p>
                       </td>
                       <td className="px-6 py-5 align-middle">
-                        <p className="text-[14px] font-bold text-slate-950">
+                        <p className="text-[13px] font-bold text-emerald-600">
                           {formatCurrency(user.totalSpent)}
                         </p>
-                        <p className="mt-1 flex items-center gap-1 text-[13px] text-slate-500">
-                          <CalendarDays size={12} />
+                        <p className="mt-1 flex items-center gap-1 text-[12px] font-medium text-slate-500">
+                          <CalendarDays size={12} className="text-slate-400" />
                           {formatDate(user.createdAt)}
                         </p>
                       </td>
@@ -441,7 +438,7 @@ export default function AdminUsers() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => setSelectedUser(user)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-600 shadow-sm"
                           >
                             <UserCog size={14} />
                             Chi tiết
@@ -453,7 +450,7 @@ export default function AdminUsers() {
                                 user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
                               )
                             }
-                            className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-[13px] font-semibold transition ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition shadow-sm ${
                               user.status === 'ACTIVE'
                                 ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
                                 : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
@@ -474,7 +471,7 @@ export default function AdminUsers() {
       </div>
 
       {selectedUser ? (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-slate-900/40 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-slate-900/40 backdrop-blur-sm">
           <button
             aria-label="Đóng chi tiết"
             onClick={() => setSelectedUser(null)}
@@ -482,23 +479,24 @@ export default function AdminUsers() {
           />
 
           <aside className="relative flex h-full w-full max-w-[460px] flex-col overflow-y-auto bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white">
+            {/* Đổi nền Drawer Header thành trắng */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
               <div>
-                <h2 className="text-xl font-black tracking-tight text-white">Chi tiết người dùng</h2>
-                <p className="mt-1 text-sm text-slate-300">Quản lý nhanh trạng thái và vai trò.</p>
+                <h2 className="text-xl font-black tracking-tight text-slate-900">Chi tiết người dùng</h2>
+                <p className="mt-1 text-sm text-slate-500">Quản lý nhanh trạng thái và vai trò.</p>
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white transition hover:bg-white/10"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="space-y-5 p-6">
-              <div className="rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+              <div className="rounded-[20px] border border-slate-100 bg-slate-50/80 p-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-slate-950 text-white ring-1 ring-slate-200">
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700 ring-4 ring-white shadow-sm">
                     {selectedUser.avatar ? (
                       <img
                         src={selectedUser.avatar}
@@ -506,24 +504,24 @@ export default function AdminUsers() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-lg font-black text-white">
+                      <span className="text-lg font-black text-emerald-700">
                         {selectedUser.fullName.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-lg font-bold text-slate-950">
+                    <h3 className="truncate text-lg font-bold text-slate-900">
                       {selectedUser.fullName}
                     </h3>
                     <p className="mt-1 truncate text-sm text-slate-500">{selectedUser.email}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-semibold ${getRoleClass(selectedUser.role)}`}
+                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-bold ${getRoleClass(selectedUser.role)}`}
                       >
                         {getRoleLabel(selectedUser.role)}
                       </span>
                       <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-semibold ${getStatusClass(selectedUser.status)}`}
+                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-bold ${getStatusClass(selectedUser.status)}`}
                       >
                         {getStatusLabel(selectedUser.status)}
                       </span>
@@ -533,43 +531,43 @@ export default function AdminUsers() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Lượt mua</p>
-                  <p className="mt-2 text-2xl font-black text-slate-950">
+                  <p className="mt-2 text-2xl font-black text-slate-900">
                     {selectedUser.purchaseCount.toLocaleString('vi-VN')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Khóa học</p>
-                  <p className="mt-2 text-2xl font-black text-slate-950">
+                  <p className="mt-2 text-2xl font-black text-slate-900">
                     {selectedUser.activeEnrollments.toLocaleString('vi-VN')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Chi tiêu</p>
-                  <p className="mt-2 text-xl font-black text-slate-950">
+                <div className="rounded-2xl border border-slate-100 bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-100/50">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600/80">Chi tiêu</p>
+                  <p className="mt-2 text-xl font-black text-emerald-700">
                     {formatCurrency(selectedUser.totalSpent)}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Ngày tạo</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-950">
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
                     {formatDate(selectedUser.createdAt)}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                <h4 className="text-base font-bold text-slate-950">Cập nhật nhanh</h4>
-                <div className="mt-4 grid gap-4">
+              <div className="rounded-[20px] border border-slate-100 bg-white p-5 shadow-sm">
+                <h4 className="text-base font-bold text-slate-900">Cập nhật nhanh</h4>
+                <div className="mt-5 grid gap-4">
                   <label className="grid gap-2">
-                    <span className="text-sm font-semibold text-slate-600">Vai trò</span>
+                    <span className="text-[13px] font-semibold text-slate-600">Phân quyền Vai trò</span>
                     <select
                       value={drawerRole}
                       onChange={(event) =>
                         setDrawerRole(event.target.value as Exclude<AdminUserRole, 'ALL'>)
                       }
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-slate-950 focus:ring-1 focus:ring-slate-950"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
                     >
                       <option value="STUDENT">Học viên</option>
                       <option value="INSTRUCTOR">Giảng viên</option>
@@ -578,13 +576,13 @@ export default function AdminUsers() {
                   </label>
 
                   <label className="grid gap-2">
-                    <span className="text-sm font-semibold text-slate-600">Trạng thái</span>
+                    <span className="text-[13px] font-semibold text-slate-600">Trạng thái tài khoản</span>
                     <select
                       value={drawerStatus}
                       onChange={(event) =>
                         setDrawerStatus(event.target.value as Exclude<AdminUserStatus, 'ALL'>)
                       }
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-slate-950 focus:ring-1 focus:ring-slate-950"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
                     >
                       <option value="ACTIVE">Hoạt động</option>
                       <option value="INACTIVE">Tạm khóa</option>
@@ -592,11 +590,11 @@ export default function AdminUsers() {
                     </select>
                   </label>
 
-                  <div className="flex flex-wrap gap-3 pt-1">
+                  <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100 mt-2">
                     <button
                       onClick={() => void handleSaveDrawerRole()}
                       disabled={selectedUser.role === drawerRole}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <UserRoundCog size={16} />
                       Lưu vai trò
@@ -604,7 +602,7 @@ export default function AdminUsers() {
                     <button
                       onClick={() => void handleSaveDrawerStatus()}
                       disabled={selectedUser.status === drawerStatus}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ShieldCheck size={16} />
                       Lưu trạng thái
