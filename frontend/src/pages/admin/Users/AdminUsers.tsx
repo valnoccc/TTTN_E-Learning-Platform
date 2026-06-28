@@ -381,10 +381,10 @@ export default function AdminUsers() {
                         >
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
                             {user.avatar ? (
-                              <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
+                              <img src={user.avatar} alt={user.fullName || 'User'} className="h-full w-full object-cover" />
                             ) : (
                               <span className="text-sm font-bold text-slate-500">
-                                {user.fullName.charAt(0).toUpperCase()}
+                                {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
                               </span>
                             )}
                           </div>
