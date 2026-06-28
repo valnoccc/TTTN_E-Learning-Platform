@@ -13,6 +13,7 @@ Use RTK Query for server state and API caching.
 - My Learning courses
 - Admin course management
 - Admin user management
+- Admin dashboard overview stats
 
 ## Use Local Component State For
 - Form input before submit

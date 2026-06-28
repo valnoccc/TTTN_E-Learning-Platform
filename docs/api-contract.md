@@ -13,7 +13,7 @@ Source of truth:
 - `POST /auth/forgot-password` (Khoi phuc mat khau)
 
 ## Users (Admin - Quan ly nguoi dung)
-- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/adminRevenue = 20%`, `instructorPayout = 80%`, `grossRevenue = 100%`)
+- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; bao gom `grossRevenue`, `adminRevenue = 20%`, `instructorPayout = 80%`, `newEnrollments`, `pendingCourses`, `revenueChart`, `salesChart`, `categoryRevenue`, `topCourses`, `topInstructors`, `recentOrders` va cac KPI tang truong)
 - `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
 - `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
 - `PATCH /admin/users/:id/role` (Admin - Cap vai tro he thong, body: `{ role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)

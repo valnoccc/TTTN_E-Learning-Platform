@@ -17,6 +17,14 @@ export interface SalesOverview {
     refunds: number;
 }
 
+export interface RevenueCategory {
+    id: number;
+    name: string;
+    revenue: number;
+    adminRevenue: number;
+    instructorPayout: number;
+}
+
 export interface SalesChartData {
     label: string;
     orders: number;
@@ -30,9 +38,11 @@ export interface SalesChartData {
 export interface RecentOrder {
     orderId: number;
     customerName: string;
+    courseName: string;
     totalAmount: number;
     paidAt: string;
     paymentMethod: string;
+    paymentStatus: string;
 }
 
 export interface TopCourse {
@@ -66,6 +76,10 @@ export interface DashboardStats {
     instructorGrowth: number;
     totalCourses: number;
     courseGrowth: number;
+    pendingCourses: number;
+    pendingCourseGrowth: number;
+    newEnrollments: number;
+    newEnrollmentGrowth: number;
     totalRevenue: number;
     grossRevenue: number;
     adminRevenue: number;
@@ -77,6 +91,7 @@ export interface DashboardStats {
     salesChart: SalesChartData[];
     topCourses: TopCourse[];
     topInstructors: TopInstructor[];
+    categoryRevenue: RevenueCategory[];
 }
 
 export function useAdminDashboard() {
@@ -88,7 +103,7 @@ export function useAdminDashboard() {
             setLoading(true);
             try {
                 const response = await axiosClient.get<DashboardStats>('/admin/dashboard/stats');
-                setStats(response as any);
+                setStats((response as any)?.data ?? response);
             } catch (error) {
                 toast.error('Lỗi khi tải dữ liệu!');
             } finally {
