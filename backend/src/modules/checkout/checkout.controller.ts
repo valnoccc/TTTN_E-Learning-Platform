@@ -30,7 +30,12 @@ export class CheckoutController {
   @UseGuards(JwtAuthGuard)
   async createMomoPayment(@Body() payload: MomoOrderData, @Request() req) {
     const userId = req.user.sub || req.user.maND;
-    console.log('[Controller] createMomoPayment | userId:', userId, '| payload:', JSON.stringify(payload));
+    console.log(
+      '[Controller] createMomoPayment | userId:',
+      userId,
+      '| payload:',
+      JSON.stringify(payload),
+    );
     return this.checkoutService.createMomoPayment(userId, payload);
   }
 
@@ -38,7 +43,10 @@ export class CheckoutController {
   @Post('momo-ipn')
   @HttpCode(HttpStatus.OK)
   async handleMomoIPN(@Body() body: any, @Req() req: any) {
-    console.log('>>> [IPN TOUCH] Đã nhận được tín hiệu Webhook từ MoMo Server!', req.body);
+    console.log(
+      '>>> [IPN TOUCH] Đã nhận được tín hiệu Webhook từ MoMo Server!',
+      req.body,
+    );
     console.log('[Controller] handleMomoIPN | body:', JSON.stringify(body));
     return this.checkoutService.handleMomoIPN(body);
   }

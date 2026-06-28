@@ -6,6 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import {
+  ADMIN_REVENUE_SHARE,
+  INSTRUCTOR_REVENUE_SHARE,
+} from '../../../common/constants/revenue-share';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
@@ -322,7 +326,7 @@ export class InstructorsService {
 
     try {
       const { sql, params } = this.buildStudentQuery(instructorId, filters);
-      rows = (await this.dataSource.query(sql, params)) as RawStudentRow[];
+      rows = await this.dataSource.query(sql, params);
     } catch (error) {
       console.error('Loi khi tai danh sach hoc vien:', error);
       return {
@@ -366,7 +370,11 @@ export class InstructorsService {
     const range = filters.range ?? '30days';
     const courseId = filters.courseId;
 
-    const whereClause = this.buildReportWhereClause(instructorId, courseId, range);
+    const whereClause = this.buildReportWhereClause(
+      instructorId,
+      courseId,
+      range,
+    );
     const previousWhereClause = this.buildPreviousReportWhereClause(
       instructorId,
       courseId,
@@ -374,13 +382,20 @@ export class InstructorsService {
     );
     const paidRevenueJoins = this.buildPaidRevenueJoins();
     const grossRevenueSql = this.buildLineNetRevenueSql();
-    const instructorRevenueSql = `(${grossRevenueSql}) * 0.4`;
-    const adminRevenueSql = `(${grossRevenueSql}) * 0.6`;
+    const instructorRevenueSql = `(${grossRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}`;
+    const adminRevenueSql = `(${grossRevenueSql}) * ${ADMIN_REVENUE_SHARE}`;
 
-    const [overviewRows, previousRows, revenueSeriesRows, topCourseRows, recentRows, couponRows, ratingRows] =
-      await Promise.all([
-        this.dataSource.query(
-          `
+    const [
+      overviewRows,
+      previousRows,
+      revenueSeriesRows,
+      topCourseRows,
+      recentRows,
+      couponRows,
+      ratingRows,
+    ] = await Promise.all([
+      this.dataSource.query(
+        `
             SELECT
               COUNT(*) AS enrollments,
               COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
@@ -391,9 +406,9 @@ export class InstructorsService {
             ${paidRevenueJoins}
             WHERE ${whereClause}
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               COUNT(*) AS enrollments,
               COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
@@ -404,9 +419,9 @@ export class InstructorsService {
             ${paidRevenueJoins}
             WHERE ${previousWhereClause}
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               ${this.buildPeriodSelect(range)} AS periodLabel,
               COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
@@ -420,9 +435,9 @@ export class InstructorsService {
             GROUP BY periodLabel
             ORDER BY MIN(dk.NgayDangKy) ASC
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               kh.MaKH AS courseId,
               kh.TenKhoaHoc AS courseName,
@@ -439,9 +454,9 @@ export class InstructorsService {
             ORDER BY revenue DESC, enrollments DESC, kh.MaKH DESC
             LIMIT 5
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               CONCAT('#DK', dk.MaDangKy) AS enrollmentCode,
               nd.HoTen AS studentName,
@@ -463,9 +478,9 @@ export class InstructorsService {
             ORDER BY dk.NgayDangKy DESC
             LIMIT 8
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               COALESCE(
                 CASE
@@ -483,9 +498,9 @@ export class InstructorsService {
             ORDER BY orderCount DESC, grossRevenue DESC
             LIMIT 5
           `,
-        ),
-        this.dataSource.query(
-          `
+      ),
+      this.dataSource.query(
+        `
             SELECT
               COALESCE(AVG(dg.SoSao), 0) AS averageRating,
               COUNT(*) AS reviewCount
@@ -493,30 +508,39 @@ export class InstructorsService {
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
             WHERE ${this.buildReviewReportWhereClause(instructorId, courseId, range)}
           `,
-        ),
-      ]);
+      ),
+    ]);
 
-    const overviewRow = (overviewRows as Array<{
-      enrollments?: number | string;
-      revenue?: number | string;
-      grossRevenue?: number | string;
-      adminRevenue?: number | string;
-      instructorRevenue?: number | string;
-    }>)[0] ?? {
+    const overviewRow = (
+      overviewRows as Array<{
+        enrollments?: number | string;
+        revenue?: number | string;
+        grossRevenue?: number | string;
+        adminRevenue?: number | string;
+        instructorRevenue?: number | string;
+      }>
+    )[0] ?? {
       enrollments: 0,
       revenue: 0,
       grossRevenue: 0,
       adminRevenue: 0,
       instructorRevenue: 0,
     };
-    const previousRow = (previousRows as Array<{ enrollments?: number | string; revenue?: number | string }>)[0] ?? {
+    const previousRow = (
+      previousRows as Array<{
+        enrollments?: number | string;
+        revenue?: number | string;
+      }>
+    )[0] ?? {
       enrollments: 0,
       revenue: 0,
     };
-    const ratingRow = (ratingRows as Array<{
-      averageRating?: number | string;
-      reviewCount?: number | string;
-    }>)[0] ?? {
+    const ratingRow = (
+      ratingRows as Array<{
+        averageRating?: number | string;
+        reviewCount?: number | string;
+      }>
+    )[0] ?? {
       averageRating: 0,
       reviewCount: 0,
     };
@@ -552,14 +576,16 @@ export class InstructorsService {
         completionRateLabel: 'MOCKDATA: Chua co du lieu tien do that',
         completionRateSource: 'mockdata',
       },
-      revenueSeries: (revenueSeriesRows as RawRevenueSeriesRow[]).map((row) => ({
-        label: row.periodLabel,
-        revenue: this.toNumber(row.revenue),
-        grossRevenue: this.toNumber(row.grossRevenue),
-        adminRevenue: this.toNumber(row.adminRevenue),
-        instructorRevenue: this.toNumber(row.instructorRevenue),
-        enrollments: this.toNumber(row.enrollments),
-      })),
+      revenueSeries: (revenueSeriesRows as RawRevenueSeriesRow[]).map(
+        (row) => ({
+          label: row.periodLabel,
+          revenue: this.toNumber(row.revenue),
+          grossRevenue: this.toNumber(row.grossRevenue),
+          adminRevenue: this.toNumber(row.adminRevenue),
+          instructorRevenue: this.toNumber(row.instructorRevenue),
+          enrollments: this.toNumber(row.enrollments),
+        }),
+      ),
       revenueSeriesSource: 'database',
       topCourses: (topCourseRows as RawTopCourseRow[]).map((row) => ({
         courseId: Number(row.courseId),
@@ -573,35 +599,48 @@ export class InstructorsService {
         imageUrl: row.imageUrl,
       })),
       topCoursesSource: 'database',
-      recentEnrollments: (recentRows as RawRecentEnrollmentRow[]).map((row) => ({
-        enrollmentCode: row.enrollmentCode,
-        studentName: row.studentName,
-        studentEmail: row.studentEmail,
-        studentAvatar: row.studentAvatar,
-        courseId: Number(row.courseId),
-        courseName: row.courseName,
-        amount: this.toNumber(row.amount),
-        grossAmount: this.toNumber(row.grossAmount),
-        adminAmount: this.toNumber(row.adminAmount),
-        instructorAmount: this.toNumber(row.instructorAmount),
-        couponCode: row.couponCode,
-        status: row.status,
-        purchasedAt: row.purchasedAt,
-      })),
+      recentEnrollments: (recentRows as RawRecentEnrollmentRow[]).map(
+        (row) => ({
+          enrollmentCode: row.enrollmentCode,
+          studentName: row.studentName,
+          studentEmail: row.studentEmail,
+          studentAvatar: row.studentAvatar,
+          courseId: Number(row.courseId),
+          courseName: row.courseName,
+          amount: this.toNumber(row.amount),
+          grossAmount: this.toNumber(row.grossAmount),
+          adminAmount: this.toNumber(row.adminAmount),
+          instructorAmount: this.toNumber(row.instructorAmount),
+          couponCode: row.couponCode,
+          status: row.status,
+          purchasedAt: row.purchasedAt,
+        }),
+      ),
       recentEnrollmentsSource: 'database',
-      revenueBySource: (couponRows as RawCouponSourceRow[]).map((row, index) => {
-        const colors = ['#94a3b8', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'];
-        const orderCount = this.toNumber(row.orderCount);
-        const totalOrders = this.toNumber(overviewRow.enrollments);
+      revenueBySource: (couponRows as RawCouponSourceRow[]).map(
+        (row, index) => {
+          const colors = [
+            '#94a3b8',
+            '#10b981',
+            '#3b82f6',
+            '#f59e0b',
+            '#8b5cf6',
+          ];
+          const orderCount = this.toNumber(row.orderCount);
+          const totalOrders = this.toNumber(overviewRow.enrollments);
 
-        return {
-          label: row.couponLabel ?? 'Khong dung ma',
-          percentage: totalOrders > 0 ? Number(((orderCount * 100) / totalOrders).toFixed(0)) : 0,
-          color: colors[index % colors.length],
-          orderCount,
-          grossRevenue: this.toNumber(row.grossRevenue),
-        };
-      }),
+          return {
+            label: row.couponLabel ?? 'Khong dung ma',
+            percentage:
+              totalOrders > 0
+                ? Number(((orderCount * 100) / totalOrders).toFixed(0))
+                : 0,
+            color: colors[index % colors.length],
+            orderCount,
+            grossRevenue: this.toNumber(row.grossRevenue),
+          };
+        },
+      ),
       revenueBySourceLabel:
         this.toNumber(overviewRow.enrollments) > 0
           ? `Du lieu nay dua tren ${this.toNumber(overviewRow.enrollments)} luot dang ky`
@@ -650,11 +689,13 @@ export class InstructorsService {
             nd.Email AS studentEmail,
             dk.MaKH AS courseId,
             kh.TenKhoaHoc AS courseName,
-            kh.GiaBan AS coursePrice,
+            COALESCE(cthd.DoanhThuGiangVien, kh.GiaBan * ${INSTRUCTOR_REVENUE_SHARE}) AS coursePrice,
             dk.NgayDangKy AS purchasedAt
         FROM DangKyKhoaHoc dk
         JOIN NguoiDung nd ON dk.MaND = nd.MaND
         JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
+        LEFT JOIN HoaDon hd ON dk.MaHD = hd.MaHD AND hd.TrangThaiThanhToan = 'PAID'
+        LEFT JOIN ChiTietHoaDon cthd ON cthd.MaHD = dk.MaHD AND cthd.MaKH = dk.MaKH
         WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'
     `;
 
@@ -680,7 +721,10 @@ export class InstructorsService {
     courseId: number | undefined,
     range: InstructorReportRange,
   ) {
-    const clauses = [`kh.MaND_GiangVien = ${instructorId}`, `dk.TrangThai = 'ACTIVE'`];
+    const clauses = [
+      `kh.MaND_GiangVien = ${instructorId}`,
+      `dk.TrangThai = 'ACTIVE'`,
+    ];
 
     if (courseId) {
       clauses.push(`kh.MaKH = ${courseId}`);
@@ -699,7 +743,10 @@ export class InstructorsService {
     courseId: number | undefined,
     range: InstructorReportRange,
   ) {
-    const clauses = [`kh.MaND_GiangVien = ${instructorId}`, `dk.TrangThai = 'ACTIVE'`];
+    const clauses = [
+      `kh.MaND_GiangVien = ${instructorId}`,
+      `dk.TrangThai = 'ACTIVE'`,
+    ];
 
     if (courseId) {
       clauses.push(`kh.MaKH = ${courseId}`);
@@ -734,7 +781,10 @@ export class InstructorsService {
     return clauses.join(' AND ');
   }
 
-  private getReviewRangeClause(range: InstructorReportRange, previous: boolean) {
+  private getReviewRangeClause(
+    range: InstructorReportRange,
+    previous: boolean,
+  ) {
     switch (range) {
       case '30days':
         return previous

@@ -26,7 +26,9 @@ export class NotificationsController {
     const userId = req.user.sub;
     const loai =
       body.loaiThongBao &&
-      Object.values(NotificationType).includes(body.loaiThongBao as NotificationType)
+      Object.values(NotificationType).includes(
+        body.loaiThongBao as NotificationType,
+      )
         ? (body.loaiThongBao as NotificationType)
         : NotificationType.SYSTEM;
 

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import {
+  ADMIN_REVENUE_SHARE,
+  INSTRUCTOR_REVENUE_SHARE,
+} from '../../common/constants/revenue-share';
 import { DashboardStatsDto } from './dto/admin-dashboard.dto';
 
 type CountGrowthRow = {
@@ -30,6 +34,11 @@ type SalesChartRow = {
   adminRevenue?: string | number;
   instructorPayout?: string | number;
   refunds?: string | number;
+};
+type RevenueChartRow = {
+  thang?: string | number;
+  nam?: string | number;
+  doanhThu?: string | number;
 };
 type TopCourseRow = {
   id?: string | number;
@@ -135,19 +144,28 @@ export class AdminDashboardService {
       ),
       this.queryWithFallback<RevenueGrowthRow[]>(
         `
-          SELECT 
-            IFNULL(SUM(TongTien), 0) as grossRevenue,
-            IFNULL(SUM(TongTien) * 0.6, 0) as adminRevenue,
-            IFNULL(SUM(TongTien) * 0.4, 0) as instructorPayout,
-            IFNULL(SUM(TongTien) * 0.6, 0) as total,
-            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m') THEN TongTien ELSE 0 END) * 0.6, 0) as currentMonth,
-            IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m') THEN TongTien ELSE 0 END) * 0.6, 0) as lastMonth
-          FROM HoaDon
-          WHERE TrangThaiThanhToan = 'PAID'
-        `,
-        [{ total: '0', currentMonth: '0', lastMonth: '0', grossRevenue: '0', adminRevenue: '0', instructorPayout: '0' }],
+            SELECT 
+              IFNULL(SUM(TongTien), 0) as grossRevenue,
+              IFNULL(SUM(TongTien) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
+              IFNULL(SUM(TongTien) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
+              IFNULL(SUM(TongTien) * ${ADMIN_REVENUE_SHARE}, 0) as total,
+              IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m') THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as currentMonth,
+              IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m') THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as lastMonth
+            FROM HoaDon
+            WHERE TrangThaiThanhToan = 'PAID'
+          `,
+        [
+          {
+            total: '0',
+            currentMonth: '0',
+            lastMonth: '0',
+            grossRevenue: '0',
+            adminRevenue: '0',
+            instructorPayout: '0',
+          },
+        ],
       ),
-      this.queryWithFallback<any[]>(
+      this.queryWithFallback<RevenueChartRow[]>(
         `
           SELECT 
             hd.MaHD as orderId,
@@ -168,10 +186,10 @@ export class AdminDashboardService {
           SELECT 
             MONTH(NgayLap) as thang,
             YEAR(NgayLap) as nam,
-            SUM(TongTien) * 0.6 as doanhThu,
+            SUM(TongTien) * ${ADMIN_REVENUE_SHARE} as doanhThu,
             SUM(TongTien) as grossRevenue,
-            SUM(TongTien) * 0.6 as adminRevenue,
-            SUM(TongTien) * 0.4 as instructorPayout
+            SUM(TongTien) * ${ADMIN_REVENUE_SHARE} as adminRevenue,
+            SUM(TongTien) * ${INSTRUCTOR_REVENUE_SHARE} as instructorPayout
           FROM HoaDon
           WHERE TrangThaiThanhToan = 'PAID'
           GROUP BY YEAR(NgayLap), MONTH(NgayLap)
@@ -185,13 +203,22 @@ export class AdminDashboardService {
           SELECT
             COUNT(*) as totalOrders,
             IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as adminRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.4, 0) as instructorPayout,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as totalEarnings,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as totalEarnings,
             0 as totalRefunds
           FROM HoaDon
         `,
-        [{ totalOrders: '0', totalEarnings: '0', grossRevenue: '0', adminRevenue: '0', instructorPayout: '0', totalRefunds: '0' }],
+        [
+          {
+            totalOrders: '0',
+            totalEarnings: '0',
+            grossRevenue: '0',
+            adminRevenue: '0',
+            instructorPayout: '0',
+            totalRefunds: '0',
+          },
+        ],
       ),
       this.queryWithFallback<SalesChartRow[]>(
         `
@@ -200,9 +227,9 @@ export class AdminDashboardService {
             YEAR(NgayLap) as year,
             COUNT(*) as orders,
             IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as adminRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.4, 0) as instructorPayout,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * 0.6, 0) as earnings,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as earnings,
             0 as refunds
           FROM HoaDon
           WHERE NgayLap >= DATE_SUB(CURRENT_DATE(), INTERVAL 11 MONTH)
@@ -220,8 +247,8 @@ export class AdminDashboardService {
             kh.GiaBan as price,
             COUNT(*) as orders,
             SUM(${lineNetRevenueSql}) as revenue,
-            SUM((${lineNetRevenueSql}) * 0.6) as adminRevenue,
-            SUM((${lineNetRevenueSql}) * 0.4) as instructorRevenue,
+            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
+            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as instructorRevenue,
             kh.HinhThuNho as image
           FROM ChiTietHoaDon cthd
           JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
@@ -247,13 +274,13 @@ export class AdminDashboardService {
             COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') as category,
             COUNT(DISTINCT hd.MaND) as students,
             SUM(${lineNetRevenueSql}) as grossRevenue,
-            SUM((${lineNetRevenueSql}) * 0.6) as adminRevenue,
-            SUM((${lineNetRevenueSql}) * 0.4) as revenue,
+            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
+            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as revenue,
             ROUND(
               (
-                SUM((${lineNetRevenueSql}) * 0.4) /
+                SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) /
                 NULLIF((
-                  SELECT IFNULL(SUM(hd2.TongTien) * 0.4, 0)
+                  SELECT IFNULL(SUM(hd2.TongTien) * ${INSTRUCTOR_REVENUE_SHARE}, 0)
                   FROM HoaDon hd2
                   WHERE hd2.TrangThaiThanhToan = 'PAID'
                 ), 0)
@@ -300,13 +327,22 @@ export class AdminDashboardService {
       totalRevenue: parseFloat(String(revenueStats[0]?.total ?? 0)),
       grossRevenue: parseFloat(String(revenueStats[0]?.grossRevenue ?? 0)),
       adminRevenue: parseFloat(String(revenueStats[0]?.adminRevenue ?? 0)),
-      instructorPayout: parseFloat(String(revenueStats[0]?.instructorPayout ?? 0)),
+      instructorPayout: parseFloat(
+        String(revenueStats[0]?.instructorPayout ?? 0),
+      ),
       revenueGrowth: this.calculateGrowth(
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
       ),
       recentOrders,
-      revenueChart: [...chartData].reverse(),
+      revenueChart: (chartData as RevenueChartRow[])
+        .slice()
+        .reverse()
+        .map((row) => ({
+          thang: Number(row.thang ?? 0),
+          nam: Number(row.nam ?? 0),
+          doanhThu: Number(row.doanhThu ?? 0),
+        })),
       salesOverview: {
         orders: Number(ordersOverview[0]?.totalOrders ?? 0),
         earnings: Number(ordersOverview[0]?.totalEarnings ?? 0),

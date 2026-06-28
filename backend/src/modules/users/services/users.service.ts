@@ -72,12 +72,12 @@ export class UsersService {
        FROM DangKyKhoaHoc d
        JOIN KhoaHoc k ON d.MaKH = k.MaKH
        WHERE d.MaND = ? AND d.TrangThai = 'ACTIVE'`,
-      [userId]
+      [userId],
     );
     return courses.map((c: any) => ({
       ...c,
       id: Number(c.id),
-      progress: Number(c.progress)
+      progress: Number(c.progress),
     }));
   }
 
@@ -87,7 +87,7 @@ export class UsersService {
        FROM HoaDon
        WHERE MaND = ?
        ORDER BY NgayLap DESC`,
-      [userId]
+      [userId],
     );
     return payments.map((p: any) => {
       const d = new Date(p.date);
@@ -103,36 +103,42 @@ export class UsersService {
 
   async markLessonComplete(userId: number, lessonId: number) {
     const existing = await this.dataSource.query(
-      `SELECT MaTienDo FROM TienDoHocTap WHERE MaND = ? AND MaBH = ?`, 
-      [userId, lessonId]
+      `SELECT MaTienDo FROM TienDoHocTap WHERE MaND = ? AND MaBH = ?`,
+      [userId, lessonId],
     );
-    
+
     if (existing.length > 0) {
       await this.dataSource.query(
-        `UPDATE TienDoHocTap SET DaHoanThanh = 1, LanXemCuoi = NOW() WHERE MaTienDo = ?`, 
-        [existing[0].MaTienDo]
+        `UPDATE TienDoHocTap SET DaHoanThanh = 1, LanXemCuoi = NOW() WHERE MaTienDo = ?`,
+        [existing[0].MaTienDo],
       );
     } else {
       await this.dataSource.query(
-        `INSERT INTO TienDoHocTap (MaND, MaBH, DaHoanThanh, LanXemCuoi) VALUES (?, ?, 1, NOW())`, 
-        [userId, lessonId]
+        `INSERT INTO TienDoHocTap (MaND, MaBH, DaHoanThanh, LanXemCuoi) VALUES (?, ?, 1, NOW())`,
+        [userId, lessonId],
       );
     }
-    
+
     return { success: true };
   }
 
   async getMyProgress(userId: number) {
     const progress = await this.dataSource.query(
       `SELECT MaBH FROM TienDoHocTap WHERE MaND = ? AND DaHoanThanh = 1`,
-      [userId]
+      [userId],
     );
     return progress.map((p: any) => p.MaBH);
   }
 
   // ─── Lưu bài học gần nhất đang xem ─────────────────────────────────────────
-  async updateCurrentLesson(userId: number, courseId: number, lessonId: number) {
-    console.log(`[updateCurrentLesson] userId=${userId} | courseId=${courseId} | lessonId=${lessonId}`);
+  async updateCurrentLesson(
+    userId: number,
+    courseId: number,
+    lessonId: number,
+  ) {
+    console.log(
+      `[updateCurrentLesson] userId=${userId} | courseId=${courseId} | lessonId=${lessonId}`,
+    );
     await this.dataSource.query(
       `UPDATE DangKyKhoaHoc SET MaBaiHocGanNhat = ? WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'`,
       [lessonId, userId, courseId],
@@ -142,12 +148,16 @@ export class UsersService {
 
   // ─── Lấy bài học gần nhất của học viên trong khóa học ─────────────────────
   async getCourseLastLesson(userId: number, courseId: number) {
-    console.log(`[getCourseLastLesson] userId=${userId} | courseId=${courseId}`);
+    console.log(
+      `[getCourseLastLesson] userId=${userId} | courseId=${courseId}`,
+    );
     const rows = await this.dataSource.query(
       `SELECT MaBaiHocGanNhat as lastLessonId FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE' LIMIT 1`,
       [userId, courseId],
     );
     if (rows.length === 0) return { lastLessonId: null };
-    return { lastLessonId: rows[0].lastLessonId ? Number(rows[0].lastLessonId) : null };
+    return {
+      lastLessonId: rows[0].lastLessonId ? Number(rows[0].lastLessonId) : null,
+    };
   }
 }

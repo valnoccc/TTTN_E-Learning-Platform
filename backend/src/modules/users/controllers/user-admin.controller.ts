@@ -79,7 +79,11 @@ export class UsersController {
 
   @Post(':id/lessons/:lessonId/complete')
   @UseGuards(JwtAuthGuard)
-  markLessonComplete(@Param('id') id: string, @Param('lessonId') lessonId: string, @Request() req) {
+  markLessonComplete(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Request() req,
+  ) {
     const userId = req.user.sub || req.user.maND;
     if (userId !== +id) throw new ForbiddenException('Access denied');
     return this.usersService.markLessonComplete(+id, +lessonId);
@@ -87,7 +91,10 @@ export class UsersController {
 
   @Post('me/lessons/:lessonId/complete')
   @UseGuards(JwtAuthGuard)
-  markLessonCompleteFromToken(@Param('lessonId') lessonId: string, @Request() req) {
+  markLessonCompleteFromToken(
+    @Param('lessonId') lessonId: string,
+    @Request() req,
+  ) {
     const userId = req.user.sub || req.user.maND;
     return this.usersService.markLessonComplete(userId, +lessonId);
   }
@@ -116,8 +123,14 @@ export class UsersController {
     @Request() req,
   ) {
     const userId = req.user.sub || req.user.maND;
-    console.log(`[Controller] updateCurrentLesson | userId=${userId} | courseId=${courseId} | lessonId=${body.lessonId}`);
-    return this.usersService.updateCurrentLesson(userId, +courseId, body.lessonId);
+    console.log(
+      `[Controller] updateCurrentLesson | userId=${userId} | courseId=${courseId} | lessonId=${body.lessonId}`,
+    );
+    return this.usersService.updateCurrentLesson(
+      userId,
+      +courseId,
+      body.lessonId,
+    );
   }
 
   // ─── Lấy bài học gần nhất của học viên trong khóa học ─────────────────────

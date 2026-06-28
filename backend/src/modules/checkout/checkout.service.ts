@@ -1,7 +1,14 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import * as crypto from 'crypto';
 import axios from 'axios';
+import { INSTRUCTOR_REVENUE_PERCENT } from '../../common/constants/revenue-share';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 
@@ -39,7 +46,12 @@ export class CheckoutService {
   async createMomoPayment(userId: number, orderData: MomoOrderData) {
     const { courseIds, couponCode, customerDetails } = orderData;
 
-    console.log('[MoMo] Bắt đầu tạo thanh toán cho userId:', userId, '| courseIds:', courseIds);
+    console.log(
+      '[MoMo] Bắt đầu tạo thanh toán cho userId:',
+      userId,
+      '| courseIds:',
+      courseIds,
+    );
 
     if (!courseIds || courseIds.length === 0) {
       throw new BadRequestException('Giỏ hàng trống');
@@ -87,25 +99,36 @@ export class CheckoutService {
           [couponCode],
         );
 
-        if (coupons.length === 0) throw new BadRequestException('Mã giảm giá không hợp lệ');
+        if (coupons.length === 0)
+          throw new BadRequestException('Mã giảm giá không hợp lệ');
 
         const coupon = coupons[0];
-        if (coupon.TrangThai !== 'ACTIVE') throw new BadRequestException('Mã giảm giá không còn hoạt động');
+        if (coupon.TrangThai !== 'ACTIVE')
+          throw new BadRequestException('Mã giảm giá không còn hoạt động');
 
         const now = new Date();
         if (coupon.NgayBatDau && new Date(coupon.NgayBatDau) > now)
-          throw new BadRequestException('Mã giảm giá chưa đến thời gian sử dụng');
+          throw new BadRequestException(
+            'Mã giảm giá chưa đến thời gian sử dụng',
+          );
         if (coupon.NgayKetThuc && new Date(coupon.NgayKetThuc) < now)
           throw new BadRequestException('Mã giảm giá đã hết hạn');
-        if (coupon.SoLuongGioiHan !== null && Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan))
+        if (
+          coupon.SoLuongGioiHan !== null &&
+          Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan)
+        )
           throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
         if (coupon.MaKH !== null && !courseIds.includes(Number(coupon.MaKH)))
-          throw new BadRequestException('Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng');
+          throw new BadRequestException(
+            'Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng',
+          );
 
         appliedCouponId = coupon.MaCoupon;
         let targetPrice = totalOriginalPrice;
         if (coupon.MaKH !== null) {
-          const targetCourse = courses.find((c: any) => Number(c.MaKH) === Number(coupon.MaKH));
+          const targetCourse = courses.find(
+            (c: any) => Number(c.MaKH) === Number(coupon.MaKH),
+          );
           targetPrice = Number(targetCourse?.GiaBan || 0);
         }
 
@@ -126,19 +149,30 @@ export class CheckoutService {
       const invoiceId: number = insertResult.insertId;
 
       // Lưu chi tiết hoá đơn tạm
-      const instructorRevenueRate = 40.0;
+      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
       for (const course of courses) {
         const giaGhiNhan = Number(course.GiaBan || 0);
         let doanhThuGiangVien = 0;
         if (appliedCouponId) {
-          const currentCourseDiscount = totalOriginalPrice > 0 ? (giaGhiNhan / totalOriginalPrice) * discountAmount : 0;
-          doanhThuGiangVien = (giaGhiNhan - currentCourseDiscount) * instructorRevenueRate / 100;
+          const currentCourseDiscount =
+            totalOriginalPrice > 0
+              ? (giaGhiNhan / totalOriginalPrice) * discountAmount
+              : 0;
+          doanhThuGiangVien =
+            ((giaGhiNhan - currentCourseDiscount) * instructorRevenueRate) /
+            100;
         } else {
-          doanhThuGiangVien = giaGhiNhan * instructorRevenueRate / 100;
+          doanhThuGiangVien = (giaGhiNhan * instructorRevenueRate) / 100;
         }
         await queryRunner.query(
           `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
-          [invoiceId, course.MaKH, giaGhiNhan, instructorRevenueRate, doanhThuGiangVien],
+          [
+            invoiceId,
+            course.MaKH,
+            giaGhiNhan,
+            instructorRevenueRate,
+            doanhThuGiangVien,
+          ],
         );
       }
 
@@ -149,8 +183,12 @@ export class CheckoutService {
       const partnerCode = process.env.MOMO_PARTNER_CODE;
       const accessKey = process.env.MOMO_ACCESS_KEY;
       const secretKey = process.env.MOMO_SECRET_KEY;
-      const momoEndpoint = process.env.MOMO_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create';
-      const redirectUrl = process.env.MOMO_REDIRECT_URL || 'http://localhost:5173/checkout/success';
+      const momoEndpoint =
+        process.env.MOMO_ENDPOINT ||
+        'https://test-payment.momo.vn/v2/gateway/api/create';
+      const redirectUrl =
+        process.env.MOMO_REDIRECT_URL ||
+        'http://localhost:5173/checkout/success';
       const ipnUrl = process.env.MOMO_NOTIFY_URL;
 
       if (!partnerCode || !accessKey || !secretKey || !ipnUrl) {
@@ -203,14 +241,20 @@ export class CheckoutService {
         signature,
       };
 
-      console.log('[MoMo] Gửi payload đến MoMo:', JSON.stringify(momoPayload, null, 2));
+      console.log(
+        '[MoMo] Gửi payload đến MoMo:',
+        JSON.stringify(momoPayload, null, 2),
+      );
 
       const momoRes = await axios.post(momoEndpoint, momoPayload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000,
       });
 
-      console.log('[MoMo] Phản hồi từ MoMo:', JSON.stringify(momoRes.data, null, 2));
+      console.log(
+        '[MoMo] Phản hồi từ MoMo:',
+        JSON.stringify(momoRes.data, null, 2),
+      );
 
       if (momoRes.data.resultCode !== 0) {
         throw new InternalServerErrorException(
@@ -227,14 +271,20 @@ export class CheckoutService {
       };
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
-      console.error('[MoMo] Lỗi tạo thanh toán:', error.message, error.response?.data || '');
+      console.error(
+        '[MoMo] Lỗi tạo thanh toán:',
+        error.message,
+        error.response?.data || '',
+      );
       if (
         error instanceof BadRequestException ||
         error instanceof InternalServerErrorException
       ) {
         throw error;
       }
-      throw new InternalServerErrorException(`Lỗi kết nối MoMo: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Lỗi kết nối MoMo: ${error.message}`,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -302,17 +352,28 @@ export class CheckoutService {
 
     // 2. Chỉ xử lý khi thanh toán thành công (resultCode === 0)
     if (resultCode !== 0) {
-      console.log('[MoMo IPN] Thanh toán THẤT BẠI hoặc bị huỷ. resultCode:', resultCode, '| message:', message);
+      console.log(
+        '[MoMo IPN] Thanh toán THẤT BẠI hoặc bị huỷ. resultCode:',
+        resultCode,
+        '| message:',
+        message,
+      );
       // Tìm và cập nhật trạng thái hoá đơn thành FAILED
       try {
-        const extraDecoded = JSON.parse(Buffer.from(extraData, 'base64').toString('utf8'));
+        const extraDecoded = JSON.parse(
+          Buffer.from(extraData, 'base64').toString('utf8'),
+        );
         const { invoiceId } = extraDecoded;
         if (invoiceId) {
           await this.dataSource.query(
             `UPDATE HoaDon SET TrangThaiThanhToan = 'FAILED' WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
             [invoiceId],
           );
-          console.log('[MoMo IPN] Đã cập nhật HoaDon', invoiceId, 'thành FAILED');
+          console.log(
+            '[MoMo IPN] Đã cập nhật HoaDon',
+            invoiceId,
+            'thành FAILED',
+          );
         }
       } catch (e) {
         console.error('[MoMo IPN] Lỗi khi cập nhật FAILED:', e);
@@ -323,13 +384,18 @@ export class CheckoutService {
     // 3. Decode extraData để lấy invoiceId, userId, courseIds
     let extraDecoded: any;
     try {
-      extraDecoded = JSON.parse(Buffer.from(extraData || '', 'base64').toString('utf8'));
+      extraDecoded = JSON.parse(
+        Buffer.from(extraData || '', 'base64').toString('utf8'),
+      );
     } catch (e) {
       console.error('[MoMo IPN] Lỗi decode extraData:', e);
       throw new BadRequestException('extraData không hợp lệ');
     }
 
-    console.log('[MoMo IPN] extraData RAW decoded (trước khi validate):', JSON.stringify(extraDecoded));
+    console.log(
+      '[MoMo IPN] extraData RAW decoded (trước khi validate):',
+      JSON.stringify(extraDecoded),
+    );
 
     // ── PHÒNG VỆ: Bóc tách & validate từng trường từ extraDecoded ──────────────
     const rawCourseIds = extraDecoded.courseIds;
@@ -338,27 +404,47 @@ export class CheckoutService {
     const appliedCouponId = extraDecoded.appliedCouponId ?? null;
 
     console.log('[MoMo IPN] extraData decoded fields:', {
-      rawInvoiceId, rawUserId, rawCourseIds, appliedCouponId,
+      rawInvoiceId,
+      rawUserId,
+      rawCourseIds,
+      appliedCouponId,
     });
 
     // Validate invoiceId & userId thành số nguyên an toàn
     const invoiceId = parseInt(rawInvoiceId, 10);
     const userId = parseInt(rawUserId, 10);
-    if (isNaN(invoiceId)) throw new BadRequestException(`invoiceId không hợp lệ (NaN): "${rawInvoiceId}"`);
-    if (isNaN(userId)) throw new BadRequestException(`userId không hợp lệ (NaN): "${rawUserId}"`);
+    if (isNaN(invoiceId))
+      throw new BadRequestException(
+        `invoiceId không hợp lệ (NaN): "${rawInvoiceId}"`,
+      );
+    if (isNaN(userId))
+      throw new BadRequestException(
+        `userId không hợp lệ (NaN): "${rawUserId}"`,
+      );
 
     // Validate & ép kiểu toàn bộ courseIds — đây là nguồn gốc lỗi ER_BAD_FIELD_ERROR
-    if (!rawCourseIds || !Array.isArray(rawCourseIds) || rawCourseIds.length === 0) {
-      throw new BadRequestException(`Không tìm thấy danh sách mã khóa học trong extraData! rawCourseIds = ${JSON.stringify(rawCourseIds)}`);
+    if (
+      !rawCourseIds ||
+      !Array.isArray(rawCourseIds) ||
+      rawCourseIds.length === 0
+    ) {
+      throw new BadRequestException(
+        `Không tìm thấy danh sách mã khóa học trong extraData! rawCourseIds = ${JSON.stringify(rawCourseIds)}`,
+      );
     }
     const validCourseIds: number[] = rawCourseIds.map((id: any) => {
       const parsedId = parseInt(id, 10);
       if (isNaN(parsedId)) {
-        throw new BadRequestException(`Mã khóa học không hợp lệ (NaN): "${id}"`);
+        throw new BadRequestException(
+          `Mã khóa học không hợp lệ (NaN): "${id}"`,
+        );
       }
       return parsedId;
     });
-    console.log('[MoMo IPN] validCourseIds sau khi ép kiểu parseInt:', validCourseIds);
+    console.log(
+      '[MoMo IPN] validCourseIds sau khi ép kiểu parseInt:',
+      validCourseIds,
+    );
 
     // 4. Dùng transaction để cập nhật DB
     const queryRunner = this.dataSource.createQueryRunner();
@@ -377,7 +463,11 @@ export class CheckoutService {
       }
 
       if (invoices[0].TrangThaiThanhToan === 'PAID') {
-        console.log('[MoMo IPN] Hoá đơn', invoiceId, 'đã PAID trước đó, bỏ qua.');
+        console.log(
+          '[MoMo IPN] Hoá đơn',
+          invoiceId,
+          'đã PAID trước đó, bỏ qua.',
+        );
         await queryRunner.rollbackTransaction();
         return { message: 'IPN already processed' };
       }
@@ -404,9 +494,19 @@ export class CheckoutService {
             `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, ?)`,
             [userId, courseId, invoiceId, 'ACTIVE'],
           );
-          console.log('[MoMo IPN] Đã ghi danh userId:', userId, '| courseId:', courseId);
+          console.log(
+            '[MoMo IPN] Đã ghi danh userId:',
+            userId,
+            '| courseId:',
+            courseId,
+          );
         } else {
-          console.log('[MoMo IPN] Bỏ qua ghi danh (đã tồn tại) userId:', userId, '| courseId:', courseId);
+          console.log(
+            '[MoMo IPN] Bỏ qua ghi danh (đã tồn tại) userId:',
+            userId,
+            '| courseId:',
+            courseId,
+          );
         }
       }
 
@@ -416,11 +516,17 @@ export class CheckoutService {
           `UPDATE MaGiamGia SET SoLuongDaDung = SoLuongDaDung + 1 WHERE MaCoupon = ?`,
           [appliedCouponId],
         );
-        console.log('[MoMo IPN] Đã tăng SoLuongDaDung cho coupon:', appliedCouponId);
+        console.log(
+          '[MoMo IPN] Đã tăng SoLuongDaDung cho coupon:',
+          appliedCouponId,
+        );
       }
 
       await queryRunner.commitTransaction();
-      console.log('[MoMo IPN] Transaction COMMIT thành công cho invoiceId:', invoiceId);
+      console.log(
+        '[MoMo IPN] Transaction COMMIT thành công cho invoiceId:',
+        invoiceId,
+      );
 
       // 5. Tạo thông báo (sau commit, không rollback nếu lỗi thông báo)
       try {
@@ -446,7 +552,10 @@ export class CheckoutService {
           });
         }
       } catch (notifError) {
-        console.error('[MoMo IPN] Lỗi tạo thông báo (không ảnh hưởng kết quả):', notifError);
+        console.error(
+          '[MoMo IPN] Lỗi tạo thông báo (không ảnh hưởng kết quả):',
+          notifError,
+        );
       }
 
       return { message: 'IPN processed successfully', invoiceId };
@@ -512,26 +621,37 @@ export class CheckoutService {
           [couponCode],
         );
 
-        if (coupons.length === 0) throw new BadRequestException('Mã giảm giá không hợp lệ');
+        if (coupons.length === 0)
+          throw new BadRequestException('Mã giảm giá không hợp lệ');
 
         coupon = coupons[0];
-        if (coupon.TrangThai !== 'ACTIVE') throw new BadRequestException('Mã giảm giá đã bị vô hiệu hóa');
+        if (coupon.TrangThai !== 'ACTIVE')
+          throw new BadRequestException('Mã giảm giá đã bị vô hiệu hóa');
 
         const now = new Date();
         if (coupon.NgayBatDau && new Date(coupon.NgayBatDau) > now)
-          throw new BadRequestException('Mã giảm giá chưa đến thời gian sử dụng');
+          throw new BadRequestException(
+            'Mã giảm giá chưa đến thời gian sử dụng',
+          );
         if (coupon.NgayKetThuc && new Date(coupon.NgayKetThuc) < now)
           throw new BadRequestException('Mã giảm giá đã hết hạn');
-        if (coupon.SoLuongGioiHan !== null && Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan))
+        if (
+          coupon.SoLuongGioiHan !== null &&
+          Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan)
+        )
           throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
         if (coupon.MaKH !== null && !courseIds.includes(Number(coupon.MaKH)))
-          throw new BadRequestException('Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng');
+          throw new BadRequestException(
+            'Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng',
+          );
 
         appliedCouponId = coupon.MaCoupon;
 
         let targetPrice = totalOriginalPrice;
         if (coupon.MaKH !== null) {
-          const targetCourse = courses.find((c: any) => Number(c.MaKH) === Number(coupon.MaKH));
+          const targetCourse = courses.find(
+            (c: any) => Number(c.MaKH) === Number(coupon.MaKH),
+          );
           targetPrice = Number(targetCourse?.GiaBan || 0);
         }
 
@@ -549,21 +669,32 @@ export class CheckoutService {
       );
 
       const invoiceId = insertHoaDonResult.insertId;
-      const instructorRevenueRate = 40.0;
+      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
 
       for (const course of courses) {
         const giaGhiNhan = Number(course.GiaBan || 0);
         let doanhThuGiangVien = 0;
         if (appliedCouponId) {
-          const currentCourseDiscount = totalOriginalPrice > 0 ? (giaGhiNhan / totalOriginalPrice) * discountAmount : 0;
-          doanhThuGiangVien = (giaGhiNhan - currentCourseDiscount) * instructorRevenueRate / 100;
+          const currentCourseDiscount =
+            totalOriginalPrice > 0
+              ? (giaGhiNhan / totalOriginalPrice) * discountAmount
+              : 0;
+          doanhThuGiangVien =
+            ((giaGhiNhan - currentCourseDiscount) * instructorRevenueRate) /
+            100;
         } else {
-          doanhThuGiangVien = giaGhiNhan * instructorRevenueRate / 100;
+          doanhThuGiangVien = (giaGhiNhan * instructorRevenueRate) / 100;
         }
 
         await queryRunner.query(
           `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
-          [invoiceId, course.MaKH, giaGhiNhan, instructorRevenueRate, doanhThuGiangVien],
+          [
+            invoiceId,
+            course.MaKH,
+            giaGhiNhan,
+            instructorRevenueRate,
+            doanhThuGiangVien,
+          ],
         );
 
         await queryRunner.query(
@@ -599,7 +730,10 @@ export class CheckoutService {
           });
         }
       } catch (notifError) {
-        console.error('Lỗi tạo thông báo (không ảnh hưởng thanh toán):', notifError);
+        console.error(
+          'Lỗi tạo thông báo (không ảnh hưởng thanh toán):',
+          notifError,
+        );
       }
 
       return {
@@ -640,7 +774,8 @@ export class CheckoutService {
     );
 
     return coupons.map((coupon: any) => {
-      const isAvailable = coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
+      const isAvailable =
+        coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
       return {
         id: coupon.MaCoupon,
         code: coupon.MaCode,
@@ -653,7 +788,9 @@ export class CheckoutService {
         usageCount: coupon.SoLuongDaDung,
         description: coupon.GhiChu,
         isAvailable,
-        reason: isAvailable ? undefined : 'Mã không áp dụng cho khóa học trong giỏ hàng',
+        reason: isAvailable
+          ? undefined
+          : 'Mã không áp dụng cho khóa học trong giỏ hàng',
       };
     });
   }
@@ -662,7 +799,14 @@ export class CheckoutService {
   // Lấy chi tiết hoá đơn
   // ─────────────────────────────────────────────────────────────────────────────
   async getInvoiceDetails(invoiceId: number, userId: number) {
-    console.log('>>> Backend nhận Invoice ID:', invoiceId, typeof invoiceId, '| userId:', userId, typeof userId);
+    console.log(
+      '>>> Backend nhận Invoice ID:',
+      invoiceId,
+      typeof invoiceId,
+      '| userId:',
+      userId,
+      typeof userId,
+    );
 
     try {
       const invoice = await this.dataSource.query(
@@ -672,7 +816,9 @@ export class CheckoutService {
       console.log('>>> Kết quả query HoaDon:', JSON.stringify(invoice));
 
       if (invoice.length === 0) {
-        throw new NotFoundException(`Không tìm thấy hóa đơn với ID bằng ${invoiceId} cho user ${userId}`);
+        throw new NotFoundException(
+          `Không tìm thấy hóa đơn với ID bằng ${invoiceId} cho user ${userId}`,
+        );
       }
 
       const details = await this.dataSource.query(
@@ -689,7 +835,11 @@ export class CheckoutService {
         details: details,
       };
     } catch (error: any) {
-      console.error('>>> LỖI THẬT trong getInvoiceDetails:', error.message, error.query || '');
+      console.error(
+        '>>> LỖI THẬT trong getInvoiceDetails:',
+        error.message,
+        error.query || '',
+      );
       throw error;
     }
   }

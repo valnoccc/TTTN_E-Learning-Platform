@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -81,7 +85,9 @@ export class CategoriesService {
       where: { maDM: id },
     });
     if (relatedCourseCount > 0) {
-      throw new BadRequestException('Không thể xóa danh mục đang được sử dụng bởi khóa học');
+      throw new BadRequestException(
+        'Không thể xóa danh mục đang được sử dụng bởi khóa học',
+      );
     }
 
     await this.categoryRepo.remove(category);

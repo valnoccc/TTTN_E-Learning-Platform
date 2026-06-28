@@ -13,7 +13,7 @@ Source of truth:
 - `POST /auth/forgot-password` (Khoi phuc mat khau)
 
 ## Users (Admin - Quan ly nguoi dung)
-- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/adminRevenue = 60%`, `instructorPayout = 40%`, `grossRevenue = 100%`)
+- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/adminRevenue = 20%`, `instructorPayout = 80%`, `grossRevenue = 100%`)
 - `GET /users` (Xem danh sach tai khoan)
 - `PATCH /users/:id/status` (Khoa/Mo khoa tai khoan)
 - `PATCH /users/:id/roles` (Cap quyen he thong)
@@ -81,7 +81,7 @@ Admin (Kiem duyet)
 ## Instructors (Giang vien)
 - `GET /instructors/me/courses` (Lay danh sach khoa hoc cua giang vien)
 - `GET /instructors/me/students` (Lay danh sach hoc vien da dang ky khoa hoc cua giang vien; khong tra ve link GitHub/bai nop)
-- `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/instructorRevenue = 40%`, `adminRevenue = 60%`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
+- `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/instructorRevenue = 80%`, `adminRevenue = 20%`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
 
 ## Notifications (Thong bao)
 - `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)

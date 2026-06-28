@@ -12,7 +12,10 @@ export class PublicPostsController {
     @Query('search') search?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit || '10', 10) || 10));
+    const limitNum = Math.min(
+      50,
+      Math.max(1, parseInt(limit || '10', 10) || 10),
+    );
 
     const result = await this.postsService.findPublished(
       pageNum,

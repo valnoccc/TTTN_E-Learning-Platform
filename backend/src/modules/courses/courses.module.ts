@@ -11,9 +11,6 @@ import { CoursesService } from './services/course-instructor.service';
 @Module({
   imports: [TypeOrmModule.forFeature([KhoaHoc]), CloudinaryModule],
   controllers: [CoursesController, PublicCoursesController],
-  providers: [
-    CoursesService,
-    CourseInstructorCurriculumService,
-  ],
+  providers: [CoursesService, CourseInstructorCurriculumService],
 })
 export class CoursesModule {}

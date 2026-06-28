@@ -206,13 +206,18 @@ export class CoursesService {
    * Tính toán tổng số lượng khóa học và tổng số học viên của một giảng viên
    * Xử lý trường hợp dữ liệu rỗng và đảm bảo tính thống nhất của logic đếm.
    */
-  async getInstructorStats(instructorId: number): Promise<{ totalCourses: number; totalStudents: number }> {
+  async getInstructorStats(
+    instructorId: number,
+  ): Promise<{ totalCourses: number; totalStudents: number }> {
     // Tính tổng số khóa học (bao gồm cả đang chờ duyệt và đã duyệt)
     const totalCoursesResult = await this.dataSource.query(
       `SELECT COUNT(*) as total FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING')`,
       [instructorId],
     );
-    const totalCourses = totalCoursesResult.length > 0 ? Number(totalCoursesResult[0].total || 0) : 0;
+    const totalCourses =
+      totalCoursesResult.length > 0
+        ? Number(totalCoursesResult[0].total || 0)
+        : 0;
 
     // Tính tổng số học viên (unique) đăng ký tất cả khóa học của giảng viên
     // Đảm bảo chỉ đếm các giao dịch ACTIVE
@@ -223,7 +228,10 @@ export class CoursesService {
        WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'`,
       [instructorId],
     );
-    const totalStudents = totalStudentsResult.length > 0 ? Number(totalStudentsResult[0].total || 0) : 0;
+    const totalStudents =
+      totalStudentsResult.length > 0
+        ? Number(totalStudentsResult[0].total || 0)
+        : 0;
 
     return { totalCourses, totalStudents };
   }
@@ -238,6 +246,8 @@ export class CoursesService {
        WHERE MaKH = ? AND TrangThai = 'ACTIVE'`,
       [courseId],
     );
-    return courseStudentsResult.length > 0 ? Number(courseStudentsResult[0].total || 0) : 0;
+    return courseStudentsResult.length > 0
+      ? Number(courseStudentsResult[0].total || 0)
+      : 0;
   }
 }

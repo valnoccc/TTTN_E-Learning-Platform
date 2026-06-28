@@ -80,7 +80,7 @@ export class CouponsService {
       params.push(normalizedStatus);
     }
 
-    const rows = (await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `SELECT
           mg.MaCoupon AS maCoupon,
           mg.MaCode AS maCode,
@@ -99,9 +99,9 @@ export class CouponsService {
        WHERE ${conditions.join(' AND ')}
        ORDER BY mg.MaCoupon DESC`,
       params,
-    )) as CouponRow[];
+    );
 
-    const summaryResult = (await this.dataSource.query(
+    const summaryResult = await this.dataSource.query(
       `SELECT
           COUNT(*) AS totalCouponCount,
           SUM(CASE WHEN TrangThai = 'ACTIVE' THEN 1 ELSE 0 END) AS activeCount,
@@ -109,7 +109,7 @@ export class CouponsService {
        FROM MaGiamGia
        WHERE MaND_GiangVien = ?`,
       [instructorId],
-    )) as CouponSummaryRow[];
+    );
 
     const summary = summaryResult[0] ?? {
       totalCouponCount: 0,
@@ -262,7 +262,7 @@ export class CouponsService {
       );
     }
 
-    const rows = (await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `SELECT
           mg.MaCoupon AS maCoupon,
           mg.MaCode AS maCode,
@@ -281,7 +281,7 @@ export class CouponsService {
        WHERE mg.MaCode = ?
        LIMIT 1`,
       [maCode],
-    )) as CouponValidationRow[];
+    );
 
     if (rows.length === 0) {
       throw new NotFoundException('Mã giảm giá không tồn tại');
@@ -302,9 +302,11 @@ export class CouponsService {
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await this.dataSource.query(
         `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-        courseIds
+        courseIds,
       );
-      applicablePrice = courses[0]?.TotalPrice ? Number(courses[0].TotalPrice) : 0;
+      applicablePrice = courses[0]?.TotalPrice
+        ? Number(courses[0].TotalPrice)
+        : 0;
     }
 
     const discountAmount = this.calculateDiscountAmount(
@@ -322,21 +324,22 @@ export class CouponsService {
       discountType: coupon.loaiGiam,
       discountValue: coupon.giaTriGiam,
       discountAmount,
-      message: coupon.maKH === null 
-        ? 'Áp dụng mã giảm giá toàn sàn thành công.' 
-        : `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`,
+      message:
+        coupon.maKH === null
+          ? 'Áp dụng mã giảm giá toàn sàn thành công.'
+          : `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`,
     };
   }
 
   async consumeCouponUsage(couponId: number) {
-    const result = (await this.dataSource.query(
+    const result = await this.dataSource.query(
       `UPDATE MaGiamGia
        SET SoLuongDaDung = SoLuongDaDung + 1
        WHERE MaCoupon = ?
          AND TrangThai = 'ACTIVE'
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
       [couponId],
-    )) as CouponUsageUpdateResult;
+    );
 
     if (!result.affectedRows) {
       throw new BadRequestException(

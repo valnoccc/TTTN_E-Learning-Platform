@@ -23,7 +23,9 @@ export class DiscussionsController {
   constructor(private readonly discussionsService: DiscussionsService) {}
 
   @Get('discussions')
-  async getInstructorDiscussions(@Req() req: Request & { user: { sub: number } }) {
+  async getInstructorDiscussions(
+    @Req() req: Request & { user: { sub: number } },
+  ) {
     const discussions = await this.discussionsService.getInstructorDiscussions(
       req.user.sub,
     );
