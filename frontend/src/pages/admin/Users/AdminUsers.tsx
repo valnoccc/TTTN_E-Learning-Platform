@@ -435,32 +435,35 @@ export default function AdminUsers() {
                         </p>
                       </td>
                       <td className="px-6 py-5 align-middle">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setSelectedUser(user)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-600 shadow-sm"
-                          >
-                            <UserCog size={14} />
-                            Chi tiết
-                          </button>
-                          <button
-                            onClick={() =>
-                              void updateUserStatus(
-                                user.id,
-                                user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
-                              )
-                            }
-                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition shadow-sm ${
-                              user.status === 'ACTIVE'
-                                ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
-                                : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {user.status === 'ACTIVE' ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
-                            {user.status === 'ACTIVE' ? 'Khóa' : 'Mở'}
-                          </button>
-                        </div>
-                      </td>
+  <div className="flex items-center justify-center gap-2">
+    {/* Nút Chi tiết */}
+    <button
+      onClick={() => setSelectedUser(user)}
+      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-blue-600"
+    >
+      <UserCog size={14} />
+      Chi tiết
+    </button>
+    
+    {/* Nút Khóa / Mở */}
+    <button
+      onClick={() =>
+        void updateUserStatus(
+          user.id,
+          user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+        )
+      }
+      className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-[12px] font-semibold shadow-sm transition ${
+        user.status === 'ACTIVE'
+          ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+      }`}
+    >
+      {user.status === 'ACTIVE' ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
+      {user.status === 'ACTIVE' ? 'Khóa' : 'Mở'}
+    </button>
+  </div>
+</td>
                     </tr>
                   ))}
                 </tbody>
