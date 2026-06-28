@@ -158,18 +158,32 @@ describe('InstructorsService', () => {
     ]);
   });
 
-  it('returns instructor reports board with database and mockdata sections separated', async () => {
+  it('returns instructor reports board with extended instructor dashboard metrics', async () => {
     dataSource.query
       .mockResolvedValueOnce([
         {
           enrollments: '4',
+          totalStudents: '3',
           grossRevenue: '1800000',
           adminRevenue: '360000',
           instructorRevenue: '1440000',
           revenue: '1440000',
         },
       ])
-      .mockResolvedValueOnce([{ enrollments: '2', revenue: '720000' }])
+      .mockResolvedValueOnce([
+        { enrollments: '2', totalStudents: '2', revenue: '720000' },
+      ])
+      .mockResolvedValueOnce([
+        { activeCourses: '3', pendingCourses: '1' },
+      ])
+      .mockResolvedValueOnce([
+        {
+          totalStudents: '3',
+          repeatStudents: '1',
+          totalLessonSlots: '10',
+          completedLessonSlots: '6',
+        },
+      ])
       .mockResolvedValueOnce([
         {
           periodLabel: '05/2026',
@@ -197,6 +211,17 @@ describe('InstructorsService', () => {
           instructorRevenue: '960000',
           revenue: '960000',
           enrollments: '3',
+          averageRating: '4.8',
+          reviewCount: '7',
+          imageUrl: 'react.png',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          courseId: 10,
+          courseName: 'React Pro',
+          averageRating: '4.9',
+          reviewCount: '9',
           imageUrl: 'react.png',
         },
       ])
@@ -219,12 +244,12 @@ describe('InstructorsService', () => {
       ])
       .mockResolvedValueOnce([
         {
-          couponLabel: 'SAVE20',
+          trafficSource: 'Coupon / Promo',
           orderCount: '7',
           grossRevenue: '1400000',
         },
         {
-          couponLabel: 'Khong dung ma',
+          trafficSource: 'Organic',
           orderCount: '5',
           grossRevenue: '800000',
         },
@@ -233,8 +258,27 @@ describe('InstructorsService', () => {
         {
           averageRating: '4.6',
           reviewCount: '12',
+          fiveStarReviews: '9',
+          lowStarReviews: '1',
         },
       ]);
+    dataSource.query
+      .mockResolvedValueOnce([{ unrespondedReviews: '3' }])
+      .mockResolvedValueOnce([
+        { rating: '5', count: '9' },
+        { rating: '4', count: '2' },
+        { rating: '2', count: '1' },
+      ])
+      .mockResolvedValueOnce([{ unansweredQuestions: '5' }])
+      .mockResolvedValueOnce([
+        {
+          courseId: '11',
+          courseName: 'NestJS Advanced',
+          reason: 'Can bo sung preview video',
+          createdAt: '2026-06-20 09:00:00',
+        },
+      ])
+      .mockResolvedValueOnce([{ expiringCoupons: '2' }]);
 
     const result = await service.getMyReports(
       { maND: 7, vaiTro: UserRole.INSTRUCTOR },
@@ -246,15 +290,31 @@ describe('InstructorsService', () => {
     expect(result.overview.adminRevenue).toBe(360000);
     expect(result.overview.instructorRevenue).toBe(1440000);
     expect(result.overview.revenueGrowth).toBe(100);
+    expect(result.overview.totalStudents).toBe(3);
+    expect(result.overview.activeCourses).toBe(3);
+    expect(result.overview.pendingCourses).toBe(1);
     expect(result.revenueSeriesSource).toBe('database');
     expect(result.topCoursesSource).toBe('database');
     expect(result.recentEnrollmentsSource).toBe('database');
     expect(result.overview.averageRating).toBe(4.6);
     expect(result.overview.averageRatingLabel).toBe('Tu 12 luot danh gia that');
     expect(result.overview.averageRatingSource).toBe('database');
-    expect(result.revenueBySourceSource).toBe('database');
-    expect(result.revenueBySource[0]).toMatchObject({
-      label: 'SAVE20',
+    expect(result.learning.completionRate).toBe(60);
+    expect(result.learning.repeatStudents).toBe(1);
+    expect(result.quality.unrespondedReviews).toBe(3);
+    expect(result.quality.topRatedCourses[0]).toMatchObject({
+      courseId: 10,
+      averageRating: 4.9,
+    });
+    expect(result.operations.unansweredQuestions).toBe(5);
+    expect(result.operations.expiringCoupons).toBe(2);
+    expect(result.operations.latestRejectedCourse).toMatchObject({
+      courseId: 11,
+      courseName: 'NestJS Advanced',
+    });
+    expect(result.traffic.revenueBySourceSource).toBe('database');
+    expect(result.traffic.revenueBySource[0]).toMatchObject({
+      label: 'Coupon / Promo',
       orderCount: 7,
       grossRevenue: 1400000,
     });
@@ -265,7 +325,8 @@ describe('InstructorsService', () => {
       grossRevenue: 1200000,
       adminRevenue: 240000,
       instructorRevenue: 960000,
-      ratingLabel: 'MOCKDATA',
+      averageRating: 4.8,
+      reviewCount: 7,
     });
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
     expect(queryCalls[0]?.[0]).toContain('* 0.2');

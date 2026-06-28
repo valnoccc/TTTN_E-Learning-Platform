@@ -35,6 +35,8 @@ export interface InstructorTopCourseReport {
   adminRevenue: number;
   instructorRevenue: number;
   enrollments: number;
+  averageRating: number | null;
+  reviewCount: number;
   ratingLabel: string;
   imageUrl: string | null;
 }
@@ -68,12 +70,54 @@ export interface InstructorReportsBoard {
     revenueGrowth: number;
     newEnrollments: number;
     enrollmentGrowth: number;
+    totalStudents: number;
+    totalStudentsGrowth: number;
+    activeCourses: number;
+    pendingCourses: number;
     averageRating: number | null;
     averageRatingLabel: string;
     averageRatingSource: 'mockdata' | 'database';
+  };
+  learning: {
+    totalStudents: number;
+    repeatStudents: number;
     completionRate: number | null;
     completionRateLabel: string;
-    completionRateSource: 'mockdata';
+    completionRateSource: 'mockdata' | 'database';
+  };
+  quality: {
+    averageRating: number | null;
+    averageRatingLabel: string;
+    averageRatingSource: 'mockdata' | 'database';
+    reviewCount: number;
+    fiveStarReviews: number;
+    lowStarReviews: number;
+    unrespondedReviews: number;
+    ratingDistribution: Array<{
+      rating: number;
+      count: number;
+      percentage: number;
+    }>;
+    topRatedCourses: Array<{
+      courseId: number;
+      courseName: string;
+      averageRating: number;
+      reviewCount: number;
+      imageUrl: string | null;
+    }>;
+  };
+  operations: {
+    activeCourses: number;
+    pendingCourses: number;
+    unansweredQuestions: number;
+    unrespondedReviews: number;
+    expiringCoupons: number;
+    latestRejectedCourse: {
+      courseId: number;
+      courseName: string;
+      reason: string | null;
+      createdAt: string | null;
+    } | null;
   };
   revenueSeries: InstructorRevenuePoint[];
   revenueSeriesSource: 'database';
@@ -81,15 +125,17 @@ export interface InstructorReportsBoard {
   topCoursesSource: 'database';
   recentEnrollments: InstructorRecentEnrollment[];
   recentEnrollmentsSource: 'database';
-  revenueBySource: Array<{
-    label: string;
-    percentage: number;
-    color: string;
-    orderCount: number;
-    grossRevenue: number;
-  }>;
-  revenueBySourceLabel: string;
-  revenueBySourceSource: 'database' | 'mockdata';
+  traffic: {
+    revenueBySource: Array<{
+      label: string;
+      percentage: number;
+      color: string;
+      orderCount: number;
+      grossRevenue: number;
+    }>;
+    revenueBySourceLabel: string;
+    revenueBySourceSource: 'database' | 'mockdata';
+  };
 }
 
 const DEFAULT_BOARD: InstructorReportsBoard = {
@@ -105,12 +151,39 @@ const DEFAULT_BOARD: InstructorReportsBoard = {
     revenueGrowth: 0,
     newEnrollments: 0,
     enrollmentGrowth: 0,
+    totalStudents: 0,
+    totalStudentsGrowth: 0,
+    activeCourses: 0,
+    pendingCourses: 0,
     averageRating: null,
-    averageRatingLabel: 'MOCKDATA',
+    averageRatingLabel: '',
     averageRatingSource: 'mockdata',
+  },
+  learning: {
+    totalStudents: 0,
     completionRate: null,
-    completionRateLabel: 'MOCKDATA',
+    repeatStudents: 0,
+    completionRateLabel: '',
     completionRateSource: 'mockdata',
+  },
+  quality: {
+    averageRating: null,
+    averageRatingLabel: '',
+    averageRatingSource: 'mockdata',
+    reviewCount: 0,
+    fiveStarReviews: 0,
+    lowStarReviews: 0,
+    unrespondedReviews: 0,
+    ratingDistribution: [],
+    topRatedCourses: [],
+  },
+  operations: {
+    activeCourses: 0,
+    pendingCourses: 0,
+    unansweredQuestions: 0,
+    unrespondedReviews: 0,
+    expiringCoupons: 0,
+    latestRejectedCourse: null,
   },
   revenueSeries: [],
   revenueSeriesSource: 'database',
@@ -118,10 +191,20 @@ const DEFAULT_BOARD: InstructorReportsBoard = {
   topCoursesSource: 'database',
   recentEnrollments: [],
   recentEnrollmentsSource: 'database',
-  revenueBySource: [],
-  revenueBySourceLabel: 'MOCKDATA',
-  revenueBySourceSource: 'mockdata',
+  traffic: {
+    revenueBySource: [],
+    revenueBySourceLabel: '',
+    revenueBySourceSource: 'mockdata',
+  },
 };
+
+function unwrapBoard(response: unknown): InstructorReportsBoard {
+  if (response && typeof response === 'object' && 'data' in response) {
+    return (response as { data: InstructorReportsBoard }).data;
+  }
+
+  return response as InstructorReportsBoard;
+}
 
 function unwrapCourses(response: unknown): InstructorCourseOption[] {
   const data =
@@ -175,7 +258,7 @@ export function useInstructorReports() {
         '/instructors/me/reports',
         { params },
       );
-      setBoard(response);
+      setBoard(unwrapBoard(response));
     } catch {
       toast.error('Không thể tải dữ liệu báo cáo giảng viên');
       setBoard(DEFAULT_BOARD);
