@@ -172,12 +172,12 @@ export default function AdminDashboard() {
   const revenueSplit = stats
     ? [
         {
-          name: 'Admin 20%',
+          name: 'Admin',
           value: stats.adminRevenue,
           color: chartPalette.admin,
         },
         {
-          name: 'Giảng viên 80%',
+          name: 'Giảng viên',
           value: stats.instructorPayout,
           color: chartPalette.instructor,
         },
@@ -195,16 +195,9 @@ export default function AdminDashboard() {
       <div className="space-y-6 bg-slate-50/60">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-600">
-              Admin dashboard
-            </p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-900">
-              Tổng quan vận hành
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Theo dõi doanh thu gộp, chia sẻ 20/80, lượt ghi danh mới và hàng chờ kiểm duyệt
-              trong cùng một màn hình.
-            </p>
+             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
+                Tổng quan hệ thống
+              </h1>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -234,7 +227,7 @@ export default function AdminDashboard() {
                 icon={<Wallet size={20} className="text-blue-600" />}
                 tone="bg-blue-500"
                 trend={stats.revenueGrowth}
-                detail="Gross volume"
+                detail=""
               />
               <KpiCard
                 label="Lợi nhuận Admin"
@@ -242,7 +235,7 @@ export default function AdminDashboard() {
                 icon={<CircleDollarSign size={20} className="text-emerald-600" />}
                 tone="bg-emerald-500"
                 trend={stats.revenueGrowth}
-                detail="Phần giữ lại 20%"
+                detail=""
               />
               <KpiCard
                 label="Công nợ giảng viên"
@@ -250,7 +243,7 @@ export default function AdminDashboard() {
                 icon={<GraduationCap size={20} className="text-amber-600" />}
                 tone="bg-amber-500"
                 trend={stats.revenueGrowth}
-                detail="Khoản chi 80%"
+                detail=""
               />
               <KpiCard
                 label="Lượt ghi danh mới"
@@ -258,21 +251,21 @@ export default function AdminDashboard() {
                 icon={<ShoppingCart size={20} className="text-cyan-600" />}
                 tone="bg-cyan-500"
                 trend={stats.newEnrollmentGrowth}
-                detail="30 ngày qua"
+                detail=""
               />
               <KpiCard
                 label="Hàng chờ kiểm duyệt"
                 value={stats.pendingCourses.toLocaleString('vi-VN')}
                 icon={<Layers3 size={20} className="text-rose-600" />}
                 tone="bg-rose-500"
-                detail="Khóa học PENDING"
+                detail=""
               />
             </section>
 
             <section className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
               <Panel
                 title="Xu hướng doanh thu"
-                subtitle="3 đường dữ liệu: tổng doanh thu, phần Admin 20%, phần giảng viên 80%."
+                subtitle=""
                 action={
                   <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
                     <TrendingUp size={14} />
@@ -300,8 +293,8 @@ export default function AdminDashboard() {
                         <Tooltip
                           formatter={(value: number, name: string) => {
                             if (name === 'grossRevenue') return [formatCurrency(value), 'Tổng doanh thu'];
-                            if (name === 'adminRevenue') return [formatCurrency(value), 'Admin 20%'];
-                            if (name === 'instructorPayout') return [formatCurrency(value), 'Giảng viên 80%'];
+                            if (name === 'adminRevenue') return [formatCurrency(value), 'Admin'];
+                            if (name === 'instructorPayout') return [formatCurrency(value), 'Giảng viên'];
                             return [value, name];
                           }}
                           labelFormatter={(label) => `Tháng ${label}`}
@@ -321,8 +314,8 @@ export default function AdminDashboard() {
                               {value === 'grossRevenue'
                                 ? 'Gross'
                                 : value === 'adminRevenue'
-                                  ? 'Admin 20%'
-                                  : 'Giảng viên 80%'}
+                                  ? 'Admin'
+                                  : 'Giảng viên'}
                             </span>
                           )}
                         />
@@ -360,7 +353,7 @@ export default function AdminDashboard() {
               <div className="space-y-6">
                 <Panel
                   title="Cơ cấu chia doanh thu"
-                  subtitle="Admin 20% và giảng viên 80% trên tổng dòng tiền."
+                  subtitle=""
                 >
                   <div className="px-4 pb-2 pt-4 sm:px-6">
                     <div className="relative h-[250px]">

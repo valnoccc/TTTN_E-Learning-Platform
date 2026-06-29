@@ -1,70 +1,55 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { Camera, Save, User } from 'lucide-react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, Image, Save, User } from 'lucide-react';
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useInstructorProfile } from './hooks/useInstructorProfile';
 
+
+type StoredInstructorUser = {
+    fullName?: string;
+    AnhDaiDien?: string;
+    avatar?: string;
+};
+
 export default function InstructorProfile() {
-    // Lấy thêm initialUser từ hook
     const { formData, handleChange, handleSave, initialUser } = useInstructorProfile();
     const avatarInputRef = useRef<HTMLInputElement>(null);
-    const previewUrlRef = useRef<string | null>(null);
 
     const [currentName, setCurrentName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-    // Khi initialUser từ API load xong, lập tức gán vào state của giao diện
+    // THÊM: State tạm thời để lưu trữ đối tượng File ảnh khi người dùng chọn
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     useEffect(() => {
         if (initialUser.hoTen || initialUser.anhDaiDien) {
             setCurrentName(initialUser.hoTen);
-            if (!avatarFile) {
-                setAvatarUrl(initialUser.anhDaiDien);
-            }
+            setAvatarUrl(initialUser.anhDaiDien);
         }
-    }, [avatarFile, initialUser]);
-
-    useEffect(() => {
-        return () => {
-            if (previewUrlRef.current) {
-                URL.revokeObjectURL(previewUrlRef.current);
-            }
-        };
-    }, []);
-
-    // BỎ TOÀN BỘ ĐOẠN KHAI BÁO storedUser (localStorage) CŨ ĐI NHÉ!
+    }, [initialUser]);
 
     const avatarPreview = avatarUrl.trim();
     const instructorInitial = (currentName || 'G').charAt(0).toUpperCase();
 
-    // 1. Hàm xử lý khi nhập tên hiển thị
     const handleUserFieldChange = (setter: React.Dispatch<React.SetStateAction<string>>) =>
         (e: ChangeEvent<HTMLInputElement>) => {
             setter(e.target.value);
         };
 
-    // 2. Hàm xử lý khi chọn file ảnh đại diện mới
+    // THAY ĐỔI: Khi chọn file, chỉ tạo link xem trước chứ CHƯA UPLOAD
     const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Tạo một URL tạm thời (blob) để hiển thị ảnh vừa chọn lên giao diện
-        if (previewUrlRef.current) {
-            URL.revokeObjectURL(previewUrlRef.current);
-        }
+        setSelectedFile(file); // Giữ lại file để khi nhấn "Lưu" mới gửi đi
 
         const previewUrl = URL.createObjectURL(file);
-        previewUrlRef.current = previewUrl;
-        setAvatarFile(file);
-        setAvatarUrl(previewUrl);
-
-        // Lưu ý: Nếu dự án của bạn có API upload ảnh lên Cloudinary, 
-        // bạn sẽ gọi API upload đó tại đây, lấy URL trả về từ Cloudinary và đưa vào setAvatarUrl()
+        setAvatarUrl(previewUrl); // Hiển thị ảnh xem trước tạm thời trên UI
     };
 
+    // THAY ĐỔI: Gửi kèm cả File ảnh (nếu có) khi nhấn nút Lưu hồ sơ
     const handleSubmit = async () => {
-        // Không cần lưu vào localStorage nữa, backend là nguồn chân lý (Source of Truth)
-        await handleSave(currentName, initialUser.anhDaiDien, avatarFile);
+        await handleSave(currentName, avatarUrl, selectedFile);
     };
 
     return (

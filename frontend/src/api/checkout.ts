@@ -17,6 +17,7 @@ export interface CouponResponse {
   discountType: 'PERCENT' | 'AMOUNT';
   discountValue: number;
   discountAmount: number;
+  targetCourseIds?: number[];
   message: string;
 }
 
