@@ -39,6 +39,13 @@ function formatCompactCurrency(value: number) {
   return `${value}`;
 }
 
+// Icon Ngôi sao dùng chung cho phần đánh giá
+const StarIcon = ({ className = "h-4 w-4", fill = "currentColor" }) => (
+  <svg className={className} fill={fill} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
+
 export default function InstructorReports() {
   const {
     loading,
@@ -50,6 +57,9 @@ export default function InstructorReports() {
     setRange,
     loadReports,
   } = useInstructorReports();
+
+  // Dữ liệu phân bổ đánh giá (đảo ngược mảng để 5 sao hiển thị trên cùng biểu đồ)
+  const ratingData = [...board.quality.ratingDistribution].reverse();
 
   return (
     <InstructorLayout>
@@ -139,10 +149,7 @@ export default function InstructorReports() {
               </span>
             </div>
             {/* Mock data vì API chưa hỗ trợ funnel */}
-            <p className="mt-4 text-2xl font-black text-slate-900">4.8%</p>
-            <div className="mt-2 text-[12px] font-medium text-slate-500">
-              Từ tổng 7,125 lượt xem trang khóa học
-            </div>
+            <p className="mt-4 text-2xl font-black text-slate-900">4.8%(MOCKDATA)</p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -153,11 +160,7 @@ export default function InstructorReports() {
               </span>
             </div>
              {/* Mock data vì API chưa hỗ trợ response time */}
-            <p className="mt-4 text-2xl font-black text-slate-900">2.4 giờ</p>
-            <div className="mt-2 flex items-center gap-1 text-[12px] font-medium text-emerald-600">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-              <span>Nhanh hơn 30p so với tuần trước</span>
-            </div>
+            <p className="mt-4 text-2xl font-black text-slate-900">MOCKDATA</p>
           </div>
         </div>
 
@@ -326,6 +329,86 @@ export default function InstructorReports() {
           </div>
         </div>
 
+        {/* --- [MỚI] THỐNG KÊ ĐÁNH GIÁ (REVIEW ANALYTICS) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+        {/* Phân bổ đánh giá */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+          <div className="border-b border-slate-100 bg-white px-6 py-5 flex-shrink-0">
+            <h2 className="text-[15px] font-bold text-slate-900">Phân bổ đánh giá (Chất lượng)</h2>
+            <p className="mt-1 text-[12px] font-medium text-slate-500">Biểu đồ phân bổ tỷ lệ đánh giá sao từ học viên.</p>
+          </div>
+          
+          <div className="flex flex-col md:flex-row md:h-[300px] items-center px-6 py-6 gap-6 md:gap-0">
+            {/* Cột trái: Tổng quan điểm số */}
+            <div className="w-full md:w-1/3 text-center md:border-r border-slate-100 md:pr-4">
+              <p className="text-5xl font-black text-slate-900">{board.quality.averageRating?.toFixed(1) || '--'}</p>
+              <div className="flex justify-center mt-2 text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <StarIcon key={i} className="h-5 w-5" fill={i < Math.round(board.quality.averageRating || 0) ? "currentColor" : "none"} />
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">Dựa trên <span className="font-bold text-slate-700">{board.quality.reviewCount}</span> lượt</p>
+            </div>
+            {/* CHÚ Ý: Thẻ </div> trên là bắt buộc phải có để đóng cột trái */}
+
+            {/* Cột phải: Biểu đồ thanh ngang */}
+            <div className="w-full md:w-2/3 h-[200px] md:h-full md:pl-4">
+              {ratingData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ratingData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="rating" type="category" tickFormatter={(val) => `${val} Sao`} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} width={50} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(value: number) => [`${value} lượt`, 'Số đánh giá']} />
+                    
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16} label={{ position: 'right', fill: '#64748b', fontSize: 11 }}>
+                      {ratingData.map((entry, index) => {
+                        const colors: Record<number, string> = {
+                          5: '#10b981', // Xanh lá
+                          4: '#3b82f6', // Xanh dương
+                          3: '#eab308', // Vàng
+                          2: '#f97316', // Cam
+                          1: '#ef4444', // Đỏ
+                        };
+                        return <Cell key={`cell-${index}`} fill={colors[entry.rating] || '#f59e0b'} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">Chưa có đánh giá nào</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+          {/* Top khóa học đánh giá cao */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+            <div className="border-b border-slate-100 bg-white px-6 py-5 flex-shrink-0">
+              <h2 className="text-[15px] font-bold text-slate-900">Top khóa học được đánh giá cao</h2>
+              <p className="mt-1 text-[12px] font-medium text-slate-500">Những khóa học mang lại trải nghiệm tốt nhất cho học viên.</p>
+            </div>
+            <div className="px-6 py-6 space-y-4 overflow-y-auto max-h-[300px] custom-scrollbar">
+              {board.quality.topRatedCourses.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">Chưa đủ dữ liệu đánh giá.</div>
+              ) : (
+                board.quality.topRatedCourses.map((course) => (
+                  <div key={course.courseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100">
+                    <div className="flex-1 min-w-0 pr-4">
+                      <p className="truncate font-bold text-slate-900 text-[13px]">{course.courseName}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{course.reviewCount} lượt đánh giá</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-amber-700 font-bold text-[14px]">
+                      {course.averageRating.toFixed(1)} <StarIcon className="h-3.5 w-3.5" fill="currentColor" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* 4. Chi Tiết Từng Khóa Học */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
@@ -393,7 +476,7 @@ export default function InstructorReports() {
                       <td className="p-4 align-middle text-center">
                         <div className="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-md">
                           <span className="font-bold text-slate-700 text-[14px]">{course.averageRating !== null ? course.averageRating.toFixed(1) : '--'}</span>
-                          <svg className="h-3.5 w-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                          <StarIcon className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">{course.reviewCount} lượt đánh giá</p>
                       </td>
