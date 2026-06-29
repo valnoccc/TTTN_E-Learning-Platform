@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { CheckCheck, Clock3, ShieldAlert, TriangleAlert } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -16,6 +17,7 @@ import {
 } from 'recharts';
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
+import { useInstructorNotifications } from '../../../layouts/InstructorNotificationsContext';
 import { useInstructorReports } from './hooks/useInstructorReports';
 
 function formatCurrency(value: number) {
@@ -46,7 +48,51 @@ const StarIcon = ({ className = "h-4 w-4", fill = "currentColor" }) => (
   </svg>
 );
 
-export default function InstructorReports() {
+function formatNotificationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function getAdminAlertTone(title: string, content: string) {
+  const text = `${title} ${content}`.toLowerCase();
+
+  if (text.includes('từ chối') || text.includes('tu choi') || text.includes('ban')) {
+    return {
+      wrapper: 'border-rose-100 bg-rose-50/40',
+      icon: <TriangleAlert className="text-rose-600" size={16} />,
+      badge: 'bg-rose-100 text-rose-700',
+      label: 'Từ chối',
+    };
+  }
+
+  if (text.includes('phê duyệt') || text.includes('phe duyet')) {
+    return {
+      wrapper: 'border-emerald-100 bg-emerald-50/40',
+      icon: <CheckCheck className="text-emerald-600" size={16} />,
+      badge: 'bg-emerald-100 text-emerald-700',
+      label: 'Phê duyệt',
+    };
+  }
+
+  return {
+    wrapper: 'border-amber-100 bg-amber-50/40',
+    icon: <ShieldAlert className="text-amber-600" size={16} />,
+    badge: 'bg-amber-100 text-amber-700',
+    label: 'Cảnh báo',
+  };
+}
+
+function InstructorReportsContent() {
+  const { notifications } = useInstructorNotifications();
   const {
     loading,
     courses,
@@ -60,9 +106,15 @@ export default function InstructorReports() {
 
   // Dữ liệu phân bổ đánh giá (đảo ngược mảng để 5 sao hiển thị trên cùng biểu đồ)
   const ratingData = [...board.quality.ratingDistribution].reverse();
+  const adminAlerts = notifications
+    .filter(
+      (notification) =>
+        notification.loaiThongBao === 'COURSE' &&
+        notification.maNguoiGui !== null,
+    )
+    .slice(0, 3);
 
   return (
-    <InstructorLayout>
       <div className="mx-auto max-w-7xl space-y-6 animate-fade-in text-slate-800">
         
         {/* Header & Bộ lọc */}
@@ -209,44 +261,56 @@ export default function InstructorReports() {
           <div className="rounded-2xl border border-rose-100 bg-rose-50/30 shadow-sm overflow-hidden">
             <div className="border-b border-rose-100 bg-rose-50/50 px-5 py-4 flex items-center justify-between">
               <h2 className="text-[14px] font-bold text-rose-900 flex items-center gap-2">
-                <svg className="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <svg className="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
                 Cảnh báo vận hành
               </h2>
             </div>
             <div className="p-4 space-y-3">
-              {board.operations.latestRejectedCourse ? (
-                <div className="rounded-xl border border-rose-100 bg-white p-3 flex items-start gap-3">
-                  <div className="mt-0.5 shrink-0 rounded-full bg-rose-100 p-1.5 text-rose-600">
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-900">Khóa học bị từ chối phê duyệt</p>
-                    <p className="mt-0.5 text-[12px] text-slate-500">Khóa "{board.operations.latestRejectedCourse.courseName}". Lý do: {board.operations.latestRejectedCourse.reason || 'Vui lòng kiểm tra lại nội dung.'}</p>
-                  </div>
-                </div>
-              ) : null}
+              {adminAlerts.length > 0 ? (
+                adminAlerts.map((notification) => {
+                  const tone = getAdminAlertTone(notification.tieuDe, notification.noiDung);
 
-              {board.operations.expiringCoupons > 0 ? (
-                <div className="rounded-xl border border-amber-100 bg-white p-3 flex items-start gap-3">
-                  <div className="mt-0.5 shrink-0 rounded-full bg-amber-100 p-1.5 text-amber-600">
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-900">Mã giảm giá sắp hết hạn</p>
-                    <p className="mt-0.5 text-[12px] text-slate-500">Bạn có {board.operations.expiringCoupons} mã coupon sẽ hết hạn trong thời gian tới.</p>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Luôn hiện 1 cảnh báo mock để giao diện không bị trống nếu 2 cái trên null */}
-              {(!board.operations.latestRejectedCourse && board.operations.expiringCoupons === 0) && (
-                 <div className="rounded-xl border border-blue-100 bg-white p-3 flex items-start gap-3">
+                  return (
+                    <div
+                      key={notification.maTB}
+                      className={`rounded-xl border bg-white p-3 flex items-start gap-3 ${tone.wrapper}`}
+                    >
+                      <div className={`mt-0.5 shrink-0 rounded-full p-1.5 ${tone.badge}`}>
+                        {tone.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13px] font-bold text-slate-900">
+                            {notification.tieuDe}
+                          </p>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                            {tone.label}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-500">
+                          {notification.noiDung}
+                        </p>
+                        <p className="mt-2 text-[11px] text-slate-400">
+                          {formatNotificationTime(notification.thoiGian)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-xl border border-blue-100 bg-white p-3 flex items-start gap-3">
                   <div className="mt-0.5 shrink-0 rounded-full bg-blue-100 p-1.5 text-blue-600">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
                   </div>
                   <div>
-                      <p className="text-[13px] font-bold text-slate-900">Hệ thống hoạt động ổn định</p>
-                      <p className="mt-0.5 text-[12px] text-slate-500">Hiện không có cảnh báo nghiêm trọng nào về khóa học của bạn.</p>
+                    <p className="text-[13px] font-bold text-slate-900">Chưa có cảnh báo từ admin</p>
+                    <p className="mt-0.5 text-[12px] text-slate-500">
+                      Hiện chưa có thông báo kiểm duyệt hoặc từ chối khóa học nào cần xử lý.
+                    </p>
                   </div>
                 </div>
               )}
@@ -494,6 +558,13 @@ export default function InstructorReports() {
         </div>
 
       </div>
+  );
+}
+
+export default function InstructorReports() {
+  return (
+    <InstructorLayout>
+      <InstructorReportsContent />
     </InstructorLayout>
   );
 }
