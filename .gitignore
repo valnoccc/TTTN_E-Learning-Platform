@@ -30,6 +30,7 @@ backend/dist/
 .nest/
 database/
 draft/
+docs/
 
 # =========================================
 # LOGS (File lưu vết lỗi)
