@@ -9,6 +9,7 @@ import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CreateCouponDto } from '../dto/create-coupon.dto';
+import { CreateAdminCouponDto } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
 import { Coupon } from '../entities/coupon.entity';
@@ -48,6 +49,7 @@ type CouponValidationRow = {
   tenKhoaHoc: string;
   giaBan: number | string;
   loaiKM: string | null;
+  targetCourseIds?: number[];
 };
 
 type CouponUsageUpdateResult = {
@@ -308,6 +310,8 @@ export class CouponsService {
       }
     }
 
+    let targetCourseIds = coupon.maKH !== null ? [coupon.maKH] : courseIds;
+
     let applicablePrice = coupon.giaBan;
     if (coupon.maKH === null) {
       // Global coupon applies to the total price of the cart
@@ -352,6 +356,8 @@ export class CouponsService {
           throw new BadRequestException('Mã giảm giá CROSS_SELL không áp dụng cho bất kỳ khóa học nào trong giỏ hàng (Khóa học không nằm trong danh sách gợi ý hợp lệ hoặc ưu đãi đã hết hạn).');
         }
         
+        targetCourseIds = validCartCourseIds;
+        
         const placeholders = validCartCourseIds.map(() => '?').join(',');
         const courses = await this.dataSource.query(
           `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
@@ -385,6 +391,7 @@ export class CouponsService {
       discountType: coupon.loaiGiam,
       discountValue: coupon.giaTriGiam,
       discountAmount,
+      targetCourseIds,
       message:
         coupon.maKH === null
           ? 'Áp dụng mã giảm giá toàn sàn thành công.'
@@ -494,5 +501,141 @@ export class CouponsService {
       giaBan: Number(row.giaBan ?? 0),
       loaiKM: row.loaiKM ? String(row.loaiKM) : null,
     };
+  }
+
+  async recordCouponRedemption(
+    payload: {
+      couponId: number;
+      userId: number;
+      invoiceId: number;
+      discountAmount: number;
+      orderValue: number;
+    },
+    queryRunner?: any,
+  ) {
+    const runner = queryRunner || this.dataSource;
+    await runner.query(
+      `UPDATE MaGiamGia
+       SET SoLuongDaDung = SoLuongDaDung + 1
+       WHERE MaCoupon = ?`,
+      [payload.couponId],
+    );
+  }
+
+  async getAdminCoupons(query: QueryCouponsDto) {
+    const normalizedSearch = query.search?.trim() ?? '';
+    const normalizedStatus = query.status?.trim().toUpperCase();
+
+    const conditions = ['1=1'];
+    const params: Array<string | number> = [];
+
+    if (normalizedSearch) {
+      conditions.push('mg.MaCode LIKE ?');
+      params.push(`%${normalizedSearch}%`);
+    }
+
+    if (normalizedStatus && ['ACTIVE', 'INACTIVE'].includes(normalizedStatus)) {
+      conditions.push('mg.TrangThai = ?');
+      params.push(normalizedStatus);
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT
+          mg.MaCoupon AS maCoupon,
+          mg.MaCode AS maCode,
+          mg.GiaTriGiam AS giaTriGiam,
+          mg.LoaiGiam AS loaiGiam,
+          mg.TrangThai AS trangThai,
+          mg.NgayBatDau AS ngayBatDau,
+          mg.NgayKetThuc AS ngayKetThuc,
+          mg.MaKH AS maKH,
+          kh.TenKhoaHoc AS tenKhoaHoc,
+          mg.SoLuongGioiHan AS soLuongGioiHan,
+          mg.SoLuongDaDung AS soLuongDaDung,
+          mg.GhiChu AS ghiChu,
+          mg.LoaiKM AS loaiKM
+       FROM MaGiamGia mg
+       LEFT JOIN KhoaHoc kh ON kh.MaKH = mg.MaKH
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY mg.MaCoupon DESC`,
+      params,
+    );
+
+    const summaryResult = await this.dataSource.query(
+      `SELECT
+          COUNT(*) AS totalCouponCount,
+          SUM(CASE WHEN TrangThai = 'ACTIVE' THEN 1 ELSE 0 END) AS activeCount,
+          COALESCE(SUM(SoLuongDaDung), 0) AS totalUsageCount
+       FROM MaGiamGia`
+    );
+
+    const summary = summaryResult[0] ?? {
+      totalCouponCount: 0,
+      activeCount: 0,
+      totalUsageCount: 0,
+    };
+
+    return {
+      summary: {
+        totalCouponCount: Number(summary.totalCouponCount ?? 0),
+        activeCount: Number(summary.activeCount ?? 0),
+        totalUsageCount: Number(summary.totalUsageCount ?? 0),
+      },
+      items: rows.map((row) => this.normalizeCouponRow(row)),
+    };
+  }
+
+  async createAdminCoupon(adminId: number, payload: CreateAdminCouponDto) {
+    const maCode = payload.maCode?.trim().toUpperCase();
+    if (!maCode) {
+      throw new BadRequestException('Mã giảm giá không được để trống');
+    }
+    const loaiGiam = payload.loaiGiam;
+    const giaTriGiam = Number(payload.giaTriGiam);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const insertResult = await queryRunner.query(
+        `INSERT INTO MaGiamGia (
+          MaCode, GiaTriGiam, LoaiGiam, TrangThai, NgayBatDau, NgayKetThuc,
+          SoLuongGioiHan, SoLuongDaDung, MaND_GiangVien, GhiChu, MaKM, LoaiKM
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
+        [
+          maCode,
+          giaTriGiam,
+          loaiGiam,
+          payload.trangThai || 'ACTIVE',
+          payload.ngayBatDau ? new Date(payload.ngayBatDau) : null,
+          payload.ngayKetThuc ? new Date(payload.ngayKetThuc) : null,
+          payload.soLuongGioiHan || null,
+          payload.ghiChu || null,
+          payload.maKM || null,
+          payload.loaiKM || null,
+        ],
+      );
+      await queryRunner.commitTransaction();
+      return { couponId: insertResult.insertId, maCode };
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new BadRequestException('Mã giảm giá đã tồn tại');
+      }
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateAdminCouponStatus(adminId: number, couponId: number, status: string) {
+    const result = await this.dataSource.query(
+      `UPDATE MaGiamGia SET TrangThai = ? WHERE MaCoupon = ?`,
+      [status, couponId]
+    );
+    if (!result.affectedRows) {
+      throw new BadRequestException('Mã giảm giá không tồn tại');
+    }
+    return { couponId, status };
   }
 }
