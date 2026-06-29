@@ -221,6 +221,8 @@ export default function Checkout() {
         toast.dismiss('momo-loading');
         if (res.payUrl) {
           toast.success('Đang chuyển đến MoMo...');
+          // Xóa gợi ý cross-sell cũ
+          localStorage.removeItem('edumeo_cross_sell');
           // Xóa giỏ hàng trước khi rời trang
           courses.forEach((course) => dispatch(removeFromCart(course.id)));
           window.location.href = res.payUrl;
@@ -239,6 +241,8 @@ export default function Checkout() {
       });
 
       if (res.success) {
+        // Xóa gợi ý cross-sell cũ
+        localStorage.removeItem('edumeo_cross_sell');
         courses.forEach((course) => dispatch(removeFromCart(course.id)));
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);

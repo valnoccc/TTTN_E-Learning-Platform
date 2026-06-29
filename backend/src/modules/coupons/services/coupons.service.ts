@@ -319,8 +319,8 @@ export class CouponsService {
         // Double check cross-sell
         const lastInvoices = await this.dataSource.query(
           `SELECT MaHD FROM HoaDon 
-           WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND NgayLap >= NOW() - INTERVAL 30 MINUTE
-           ORDER BY NgayLap DESC LIMIT 1`,
+           WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
+           ORDER BY NgayThanhToan DESC LIMIT 1`,
           [userId]
         );
         
@@ -329,11 +329,12 @@ export class CouponsService {
         if (lastInvoices.length > 0) {
           const invoiceId = lastInvoices[0].MaHD;
           const details = await this.dataSource.query(
-            `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ? LIMIT 1`,
+            `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
             [invoiceId]
           );
           if (details.length > 0) {
             const oldCourseId = details[0].MaKH;
+            const maDM = details[0].MaDM || 0;
             let excludeCondition = `k.MaKH != ?`;
             let params: any[] = [oldCourseId];
             
@@ -344,8 +345,8 @@ export class CouponsService {
               `SELECT k.MaKH as maKH
                FROM KhoaHoc k
                WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-               ORDER BY k.MaKH DESC LIMIT 4`,
-              params
+               ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
+              [...params, maDM]
             );
             validCrossSellCourseIds = recommendations.map((r: any) => Number(r.maKH));
           }

@@ -114,15 +114,21 @@ export class PublicCoursesController {
       }
     }
 
-    // Lấy tối đa 4 khóa học (Deterministic để phục vụ validate cross-sell coupon)
+    const courseInfo = await this.dataSource.query(
+      `SELECT MaDM FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
+      [courseId]
+    );
+    const maDM = courseInfo[0]?.MaDM || 0;
+
+    // Lấy tối đa 4 khóa học, ưu tiên cùng danh mục trước, sau đó mới đến mới nhất
     const recommendations = await this.dataSource.query(
       `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
               k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
               (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
        FROM KhoaHoc k
        WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-       ORDER BY k.MaKH DESC LIMIT 4`,
-      params
+       ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
+      [...params, maDM]
     );
 
     // Lấy voucher cross-sell

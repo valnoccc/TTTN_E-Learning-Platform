@@ -482,9 +482,8 @@ export class CheckoutService {
         return { message: 'IPN already processed' };
       }
 
-      // 4b. Cập nhật HoaDon thành PAID
       await queryRunner.query(
-        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID' WHERE MaHD = ?`,
+        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID', NgayThanhToan = NOW() WHERE MaHD = ?`,
         [invoiceId],
       );
       console.log('[MoMo IPN] Đã cập nhật HoaDon', invoiceId, 'thành PAID');
@@ -641,7 +640,7 @@ export class CheckoutService {
       }
 
       const insertHoaDonResult = await queryRunner.query(
-        `INSERT INTO HoaDon (MaND, TongTien, TrangThaiThanhToan, PhuongThucThanhToan, MaCoupon) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO HoaDon (MaND, TongTien, TrangThaiThanhToan, PhuongThucThanhToan, MaCoupon, NgayThanhToan) VALUES (?, ?, ?, ?, ?, NOW())`,
         [userId, finalPrice, 'PAID', paymentMethod, appliedCouponId],
       );
 
@@ -775,11 +774,10 @@ export class CheckoutService {
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
     );
 
-    // Xử lý Double Check Cross-Sell
     const lastInvoices = await this.dataSource.query(
       `SELECT MaHD FROM HoaDon 
-       WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND NgayLap >= NOW() - INTERVAL 30 MINUTE
-       ORDER BY NgayLap DESC LIMIT 1`,
+       WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
+       ORDER BY NgayThanhToan DESC LIMIT 1`,
       [userId]
     );
     
@@ -787,11 +785,12 @@ export class CheckoutService {
     if (lastInvoices.length > 0) {
       const invoiceId = lastInvoices[0].MaHD;
       const details = await this.dataSource.query(
-        `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ? LIMIT 1`,
+        `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
         [invoiceId]
       );
       if (details.length > 0) {
         const oldCourseId = details[0].MaKH;
+        const maDM = details[0].MaDM || 0;
         let excludeCondition = `k.MaKH != ?`;
         let params: any[] = [oldCourseId];
         excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
@@ -800,8 +799,8 @@ export class CheckoutService {
           `SELECT k.MaKH as maKH
            FROM KhoaHoc k
            WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-           ORDER BY k.MaKH DESC LIMIT 4`,
-          params
+           ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
+          [...params, maDM]
         );
         validCrossSellCourseIds = recommendations.map((r: any) => Number(r.maKH));
       }
