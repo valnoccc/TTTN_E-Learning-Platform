@@ -11,6 +11,7 @@ import axios from 'axios';
 import { INSTRUCTOR_REVENUE_PERCENT } from '../../common/constants/revenue-share';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { CouponsService } from '../coupons/services/coupons.service';
 
 export interface PaymentRequest {
   courseIds: number[];
@@ -38,6 +39,7 @@ export class CheckoutService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
+    private readonly couponsService: CouponsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -91,52 +93,20 @@ export class CheckoutService {
       let finalPrice = totalOriginalPrice;
       let appliedCouponId: number | null = null;
       let discountAmount = 0;
+      let discountTargetCourseIds: number[] = courseIds;
 
       if (couponCode) {
-        const coupons = await queryRunner.query(
-          `SELECT MaCoupon, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc 
-           FROM MaGiamGia WHERE MaCode = ? LIMIT 1`,
-          [couponCode],
+        const coupon = await this.couponsService.validateCoupon(
+          {
+            maCode: couponCode,
+            courseIds,
+          },
+          userId,
         );
 
-        if (coupons.length === 0)
-          throw new BadRequestException('Mã giảm giá không hợp lệ');
-
-        const coupon = coupons[0];
-        if (coupon.TrangThai !== 'ACTIVE')
-          throw new BadRequestException('Mã giảm giá không còn hoạt động');
-
-        const now = new Date();
-        if (coupon.NgayBatDau && new Date(coupon.NgayBatDau) > now)
-          throw new BadRequestException(
-            'Mã giảm giá chưa đến thời gian sử dụng',
-          );
-        if (coupon.NgayKetThuc && new Date(coupon.NgayKetThuc) < now)
-          throw new BadRequestException('Mã giảm giá đã hết hạn');
-        if (
-          coupon.SoLuongGioiHan !== null &&
-          Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan)
-        )
-          throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
-        if (coupon.MaKH !== null && !courseIds.includes(Number(coupon.MaKH)))
-          throw new BadRequestException(
-            'Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng',
-          );
-
-        appliedCouponId = coupon.MaCoupon;
-        let targetPrice = totalOriginalPrice;
-        if (coupon.MaKH !== null) {
-          const targetCourse = courses.find(
-            (c: any) => Number(c.MaKH) === Number(coupon.MaKH),
-          );
-          targetPrice = Number(targetCourse?.GiaBan || 0);
-        }
-
-        discountAmount =
-          coupon.LoaiGiam === 'PERCENT'
-            ? (targetPrice * Number(coupon.GiaTriGiam)) / 100
-            : Math.min(Number(coupon.GiaTriGiam), targetPrice);
-
+        appliedCouponId = coupon.couponId;
+        discountAmount = coupon.discountAmount;
+        discountTargetCourseIds = coupon.targetCourseIds ?? courseIds;
         finalPrice = Math.max(0, totalOriginalPrice - discountAmount);
       }
 
@@ -150,14 +120,26 @@ export class CheckoutService {
 
       // Lưu chi tiết hoá đơn tạm
       const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const discountBaseSubtotal = discountTargetCourseIds.reduce(
+        (sum, courseId) => {
+          const targetCourse = courses.find(
+            (course: any) => Number(course.MaKH) === Number(courseId),
+          );
+          return sum + Number(targetCourse?.GiaBan || 0);
+        },
+        0,
+      );
       for (const course of courses) {
         const giaGhiNhan = Number(course.GiaBan || 0);
         let doanhThuGiangVien = 0;
         if (appliedCouponId) {
-          const currentCourseDiscount =
-            totalOriginalPrice > 0
-              ? (giaGhiNhan / totalOriginalPrice) * discountAmount
-              : 0;
+          const currentCourseDiscount = discountTargetCourseIds.includes(
+            Number(course.MaKH),
+          )
+            ? discountBaseSubtotal > 0
+              ? (giaGhiNhan / discountBaseSubtotal) * discountAmount
+              : 0
+            : 0;
           doanhThuGiangVien =
             ((giaGhiNhan - currentCourseDiscount) * instructorRevenueRate) /
             100;
@@ -173,6 +155,19 @@ export class CheckoutService {
             instructorRevenueRate,
             doanhThuGiangVien,
           ],
+        );
+      }
+
+      if (appliedCouponId) {
+        await this.couponsService.recordCouponRedemption(
+          {
+            couponId: appliedCouponId,
+            userId,
+            invoiceId,
+            discountAmount,
+            orderValue: totalOriginalPrice,
+          },
+          queryRunner,
         );
       }
 
@@ -600,7 +595,7 @@ export class CheckoutService {
         0,
       );
       let finalPrice = totalOriginalPrice;
-      let appliedCouponId = null;
+      let appliedCouponId: number | null = null;
 
       const existingEnrollments = await queryRunner.query(
         `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
@@ -611,55 +606,22 @@ export class CheckoutService {
         throw new BadRequestException('Bạn đã sở hữu khóa học này!');
       }
 
-      let coupon: any = null;
       let discountAmount = 0;
+      let discountTargetCourseIds: number[] = courseIds;
 
       if (couponCode) {
-        const coupons = await queryRunner.query(
-          `SELECT MaCoupon, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, LoaiMa, TiLeGiangVien 
-           FROM MaGiamGia WHERE MaCode = ? LIMIT 1`,
-          [couponCode],
+        const couponValidation = await this.couponsService.validateCoupon(
+          {
+            maCode: couponCode,
+            courseIds,
+          },
+          userId,
         );
 
-        if (coupons.length === 0)
-          throw new BadRequestException('Mã giảm giá không hợp lệ');
-
-        coupon = coupons[0];
-        if (coupon.TrangThai !== 'ACTIVE')
-          throw new BadRequestException('Mã giảm giá đã bị vô hiệu hóa');
-
-        const now = new Date();
-        if (coupon.NgayBatDau && new Date(coupon.NgayBatDau) > now)
-          throw new BadRequestException(
-            'Mã giảm giá chưa đến thời gian sử dụng',
-          );
-        if (coupon.NgayKetThuc && new Date(coupon.NgayKetThuc) < now)
-          throw new BadRequestException('Mã giảm giá đã hết hạn');
-        if (
-          coupon.SoLuongGioiHan !== null &&
-          Number(coupon.SoLuongDaDung) >= Number(coupon.SoLuongGioiHan)
-        )
-          throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
-        if (coupon.MaKH !== null && !courseIds.includes(Number(coupon.MaKH)))
-          throw new BadRequestException(
-            'Mã giảm giá không áp dụng cho các khóa học trong giỏ hàng',
-          );
-
-        appliedCouponId = coupon.MaCoupon;
-
-        let targetPrice = totalOriginalPrice;
-        if (coupon.MaKH !== null) {
-          const targetCourse = courses.find(
-            (c: any) => Number(c.MaKH) === Number(coupon.MaKH),
-          );
-          targetPrice = Number(targetCourse?.GiaBan || 0);
-        }
-
-        discountAmount =
-          coupon.LoaiGiam === 'PERCENT'
-            ? (targetPrice * Number(coupon.GiaTriGiam)) / 100
-            : Math.min(Number(coupon.GiaTriGiam), targetPrice);
-
+        appliedCouponId = couponValidation.couponId;
+        discountAmount = couponValidation.discountAmount;
+        discountTargetCourseIds =
+          couponValidation.targetCourseIds ?? courseIds;
         finalPrice = Math.max(0, totalOriginalPrice - discountAmount);
       }
 
@@ -670,15 +632,27 @@ export class CheckoutService {
 
       const invoiceId = insertHoaDonResult.insertId;
       const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const discountBaseSubtotal = discountTargetCourseIds.reduce(
+        (sum, courseId) => {
+          const targetCourse = courses.find(
+            (course: any) => Number(course.MaKH) === Number(courseId),
+          );
+          return sum + Number(targetCourse?.GiaBan || 0);
+        },
+        0,
+      );
 
       for (const course of courses) {
         const giaGhiNhan = Number(course.GiaBan || 0);
         let doanhThuGiangVien = 0;
         if (appliedCouponId) {
-          const currentCourseDiscount =
-            totalOriginalPrice > 0
-              ? (giaGhiNhan / totalOriginalPrice) * discountAmount
-              : 0;
+          const currentCourseDiscount = discountTargetCourseIds.includes(
+            Number(course.MaKH),
+          )
+            ? discountBaseSubtotal > 0
+              ? (giaGhiNhan / discountBaseSubtotal) * discountAmount
+              : 0
+            : 0;
           doanhThuGiangVien =
             ((giaGhiNhan - currentCourseDiscount) * instructorRevenueRate) /
             100;
@@ -704,9 +678,15 @@ export class CheckoutService {
       }
 
       if (appliedCouponId) {
-        await queryRunner.query(
-          `UPDATE MaGiamGia SET SoLuongDaDung = SoLuongDaDung + 1 WHERE MaCoupon = ?`,
-          [appliedCouponId],
+        await this.couponsService.recordCouponRedemption(
+          {
+            couponId: appliedCouponId,
+            userId,
+            invoiceId,
+            discountAmount,
+            orderValue: totalOriginalPrice,
+          },
+          queryRunner,
         );
       }
 

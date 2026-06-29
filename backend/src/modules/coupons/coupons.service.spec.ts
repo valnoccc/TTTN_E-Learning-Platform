@@ -125,6 +125,13 @@ describe('CouponsService', () => {
         giaBan: 300000,
       },
     ]);
+    dataSource.query.mockResolvedValueOnce([]);
+    dataSource.query.mockResolvedValueOnce([]);
+    dataSource.query.mockResolvedValueOnce([
+      { MaKH: 12, GiaBan: 200000, TenKhoaHoc: 'NestJS', MaDM: 1, MaND_GiangVien: 99 },
+      { MaKH: 10, GiaBan: 300000, TenKhoaHoc: 'React', MaDM: 1, MaND_GiangVien: 99 },
+      { MaKH: 99, GiaBan: 150000, TenKhoaHoc: 'Docker', MaDM: 1, MaND_GiangVien: 99 },
+    ]);
 
     const result = await service.validateCoupon({
       maCode: 'REACT10',
@@ -151,6 +158,11 @@ describe('CouponsService', () => {
         tenKhoaHoc: 'NestJS',
         giaBan: 250000,
       },
+    ]);
+    dataSource.query.mockResolvedValueOnce([]);
+    dataSource.query.mockResolvedValueOnce([]);
+    dataSource.query.mockResolvedValueOnce([
+      { MaKH: 5, GiaBan: 250000, TenKhoaHoc: 'NestJS', MaDM: 1, MaND_GiangVien: 99 },
     ]);
 
     const result = await service.validateCoupon({

@@ -112,6 +112,10 @@ function InstructorReportsContent() {
         notification.loaiThongBao === 'COURSE' &&
         notification.maNguoiGui !== null,
     )
+    .sort(
+      (left, right) =>
+        new Date(right.thoiGian).getTime() - new Date(left.thoiGian).getTime(),
+    )
     .slice(0, 3);
 
   return (

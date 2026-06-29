@@ -1,4 +1,5 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
@@ -10,8 +11,12 @@ export class PublicCouponsController {
   constructor(private readonly couponsService: CouponsService) {}
 
   @Post('validate')
-  async validateCoupon(@Body() body: ValidateCouponDto) {
-    const data = await this.couponsService.validateCoupon(body);
+  async validateCoupon(
+    @Body() body: ValidateCouponDto,
+    @Req() req: Request & { user?: { sub?: number; maND?: number } },
+  ) {
+    const userId = req.user?.sub ?? req.user?.maND ?? null;
+    const data = await this.couponsService.validateCoupon(body, userId);
 
     return {
       message: 'Kiểm tra mã giảm giá thành công',

@@ -46,11 +46,11 @@ export class Coupon {
   @Column({ name: 'NgayKetThuc', type: 'datetime', nullable: true })
   ngayKetThuc!: Date | null;
 
-  @Column({ name: 'MaKH' })
-  maKH!: number;
+  @Column({ name: 'MaKH', type: 'int', nullable: true })
+  maKH!: number | null;
 
-  @Column({ name: 'MaND_GiangVien' })
-  maND_GiangVien!: number;
+  @Column({ name: 'MaND_GiangVien', type: 'int', nullable: true })
+  maND_GiangVien!: number | null;
 
   @Column({ name: 'SoLuongGioiHan', type: 'int', nullable: true })
   soLuongGioiHan!: number | null;
@@ -61,7 +61,18 @@ export class Coupon {
   @Column({ name: 'GhiChu', type: 'varchar', length: 255, nullable: true })
   ghiChu!: string | null;
 
-  @ManyToOne(() => KhoaHoc)
+  @Column({ name: 'MaKM', type: 'varchar', length: 100, nullable: true })
+  maKM!: string | null;
+
+  @Column({
+    name: 'LoaiKM',
+    type: 'enum',
+    enum: ['FIRST_TIME', 'CROSS_SELL', 'HOLIDAY', 'STANDARD'],
+    default: 'STANDARD',
+  })
+  loaiKM!: 'FIRST_TIME' | 'CROSS_SELL' | 'HOLIDAY' | 'STANDARD';
+
+  @ManyToOne(() => KhoaHoc, { nullable: true })
   @JoinColumn({ name: 'MaKH' })
-  khoaHoc!: KhoaHoc;
+  khoaHoc?: KhoaHoc | null;
 }
