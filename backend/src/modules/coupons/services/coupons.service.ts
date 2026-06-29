@@ -47,6 +47,7 @@ type CouponValidationRow = {
   soLuongDaDung: number | string;
   tenKhoaHoc: string;
   giaBan: number | string;
+  loaiKM: string | null;
 };
 
 type CouponUsageUpdateResult = {
@@ -244,7 +245,7 @@ export class CouponsService {
     };
   }
 
-  async validateCoupon(payload: ValidateCouponDto) {
+  async validateCoupon(payload: ValidateCouponDto, userId?: number) {
     const maCode = payload.maCode?.trim().toUpperCase();
     if (!maCode) {
       throw new BadRequestException('Vui lòng nhập mã giảm giá');
@@ -274,6 +275,7 @@ export class CouponsService {
           mg.MaKH AS maKH,
           mg.SoLuongGioiHan AS soLuongGioiHan,
           mg.SoLuongDaDung AS soLuongDaDung,
+          mg.LoaiKM AS loaiKM,
           kh.TenKhoaHoc AS tenKhoaHoc,
           kh.GiaBan AS giaBan
        FROM MaGiamGia mg
@@ -296,17 +298,76 @@ export class CouponsService {
       );
     }
 
+    if (coupon.loaiKM === 'FIRST_TIME' && userId) {
+      const paidInvoices = await this.dataSource.query(
+        `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+        [userId]
+      );
+      if (Number(paidInvoices[0]?.count || 0) > 0) {
+        throw new BadRequestException('Mã giảm giá này chỉ dành cho khách hàng mua khóa học lần đầu tiên.');
+      }
+    }
+
     let applicablePrice = coupon.giaBan;
     if (coupon.maKH === null) {
       // Global coupon applies to the total price of the cart
-      const placeholders = courseIds.map(() => '?').join(',');
-      const courses = await this.dataSource.query(
-        `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-        courseIds,
-      );
-      applicablePrice = courses[0]?.TotalPrice
-        ? Number(courses[0].TotalPrice)
-        : 0;
+      if (coupon.loaiKM === 'CROSS_SELL' && userId) {
+        // Double check cross-sell
+        const lastInvoices = await this.dataSource.query(
+          `SELECT MaHD FROM HoaDon 
+           WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND NgayLap >= NOW() - INTERVAL 30 MINUTE
+           ORDER BY NgayLap DESC LIMIT 1`,
+          [userId]
+        );
+        
+        let validCrossSellCourseIds: number[] = [];
+        
+        if (lastInvoices.length > 0) {
+          const invoiceId = lastInvoices[0].MaHD;
+          const details = await this.dataSource.query(
+            `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ? LIMIT 1`,
+            [invoiceId]
+          );
+          if (details.length > 0) {
+            const oldCourseId = details[0].MaKH;
+            let excludeCondition = `k.MaKH != ?`;
+            let params: any[] = [oldCourseId];
+            
+            excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+            params.push(userId);
+            
+            const recommendations = await this.dataSource.query(
+              `SELECT k.MaKH as maKH
+               FROM KhoaHoc k
+               WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
+               ORDER BY k.MaKH DESC LIMIT 4`,
+              params
+            );
+            validCrossSellCourseIds = recommendations.map((r: any) => Number(r.maKH));
+          }
+        }
+        
+        const validCartCourseIds = courseIds.filter(id => validCrossSellCourseIds.includes(Number(id)));
+        if (validCartCourseIds.length === 0) {
+          throw new BadRequestException('Mã giảm giá CROSS_SELL không áp dụng cho bất kỳ khóa học nào trong giỏ hàng (Khóa học không nằm trong danh sách gợi ý hợp lệ hoặc ưu đãi đã hết hạn).');
+        }
+        
+        const placeholders = validCartCourseIds.map(() => '?').join(',');
+        const courses = await this.dataSource.query(
+          `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+          validCartCourseIds,
+        );
+        applicablePrice = courses[0]?.TotalPrice ? Number(courses[0].TotalPrice) : 0;
+      } else {
+        const placeholders = courseIds.map(() => '?').join(',');
+        const courses = await this.dataSource.query(
+          `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+          courseIds,
+        );
+        applicablePrice = courses[0]?.TotalPrice
+          ? Number(courses[0].TotalPrice)
+          : 0;
+      }
     }
 
     const discountAmount = this.calculateDiscountAmount(
@@ -431,6 +492,7 @@ export class CouponsService {
       soLuongDaDung: Number(row.soLuongDaDung ?? 0),
       tenKhoaHoc: String(row.tenKhoaHoc ?? ''),
       giaBan: Number(row.giaBan ?? 0),
+      loaiKM: row.loaiKM ? String(row.loaiKM) : null,
     };
   }
 }

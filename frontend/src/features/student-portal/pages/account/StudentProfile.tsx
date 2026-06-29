@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LayoutDashboard, User, BookOpen, CreditCard, Save, Camera, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
@@ -24,7 +24,14 @@ type StoredUser = {
 export default function StudentProfile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password'>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  
+  const initialTab = (tabParam === 'profile' || tabParam === 'courses' || tabParam === 'payments' || tabParam === 'password') 
+    ? tabParam 
+    : 'profile';
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password'>(initialTab);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', avatarUrl: '' });
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -90,6 +97,17 @@ export default function StudentProfile() {
 
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    if (tabParam && ['profile', 'courses', 'payments', 'password'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab: 'profile' | 'courses' | 'payments' | 'password') => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +202,12 @@ export default function StudentProfile() {
       }
     }
   };
+  const [searchTerm, setSearchTerm] = useState('');
+  const filteredCourses = myCourses.filter((course) =>
+    course.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const completedCount = myCourses.filter((c) => c.progress >= 100).length;
+  const inProgressCount = myCourses.filter((c) => c.progress > 0 && c.progress < 100).length;
 
   return (
     <div className="profile-page bg-slate-50 min-h-screen pb-16">
@@ -211,7 +235,7 @@ export default function StudentProfile() {
 
               <nav className="space-y-2">
                 <button
-                  onClick={() => setActiveTab('profile')}
+                  onClick={() => handleTabChange('profile')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === 'profile' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -220,7 +244,7 @@ export default function StudentProfile() {
                   {t('Personal Info')}
                 </button>
                 <button
-                  onClick={() => setActiveTab('courses')}
+                  onClick={() => handleTabChange('courses')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === 'courses' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -229,7 +253,7 @@ export default function StudentProfile() {
                   {t('My Courses')}
                 </button>
                 <button
-                  onClick={() => setActiveTab('payments')}
+                  onClick={() => handleTabChange('payments')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === 'payments' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -238,7 +262,7 @@ export default function StudentProfile() {
                   {t('Payment History')}
                 </button>
                 <button
-                  onClick={() => setActiveTab('password')}
+                  onClick={() => handleTabChange('password')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === 'password' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -336,42 +360,152 @@ export default function StudentProfile() {
               {activeTab === 'courses' && (
                 <div>
                   <h3 className="text-2xl font-bold text-slate-800 mb-6">{t('My Courses')}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {myCourses.map((course) => (
-                      <div key={course.id} className="border border-slate-100 rounded-2xl p-4 hover:shadow-md transition-shadow group">
-                        <div className="h-40 bg-slate-200 rounded-xl mb-4 overflow-hidden relative">
-                           {course.image ? (
-                             <img 
-                               src={course.image.startsWith('http') ? course.image : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?/, '')}`} 
-                               alt={course.title} 
-                               className="w-full h-full object-cover" 
-                               onError={(e: any) => { e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`; }}
-                             />
-                           ) : (
-                             <div className="w-full h-full bg-slate-300 flex items-center justify-center text-slate-400">
-                               <BookOpen size={40} />
-                             </div>
-                           )}
-                        </div>
-                        <h4 className="font-bold text-slate-800 mb-2">{course.title}</h4>
-                        <div className="mb-4">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-500">Tiến độ</span>
-                            <span className="font-semibold text-emerald-600">{course.progress}%</span>
-                          </div>
-                          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${course.progress}%` }}></div>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => navigate(`/student/learn/${course.id}`)}
-                          className="w-full py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors"
-                        >
-                          {t('Learn Now')}
-                        </button>
+                  
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <BookOpen size={22} className="text-blue-500" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-sm text-slate-500">Tổng khóa học</p>
+                        <p className="text-2xl font-bold text-slate-800">{myCourses.length}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                        <svg className="text-amber-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500">Đang học</p>
+                        <p className="text-2xl font-bold text-slate-800">{inProgressCount}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                        <svg className="text-emerald-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500">Hoàn thành</p>
+                        <p className="text-2xl font-bold text-slate-800">{completedCount}</p>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Search Bar */}
+                  <div className="relative mb-8">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm trong khóa học của bạn..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
+                    />
+                  </div>
+
+                  {filteredCourses.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <BookOpen size={40} className="mx-auto text-slate-300 mb-3" />
+                      <h3 className="text-lg font-semibold text-slate-600 mb-1">
+                        {searchTerm ? 'Không tìm thấy khóa học' : 'Chưa có khóa học nào'}
+                      </h3>
+                      {!searchTerm && (
+                        <button
+                          onClick={() => navigate('/course-grid')}
+                          className="mt-4 px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors"
+                        >
+                          Khám phá khóa học
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                          onClick={() => navigate(`/student/learn/${course.id}`)}
+                        >
+                          <div className="h-40 bg-slate-200 overflow-hidden relative">
+                            {course.image ? (
+                              <img
+                                src={
+                                  course.image.startsWith('http')
+                                    ? course.image
+                                    : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?\/?/, '')}`
+                                }
+                                alt={course.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={(e: any) => {
+                                  e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-400">
+                                <BookOpen size={40} />
+                              </div>
+                            )}
+                            <div className="absolute top-3 right-3">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full backdrop-blur-sm ${
+                                  course.progress >= 100
+                                    ? 'bg-emerald-500/90 text-white'
+                                    : course.progress > 0
+                                      ? 'bg-amber-500/90 text-white'
+                                      : 'bg-slate-500/80 text-white'
+                                }`}
+                              >
+                                {course.progress >= 100 ? 'Hoàn thành' : course.progress > 0 ? 'Đang học' : 'Chưa bắt đầu'}
+                              </span>
+                            </div>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                              <svg className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          </div>
+
+                          <div className="p-4">
+                            <h4 className="font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                              {course.title}
+                            </h4>
+
+                            <div className="mb-4">
+                              <div className="flex justify-between text-sm mb-1.5">
+                                <span className="text-slate-500">Tiến độ</span>
+                                <span className="font-semibold text-emerald-600">{course.progress}%</span>
+                              </div>
+                              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-700"
+                                  style={{
+                                    width: `${course.progress}%`,
+                                    background:
+                                      course.progress >= 100
+                                        ? 'linear-gradient(90deg, #10b981, #059669)'
+                                        : course.progress > 0
+                                          ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                                          : '#cbd5e1',
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/student/learn/${course.id}`);
+                              }}
+                              className="w-full py-2.5 bg-emerald-50 text-emerald-700 font-medium rounded-xl hover:bg-emerald-600 hover:text-white transition-all duration-200 flex items-center justify-center gap-2"
+                            >
+                              {course.progress >= 100 ? 'Ôn tập lại' : course.progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -411,9 +545,11 @@ export default function StudentProfile() {
                               <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                                 invoice.status === 'Success' 
                                   ? 'bg-emerald-100 text-emerald-700' 
-                                  : 'bg-amber-100 text-amber-700'
+                                  : (invoice.status === 'Canceled' || invoice.status === 'Failed')
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-amber-100 text-amber-700'
                               }`}>
-                                {invoice.status === 'Success' ? t('Success') : t('Pending')}
+                                {invoice.status === 'Success' ? 'Thành công' : (invoice.status === 'Canceled' ? 'Đã hủy' : (invoice.status === 'Failed' ? 'Lỗi' : 'Chờ xử lý'))}
                               </span>
                             </td>
                           </tr>

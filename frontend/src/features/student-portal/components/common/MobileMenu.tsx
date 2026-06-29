@@ -144,7 +144,7 @@ class MobileMenu extends Component {
                         <CourseCategoryMobile />
                         <div className="mb-menu-item">
                             <button className="mb-menu-button active">
-                                <p><Link to={"/student/my-courses"} style={{ color: "inherit", textDecoration: "none" }}>Khóa học của tôi</Link></p>
+                                <p><Link to={"/student/profile?tab=courses"} style={{ color: "inherit", textDecoration: "none" }}>Khóa học của tôi</Link></p>
                             </button>
                         </div>
                         <div className="mb-menu-item">

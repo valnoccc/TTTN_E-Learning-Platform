@@ -25,8 +25,10 @@ import {
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { AiStatus } from '../entities/lesson.entity';
 import { serializeLesson } from '../services/lesson-response.util';
 import { LessonsService } from '../services/lessons.service';
+import { VideoIntelligenceService } from '../services/video-intelligence.service';
 
 const LESSON_TITLE_MAX_LENGTH = 60;
 
@@ -68,6 +70,7 @@ export class LessonsController {
   constructor(
     private readonly lessonsService: LessonsService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly videoIntelligenceService: VideoIntelligenceService,
   ) {}
 
   @Post()
@@ -112,6 +115,25 @@ export class LessonsController {
       }
 
       const newLesson = await this.lessonsService.create(payload);
+
+      // Kích hoạt AI kiểm duyệt video ngầm (fire & forget)
+      // Không dùng await để không block response
+      if (videoUrl && videoDuration > 0) {
+        // Kiểm tra quota trước khi phân tích
+        this.videoIntelligenceService.checkQuota(videoDuration)
+          .then(() => {
+            return this.videoIntelligenceService.analyzeVideoBackground(
+              newLesson.maBH,
+              videoUrl,
+            );
+          })
+          .catch((quotaErr) => {
+            // Nếu vượt quota: ghi log nhưng KHÔNG block việc tạo bài học
+            console.warn(
+              `[AI Quota] Bỏ qua kiểm duyệt bài học ${newLesson.maBH}: ${quotaErr.message}`,
+            );
+          });
+      }
 
       return {
         message: 'Thêm bài học thành công',
@@ -212,9 +234,31 @@ export class LessonsController {
       );
       updateData['videoURL'] = uploadResult.secure_url;
       updateData['thoiLuong'] = parseVideoDuration(uploadResult.duration);
+      
+      // Đặt lại trạng thái AI về chờ xử lý khi video thay đổi
+      updateData['aiStatus'] = AiStatus.PENDING;
+      updateData['aiLabels'] = null;
+      updateData['aiRejectReason'] = null;
     }
 
     const lesson = await this.lessonsService.update(id, updateData);
+
+    // Kích hoạt AI nếu có tải video mới lên
+    if (file && updateData['videoURL'] && updateData['thoiLuong'] > 0) {
+      this.videoIntelligenceService.checkQuota(updateData['thoiLuong'] as number)
+        .then(() => {
+          return this.videoIntelligenceService.analyzeVideoBackground(
+            lesson.maBH,
+            updateData['videoURL'] as string,
+          );
+        })
+        .catch((quotaErr) => {
+          console.warn(
+            `[AI Quota] Bỏ qua kiểm duyệt bài học ${lesson.maBH}: ${quotaErr.message}`,
+          );
+        });
+    }
+
     return serializeLesson(lesson);
   }
 

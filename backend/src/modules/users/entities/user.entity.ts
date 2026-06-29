@@ -41,4 +41,10 @@ export class User {
 
   @CreateDateColumn({ name: 'NgayTao', type: 'timestamp' })
   ngayTao!: Date;
+
+  @Column({ name: 'resetPasswordToken', type: 'varchar', length: 255, nullable: true })
+  resetPasswordToken?: string;
+
+  @Column({ name: 'resetPasswordExpires', type: 'datetime', nullable: true })
+  resetPasswordExpires?: Date;
 }

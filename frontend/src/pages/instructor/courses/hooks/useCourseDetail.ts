@@ -65,6 +65,8 @@ export interface InstructorCourseContextValue {
     handleDeleteLesson: (lessonId: string | number) => Promise<void>;
     handleStatusChange: (newStatus: string) => Promise<void>;
     navigate: ReturnType<typeof useNavigate>;
+    isSaving: boolean;
+    isStatusChanging: boolean;
 
     // CÁC HÀM XỬ LÝ MỤC TIÊU/YÊU CẦU ĐƯỢC XUẤT RA GIAO DIỆN
     updateObjective: (index: number, value: string) => void;
@@ -105,6 +107,8 @@ export function useCourseDetail(
     const [errorText, setErrorText] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isStatusChanging, setIsStatusChanging] = useState(false);
 
     useEffect(() => {
         if (isNewCourse || !id) {
@@ -231,22 +235,31 @@ export function useCourseDetail(
 
         if (!trimmedTitle) {
             setErrorText('Tên khóa học không được để trống!');
+            toast.error('Vui lòng kiểm tra lại thông tin cơ bản!');
+            navigate(`/instructor/courses/${id || 'new'}/overview`);
             return;
         }
         if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
             setErrorText(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
+            toast.error('Vui lòng kiểm tra lại thông tin cơ bản!');
+            navigate(`/instructor/courses/${id || 'new'}/overview`);
             return;
         }
         if (!Number.isFinite(selectedCategory) || selectedCategory <= 0) {
             setErrorText('Vui lòng chọn danh mục khóa học!');
+            toast.error('Vui lòng chọn danh mục khóa học!');
+            navigate(`/instructor/courses/${id || 'new'}/overview`);
             return;
         }
         if (!Number.isFinite(coursePrice) || coursePrice < 0) {
             setErrorText('Giá khóa học không hợp lệ!');
+            toast.error('Giá khóa học không hợp lệ!');
+            navigate(`/instructor/courses/${id || 'new'}/overview`);
             return;
         }
 
         try {
+            setIsSaving(true);
             const data = new FormData();
             data.append('ten_khoa_hoc', trimmedTitle);
             data.append('mo_ta', formData.description);
@@ -276,7 +289,9 @@ export function useCourseDetail(
 
             navigate('/instructor/courses');
         } catch {
-            toast.error('Lỗi khi lưu khóa học! Hãy kiểm tra dữ liệu.');
+            toast.error('Lỗi khi lưu thông tin. Vui lòng thử lại!');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -304,45 +319,51 @@ export function useCourseDetail(
     };
 
     const handleStatusChange = async (newStatus: string) => {
-        if (!id) return;
+        console.log('[handleStatusChange] Đã click đổi trạng thái sang:', newStatus);
+        if (!id) {
+            console.log('[handleStatusChange] LỖI: Không tìm thấy ID khóa học!');
+            return;
+        }
 
         // 1. KIỂM TRA RÀNG BUỘC DỮ LIỆU TRƯỚC KHI LƯU VÀ GỬI DUYỆT
+        console.log('[handleStatusChange] Đang kiểm tra dữ liệu formData...', formData);
         const trimmedTitle = formData.title.trim();
         const selectedCategory = Number(formData.category);
         const coursePrice = Number(formData.price);
         if (!trimmedTitle) {
+            console.log('[handleStatusChange] LỖI: Tên khóa học trống');
             toast.error('Tên khóa học không được để trống!');
+            navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
+            console.log('[handleStatusChange] LỖI: Tên khóa học quá dài');
             toast.error(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
+            navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (!Number.isFinite(selectedCategory) || selectedCategory <= 0) {
+            console.log('[handleStatusChange] LỖI: Chưa chọn danh mục');
             toast.error('Vui lòng chọn danh mục khóa học!');
+            navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (!Number.isFinite(coursePrice) || coursePrice < 0) {
+            console.log('[handleStatusChange] LỖI: Giá không hợp lệ');
             toast.error('Giá khóa học không hợp lệ!');
+            navigate(`/instructor/courses/${id}/overview`);
             return;
         }
 
         if (newStatus === 'PENDING' && lessons.length === 0) {
+            console.log('[handleStatusChange] LỖI: Khóa học chưa có bài học');
             toast.error('Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.');
             return;
         }
 
-        // Cập nhật câu thông báo xác nhận cho rõ ràng hơn
-        const confirmMessage =
-            newStatus === 'PENDING'
-                ? 'Nội dung hiện tại sẽ được tự động lưu lại và gửi yêu cầu duyệt. Khóa học sẽ bị khóa chỉnh sửa cho đến khi Admin phản hồi. Tiếp tục?'
-                : newStatus === 'DRAFT'
-                    ? 'Hủy yêu cầu duyệt và quay lại bản nháp?'
-                    : 'Tạm ngưng xuất bản? Khóa học sẽ bị ẩn khỏi trang chủ để bạn chỉnh sửa.';
-
-        if (!window.confirm(confirmMessage)) return;
-
+        console.log('[handleStatusChange] Đã qua bước kiểm tra dữ liệu. Bắt đầu gọi API...');
         try {
+            setIsStatusChanging(true);
             // 2. AUTO-SAVE: TỰ ĐỘNG LƯU TOÀN BỘ NỘI DUNG MỚI TRƯỚC KHI ĐỔI TRẠNG THÁI
             const data = new FormData();
             data.append('ten_khoa_hoc', trimmedTitle);
@@ -356,24 +377,30 @@ export function useCourseDetail(
                 data.append('image', imageFile);
             }
 
+            console.log('[handleStatusChange] Gọi API PUT /courses/' + id);
             // Gọi API lưu dữ liệu (PUT)
             await axiosClient.put(`/courses/${id}`, data, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
+            console.log('[handleStatusChange] Gọi API PATCH /courses/' + id + '/status');
             // 3. NẾU LƯU DỮ LIỆU THÀNH CÔNG -> GỌI API CẬP NHẬT TRẠNG THÁI (PATCH)
             await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
 
+            console.log('[handleStatusChange] THÀNH CÔNG!');
             toast.success('Đã lưu lại nội dung và cập nhật trạng thái mới!');
             setFormData((current) => ({ ...current, trang_thai: newStatus }));
 
         } catch (error: unknown) {
+            console.error('[handleStatusChange] CATCH LỖI:', error);
             // Bắt lỗi nếu quá trình lưu hoặc đổi trạng thái thất bại
             const message = typeof error === 'object' && error !== null && 'response' in error &&
                 typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
                 ? (error as { response: { data: { message: string } } }).response.data.message
                 : 'Lỗi khi xử lý yêu cầu. Vui lòng kiểm tra lại!';
             toast.error(message);
+        } finally {
+            setIsStatusChanging(false);
         }
     };
 
@@ -401,6 +428,8 @@ export function useCourseDetail(
         handleDeleteLesson,
         handleStatusChange,
         navigate,
+        isSaving,
+        isStatusChanging,
 
         // XUẤT CÁC HÀM NÀY RA ĐỂ GIAO DIỆN CÓ THỂ SỬ DỤNG
         updateObjective,

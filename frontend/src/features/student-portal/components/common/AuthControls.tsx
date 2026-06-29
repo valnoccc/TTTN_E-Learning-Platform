@@ -150,7 +150,7 @@ export default function AuthControls() {
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}
-          to="/student/my-courses"
+          to="/student/profile?tab=courses"
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
         >
           <BookOpen size={14} className="me-2 text-emerald-500" />

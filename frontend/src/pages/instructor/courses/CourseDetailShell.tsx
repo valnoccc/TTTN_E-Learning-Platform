@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
     AlertTriangle,
@@ -9,7 +9,9 @@ import {
     Layers3,
     Trash2,
     Bookmark,
+    Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import {
@@ -46,7 +48,16 @@ export default function InstructorCourseDetail({
         setIsDeleteModalOpen,
         handleStatusChange,
         navigate,
+        isSaving,
+        isStatusChanging,
     } = course as any;
+
+    const isAiChecking = lessons?.some((l: any) => l.aiStatus === 'PENDING');
+    const hasAiRejected = lessons?.some((l: any) => l.aiStatus === 'REJECTED');
+    const disablePublish = isSaving || isStatusChanging;
+    let publishBtnTitle = '';
+    if (isAiChecking) publishBtnTitle = 'Có video đang chờ AI kiểm duyệt';
+    else if (hasAiRejected) publishBtnTitle = 'Có video bị AI từ chối, vui lòng kiểm tra lại';
 
     return (
         <InstructorLayout>
@@ -94,19 +105,32 @@ export default function InstructorCourseDetail({
                                         {!isLocked ? (
                                             <button
                                                 onClick={() => void handleSave()}
-                                                className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100"
+                                                disabled={isSaving || isStatusChanging}
+                                                className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <Bookmark size={16} />
+                                                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Bookmark size={16} />}
                                                 {isNewCourse ? 'Tạo bản nháp' : 'Lưu thay đổi'}
                                             </button>
                                         ) : null}
 
                                         {!isLocked && !isNewCourse ? (
                                             <button
-                                                onClick={() => void handleStatusChange('PENDING')}
-                                                className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-5 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow"
+                                                onClick={() => {
+                                                    if (isAiChecking) {
+                                                        toast.error('Khóa học có video đang chờ AI duyệt. Không thể gửi yêu cầu!');
+                                                        return;
+                                                    }
+                                                    if (hasAiRejected) {
+                                                        toast.error('Khóa học có video bị AI từ chối. Vui lòng kiểm tra lại!');
+                                                        return;
+                                                    }
+                                                    void handleStatusChange('PENDING');
+                                                }}
+                                                disabled={disablePublish}
+                                                title={publishBtnTitle}
+                                                className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-5 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <BadgeInfo size={16} />
+                                                {isStatusChanging ? <Loader2 className="animate-spin" size={16} /> : <BadgeInfo size={16} />}
                                                 Gửi yêu cầu duyệt
                                             </button>
                                         ) : null}

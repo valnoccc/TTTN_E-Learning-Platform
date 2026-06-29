@@ -100,10 +100,32 @@ export default function Checkout() {
     }
   }, [successData]);
 
-  // Handle auto-apply coupon from Cart
+  const autoApplyBestCoupon = async (courseIds: number[]) => {
+    try {
+      const availableCoupons = await getAvailableCoupons(courseIds);
+      if (availableCoupons && availableCoupons.length > 0) {
+        availableCoupons.sort((a, b) => {
+          if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
+          return (b.calculatedDiscount || 0) - (a.calculatedDiscount || 0);
+        });
+        const bestCoupon = availableCoupons[0];
+        if (bestCoupon && bestCoupon.isAvailable && (bestCoupon.calculatedDiscount || 0) > 0) {
+          handleApplyCoupon(bestCoupon.code);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to auto-apply best coupon', err);
+    }
+  };
+
   useEffect(() => {
-    if (courses.length > 0 && location.state?.appliedCouponCode && !couponCode) {
-      handleApplyCoupon(location.state.appliedCouponCode);
+    // Handle auto-apply coupon from Cart or automatically find the best one
+    if (courses.length > 0 && !couponCode) {
+      if (location.state?.appliedCouponCode) {
+        handleApplyCoupon(location.state.appliedCouponCode);
+      } else {
+        autoApplyBestCoupon(courses.map(c => c.id));
+      }
     }
   }, [courses, location.state?.appliedCouponCode, couponCode]);
 

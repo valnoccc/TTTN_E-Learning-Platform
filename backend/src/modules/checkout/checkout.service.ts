@@ -295,6 +295,7 @@ export class CheckoutService {
   // ─────────────────────────────────────────────────────────────────────────────
   async handleMomoIPN(body: any) {
     console.log('[MoMo IPN] Nhận được webhook:', JSON.stringify(body, null, 2));
+    console.log("[IPN] Nhận request từ MoMo:", body);
 
     const {
       partnerCode,
@@ -310,6 +311,9 @@ export class CheckoutService {
       responseTime,
       extraData,
       signature,
+      partnerName,
+      storeId,
+      storeName,
     } = body;
 
     // 1. Verify Signature - Tự tính lại để đối chiếu
@@ -320,7 +324,7 @@ export class CheckoutService {
       throw new Error('Thiếu cấu hình cổng thanh toán MoMo trong hệ thống');
     }
 
-    const rawSignature =
+    let rawSignature =
       `accessKey=${accessKey}` +
       `&amount=${amount}` +
       `&extraData=${extraData}` +
@@ -328,22 +332,32 @@ export class CheckoutService {
       `&orderId=${orderId}` +
       `&orderInfo=${orderInfo}` +
       `&orderType=${orderType}` +
-      `&partnerCode=${partnerCode}` +
+      `&partnerCode=${partnerCode}`;
+      
+    if (partnerName) rawSignature += `&partnerName=${partnerName}`;
+    
+    rawSignature += 
       `&payType=${payType}` +
       `&requestId=${requestId}` +
       `&responseTime=${responseTime}` +
-      `&resultCode=${resultCode}` +
-      `&transId=${transId}`;
+      `&resultCode=${resultCode}`;
+      
+    if (storeId) rawSignature += `&storeId=${storeId}`;
+    if (storeName) rawSignature += `&storeName=${storeName}`;
+    
+    rawSignature += `&transId=${transId}`;
 
     const expectedSignature = crypto
       .createHmac('sha256', secretKey)
       .update(rawSignature)
       .digest('hex');
 
+    const isValidSignature = signature === expectedSignature;
     console.log('>>> [SIGNATURE CHECK] Chữ ký nhận được:', signature);
     console.log('>>> [SIGNATURE CHECK] Chữ ký tự tính lại:', expectedSignature);
+    console.log("[IPN] Kết quả check signature:", isValidSignature);
 
-    if (signature !== expectedSignature) {
+    if (!isValidSignature) {
       console.error('[MoMo IPN] Chữ ký KHÔNG hợp lệ! Có thể là giả mạo.');
       throw new UnauthorizedException('Chữ ký MoMo không hợp lệ!');
     }
@@ -358,7 +372,8 @@ export class CheckoutService {
         '| message:',
         message,
       );
-      // Tìm và cập nhật trạng thái hoá đơn thành FAILED
+      // Tìm và cập nhật trạng thái hoá đơn thành FAILED hoặc CANCELLED
+      const failedStatus = resultCode === 1006 ? 'CANCELLED' : 'FAILED';
       try {
         const extraDecoded = JSON.parse(
           Buffer.from(extraData, 'base64').toString('utf8'),
@@ -366,19 +381,19 @@ export class CheckoutService {
         const { invoiceId } = extraDecoded;
         if (invoiceId) {
           await this.dataSource.query(
-            `UPDATE HoaDon SET TrangThaiThanhToan = 'FAILED' WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
-            [invoiceId],
+            `UPDATE HoaDon SET TrangThaiThanhToan = ? WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
+            [failedStatus, invoiceId],
           );
           console.log(
             '[MoMo IPN] Đã cập nhật HoaDon',
             invoiceId,
-            'thành FAILED',
+            `thành ${failedStatus}`,
           );
         }
       } catch (e) {
-        console.error('[MoMo IPN] Lỗi khi cập nhật FAILED:', e);
+        console.error(`[MoMo IPN] Lỗi khi cập nhật ${failedStatus}:`, e);
       }
-      return { message: 'IPN received - payment failed' };
+      return { message: `IPN received - payment ${failedStatus.toLowerCase()}` };
     }
 
     // 3. Decode extraData để lấy invoiceId, userId, courseIds
@@ -754,7 +769,8 @@ export class CheckoutService {
   // ─────────────────────────────────────────────────────────────────────────────
   // Lấy danh sách voucher khả dụng
   // ─────────────────────────────────────────────────────────────────────────────
-  async getAvailableCoupons(courseIdsStr: string) {
+  // ─────────────────────────────────────────────────────────────────────────────
+  async getAvailableCoupons(courseIdsStr: string, userId: number) {
     if (!courseIdsStr) return [];
 
     const courseIds = courseIdsStr
@@ -763,19 +779,108 @@ export class CheckoutService {
       .filter((id) => !isNaN(id));
     if (courseIds.length === 0) return [];
 
+    // Kiểm tra xem user đã từng mua khóa học nào thành công chưa
+    const paidInvoices = await this.dataSource.query(
+      `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+      [userId]
+    );
+    const hasPurchased = Number(paidInvoices[0]?.count || 0) > 0;
+
     const coupons = await this.dataSource.query(
-      `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu 
+      `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu, LoaiKM 
        FROM MaGiamGia 
        WHERE TrangThai = 'ACTIVE' 
-         AND LoaiMa = 'PUBLIC'
          AND (NgayBatDau IS NULL OR NgayBatDau <= NOW())
          AND (NgayKetThuc IS NULL OR NgayKetThuc >= NOW())
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
     );
 
+    // Xử lý Double Check Cross-Sell
+    const lastInvoices = await this.dataSource.query(
+      `SELECT MaHD FROM HoaDon 
+       WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND NgayLap >= NOW() - INTERVAL 30 MINUTE
+       ORDER BY NgayLap DESC LIMIT 1`,
+      [userId]
+    );
+    
+    let validCrossSellCourseIds: number[] = [];
+    if (lastInvoices.length > 0) {
+      const invoiceId = lastInvoices[0].MaHD;
+      const details = await this.dataSource.query(
+        `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ? LIMIT 1`,
+        [invoiceId]
+      );
+      if (details.length > 0) {
+        const oldCourseId = details[0].MaKH;
+        let excludeCondition = `k.MaKH != ?`;
+        let params: any[] = [oldCourseId];
+        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+        params.push(userId);
+        const recommendations = await this.dataSource.query(
+          `SELECT k.MaKH as maKH
+           FROM KhoaHoc k
+           WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
+           ORDER BY k.MaKH DESC LIMIT 4`,
+          params
+        );
+        validCrossSellCourseIds = recommendations.map((r: any) => Number(r.maKH));
+      }
+    }
+
+    // Lấy giá các khóa học trong giỏ để tính discountAmount chính xác
+    let coursePrices: any[] = [];
+    if (courseIds.length > 0) {
+      const placeholders = courseIds.map(() => '?').join(',');
+      coursePrices = await this.dataSource.query(
+        `SELECT MaKH, GiaBan FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        courseIds
+      );
+    }
+    
+    const priceMap = new Map<number, number>();
+    coursePrices.forEach(c => priceMap.set(Number(c.MaKH), Number(c.GiaBan)));
+    
+    let totalCartPrice = 0;
+    courseIds.forEach(id => totalCartPrice += (priceMap.get(id) || 0));
+
+    let totalCrossSellPrice = 0;
+    const validCartCourseIds = courseIds.filter(id => validCrossSellCourseIds.includes(Number(id)));
+    validCartCourseIds.forEach(id => totalCrossSellPrice += (priceMap.get(id) || 0));
+
     return coupons.map((coupon: any) => {
-      const isAvailable =
-        coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
+      let isAvailable = true;
+      let reason: string | undefined = undefined;
+      let applicablePrice = 0;
+
+      if (coupon.LoaiKM === 'CROSS_SELL') {
+        if (validCartCourseIds.length === 0) {
+          isAvailable = false;
+          reason = 'Mã ưu đãi đã hết hạn (quá 30 phút) hoặc không áp dụng cho khóa học trong giỏ';
+          applicablePrice = totalCartPrice; // Just fallback
+        } else {
+          isAvailable = true;
+          applicablePrice = totalCrossSellPrice;
+        }
+      } else {
+        isAvailable = coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
+        reason = isAvailable ? undefined : 'Mã không áp dụng cho khóa học trong giỏ hàng';
+        applicablePrice = coupon.MaKH === null ? totalCartPrice : (priceMap.get(Number(coupon.MaKH)) || 0);
+      }
+
+      if (isAvailable && coupon.LoaiKM === 'FIRST_TIME' && hasPurchased) {
+        isAvailable = false;
+        reason = 'Mã chỉ áp dụng cho lần đầu mua khóa học';
+      }
+
+      let calculatedDiscount = 0;
+      if (isAvailable) {
+        if (coupon.LoaiGiam === 'PERCENT') {
+          calculatedDiscount = applicablePrice * Number(coupon.GiaTriGiam) / 100;
+        } else {
+          calculatedDiscount = Math.min(Number(coupon.GiaTriGiam), applicablePrice);
+        }
+      }
+
       return {
         id: coupon.MaCoupon,
         code: coupon.MaCode,
@@ -788,11 +893,10 @@ export class CheckoutService {
         usageCount: coupon.SoLuongDaDung,
         description: coupon.GhiChu,
         isAvailable,
-        reason: isAvailable
-          ? undefined
-          : 'Mã không áp dụng cho khóa học trong giỏ hàng',
+        reason,
+        calculatedDiscount,
       };
-    });
+    }).filter(Boolean);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

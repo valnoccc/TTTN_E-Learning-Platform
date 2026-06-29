@@ -108,14 +108,15 @@ export interface AvailableCoupon {
   code: string;
   discountValue: number;
   discountType: 'PERCENT' | 'AMOUNT';
-  courseId: number;
+  courseId: number | null;
   startDate: string | null;
   endDate: string | null;
   usageLimit: number | null;
-  usageCount: number | null;
+  usageCount: number;
   description: string | null;
   isAvailable: boolean;
   reason?: string;
+  calculatedDiscount?: number;
 }
 
 export const getAvailableCoupons = async (courseIds: number[]): Promise<AvailableCoupon[]> => {

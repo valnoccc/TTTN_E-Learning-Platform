@@ -4,12 +4,12 @@ import { Styles } from '../styles/popularCourse';
 import axiosClient from '../../../../../api/axios';
 
 const formatPrice = (price: any) => {
-    return new Intl.NumberFormat('en-US', { 
+    return new Intl.NumberFormat('vi-VN', { 
         style: 'currency', 
-        currency: 'USD',
+        currency: 'VND',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0 
-    }).format(price || 0);
+    }).format(price || 0).replace('₫', 'đ');
 };
 
 const PopularCourse = () => {
@@ -50,11 +50,19 @@ const PopularCourse = () => {
                                     <div className="item-content">
                                         <p className="title"><Link to={courseUrl} className="line-clamp-2">{data.tenKhoaHoc}</Link></p>
                                         <ul className="list-unstyled list-inline rating">
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
-                                            <li className="list-inline-item"><i className="las la-star"></i></li>
+                                            {[...Array(5)].map((_, index) => {
+                                                const rating = Math.round(parseFloat(data.averageRating || data.rating || '0'));
+                                                return (
+                                                    <li className="list-inline-item" key={index}>
+                                                        <i className={index < rating ? "las la-star" : "lar la-star"}></i>
+                                                    </li>
+                                                );
+                                            })}
+                                            {parseFloat(data.averageRating || data.rating || '0') > 0 && (
+                                                <li className="list-inline-item ms-1 text-muted" style={{fontSize: '12px'}}>
+                                                    ({parseFloat(data.averageRating || data.rating || '0').toFixed(1)})
+                                                </li>
+                                            )}
                                         </ul>
                                         <p className="price" style={{ color: '#10b981', fontWeight: 'bold' }}>{formatPrice(data.giaBan)}</p>
                                     </div>

@@ -19,10 +19,12 @@ import type { PaymentRequest, MomoOrderData } from './checkout.service';
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
 
-  // ─── Lấy danh sách voucher khả dụng (Public) ───────────────────────────────
+  // ─── Lấy danh sách voucher khả dụng (Yêu cầu đăng nhập) ───────────────────────────────
   @Get('available-coupons')
-  async getAvailableCoupons(@Query('courseIds') courseIdsStr: string) {
-    return this.checkoutService.getAvailableCoupons(courseIdsStr);
+  @UseGuards(JwtAuthGuard)
+  async getAvailableCoupons(@Query('courseIds') courseIdsStr: string, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.getAvailableCoupons(courseIdsStr, userId);
   }
 
   // ─── Tạo thanh toán MoMo QR động (Cần đăng nhập) ──────────────────────────

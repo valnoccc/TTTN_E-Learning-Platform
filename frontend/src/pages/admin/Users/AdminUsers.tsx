@@ -379,9 +379,26 @@ export default function AdminUsers() {
                           onClick={() => setSelectedUser(user)}
                           className="flex w-full items-start gap-4 text-left"
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
+                          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
                             {user.avatar ? (
-                              <img src={user.avatar} alt={user.fullName || 'User'} className="h-full w-full object-cover" />
+                              <>
+                                <img
+                                  src={user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `/assets/images/${user.avatar}`}
+                                  alt={user.fullName || 'User'}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <span
+                                  className="hidden h-full w-full items-center justify-center text-sm font-bold text-slate-500"
+                                >
+                                  {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                              </>
                             ) : (
                               <span className="text-sm font-bold text-slate-500">
                                 {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
@@ -499,16 +516,29 @@ export default function AdminUsers() {
             <div className="space-y-5 p-6">
               <div className="rounded-[20px] border border-slate-100 bg-slate-50/80 p-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700 ring-4 ring-white shadow-sm">
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700 ring-4 ring-white shadow-sm">
                     {selectedUser.avatar ? (
-                      <img
-                        src={selectedUser.avatar}
-                        alt={selectedUser.fullName}
-                        className="h-full w-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={selectedUser.avatar.startsWith('http') || selectedUser.avatar.startsWith('data:') ? selectedUser.avatar : `/assets/images/${selectedUser.avatar}`}
+                          alt={selectedUser.fullName || 'User'}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                        <span
+                          className="hidden h-full w-full items-center justify-center text-lg font-black text-emerald-700"
+                        >
+                          {selectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </>
                     ) : (
                       <span className="text-lg font-black text-emerald-700">
-                        {selectedUser.fullName.charAt(0).toUpperCase()}
+                        {selectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     )}
                   </div>

@@ -27,6 +27,9 @@ export interface AdminModerationLesson {
     noiDung: string;
     videoURL: string | null;
     trangThai: string;
+    aiStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    aiLabels: string[];
+    aiRejectReason: string | null;
 }
 
 export interface AdminModerationChapter {

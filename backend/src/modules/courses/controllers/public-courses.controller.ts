@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Param,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -94,6 +95,57 @@ export class PublicCoursesController {
     return {
       message: 'Lấy danh sách khóa học thành công',
       data: courses,
+    };
+  }
+
+  @Get(':id/recommendations')
+  async getRecommendations(
+    @Param('id', ParseIntPipe) courseId: number,
+    @Query('userId') userId?: string
+  ) {
+    let excludeCondition = `k.MaKH != ?`;
+    let params: any[] = [courseId];
+
+    if (userId) {
+      const parsedUserId = parseInt(userId, 10);
+      if (!isNaN(parsedUserId)) {
+        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+        params.push(parsedUserId);
+      }
+    }
+
+    // Lấy tối đa 4 khóa học (Deterministic để phục vụ validate cross-sell coupon)
+    const recommendations = await this.dataSource.query(
+      `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
+              k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
+              (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
+       FROM KhoaHoc k
+       WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
+       ORDER BY k.MaKH DESC LIMIT 4`,
+      params
+    );
+
+    // Lấy voucher cross-sell
+    const vouchers = await this.dataSource.query(
+      `SELECT MaCode as code, GiaTriGiam as discount, LoaiGiam as discountType
+       FROM MaGiamGia 
+       WHERE LoaiKM = 'CROSS_SELL' AND TrangThai = 'ACTIVE' AND (NgayKetThuc IS NULL OR NgayKetThuc > NOW())
+       LIMIT 1`
+    );
+
+    const crossSellVoucher = vouchers.length > 0 ? {
+      code: vouchers[0].code,
+      discount: Number(vouchers[0].discount),
+      discountType: vouchers[0].discountType
+    } : null;
+
+    return {
+      recommendations: recommendations.map((r: any) => ({
+        ...r,
+        giaBan: Number(r.giaBan),
+        averageRating: r.averageRating ? Number(r.averageRating).toFixed(1) : '0.0'
+      })),
+      crossSellVoucher
     };
   }
 
@@ -234,4 +286,5 @@ export class PublicCoursesController {
       data,
     };
   }
+
 }

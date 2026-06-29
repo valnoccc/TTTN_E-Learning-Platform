@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 
 import InstructorSidebar from '../components/common/InstructorSidebar';
 import InstructorTopHeader from '../components/instructor/InstructorTopHeader';
+import { AiQuotaWarningBanner } from '../components/AiQuotaWarningBanner';
 
 interface InstructorLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ export default function InstructorLayout({ children }: InstructorLayoutProps) {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <InstructorTopHeader />
+        <AiQuotaWarningBanner />
 
         <main className="min-h-0 flex-1 overflow-y-auto p-6 lg:p-8">
           <div className="mx-auto w-full max-w-[1320px]">{children}</div>

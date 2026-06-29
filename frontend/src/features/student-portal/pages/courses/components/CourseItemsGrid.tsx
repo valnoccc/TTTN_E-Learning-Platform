@@ -11,12 +11,12 @@ import toast from 'react-hot-toast';
 import axiosClient from '../../../../../api/axios';
 
 const formatPrice = (price: any) => {
-    return new Intl.NumberFormat('en-US', { 
+    return new Intl.NumberFormat('vi-VN', { 
         style: 'currency', 
-        currency: 'USD',
+        currency: 'VND',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0 
-    }).format(price || 0);
+    }).format(price || 0).replace('₫', 'đ');
 };
 
 const CourseItemGrid = ({ filters }: { filters?: any }) => {
@@ -191,9 +191,9 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                             tieuDe: isWishlisted
                                                                 ? `Đã gỡ khỏi yêu thích`
                                                                 : `Đã thêm vào yêu thích`,
-                                                            noiDung: isWishlisted
+                                                            noiDung: (isWishlisted
                                                                 ? `Bạn đã gỡ khóa học "${data.tenKhoaHoc}" khỏi danh sách yêu thích.`
-                                                                : `Bạn đã thêm khóa học "${data.tenKhoaHoc}" vào danh sách yêu thích. ❤️`,
+                                                                : `Bạn đã thêm khóa học "${data.tenKhoaHoc}" vào danh sách yêu thích. ❤️`) + `|||/course-details/${data.maKH}`,
                                                         }).then(() => {
                                                             // Refresh thông báo tức thì
                                                             window.dispatchEvent(new Event('notification-refresh'));
@@ -202,7 +202,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                     if (isWishlisted) {
                                                         toast.success('Đã gỡ khỏi danh sách yêu thích!');
                                                     } else {
-                                                        toast.success('Đã thêm vào danh sách yêu thích!');
+                                                        toast.success('Đã thêm vào yêu thích!');
                                                     }
                                                 }}
                                                 title="Thêm vào yêu thích"

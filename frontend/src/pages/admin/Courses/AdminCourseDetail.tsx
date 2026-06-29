@@ -13,6 +13,10 @@ import {
     Star,
     Target,
     XCircle,
+    Tag,
+    ShieldAlert,
+    ShieldCheck,
+    ShieldEllipsis
 } from 'lucide-react';
 
 import AdminLayout from '../../../layouts/AdminLayout';
@@ -365,6 +369,46 @@ export default function AdminCourseDetail() {
                                                     Bài học này chưa có video bài giảng.
                                                 </div>
                                             )}
+
+                                            {selectedLesson.aiStatus ? (
+                                                <div className="mt-5 rounded-[20px] border border-blue-100 bg-blue-50/50 p-5">
+                                                    <h5 className="flex items-center gap-2 text-[14px] font-bold uppercase tracking-wide text-blue-900">
+                                                        {selectedLesson.aiStatus === 'APPROVED' ? <ShieldCheck size={18} className="text-emerald-600" /> :
+                                                         selectedLesson.aiStatus === 'REJECTED' ? <ShieldAlert size={18} className="text-rose-600" /> :
+                                                         <ShieldEllipsis size={18} className="text-amber-500" />}
+                                                        Kết quả kiểm duyệt AI
+                                                    </h5>
+                                                    <div className="mt-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-bold ${
+                                                                selectedLesson.aiStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                                                                selectedLesson.aiStatus === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
+                                                                'bg-amber-100 text-amber-800'
+                                                            }`}>
+                                                                Trạng thái: {selectedLesson.aiStatus === 'APPROVED' ? 'An Toàn' : selectedLesson.aiStatus === 'REJECTED' ? 'Từ Chối' : 'Đang Xử Lý'}
+                                                            </span>
+                                                        </div>
+                                                        {selectedLesson.aiRejectReason ? (
+                                                            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] leading-6 text-rose-700 shadow-sm">
+                                                                <span className="font-bold">Lý do từ chối:</span> {selectedLesson.aiRejectReason}
+                                                            </div>
+                                                        ) : null}
+                                                        {selectedLesson.aiLabels && selectedLesson.aiLabels.length > 0 ? (
+                                                            <div className="mt-4">
+                                                                <p className="mb-2 text-[12px] font-semibold text-slate-500 uppercase tracking-wide">Nhãn nhận diện (Tags)</p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {selectedLesson.aiLabels.map((label, idx) => (
+                                                                        <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 shadow-sm">
+                                                                            <Tag size={12} className="text-slate-400" />
+                                                                            {label}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            ) : null}
 
                                             <div className="mt-5 min-h-[170px] flex-1 rounded-[20px] border border-slate-100 bg-white p-5">
                                                 <h5 className="text-[13px] font-bold uppercase tracking-wide text-slate-400">
