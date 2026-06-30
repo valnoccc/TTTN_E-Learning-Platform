@@ -172,6 +172,8 @@ export default function AdminCoupons() {
         setTogglingId(coupon.maCoupon);
         try {
             await toggleStatus(coupon);
+        } catch (err: any) {
+            alert(err?.response?.data?.message ?? 'Lỗi cập nhật trạng thái');
         } finally {
             setTogglingId(null);
         }

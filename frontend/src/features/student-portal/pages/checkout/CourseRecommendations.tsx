@@ -41,22 +41,26 @@ export default function CourseRecommendations({ courseId, userId }: { courseId: 
           setData(response);
           if (response.crossSellVoucher) {
             localStorage.setItem('edumeo_cross_sell', JSON.stringify({
+              userId: userId,
               allowedCourseIds: response.recommendations.map((c: Course) => c.maKH),
               courses: response.recommendations,
               couponCode: response.crossSellVoucher.code,
               expiresAt: Date.now() + 30 * 60 * 1000
             }));
+            window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
           }
         } else if (response?.data?.recommendations) {
           // Fallback if it's wrapped
           setData(response.data);
           if (response.data.crossSellVoucher) {
             localStorage.setItem('edumeo_cross_sell', JSON.stringify({
+              userId: userId,
               allowedCourseIds: response.data.recommendations.map((c: Course) => c.maKH),
               courses: response.data.recommendations,
               couponCode: response.data.crossSellVoucher.code,
               expiresAt: Date.now() + 30 * 60 * 1000
             }));
+            window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
           }
         }
       } catch (error) {

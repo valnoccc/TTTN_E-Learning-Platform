@@ -120,14 +120,14 @@ export class PublicCoursesController {
     );
     const maDM = courseInfo[0]?.MaDM || 0;
 
-    // Lấy tối đa 4 khóa học, ưu tiên cùng danh mục trước, sau đó mới đến mới nhất
+    // Lấy tối đa 4 khóa học, ưu tiên cùng danh mục trước, sau đó sắp xếp ngẫu nhiên để tránh lặp lại gợi ý cũ
     const recommendations = await this.dataSource.query(
       `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
               k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
               (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
        FROM KhoaHoc k
        WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-       ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
+       ORDER BY (k.MaDM = ?) DESC, RAND() LIMIT 4`,
       [...params, maDM]
     );
 

@@ -29,25 +29,54 @@ export const NotificationDropdown = () => {
   const navigate = useNavigate();
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
 
-  useEffect(() => {
+  const fetchCrossSellData = () => {
     try {
       const crossSellData = localStorage.getItem('edumeo_cross_sell');
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const currentUserId = currentUser ? (currentUser.id || currentUser.maND) : null;
+
       if (crossSellData) {
         const parsed = JSON.parse(crossSellData);
+        if (parsed.expiresAt && Date.now() >= parsed.expiresAt) {
+          localStorage.removeItem('edumeo_cross_sell');
+          setRecommendedCourses([]);
+          return;
+        }
+
+        if (parsed.userId && parsed.userId !== currentUserId) {
+          setRecommendedCourses([]);
+          return;
+        }
+
         if (parsed.expiresAt && Date.now() < parsed.expiresAt && parsed.courses && Array.isArray(parsed.courses)) {
           setRecommendedCourses(parsed.courses);
-        } else if (parsed.expiresAt && Date.now() >= parsed.expiresAt) {
-          localStorage.removeItem('edumeo_cross_sell');
         }
+      } else {
+        setRecommendedCourses([]);
       }
     } catch (e) {
       console.error('Failed to parse cross-sell data from localStorage', e);
     }
+  };
+
+  useEffect(() => {
+    fetchCrossSellData();
+
+    window.addEventListener('edumeo_cross_sell_updated', fetchCrossSellData);
+    window.addEventListener('storage', fetchCrossSellData);
+    window.addEventListener('auth-change', fetchCrossSellData);
+
+    return () => {
+      window.removeEventListener('edumeo_cross_sell_updated', fetchCrossSellData);
+      window.removeEventListener('storage', fetchCrossSellData);
+      window.removeEventListener('auth-change', fetchCrossSellData);
+    };
   }, [notifications]); // Re-check occasionally or when notifications change
 
   const totalItems = notifications.length + recommendedCourses.length;
-  // Do not add recommendations to the unread badge count so it doesn't stay permanently high
-  const displayUnreadCount = unreadCount;
+  // Bao gồm khóa học gợi ý vào số lượng chưa đọc trên badge để user nhận ra
+  const displayUnreadCount = unreadCount + recommendedCourses.length;
 
   return (
     <Dropdown align="end">

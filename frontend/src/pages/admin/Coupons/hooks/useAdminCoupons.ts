@@ -104,7 +104,7 @@ export function useAdminCoupons() {
     }, [fetchCoupons, filter]);
 
     const updateCoupon = useCallback(async (id: number, payload: Partial<CreateAdminCouponPayload>) => {
-        const response: any = await axiosClient.patch(`/admin/coupons/${id}`, payload);
+        const response: any = await axiosClient.patch(`/admin/coupons/${id}/status`, payload);
         const updated = response?.data ?? response;
         await fetchCoupons(filter);
         return updated;
