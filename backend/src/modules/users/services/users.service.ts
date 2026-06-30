@@ -96,7 +96,14 @@ export class UsersService {
         MaHD: p.id,
         date: d.toISOString().split('T')[0],
         amount: Number(p.amount),
-        status: p.status === 'PAID' ? 'Success' : (p.status === 'CANCELED' ? 'Canceled' : (p.status === 'FAILED' ? 'Failed' : 'Pending')),
+        status:
+          p.status === 'PAID'
+            ? 'Success'
+            : p.status === 'CANCELED'
+              ? 'Canceled'
+              : p.status === 'FAILED'
+                ? 'Failed'
+                : 'Pending',
       };
     });
   }

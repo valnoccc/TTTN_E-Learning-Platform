@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -133,7 +137,9 @@ export class AuthService {
       }
 
       const info = await transporter.sendMail({
-        from: process.env.SMTP_USER ? `"EDUMEO Support" <${process.env.SMTP_USER}>` : '"Hỗ trợ E-Learning" <support@elearning.com>',
+        from: process.env.SMTP_USER
+          ? `"EDUMEO Support" <${process.env.SMTP_USER}>`
+          : '"Hỗ trợ E-Learning" <support@elearning.com>',
         to: user.email,
         subject: 'Yêu cầu đặt lại mật khẩu - EDUMEO',
         text: message,
@@ -144,10 +150,15 @@ export class AuthService {
         console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
       }
 
-      return { message: 'Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra email của bạn!' };
+      return {
+        message:
+          'Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra email của bạn!',
+      };
     } catch (err) {
       console.error(err);
-      throw new BadRequestException('Không thể gửi email lúc này. Vui lòng thử lại sau.');
+      throw new BadRequestException(
+        'Không thể gửi email lúc này. Vui lòng thử lại sau.',
+      );
     }
   }
 
@@ -158,7 +169,9 @@ export class AuthService {
     }
 
     if (!user.resetPasswordToken || !user.resetPasswordExpires) {
-      throw new BadRequestException('Mã xác nhận không hợp lệ hoặc đã hết hạn!');
+      throw new BadRequestException(
+        'Mã xác nhận không hợp lệ hoặc đã hết hạn!',
+      );
     }
 
     if (new Date() > user.resetPasswordExpires) {

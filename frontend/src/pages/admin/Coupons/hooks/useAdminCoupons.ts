@@ -4,6 +4,22 @@ import axiosClient from '../../../../api/axios';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type LoaiKM = 'FIRST_TIME' | 'CROSS_SELL' | 'HOLIDAY' | 'STANDARD';
+export type AdminCouponScopeType = 'ALL' | 'COURSE' | 'CATEGORY' | 'INSTRUCTOR';
+export type AdminCouponRuleType =
+    | 'NEW_USER_24H'
+    | 'FIRST_PURCHASE'
+    | 'COMBO_ONLY'
+    | 'MIN_ORDER_VALUE'
+    | 'MIN_COURSE_COUNT'
+    | 'ACCOUNT_AGE_HOURS'
+    | 'REPEAT_PURCHASE'
+    | 'NEW_USER_ONLY';
+
+export interface AdminCouponRuleInput {
+    loaiDieuKien: AdminCouponRuleType;
+    giaTriDieuKien?: number | null;
+    moTa?: string | null;
+}
 
 export interface AdminCouponItem {
     maCoupon: number;
@@ -42,6 +58,9 @@ export interface CreateAdminCouponPayload {
     maKH?: number | null;
     soLuongGioiHan?: number | null;
     ghiChu?: string | null;
+    scopeType?: AdminCouponScopeType;
+    scopeTargetIds?: number[] | null;
+    rules?: AdminCouponRuleInput[] | null;
 }
 
 export interface QueryCouponsFilter {
@@ -81,7 +100,14 @@ export function useAdminCoupons() {
             );
             const data = response?.data ?? response;
             setCoupons(data?.items ?? []);
-            setSummary(data?.summary ?? { total: 0, activeCount: 0, crossSellActive: 0, firstTimeActive: 0, totalUsed: 0 });
+            const backendSummary = data?.summary ?? {};
+            setSummary({
+                total: Number(backendSummary.total ?? backendSummary.totalCouponCount ?? 0),
+                activeCount: Number(backendSummary.activeCount ?? 0),
+                crossSellActive: Number(backendSummary.crossSellActive ?? 0),
+                firstTimeActive: Number(backendSummary.firstTimeActive ?? 0),
+                totalUsed: Number(backendSummary.totalUsed ?? backendSummary.totalUsageCount ?? 0),
+            });
         } catch (err: any) {
             if (err?.name !== 'CanceledError' && err?.name !== 'AbortError') {
                 setError(err?.response?.data?.message ?? 'Lỗi tải danh sách mã khuyến mãi');

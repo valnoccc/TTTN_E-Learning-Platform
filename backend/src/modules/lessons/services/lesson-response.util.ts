@@ -22,4 +22,3 @@ export function serializeLesson(lesson: Lesson) {
     durationSeconds: lesson.durationSeconds ?? 0,
   };
 }
-

@@ -4,7 +4,10 @@ export type AdminCouponRuleType =
   | 'FIRST_PURCHASE'
   | 'COMBO_ONLY'
   | 'MIN_ORDER_VALUE'
-  | 'MIN_COURSE_COUNT';
+  | 'MIN_COURSE_COUNT'
+  | 'ACCOUNT_AGE_HOURS'
+  | 'REPEAT_PURCHASE'
+  | 'NEW_USER_ONLY';
 export type AdminCouponCampaignType =
   | 'FIRST_TIME'
   | 'CROSS_SELL'

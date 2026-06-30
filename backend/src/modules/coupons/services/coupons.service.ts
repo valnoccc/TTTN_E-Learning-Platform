@@ -8,8 +8,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../../courses/entities/course.entity';
+import {
+  CreateAdminCouponDto,
+  type AdminCouponRuleInput,
+  type AdminCouponRuleType,
+  type AdminCouponScopeType,
+} from '../dto/create-admin-coupon.dto';
 import { CreateCouponDto } from '../dto/create-coupon.dto';
-import { CreateAdminCouponDto } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
 import { Coupon } from '../entities/coupon.entity';
@@ -29,12 +34,6 @@ type CouponRow = {
   ghiChu: string | null;
 };
 
-type CouponSummaryRow = {
-  totalCouponCount: number | string | null;
-  activeCount: number | string | null;
-  totalUsageCount: number | string | null;
-};
-
 type CouponValidationRow = {
   maCoupon: number | string;
   maCode: string;
@@ -52,8 +51,27 @@ type CouponValidationRow = {
   targetCourseIds?: number[];
 };
 
-type CouponUsageUpdateResult = {
-  affectedRows?: number;
+type AdminCouponScopeRow = {
+  maPV: number | string;
+  maCoupon: number | string;
+  loaiPhamVi: AdminCouponScopeType;
+  maDoiTuong: number | string | null;
+};
+
+type AdminCouponRuleRow = {
+  maDK: number | string;
+  maCoupon: number | string;
+  loaiDieuKien: AdminCouponRuleType;
+  giaTriDieuKien: number | string | null;
+  moTa: string | null;
+};
+
+type CouponCourseRow = {
+  MaKH: number | string;
+  GiaBan: number | string;
+  TenKhoaHoc: string;
+  MaDM: number | string | null;
+  MaND_GiangVien: number | string | null;
 };
 
 @Injectable()
@@ -294,7 +312,34 @@ export class CouponsService {
     const coupon = this.normalizeCouponValidationRow(rows[0]);
     this.ensureCouponIsUsable(coupon);
 
-    if (coupon.maKH !== null && !courseIds.includes(coupon.maKH)) {
+    const scopeRows = await this.loadAdminCouponScopeRows(coupon.maCoupon);
+    const ruleRows = await this.loadAdminCouponRuleRows(coupon.maCoupon);
+    const effectiveScopeRows =
+      scopeRows.length > 0
+        ? scopeRows
+        : coupon.maKH !== null
+          ? [{ loaiPhamVi: 'COURSE' as const, maDoiTuong: coupon.maKH }]
+          : [{ loaiPhamVi: 'ALL' as const, maDoiTuong: null }];
+
+    let targetCourseIds: number[] = [];
+    let courseRows: CouponCourseRow[] = [];
+
+    if (
+      effectiveScopeRows.some(
+        (row) =>
+          row.loaiPhamVi === 'CATEGORY' || row.loaiPhamVi === 'INSTRUCTOR',
+      )
+    ) {
+      courseRows = await this.loadCouponCourses(courseIds);
+    }
+
+    targetCourseIds = this.resolveCouponTargetCourseIds(
+      effectiveScopeRows,
+      courseIds,
+      courseRows,
+    );
+
+    if (targetCourseIds.length === 0) {
       throw new BadRequestException(
         'Mã giảm giá không áp dụng cho khóa học trong giỏ hàng',
       );
@@ -303,78 +348,91 @@ export class CouponsService {
     if (coupon.loaiKM === 'FIRST_TIME' && userId) {
       const paidInvoices = await this.dataSource.query(
         `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
-        [userId]
+        [userId],
       );
       if (Number(paidInvoices[0]?.count || 0) > 0) {
-        throw new BadRequestException('Mã giảm giá này chỉ dành cho khách hàng mua khóa học lần đầu tiên.');
+        throw new BadRequestException(
+          'Mã giảm giá này chỉ dành cho khách hàng mua khóa học lần đầu tiên.',
+        );
       }
     }
 
-    let targetCourseIds = coupon.maKH !== null ? [coupon.maKH] : courseIds;
-
-    let applicablePrice = coupon.giaBan;
-    if (coupon.maKH === null) {
-      // Global coupon applies to the total price of the cart
-      if (coupon.loaiKM === 'CROSS_SELL' && userId) {
-        // Double check cross-sell
-        const lastInvoices = await this.dataSource.query(
-          `SELECT MaHD FROM HoaDon 
+    let applicablePrice = 0;
+    if (coupon.loaiKM === 'CROSS_SELL' && userId) {
+      const lastInvoices = await this.dataSource.query(
+        `SELECT MaHD FROM HoaDon
            WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
            ORDER BY NgayThanhToan DESC LIMIT 1`,
-          [userId]
+        [userId],
+      );
+
+      let validCrossSellCourseIds: number[] = [];
+
+      if (lastInvoices.length > 0) {
+        const invoiceId = lastInvoices[0].MaHD;
+        const details = await this.dataSource.query(
+          `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
+          [invoiceId],
         );
-        
-        let validCrossSellCourseIds: number[] = [];
-        
-        if (lastInvoices.length > 0) {
-          const invoiceId = lastInvoices[0].MaHD;
-          const details = await this.dataSource.query(
-            `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
-            [invoiceId]
-          );
-          if (details.length > 0) {
-            const oldCourseId = details[0].MaKH;
-            const maDM = details[0].MaDM || 0;
-            let excludeCondition = `k.MaKH != ?`;
-            let params: any[] = [oldCourseId];
-            
-            excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-            params.push(userId);
-            
-            const recommendations = await this.dataSource.query(
-              `SELECT k.MaKH as maKH
+        if (details.length > 0) {
+          const oldCourseId = details[0].MaKH;
+          const maDM = details[0].MaDM || 0;
+          let excludeCondition = `k.MaKH != ?`;
+          const params: any[] = [oldCourseId];
+
+          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+          params.push(userId);
+
+          const recommendations = await this.dataSource.query(
+            `SELECT k.MaKH as maKH
                FROM KhoaHoc k
-               WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
+               WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED'
                ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
-              [...params, maDM]
-            );
-            validCrossSellCourseIds = recommendations.map((r: any) => Number(r.maKH));
-          }
+            [...params, maDM],
+          );
+          validCrossSellCourseIds = recommendations.map((r: any) =>
+            Number(r.maKH),
+          );
         }
-        
-        const validCartCourseIds = courseIds.filter(id => validCrossSellCourseIds.includes(Number(id)));
-        if (validCartCourseIds.length === 0) {
-          throw new BadRequestException('Mã giảm giá CROSS_SELL không áp dụng cho bất kỳ khóa học nào trong giỏ hàng (Khóa học không nằm trong danh sách gợi ý hợp lệ hoặc ưu đãi đã hết hạn).');
-        }
-        
-        targetCourseIds = validCartCourseIds;
-        
-        const placeholders = validCartCourseIds.map(() => '?').join(',');
-        const courses = await this.dataSource.query(
-          `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-          validCartCourseIds,
-        );
-        applicablePrice = courses[0]?.TotalPrice ? Number(courses[0].TotalPrice) : 0;
-      } else {
-        const placeholders = courseIds.map(() => '?').join(',');
-        const courses = await this.dataSource.query(
-          `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-          courseIds,
-        );
-        applicablePrice = courses[0]?.TotalPrice
-          ? Number(courses[0].TotalPrice)
-          : 0;
       }
+
+      const validCartCourseIds = targetCourseIds.filter((id) =>
+        validCrossSellCourseIds.includes(Number(id)),
+      );
+      if (validCartCourseIds.length === 0) {
+        throw new BadRequestException(
+          'Mã giảm giá CROSS_SELL không áp dụng cho bất kỳ khóa học nào trong giỏ hàng (Khóa học không nằm trong danh sách gợi ý hợp lệ hoặc ưu đãi đã hết hạn).',
+        );
+      }
+
+      targetCourseIds = validCartCourseIds;
+      applicablePrice = await this.getCourseSubtotal(validCartCourseIds);
+    } else {
+      applicablePrice = await this.getCourseSubtotal(targetCourseIds);
+    }
+
+    const requiresUserContext = ruleRows.some((rule) =>
+      [
+        'FIRST_PURCHASE',
+        'REPEAT_PURCHASE',
+        'NEW_USER_24H',
+        'ACCOUNT_AGE_HOURS',
+        'NEW_USER_ONLY',
+      ].includes(rule.loaiDieuKien),
+    );
+    const userContext =
+      requiresUserContext && userId
+        ? await this.getUserCouponContext(userId)
+        : null;
+
+    for (const rule of ruleRows) {
+      this.ensureCouponRuleSatisfied(rule, {
+        userId,
+        paidInvoiceCount: userContext?.paidInvoiceCount,
+        ngayTao: userContext?.ngayTao,
+        eligibleSubtotal: applicablePrice,
+        eligibleCourseCount: targetCourseIds.length,
+      });
     }
 
     const discountAmount = this.calculateDiscountAmount(
@@ -387,16 +445,18 @@ export class CouponsService {
       valid: true,
       couponId: coupon.maCoupon,
       maCode: coupon.maCode,
-      matchedCourseId: coupon.maKH,
+      matchedCourseId: targetCourseIds[0] ?? coupon.maKH,
       matchedCourseName: coupon.tenKhoaHoc,
       discountType: coupon.loaiGiam,
       discountValue: coupon.giaTriGiam,
       discountAmount,
       targetCourseIds,
       message:
-        coupon.maKH === null
+        targetCourseIds.length === courseIds.length
           ? 'Áp dụng mã giảm giá toàn sàn thành công.'
-          : `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`,
+          : coupon.tenKhoaHoc
+            ? `Áp dụng mã giảm giá cho khóa học ${coupon.tenKhoaHoc} thành công.`
+            : 'Áp dụng mã giảm giá thành công.',
     };
   }
 
@@ -504,6 +564,267 @@ export class CouponsService {
     };
   }
 
+  private normalizeAdminCouponScopeRows(rows: AdminCouponScopeRow[]) {
+    return rows.map((row) => ({
+      maPV: Number(row.maPV),
+      maCoupon: Number(row.maCoupon),
+      loaiPhamVi: row.loaiPhamVi,
+      maDoiTuong: row.maDoiTuong === null ? null : Number(row.maDoiTuong),
+    }));
+  }
+
+  private normalizeAdminCouponRuleRows(rows: AdminCouponRuleRow[]) {
+    return rows.map((row) => ({
+      maDK: Number(row.maDK),
+      maCoupon: Number(row.maCoupon),
+      loaiDieuKien: row.loaiDieuKien,
+      giaTriDieuKien:
+        row.giaTriDieuKien === null ? null : Number(row.giaTriDieuKien),
+      moTa: row.moTa,
+    }));
+  }
+
+  private async loadAdminCouponScopeRows(couponId: number) {
+    const rows = await this.dataSource.query(
+      `SELECT
+          MaPV AS maPV,
+          MaCoupon AS maCoupon,
+          LoaiPhamVi AS loaiPhamVi,
+          MaDoiTuong AS maDoiTuong
+       FROM MaGiamGiaPhamVi
+       WHERE MaCoupon = ?
+       ORDER BY MaPV ASC`,
+      [couponId],
+    );
+
+    return this.normalizeAdminCouponScopeRows(rows ?? []);
+  }
+
+  private async loadAdminCouponRuleRows(couponId: number) {
+    const rows = await this.dataSource.query(
+      `SELECT
+          MaDK AS maDK,
+          MaCoupon AS maCoupon,
+          LoaiDieuKien AS loaiDieuKien,
+          GiaTriDieuKien AS giaTriDieuKien,
+          MoTa AS moTa
+       FROM MaGiamGiaDieuKien
+       WHERE MaCoupon = ?
+       ORDER BY MaDK ASC`,
+      [couponId],
+    );
+
+    return this.normalizeAdminCouponRuleRows(rows ?? []);
+  }
+
+  private async loadCouponCourses(courseIds: number[]) {
+    if (courseIds.length === 0) {
+      return [] as CouponCourseRow[];
+    }
+
+    const placeholders = courseIds.map(() => '?').join(',');
+    const rows = await this.dataSource.query(
+      `SELECT
+          MaKH,
+          GiaBan,
+          TenKhoaHoc,
+          MaDM,
+          MaND_GiangVien
+       FROM KhoaHoc
+       WHERE MaKH IN (${placeholders})`,
+      courseIds,
+    );
+
+    return rows as CouponCourseRow[];
+  }
+
+  private async getCourseSubtotal(courseIds: number[]) {
+    if (courseIds.length === 0) {
+      return 0;
+    }
+
+    const placeholders = courseIds.map(() => '?').join(',');
+    const rows = await this.dataSource.query(
+      `SELECT SUM(GiaBan) AS TotalPrice FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+      courseIds,
+    );
+    return rows[0]?.TotalPrice ? Number(rows[0].TotalPrice) : 0;
+  }
+
+  private async getUserCouponContext(userId: number) {
+    const [userRows, invoiceRows] = await Promise.all([
+      this.dataSource.query(
+        `SELECT NgayTao FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+        [userId],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+        [userId],
+      ),
+    ]);
+
+    return {
+      ngayTao: userRows[0]?.NgayTao ? new Date(userRows[0].NgayTao) : null,
+      paidInvoiceCount: Number(invoiceRows[0]?.count ?? 0),
+    };
+  }
+
+  private resolveCouponTargetCourseIds(
+    scopeRows: Array<{
+      loaiPhamVi: AdminCouponScopeType;
+      maDoiTuong: number | null;
+    }>,
+    courseIds: number[],
+    courseRows: CouponCourseRow[] = [],
+  ) {
+    if (scopeRows.some((row) => row.loaiPhamVi === 'ALL')) {
+      return [...new Set(courseIds)];
+    }
+
+    const targetSet = new Set<number>();
+    const courseIdSet = new Set<number>(courseIds);
+    const courseRowMap = new Map<number, CouponCourseRow>(
+      courseRows.map((row) => [Number(row.MaKH), row]),
+    );
+
+    for (const scopeRow of scopeRows) {
+      const targetId =
+        scopeRow.maDoiTuong === null ? null : Number(scopeRow.maDoiTuong);
+      if (!targetId) {
+        continue;
+      }
+
+      if (scopeRow.loaiPhamVi === 'COURSE') {
+        if (courseIdSet.has(targetId)) {
+          targetSet.add(targetId);
+        }
+        continue;
+      }
+
+      for (const courseId of courseIds) {
+        const course = courseRowMap.get(courseId);
+        if (!course) {
+          continue;
+        }
+
+        if (
+          scopeRow.loaiPhamVi === 'CATEGORY' &&
+          Number(course.MaDM ?? 0) === targetId
+        ) {
+          targetSet.add(courseId);
+        }
+
+        if (
+          scopeRow.loaiPhamVi === 'INSTRUCTOR' &&
+          Number(course.MaND_GiangVien ?? 0) === targetId
+        ) {
+          targetSet.add(courseId);
+        }
+      }
+    }
+
+    return [...targetSet];
+  }
+
+  private ensureCouponRuleSatisfied(
+    rule: {
+      loaiDieuKien: AdminCouponRuleType;
+      giaTriDieuKien: number | null;
+    },
+    context: {
+      userId?: number;
+      paidInvoiceCount?: number;
+      ngayTao?: Date | null;
+      eligibleSubtotal: number;
+      eligibleCourseCount: number;
+    },
+  ) {
+    const requiresUserContext = [
+      'FIRST_PURCHASE',
+      'REPEAT_PURCHASE',
+      'NEW_USER_24H',
+      'ACCOUNT_AGE_HOURS',
+      'NEW_USER_ONLY',
+    ].includes(rule.loaiDieuKien);
+
+    if (requiresUserContext && !context.userId) {
+      throw new BadRequestException(
+        'Mã giảm giá này cần tài khoản đăng nhập để kiểm tra điều kiện',
+      );
+    }
+
+    switch (rule.loaiDieuKien) {
+      case 'FIRST_PURCHASE':
+      case 'NEW_USER_ONLY':
+        if ((context.paidInvoiceCount ?? 0) > 0) {
+          throw new BadRequestException(
+            'Mã giảm giá này chỉ dành cho khách hàng mua lần đầu',
+          );
+        }
+        break;
+      case 'REPEAT_PURCHASE':
+        if ((context.paidInvoiceCount ?? 0) === 0) {
+          throw new BadRequestException(
+            'Mã giảm giá này chỉ dành cho khách hàng đã mua trước đó',
+          );
+        }
+        break;
+      case 'NEW_USER_24H':
+        if (context.ngayTao) {
+          const ageHours =
+            (Date.now() - context.ngayTao.getTime()) / (1000 * 60 * 60);
+          if (ageHours > 24) {
+            throw new BadRequestException(
+              'Mã giảm giá này chỉ dành cho tài khoản mới trong 24 giờ đầu',
+            );
+          }
+        }
+        break;
+      case 'ACCOUNT_AGE_HOURS': {
+        const maxAge = Number(rule.giaTriDieuKien ?? 24);
+        if (context.ngayTao) {
+          const ageHours =
+            (Date.now() - context.ngayTao.getTime()) / (1000 * 60 * 60);
+          if (ageHours > maxAge) {
+            throw new BadRequestException(
+              'Tài khoản không thỏa điều kiện thời gian tạo',
+            );
+          }
+        }
+        break;
+      }
+      case 'COMBO_ONLY': {
+        const minCombo = Number(rule.giaTriDieuKien ?? 2);
+        if (context.eligibleCourseCount < minCombo) {
+          throw new BadRequestException(
+            'Mã giảm giá này chỉ áp dụng khi mua combo đủ số lượng khóa học yêu cầu',
+          );
+        }
+        break;
+      }
+      case 'MIN_ORDER_VALUE': {
+        const minOrderValue = Number(rule.giaTriDieuKien ?? 0);
+        if (context.eligibleSubtotal < minOrderValue) {
+          throw new BadRequestException(
+            'Giá trị đơn hàng chưa đạt mức tối thiểu để áp dụng mã giảm giá',
+          );
+        }
+        break;
+      }
+      case 'MIN_COURSE_COUNT': {
+        const minCourseCount = Number(rule.giaTriDieuKien ?? 1);
+        if (context.eligibleCourseCount < minCourseCount) {
+          throw new BadRequestException(
+            'Số lượng khóa học trong giỏ chưa đạt mức tối thiểu để áp dụng mã giảm giá',
+          );
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   async recordCouponRedemption(
     payload: {
       couponId: number;
@@ -520,6 +841,23 @@ export class CouponsService {
        SET SoLuongDaDung = SoLuongDaDung + 1
        WHERE MaCoupon = ?`,
       [payload.couponId],
+    );
+
+    await runner.query(
+      `INSERT INTO LichSuSuDungMaGiamGia (
+          MaCoupon,
+          MaND,
+          MaHD,
+          GiaTriDonHang,
+          SoTienGiam
+       ) VALUES (?, ?, ?, ?, ?)`,
+      [
+        payload.couponId,
+        payload.userId,
+        payload.invoiceId,
+        payload.orderValue,
+        payload.discountAmount,
+      ],
     );
   }
 
@@ -567,7 +905,7 @@ export class CouponsService {
           COUNT(*) AS totalCouponCount,
           SUM(CASE WHEN TrangThai = 'ACTIVE' THEN 1 ELSE 0 END) AS activeCount,
           COALESCE(SUM(SoLuongDaDung), 0) AS totalUsageCount
-       FROM MaGiamGia`
+       FROM MaGiamGia`,
     );
 
     const summary = summaryResult[0] ?? {
@@ -594,15 +932,104 @@ export class CouponsService {
     const loaiGiam = payload.loaiGiam;
     const giaTriGiam = Number(payload.giaTriGiam);
 
+    if (!['PERCENT', 'AMOUNT'].includes(loaiGiam)) {
+      throw new BadRequestException('Loại giảm giá không hợp lệ');
+    }
+
+    if (!Number.isFinite(giaTriGiam) || giaTriGiam <= 0) {
+      throw new BadRequestException('Giá trị giảm phải lớn hơn 0');
+    }
+
+    if (loaiGiam === 'PERCENT' && (giaTriGiam < 1 || giaTriGiam > 99)) {
+      throw new BadRequestException('Mã phần trăm chỉ được phép từ 1 đến 99');
+    }
+
+    const soLuongGioiHan =
+      payload.soLuongGioiHan === null || payload.soLuongGioiHan === undefined
+        ? null
+        : Number(payload.soLuongGioiHan);
+
+    if (
+      soLuongGioiHan !== null &&
+      (!Number.isInteger(soLuongGioiHan) || soLuongGioiHan <= 0)
+    ) {
+      throw new BadRequestException(
+        'Giới hạn lượt dùng phải là số nguyên dương',
+      );
+    }
+
+    const normalizedScopeType: AdminCouponScopeType =
+      payload.scopeType ?? (payload.scopeTargetIds?.length ? 'COURSE' : 'ALL');
+
+    const scopeTargetIds = Array.isArray(payload.scopeTargetIds)
+      ? [
+          ...new Set(
+            payload.scopeTargetIds
+              .map((id) => Number(id))
+              .filter((id) => Number.isInteger(id) && id > 0),
+          ),
+        ]
+      : [];
+
+    if (normalizedScopeType !== 'ALL' && scopeTargetIds.length === 0) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất một đối tượng áp dụng cho phạm vi này',
+      );
+    }
+
+    const normalizedRules: Array<{
+      loaiDieuKien: AdminCouponRuleType;
+      giaTriDieuKien: number | null;
+      moTa: string | null;
+    }> = Array.isArray(payload.rules)
+      ? payload.rules.map((rule: AdminCouponRuleInput) => {
+          const ruleValue =
+            rule.giaTriDieuKien === null || rule.giaTriDieuKien === undefined
+              ? null
+              : Number(rule.giaTriDieuKien);
+          if (
+            ruleValue !== null &&
+            (!Number.isFinite(ruleValue) || ruleValue < 0)
+          ) {
+            throw new BadRequestException('Giá trị điều kiện không hợp lệ');
+          }
+          return {
+            loaiDieuKien: rule.loaiDieuKien,
+            giaTriDieuKien: ruleValue,
+            moTa: rule.moTa?.trim() || null,
+          };
+        })
+      : [];
+
+    const ruleTypesNeedValue: AdminCouponRuleType[] = [
+      'COMBO_ONLY',
+      'MIN_ORDER_VALUE',
+      'MIN_COURSE_COUNT',
+      'ACCOUNT_AGE_HOURS',
+    ];
+
+    for (const rule of normalizedRules) {
+      if (
+        ruleTypesNeedValue.includes(rule.loaiDieuKien) &&
+        rule.giaTriDieuKien === null
+      ) {
+        throw new BadRequestException('Điều kiện này cần nhập giá trị áp dụng');
+      }
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      const maKH =
+        normalizedScopeType === 'COURSE' && scopeTargetIds.length === 1
+          ? scopeTargetIds[0]
+          : null;
       const insertResult = await queryRunner.query(
         `INSERT INTO MaGiamGia (
           MaCode, GiaTriGiam, LoaiGiam, TrangThai, NgayBatDau, NgayKetThuc,
-          SoLuongGioiHan, SoLuongDaDung, MaND_GiangVien, GhiChu, MaKM, LoaiKM
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
+          MaKH, SoLuongGioiHan, SoLuongDaDung, MaND_GiangVien, GhiChu, MaKM, LoaiKM
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)`,
         [
           maCode,
           giaTriGiam,
@@ -610,14 +1037,39 @@ export class CouponsService {
           payload.trangThai || 'ACTIVE',
           payload.ngayBatDau ? new Date(payload.ngayBatDau) : null,
           payload.ngayKetThuc ? new Date(payload.ngayKetThuc) : null,
-          payload.soLuongGioiHan || null,
+          maKH,
+          soLuongGioiHan,
           payload.ghiChu || null,
           payload.maKM || null,
           payload.loaiKM || null,
         ],
       );
+      const couponId = insertResult.insertId;
+
+      const scopeRows =
+        normalizedScopeType === 'ALL'
+          ? [{ loaiPhamVi: 'ALL' as const, maDoiTuong: null }]
+          : scopeTargetIds.map((targetId) => ({
+              loaiPhamVi: normalizedScopeType,
+              maDoiTuong: targetId,
+            }));
+
+      for (const scopeRow of scopeRows) {
+        await queryRunner.query(
+          `INSERT INTO MaGiamGiaPhamVi (MaCoupon, LoaiPhamVi, MaDoiTuong) VALUES (?, ?, ?)`,
+          [couponId, scopeRow.loaiPhamVi, scopeRow.maDoiTuong],
+        );
+      }
+
+      for (const rule of normalizedRules) {
+        await queryRunner.query(
+          `INSERT INTO MaGiamGiaDieuKien (MaCoupon, LoaiDieuKien, GiaTriDieuKien, MoTa) VALUES (?, ?, ?, ?)`,
+          [couponId, rule.loaiDieuKien, rule.giaTriDieuKien, rule.moTa],
+        );
+      }
+
       await queryRunner.commitTransaction();
-      return { couponId: insertResult.insertId, maCode };
+      return { couponId, maCode };
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
       if (error.code === 'ER_DUP_ENTRY') {
@@ -629,10 +1081,14 @@ export class CouponsService {
     }
   }
 
-  async updateAdminCouponStatus(adminId: number, couponId: number, status: string) {
+  async updateAdminCouponStatus(
+    adminId: number,
+    couponId: number,
+    status: string,
+  ) {
     const result = await this.dataSource.query(
       `UPDATE MaGiamGia SET TrangThai = ? WHERE MaCoupon = ?`,
-      [status, couponId]
+      [status, couponId],
     );
     if (!result.affectedRows) {
       throw new BadRequestException('Mã giảm giá không tồn tại');

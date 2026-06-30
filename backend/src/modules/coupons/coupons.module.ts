@@ -10,7 +10,11 @@ import { CouponsService } from './services/coupons.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Coupon, KhoaHoc])],
-  controllers: [AdminCouponsController, InstructorCouponsController, PublicCouponsController],
+  controllers: [
+    AdminCouponsController,
+    InstructorCouponsController,
+    PublicCouponsController,
+  ],
   providers: [CouponsService],
   exports: [CouponsService],
 })

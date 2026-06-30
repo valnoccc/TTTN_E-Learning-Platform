@@ -79,9 +79,13 @@ export class CoursesService {
 
     // Xóa các bảng phụ thuộc trước để tránh lỗi Foreign Key Constraint
     // 1. Mục tiêu và Yêu cầu
-    await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [courseId]);
-    await this.dataSource.query(`DELETE FROM YeuCauKhoaHoc WHERE MaKH = ?`, [courseId]);
-    
+    await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
+    await this.dataSource.query(`DELETE FROM YeuCauKhoaHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
+
     // 2. Thảo luận (xóa con trước rồi xóa cha)
     await this.dataSource.query(
       `DELETE FROM ThaoLuanKhoaHoc WHERE MaThaoLuanCha IN (
@@ -89,8 +93,10 @@ export class CoursesService {
        )`,
       [courseId],
     );
-    await this.dataSource.query(`DELETE FROM ThaoLuanKhoaHoc WHERE MaKH = ?`, [courseId]);
-    
+    await this.dataSource.query(`DELETE FROM ThaoLuanKhoaHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
+
     // 3. Đánh giá
     await this.dataSource.query(
       `DELETE FROM DanhGiaKhoaHoc WHERE MaDanhGiaCha IN (
@@ -98,18 +104,26 @@ export class CoursesService {
        )`,
       [courseId],
     );
-    await this.dataSource.query(`DELETE FROM DanhGiaKhoaHoc WHERE MaKH = ?`, [courseId]);
-    
+    await this.dataSource.query(`DELETE FROM DanhGiaKhoaHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
+
     // 4. Đăng ký & Tiến độ
-    await this.dataSource.query(`DELETE FROM DangKyKhoaHoc WHERE MaKH = ?`, [courseId]);
+    await this.dataSource.query(`DELETE FROM DangKyKhoaHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
     await this.dataSource.query(
-      `DELETE FROM TienDoHocTap WHERE MaBH IN (SELECT MaBH FROM BaiHoc WHERE MaKH = ?)`, 
-      [courseId]
+      `DELETE FROM TienDoHocTap WHERE MaBH IN (SELECT MaBH FROM BaiHoc WHERE MaKH = ?)`,
+      [courseId],
     );
-    
+
     // 5. Bài học và Chương học
-    await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaKH = ?`, [courseId]);
-    await this.dataSource.query(`DELETE FROM ChuongHoc WHERE MaKH = ?`, [courseId]);
+    await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
+    await this.dataSource.query(`DELETE FROM ChuongHoc WHERE MaKH = ?`, [
+      courseId,
+    ]);
 
     // Cuối cùng mới xóa khóa học
     await this.khoaHocRepository.delete(courseId);

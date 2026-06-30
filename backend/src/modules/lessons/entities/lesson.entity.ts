@@ -56,7 +56,12 @@ export class Lesson {
   @Column({ name: 'AiLabels', type: 'json', nullable: true })
   aiLabels?: string[] | null;
 
-  @Column({ name: 'AiRejectReason', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'AiRejectReason',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   aiRejectReason?: string | null;
 
   @Column({ name: 'DurationSeconds', type: 'int', default: 0 })
