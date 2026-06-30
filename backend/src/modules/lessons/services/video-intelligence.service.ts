@@ -102,7 +102,9 @@ export class VideoIntelligenceService {
     isExceeded: boolean;
   }> {
     const monthYear = this.getCurrentMonthYear();
-    const tracker = await this.quotaRepository.findOne({ where: { monthYear } });
+    const tracker = await this.quotaRepository.findOne({
+      where: { monthYear },
+    });
     const usedSeconds = tracker?.usedSeconds ?? 0;
     const usedMinutes = Math.floor(usedSeconds / 60);
     const limitMinutes = QUOTA_LIMIT_SECONDS / 60;
@@ -123,7 +125,10 @@ export class VideoIntelligenceService {
    * Phân tích video bằng Google Video Intelligence API.
    * Chạy ngầm (fire-and-forget) để không block luồng chính.
    */
-  async analyzeVideoBackground(lessonId: number, videoUrl: string): Promise<void> {
+  async analyzeVideoBackground(
+    lessonId: number,
+    videoUrl: string,
+  ): Promise<void> {
     // Không dùng await khi gọi - fire and forget
     this.runAnalysis(lessonId, videoUrl).catch((err) => {
       this.logger.error(`[Lesson ${lessonId}] Phân tích video thất bại:`, err);
@@ -131,7 +136,9 @@ export class VideoIntelligenceService {
   }
 
   private async runAnalysis(lessonId: number, videoUrl: string): Promise<void> {
-    this.logger.log(`[Lesson ${lessonId}] Bắt đầu phân tích video: ${videoUrl}`);
+    this.logger.log(
+      `[Lesson ${lessonId}] Bắt đầu phân tích video: ${videoUrl}`,
+    );
 
     // Cập nhật trạng thái PENDING
     await this.lessonRepository.update(lessonId, {
@@ -151,7 +158,9 @@ export class VideoIntelligenceService {
         ],
       });
 
-      this.logger.log(`[Lesson ${lessonId}] Đã gửi video, đang chờ Google phân tích...`);
+      this.logger.log(
+        `[Lesson ${lessonId}] Đã gửi video, đang chờ Google phân tích...`,
+      );
       const [result] = await operation.promise();
 
       const annotation = result.annotationResults?.[0];
@@ -183,10 +192,13 @@ export class VideoIntelligenceService {
         // Từ chối video vi phạm
         await this.lessonRepository.update(lessonId, {
           aiStatus: AiStatus.REJECTED,
-          aiRejectReason: 'Video chứa nội dung khiêu dâm hoặc bạo lực mức LIKELY/VERY_LIKELY theo Google Video Intelligence AI.',
+          aiRejectReason:
+            'Video chứa nội dung khiêu dâm hoặc bạo lực mức LIKELY/VERY_LIKELY theo Google Video Intelligence AI.',
           durationSeconds,
         });
-        this.logger.warn(`[Lesson ${lessonId}] Video BỊ TỪ CHỐI - Nội dung nhạy cảm`);
+        this.logger.warn(
+          `[Lesson ${lessonId}] Video BỊ TỪ CHỐI - Nội dung nhạy cảm`,
+        );
       } else {
         // Lấy top 5 nhãn phân loại nội dung
         const shotLabels = annotation.shotLabelAnnotations ?? [];
@@ -194,7 +206,10 @@ export class VideoIntelligenceService {
         const allLabels = [...shotLabels, ...segmentLabels];
 
         const top5Labels: string[] = allLabels
-          .map((label: { entity?: { description?: string } }) => label.entity?.description ?? '')
+          .map(
+            (label: { entity?: { description?: string } }) =>
+              label.entity?.description ?? '',
+          )
           .filter(Boolean)
           .slice(0, 5);
 
@@ -204,7 +219,9 @@ export class VideoIntelligenceService {
           aiRejectReason: null,
           durationSeconds,
         });
-        this.logger.log(`[Lesson ${lessonId}] Video ĐƯỢC DUYỆT. Labels: ${top5Labels.join(', ')}`);
+        this.logger.log(
+          `[Lesson ${lessonId}] Video ĐƯỢC DUYỆT. Labels: ${top5Labels.join(', ')}`,
+        );
       }
     } catch (error: any) {
       this.logger.error(`[Lesson ${lessonId}] Lỗi phân tích:`, error.message);
@@ -217,7 +234,9 @@ export class VideoIntelligenceService {
       // BẮT BUỘC: Cộng dồn quota dù thành công hay thất bại
       if (durationSeconds > 0) {
         await this.incrementQuota(durationSeconds);
-        this.logger.log(`[Lesson ${lessonId}] Đã cộng ${durationSeconds}s vào quota tháng này`);
+        this.logger.log(
+          `[Lesson ${lessonId}] Đã cộng ${durationSeconds}s vào quota tháng này`,
+        );
       }
     }
   }

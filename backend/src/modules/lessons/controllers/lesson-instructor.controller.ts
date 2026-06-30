@@ -120,7 +120,8 @@ export class LessonsController {
       // Không dùng await để không block response
       if (videoUrl && videoDuration > 0) {
         // Kiểm tra quota trước khi phân tích
-        this.videoIntelligenceService.checkQuota(videoDuration)
+        this.videoIntelligenceService
+          .checkQuota(videoDuration)
           .then(() => {
             return this.videoIntelligenceService.analyzeVideoBackground(
               newLesson.maBH,
@@ -234,7 +235,7 @@ export class LessonsController {
       );
       updateData['videoURL'] = uploadResult.secure_url;
       updateData['thoiLuong'] = parseVideoDuration(uploadResult.duration);
-      
+
       // Đặt lại trạng thái AI về chờ xử lý khi video thay đổi
       updateData['aiStatus'] = AiStatus.PENDING;
       updateData['aiLabels'] = null;
@@ -245,7 +246,8 @@ export class LessonsController {
 
     // Kích hoạt AI nếu có tải video mới lên
     if (file && updateData['videoURL'] && updateData['thoiLuong'] > 0) {
-      this.videoIntelligenceService.checkQuota(updateData['thoiLuong'] as number)
+      this.videoIntelligenceService
+        .checkQuota(updateData['thoiLuong'] as number)
         .then(() => {
           return this.videoIntelligenceService.analyzeVideoBackground(
             lesson.maBH,

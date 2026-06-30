@@ -13,7 +13,15 @@ import { CouponsService } from './services/coupons.service';
 
 describe('CouponsService', () => {
   let service: CouponsService;
-  let dataSource: { query: jest.Mock };
+  let dataSource: { query: jest.Mock; createQueryRunner: jest.Mock };
+  let queryRunner: {
+    connect: jest.Mock;
+    startTransaction: jest.Mock;
+    commitTransaction: jest.Mock;
+    rollbackTransaction: jest.Mock;
+    release: jest.Mock;
+    query: jest.Mock;
+  };
   let couponRepository: {
     findOne: jest.Mock;
     create: jest.Mock;
@@ -24,8 +32,18 @@ describe('CouponsService', () => {
   };
 
   beforeEach(async () => {
+    queryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      query: jest.fn(),
+    };
+
     dataSource = {
       query: jest.fn(),
+      createQueryRunner: jest.fn(() => queryRunner),
     };
 
     couponRepository = {
@@ -50,6 +68,84 @@ describe('CouponsService', () => {
     }).compile();
 
     service = module.get<CouponsService>(CouponsService);
+  });
+
+  it('ensures admin coupon schema exists on module init', async () => {
+    await service.onModuleInit();
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaPhamVi`'),
+    );
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaDieuKien`'),
+    );
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`'),
+    );
+  });
+
+  it('stores admin coupon scope and conditions in dedicated tables', async () => {
+    queryRunner.query
+      .mockResolvedValueOnce({ insertId: 120009 })
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce({ affectedRows: 1 });
+
+    const result = await service.createAdminCoupon(1, {
+      maCode: '8MARCH-2026',
+      giaTriGiam: 20,
+      loaiGiam: 'PERCENT',
+      loaiKM: 'HOLIDAY',
+      scopeType: 'COURSE',
+      scopeTargetIds: [101, 102],
+      rules: [
+        {
+          loaiDieuKien: 'MIN_ORDER_VALUE',
+          giaTriDieuKien: 500000,
+          moTa: 'Chỉ áp dụng cho đơn từ 500k',
+        },
+        {
+          loaiDieuKien: 'FIRST_PURCHASE',
+        },
+      ],
+      ghiChu: 'Chiến dịch 8/3',
+    });
+
+    expect(dataSource.createQueryRunner).toHaveBeenCalledTimes(1);
+    expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+    expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.rollbackTransaction).not.toHaveBeenCalled();
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('INSERT INTO MaGiamGia'),
+      expect.arrayContaining(['8MARCH-2026', 20, 'PERCENT', 'ACTIVE']),
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('INSERT INTO MaGiamGiaPhamVi'),
+      expect.arrayContaining([120009, 'COURSE', 101]),
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('INSERT INTO MaGiamGiaPhamVi'),
+      expect.arrayContaining([120009, 'COURSE', 102]),
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('INSERT INTO MaGiamGiaDieuKien'),
+      expect.arrayContaining([120009, 'MIN_ORDER_VALUE', 500000]),
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      5,
+      expect.stringContaining('INSERT INTO MaGiamGiaDieuKien'),
+      expect.arrayContaining([120009, 'FIRST_PURCHASE', null]),
+    );
+    expect(result).toEqual({
+      couponId: 120009,
+      maCode: '8MARCH-2026',
+    });
   });
 
   it('rejects percent coupons above 99', async () => {
@@ -127,11 +223,7 @@ describe('CouponsService', () => {
     ]);
     dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([]);
-    dataSource.query.mockResolvedValueOnce([
-      { MaKH: 12, GiaBan: 200000, TenKhoaHoc: 'NestJS', MaDM: 1, MaND_GiangVien: 99 },
-      { MaKH: 10, GiaBan: 300000, TenKhoaHoc: 'React', MaDM: 1, MaND_GiangVien: 99 },
-      { MaKH: 99, GiaBan: 150000, TenKhoaHoc: 'Docker', MaDM: 1, MaND_GiangVien: 99 },
-    ]);
+    dataSource.query.mockResolvedValueOnce([{ TotalPrice: 300000 }]);
 
     const result = await service.validateCoupon({
       maCode: 'REACT10',
@@ -140,6 +232,48 @@ describe('CouponsService', () => {
 
     expect(result.matchedCourseId).toBe(10);
     expect(result.discountAmount).toBe(30000);
+  });
+
+  it('rejects admin coupons when the cart does not satisfy their conditions', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      {
+        maCoupon: 8,
+        maCode: 'SALE8',
+        giaTriGiam: 50,
+        loaiGiam: 'PERCENT',
+        trangThai: 'ACTIVE',
+        ngayBatDau: null,
+        ngayKetThuc: null,
+        maKH: null,
+        soLuongGioiHan: null,
+        soLuongDaDung: 0,
+        tenKhoaHoc: 'React',
+        giaBan: 300000,
+        loaiKM: 'STANDARD',
+      },
+    ]);
+    dataSource.query.mockResolvedValueOnce([
+      {
+        maPV: 1,
+        maCoupon: 8,
+        loaiPhamVi: 'COURSE',
+        maDoiTuong: 10,
+      },
+    ]);
+    dataSource.query.mockResolvedValueOnce([
+      {
+        maDK: 1,
+        maCoupon: 8,
+        loaiDieuKien: 'MIN_ORDER_VALUE',
+        giaTriDieuKien: 500000,
+        moTa: 'Đơn tối thiểu 500k',
+      },
+    ]);
+    dataSource.query.mockResolvedValueOnce([{ TotalPrice: 300000 }]);
+
+    await expect(
+      service.validateCoupon({ maCode: 'SALE8', courseIds: [10] }, 1),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('caps amount discount at the matching course subtotal', async () => {
@@ -161,9 +295,7 @@ describe('CouponsService', () => {
     ]);
     dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([]);
-    dataSource.query.mockResolvedValueOnce([
-      { MaKH: 5, GiaBan: 250000, TenKhoaHoc: 'NestJS', MaDM: 1, MaND_GiangVien: 99 },
-    ]);
+    dataSource.query.mockResolvedValueOnce([{ TotalPrice: 250000 }]);
 
     const result = await service.validateCoupon({
       maCode: 'FREE999',
@@ -188,5 +320,36 @@ describe('CouponsService', () => {
       success: true,
       couponId: 7,
     });
+  });
+
+  it('records coupon redemption history when coupon usage is logged', async () => {
+    const historyRunner = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({ affectedRows: 1 })
+        .mockResolvedValueOnce({ affectedRows: 1 }),
+    };
+
+    await service.recordCouponRedemption(
+      {
+        couponId: 7,
+        userId: 88,
+        invoiceId: 123,
+        discountAmount: 45000,
+        orderValue: 300000,
+      },
+      historyRunner,
+    );
+
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('UPDATE MaGiamGia'),
+      [7],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('INSERT INTO LichSuSuDungMaGiamGia'),
+      [7, 88, 123, 300000, 45000],
+    );
   });
 });

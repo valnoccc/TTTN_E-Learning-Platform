@@ -30,9 +30,7 @@ export class AdminCouponsController {
   }
 
   @Get()
-  async getAdminCoupons(
-    @Query() query: QueryCouponsDto,
-  ) {
+  async getAdminCoupons(@Query() query: QueryCouponsDto) {
     const data = await this.couponsService.getAdminCoupons(query);
 
     return {

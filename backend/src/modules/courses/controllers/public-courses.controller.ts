@@ -101,10 +101,10 @@ export class PublicCoursesController {
   @Get(':id/recommendations')
   async getRecommendations(
     @Param('id', ParseIntPipe) courseId: number,
-    @Query('userId') userId?: string
+    @Query('userId') userId?: string,
   ) {
     let excludeCondition = `k.MaKH != ?`;
-    let params: any[] = [courseId];
+    const params: any[] = [courseId];
 
     if (userId) {
       const parsedUserId = parseInt(userId, 10);
@@ -116,7 +116,7 @@ export class PublicCoursesController {
 
     const courseInfo = await this.dataSource.query(
       `SELECT MaDM FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
-      [courseId]
+      [courseId],
     );
     const maDM = courseInfo[0]?.MaDM || 0;
 
@@ -128,7 +128,7 @@ export class PublicCoursesController {
        FROM KhoaHoc k
        WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
        ORDER BY (k.MaDM = ?) DESC, RAND() LIMIT 4`,
-      [...params, maDM]
+      [...params, maDM],
     );
 
     // Lấy voucher cross-sell
@@ -136,22 +136,27 @@ export class PublicCoursesController {
       `SELECT MaCode as code, GiaTriGiam as discount, LoaiGiam as discountType
        FROM MaGiamGia 
        WHERE LoaiKM = 'CROSS_SELL' AND TrangThai = 'ACTIVE' AND (NgayKetThuc IS NULL OR NgayKetThuc > NOW())
-       LIMIT 1`
+       LIMIT 1`,
     );
 
-    const crossSellVoucher = vouchers.length > 0 ? {
-      code: vouchers[0].code,
-      discount: Number(vouchers[0].discount),
-      discountType: vouchers[0].discountType
-    } : null;
+    const crossSellVoucher =
+      vouchers.length > 0
+        ? {
+            code: vouchers[0].code,
+            discount: Number(vouchers[0].discount),
+            discountType: vouchers[0].discountType,
+          }
+        : null;
 
     return {
       recommendations: recommendations.map((r: any) => ({
         ...r,
         giaBan: Number(r.giaBan),
-        averageRating: r.averageRating ? Number(r.averageRating).toFixed(1) : '0.0'
+        averageRating: r.averageRating
+          ? Number(r.averageRating).toFixed(1)
+          : '0.0',
       })),
-      crossSellVoucher
+      crossSellVoucher,
     };
   }
 
@@ -292,5 +297,4 @@ export class PublicCoursesController {
       data,
     };
   }
-
 }

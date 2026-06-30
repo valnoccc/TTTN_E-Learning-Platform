@@ -18,7 +18,15 @@ import { CourseAdminService } from './services/course-admin.service';
     CloudinaryModule,
     NotificationsModule,
   ],
-  controllers: [CoursesController, CourseAdminController, PublicCoursesController],
-  providers: [CoursesService, CourseInstructorCurriculumService, CourseAdminService],
+  controllers: [
+    CoursesController,
+    CourseAdminController,
+    PublicCoursesController,
+  ],
+  providers: [
+    CoursesService,
+    CourseInstructorCurriculumService,
+    CourseAdminService,
+  ],
 })
 export class CoursesModule {}

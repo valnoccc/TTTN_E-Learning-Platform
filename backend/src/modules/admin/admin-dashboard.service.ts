@@ -396,7 +396,10 @@ export class AdminDashboardService {
       courseGrowth: 0,
       pendingCourses: parseInt(String(pendingCourseStats[0]?.total ?? 0), 10),
       pendingCourseGrowth: 0,
-      newEnrollments: parseInt(String(enrollmentStats[0]?.currentMonth ?? 0), 10),
+      newEnrollments: parseInt(
+        String(enrollmentStats[0]?.currentMonth ?? 0),
+        10,
+      ),
       newEnrollmentGrowth: this.calculateGrowth(
         enrollmentStats[0]?.currentMonth,
         enrollmentStats[0]?.lastMonth,
@@ -411,7 +414,7 @@ export class AdminDashboardService {
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
       ),
-      recentOrders: (recentOrders as RecentTransactionRow[]).map((row) => ({
+      recentOrders: recentOrders.map((row) => ({
         orderId: Number(row.orderId ?? 0),
         customerName: row.customerName ?? '',
         courseName: row.courseName ?? '',

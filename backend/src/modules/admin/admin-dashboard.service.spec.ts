@@ -26,9 +26,7 @@ describe('AdminDashboardService', () => {
         { total: '3', currentMonth: '1', lastMonth: '2' },
       ])
       .mockResolvedValueOnce([{ total: '8' }])
-      .mockResolvedValueOnce([
-        { total: '3' },
-      ])
+      .mockResolvedValueOnce([{ total: '3' }])
       .mockResolvedValueOnce([
         { total: '5', currentMonth: '5', lastMonth: '2' },
       ])

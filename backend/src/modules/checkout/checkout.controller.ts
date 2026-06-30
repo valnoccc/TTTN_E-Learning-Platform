@@ -22,7 +22,10 @@ export class CheckoutController {
   // ─── Lấy danh sách voucher khả dụng (Yêu cầu đăng nhập) ───────────────────────────────
   @Get('available-coupons')
   @UseGuards(JwtAuthGuard)
-  async getAvailableCoupons(@Query('courseIds') courseIdsStr: string, @Request() req) {
+  async getAvailableCoupons(
+    @Query('courseIds') courseIdsStr: string,
+    @Request() req,
+  ) {
     const userId = req.user.sub || req.user.maND;
     return this.checkoutService.getAvailableCoupons(courseIdsStr, userId);
   }

@@ -4,6 +4,22 @@ import axiosClient from '../../../../api/axios';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type LoaiKM = 'FIRST_TIME' | 'CROSS_SELL' | 'HOLIDAY' | 'STANDARD';
+export type AdminCouponScopeType = 'ALL' | 'COURSE' | 'CATEGORY' | 'INSTRUCTOR';
+export type AdminCouponRuleType =
+    | 'NEW_USER_24H'
+    | 'FIRST_PURCHASE'
+    | 'COMBO_ONLY'
+    | 'MIN_ORDER_VALUE'
+    | 'MIN_COURSE_COUNT'
+    | 'ACCOUNT_AGE_HOURS'
+    | 'REPEAT_PURCHASE'
+    | 'NEW_USER_ONLY';
+
+export interface AdminCouponRuleInput {
+    loaiDieuKien: AdminCouponRuleType;
+    giaTriDieuKien?: number | null;
+    moTa?: string | null;
+}
 
 export interface AdminCouponItem {
     maCoupon: number;
@@ -42,6 +58,9 @@ export interface CreateAdminCouponPayload {
     maKH?: number | null;
     soLuongGioiHan?: number | null;
     ghiChu?: string | null;
+    scopeType?: AdminCouponScopeType;
+    scopeTargetIds?: number[] | null;
+    rules?: AdminCouponRuleInput[] | null;
 }
 
 export interface QueryCouponsFilter {
@@ -81,7 +100,14 @@ export function useAdminCoupons() {
             );
             const data = response?.data ?? response;
             setCoupons(data?.items ?? []);
-            setSummary(data?.summary ?? { total: 0, activeCount: 0, crossSellActive: 0, firstTimeActive: 0, totalUsed: 0 });
+            const backendSummary = data?.summary ?? {};
+            setSummary({
+                total: Number(backendSummary.total ?? backendSummary.totalCouponCount ?? 0),
+                activeCount: Number(backendSummary.activeCount ?? 0),
+                crossSellActive: Number(backendSummary.crossSellActive ?? 0),
+                firstTimeActive: Number(backendSummary.firstTimeActive ?? 0),
+                totalUsed: Number(backendSummary.totalUsed ?? backendSummary.totalUsageCount ?? 0),
+            });
         } catch (err: any) {
             if (err?.name !== 'CanceledError' && err?.name !== 'AbortError') {
                 setError(err?.response?.data?.message ?? 'Lỗi tải danh sách mã khuyến mãi');
@@ -104,7 +130,9 @@ export function useAdminCoupons() {
     }, [fetchCoupons, filter]);
 
     const updateCoupon = useCallback(async (id: number, payload: Partial<CreateAdminCouponPayload>) => {
-        const response: any = await axiosClient.patch(`/admin/coupons/${id}/status`, payload);
+        const response: any = await axiosClient.patch(`/admin/coupons/${id}/status`, {
+            trangThai: payload.trangThai,
+        });
         const updated = response?.data ?? response;
         await fetchCoupons(filter);
         return updated;
@@ -118,8 +146,30 @@ export function useAdminCoupons() {
     const toggleStatus = useCallback(async (coupon: AdminCouponItem) => {
         const newStatus: 'ACTIVE' | 'INACTIVE' =
             coupon.trangThai === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-        await updateCoupon(coupon.maCoupon, { trangThai: newStatus });
-    }, [updateCoupon]);
+        const previousCoupons = coupons;
+        const previousSummary = summary;
+
+        setCoupons((current) =>
+            current.map((item) =>
+                item.maCoupon === coupon.maCoupon ? { ...item, trangThai: newStatus } : item,
+            ),
+        );
+        setSummary((current) => ({
+            ...current,
+            activeCount:
+                current.activeCount + (newStatus === 'ACTIVE' ? 1 : -1),
+        }));
+
+        try {
+            await axiosClient.patch(`/admin/coupons/${coupon.maCoupon}/status`, {
+                trangThai: newStatus,
+            });
+        } catch (error) {
+            setCoupons(previousCoupons);
+            setSummary(previousSummary);
+            throw error;
+        }
+    }, [coupons, summary]);
 
     return {
         coupons,

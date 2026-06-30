@@ -499,7 +499,10 @@ export class CourseAdminService {
         videoURL: row.videoURL ?? null,
         trangThai: row.trangThaiBaiHoc ?? 'ACTIVE',
         aiStatus: row.aiStatus ?? null,
-        aiLabels: typeof row.aiLabels === 'string' ? JSON.parse(row.aiLabels) : (row.aiLabels ?? []),
+        aiLabels:
+          typeof row.aiLabels === 'string'
+            ? JSON.parse(row.aiLabels)
+            : (row.aiLabels ?? []),
         aiRejectReason: row.aiRejectReason ?? null,
       });
     }

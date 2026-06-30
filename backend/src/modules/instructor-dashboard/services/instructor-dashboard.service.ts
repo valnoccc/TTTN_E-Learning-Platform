@@ -485,7 +485,9 @@ export class InstructorDashboardService {
     const fiveStarReviews = this.toNumber(reviewSummaryRow.fiveStarReviews);
     const lowStarReviews = this.toNumber(reviewSummaryRow.lowStarReviews);
     const totalLessonSlots = this.toNumber(learningRow.totalLessonSlots);
-    const completedLessonSlots = this.toNumber(learningRow.completedLessonSlots);
+    const completedLessonSlots = this.toNumber(
+      learningRow.completedLessonSlots,
+    );
     const completionRate =
       totalLessonSlots > 0
         ? Number(((completedLessonSlots * 100) / totalLessonSlots).toFixed(1))
@@ -540,8 +542,7 @@ export class InstructorDashboardService {
           completionRate !== null
             ? `${completedLessonSlots}/${totalLessonSlots} dau muc bai hoc da hoan thanh`
             : 'Chua co du lieu tien do hoc tap',
-        completionRateSource:
-          completionRate !== null ? 'database' : 'mockdata',
+        completionRateSource: completionRate !== null ? 'database' : 'mockdata',
       },
       quality: {
         averageRating: reviewCount > 0 ? Number(ratingValue.toFixed(1)) : null,
@@ -580,7 +581,9 @@ export class InstructorDashboardService {
               courseId: Number(latestRejectedCourseRow.courseId ?? 0),
               courseName: latestRejectedCourseRow.courseName ?? '',
               reason: latestRejectedCourseRow.reason ?? null,
-              createdAt: this.toIsoStringOrNull(latestRejectedCourseRow.createdAt),
+              createdAt: this.toIsoStringOrNull(
+                latestRejectedCourseRow.createdAt,
+              ),
             }
           : null,
       },
@@ -895,7 +898,6 @@ export class InstructorDashboardService {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }
-
 
   private assertInstructor(principal: InstructorPrincipal) {
     if (principal.vaiTro !== UserRole.INSTRUCTOR) {
