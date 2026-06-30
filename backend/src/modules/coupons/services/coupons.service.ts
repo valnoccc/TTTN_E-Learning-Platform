@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  OnModuleInit,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -75,7 +76,9 @@ type CouponCourseRow = {
 };
 
 @Injectable()
-export class CouponsService {
+export class CouponsService implements OnModuleInit {
+  private adminCouponSchemaReady: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(Coupon)
     private readonly couponRepository: Repository<Coupon>,
@@ -83,6 +86,137 @@ export class CouponsService {
     private readonly courseRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    await this.ensureAdminCouponSchema();
+  }
+
+  private ensureAdminCouponSchema() {
+    if (!this.adminCouponSchemaReady) {
+      this.adminCouponSchemaReady = (async () => {
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`MaKM\` varchar(100) DEFAULT NULL AFTER \`GhiChu\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`LoaiKM\` enum('FIRST_TIME','CROSS_SELL','HOLIDAY','STANDARD') DEFAULT 'STANDARD' AFTER \`MaKM\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`MaGiamGiaDieuKien\` (
+            \`MaDK\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`LoaiDieuKien\` enum(
+              'NEW_USER_24H',
+              'FIRST_PURCHASE',
+              'COMBO_ONLY',
+              'MIN_ORDER_VALUE',
+              'MIN_COURSE_COUNT'
+            ) NOT NULL,
+            \`GiaTriDieuKien\` decimal(12,2) DEFAULT NULL,
+            \`MoTa\` varchar(255) DEFAULT NULL,
+            \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaDK\`),
+            KEY \`idx_coupon_rule_coupon\` (\`MaCoupon\`),
+            KEY \`idx_coupon_rule_type\` (\`LoaiDieuKien\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           MODIFY COLUMN \`LoaiDieuKien\` enum(
+             'NEW_USER_24H',
+             'FIRST_PURCHASE',
+             'COMBO_ONLY',
+             'MIN_ORDER_VALUE',
+             'MIN_COURSE_COUNT',
+             'ACCOUNT_AGE_HOURS',
+             'REPEAT_PURCHASE',
+             'NEW_USER_ONLY'
+           ) NOT NULL`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`GiaTriDieuKien\` decimal(12,2) DEFAULT NULL AFTER \`LoaiDieuKien\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`MoTa\` varchar(255) DEFAULT NULL AFTER \`GiaTriDieuKien\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MoTa\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`MaGiamGiaPhamVi\` (
+            \`MaPV\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`LoaiPhamVi\` enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL,
+            \`MaDoiTuong\` int DEFAULT NULL,
+            \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaPV\`),
+            KEY \`idx_coupon_scope_coupon\` (\`MaCoupon\`),
+            KEY \`idx_coupon_scope_type\` (\`LoaiPhamVi\`),
+            KEY \`idx_coupon_scope_target\` (\`MaDoiTuong\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`LoaiPhamVi\` enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL AFTER \`MaCoupon\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`MaDoiTuong\` int DEFAULT NULL AFTER \`LoaiPhamVi\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MaDoiTuong\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`LichSuSuDungMaGiamGia\` (
+            \`MaLSSD\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`MaND\` int NOT NULL,
+            \`MaHD\` int NOT NULL,
+            \`GiaTriDonHang\` decimal(12,2) NOT NULL DEFAULT '0.00',
+            \`SoTienGiam\` decimal(12,2) NOT NULL DEFAULT '0.00',
+            \`ThoiGianSuDung\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaLSSD\`),
+            UNIQUE KEY \`uq_coupon_invoice\` (\`MaCoupon\`, \`MaHD\`),
+            KEY \`idx_coupon_redemption_user\` (\`MaND\`),
+            KEY \`idx_coupon_redemption_invoice\` (\`MaHD\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`GiaTriDonHang\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`MaHD\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`SoTienGiam\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`GiaTriDonHang\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`ThoiGianSuDung\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`SoTienGiam\``,
+        );
+      })();
+    }
+
+    return this.adminCouponSchemaReady;
+  }
 
   async getInstructorCoupons(instructorId: number, query: QueryCouponsDto) {
     const normalizedSearch = query.search?.trim() ?? '';

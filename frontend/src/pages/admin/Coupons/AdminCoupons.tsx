@@ -1063,9 +1063,9 @@ export default function AdminCoupons() {
                               }
                             />
                           )}
-                          <p className="mt-1.5 text-[11px] leading-5 text-slate-400">
-                            {SCOPE_OPTIONS.find((opt) => opt.value === form.scopeType)?.desc}
-                          </p>
+                          {/* <p className="mt-1.5 text-[11px] leading-5 text-slate-400">
+                            {SCOPE_OPTIONS.find((opt) => opt.value === form.scopeType)}
+                          </p> */}
                         </div>
                       </div>
                     </div>

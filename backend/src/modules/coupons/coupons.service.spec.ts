@@ -70,6 +70,20 @@ describe('CouponsService', () => {
     service = module.get<CouponsService>(CouponsService);
   });
 
+  it('ensures admin coupon schema exists on module init', async () => {
+    await service.onModuleInit();
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaPhamVi`'),
+    );
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaDieuKien`'),
+    );
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`'),
+    );
+  });
+
   it('stores admin coupon scope and conditions in dedicated tables', async () => {
     queryRunner.query
       .mockResolvedValueOnce({ insertId: 120009 })
