@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   Download,
@@ -22,6 +22,7 @@ import {
   type AdminUserRole,
   type AdminUserStatus,
 } from './hooks/useAdminUsers';
+import Pagination from '../../../components/Pagination';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('vi-VN', {
@@ -136,12 +137,31 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
   const [drawerRole, setDrawerRole] = useState<Exclude<AdminUserRole, 'ALL'>>('STUDENT');
   const [drawerStatus, setDrawerStatus] = useState<Exclude<AdminUserStatus, 'ALL'>>('ACTIVE');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const indexOfLast = currentPage * pageSize;
+  const indexOfFirst = indexOfLast - pageSize;
+  const visibleUsers = useMemo(
+    () => users.slice(indexOfFirst, indexOfLast),
+    [users, indexOfFirst, indexOfLast],
+  );
 
   useEffect(() => {
     if (selectedUser && !users.some((user) => user.id === selectedUser.id)) {
       setSelectedUser(null);
     }
   }, [selectedUser, users]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, role, status]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -323,7 +343,9 @@ export default function AdminUsers() {
             <div>
               <h2 className="text-[18px] font-bold text-slate-900">Danh sách người dùng</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {loading ? 'Đang tải dữ liệu...' : `${users.length} tài khoản trong bộ lọc hiện tại`}
+                {loading
+                  ? 'Đang tải dữ liệu...'
+                  : `${users.length} tài khoản trong bộ lọc hiện tại`}
               </p>
             </div>
           </div>
@@ -372,7 +394,7 @@ export default function AdminUsers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {visibleUsers.map((user) => (
                     <tr key={user.id} className="border-t border-slate-100 align-top transition hover:bg-slate-50/70">
                       <td className="px-6 py-5">
                         <button
@@ -485,6 +507,20 @@ export default function AdminUsers() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && users.length > 0 && (
+            <div className="border-t border-slate-100 px-6 pb-5">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={users.length}
+                indexOfFirst={indexOfFirst}
+                indexOfLast={indexOfLast}
+                variant="numbers"
+              />
             </div>
           )}
         </section>
