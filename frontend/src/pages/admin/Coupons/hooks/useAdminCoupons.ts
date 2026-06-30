@@ -130,7 +130,9 @@ export function useAdminCoupons() {
     }, [fetchCoupons, filter]);
 
     const updateCoupon = useCallback(async (id: number, payload: Partial<CreateAdminCouponPayload>) => {
-        const response: any = await axiosClient.patch(`/admin/coupons/${id}`, payload);
+        const response: any = await axiosClient.patch(`/admin/coupons/${id}/status`, {
+            trangThai: payload.trangThai,
+        });
         const updated = response?.data ?? response;
         await fetchCoupons(filter);
         return updated;
@@ -144,8 +146,30 @@ export function useAdminCoupons() {
     const toggleStatus = useCallback(async (coupon: AdminCouponItem) => {
         const newStatus: 'ACTIVE' | 'INACTIVE' =
             coupon.trangThai === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-        await updateCoupon(coupon.maCoupon, { trangThai: newStatus });
-    }, [updateCoupon]);
+        const previousCoupons = coupons;
+        const previousSummary = summary;
+
+        setCoupons((current) =>
+            current.map((item) =>
+                item.maCoupon === coupon.maCoupon ? { ...item, trangThai: newStatus } : item,
+            ),
+        );
+        setSummary((current) => ({
+            ...current,
+            activeCount:
+                current.activeCount + (newStatus === 'ACTIVE' ? 1 : -1),
+        }));
+
+        try {
+            await axiosClient.patch(`/admin/coupons/${coupon.maCoupon}/status`, {
+                trangThai: newStatus,
+            });
+        } catch (error) {
+            setCoupons(previousCoupons);
+            setSummary(previousSummary);
+            throw error;
+        }
+    }, [coupons, summary]);
 
     return {
         coupons,

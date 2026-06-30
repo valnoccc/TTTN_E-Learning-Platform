@@ -60,12 +60,11 @@ const RULE_OPTIONS: Array<{
 const SCOPE_OPTIONS: Array<{
   value: AdminCouponScopeType;
   label: string;
-  desc: string;
 }> = [
-  { value: 'ALL', label: 'Toàn sàn', desc: 'Áp dụng cho mọi khóa học hợp lệ' },
-  { value: 'COURSE', label: 'Khóa học cụ thể', desc: 'Chọn khóa học theo tên, không cần nhớ ID' },
-  { value: 'CATEGORY', label: 'Danh mục', desc: 'Chọn danh mục theo tên để áp dụng nhanh hơn' },
-  { value: 'INSTRUCTOR', label: 'Giảng viên', desc: 'Chọn giảng viên theo tên hoặc email' },
+  { value: 'ALL', label: 'Toàn sàn' },
+  { value: 'COURSE', label: 'Khóa học cụ thể' },
+  { value: 'CATEGORY', label: 'Danh mục'},
+  { value: 'INSTRUCTOR', label: 'Giảng viên' },
 ];
 
 type ScopeTargetOption = {
@@ -128,6 +127,10 @@ function parseTargetIds(value: string) {
 
 function formatCurrency(value: number) {
   return `${value.toLocaleString('vi-VN')} đ`;
+}
+
+function formatDiscountValue(loaiGiam: 'PERCENT' | 'AMOUNT', giaTriGiam: number) {
+  return loaiGiam === 'PERCENT' ? `${giaTriGiam}%` : formatCurrency(giaTriGiam);
 }
 
 function ScopeTargetPicker({
@@ -742,17 +745,14 @@ export default function AdminCoupons() {
                 <table className="min-w-full table-fixed text-left">
                   <thead className="bg-slate-50/70">
                     <tr>
-                      <th className="w-[10%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">
-                        ID
-                      </th>
                       <th className="w-[16%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">
                         Mã Code
                       </th>
                       <th className="w-[22%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">
                         Loại mã
                       </th>
-                      <th className="w-[10%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500 text-center">
-                        % Giảm
+                      <th className="w-[14%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500 text-center">
+                        Giảm giá
                       </th>
                       <th className="w-[14%] px-5 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">
                         Hết hạn
@@ -783,7 +783,7 @@ export default function AdminCoupons() {
 
                       return (
                         <tr key={coupon.maCoupon} className="transition hover:bg-slate-50/60">
-                          <td className="px-5 py-4 text-[14px] font-semibold text-slate-500">#{coupon.maCoupon}</td>
+                          
                           <td className="px-5 py-4">
                             <div className="font-mono text-[14px] font-bold text-slate-800">{coupon.maCode}</div>
                             {coupon.maKM && <div className="text-[11px] text-slate-400">{coupon.maKM}</div>}
@@ -795,10 +795,12 @@ export default function AdminCoupons() {
                             {coupon.ghiChu && <p className="mt-1 text-[11px] text-slate-400 line-clamp-1">{coupon.ghiChu}</p>}
                           </td>
                           <td className="px-5 py-4 text-center">
-                            <span className="inline-flex items-center gap-0.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-[13px] font-bold text-emerald-700">
-                              <Percent size={11} />
-                              {coupon.giaTriGiam}
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[13px] font-bold text-emerald-700">
+                                {coupon.loaiGiam === 'PERCENT' ? <Percent size={11} /> : null}
+                                {formatDiscountValue(coupon.loaiGiam, Number(coupon.giaTriGiam))}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-1.5 text-[13px] text-slate-600">
@@ -825,12 +827,12 @@ export default function AdminCoupons() {
                               ) : coupon.trangThai === 'ACTIVE' ? (
                                 <>
                                   <ToggleRight size={20} className="text-emerald-500" />
-                                  <span className="text-emerald-600">Bật</span>
+                                  <span className="text-emerald-600">Vô hiệu</span>
                                 </>
                               ) : (
                                 <>
                                   <ToggleLeft size={20} className="text-slate-400" />
-                                  <span className="text-slate-500">Tắt</span>
+                                  <span className="text-slate-500">Kích hoạt</span>
                                 </>
                               )}
                             </button>
@@ -1040,12 +1042,9 @@ export default function AdminCoupons() {
                         </div>
 
                         <div>
-                          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Đối tượng áp dụng
-                          </label>
                           {form.scopeType === 'ALL' ? (
-                            <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 px-4 py-3 text-[13px] text-emerald-800">
-                              Mã sẽ tự động áp dụng cho toàn sàn. Không cần nhập ID.
+                            <div>
+                                
                             </div>
                           ) : (
                             <ScopeTargetPicker
