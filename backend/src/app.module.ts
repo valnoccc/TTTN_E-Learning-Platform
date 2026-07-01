@@ -23,6 +23,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { CheckoutModule } from './modules/checkout/checkout.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PostsModule } from './modules/posts/posts.module';
+import { ForumModule } from './modules/forum/forum.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { PostsModule } from './modules/posts/posts.module';
     CheckoutModule,
     NotificationsModule,
     PostsModule,
+    ForumModule,
   ],
 })
 export class AppModule {}

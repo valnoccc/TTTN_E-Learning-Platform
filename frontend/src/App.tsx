@@ -23,6 +23,9 @@ import BlogGrid from './features/student-portal/pages/blog/BlogGrid';
 import BlogDetails from './features/student-portal/pages/blog/BlogDetails';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ForumHome from './features/forum/pages/ForumHome';
+import ForumDetail from './features/forum/pages/ForumDetail';
+import ForumAsk from './features/forum/pages/ForumAsk';
 
 import StudentLayout from './features/student-portal/components/StudentLayout';
 
@@ -41,6 +44,9 @@ function AnimatedRoutes() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/instructors" element={<Instructors />} />
         <Route path="/instructor-details/:id" element={<InstructorDetails />} />
+        <Route path="/forum" element={<ForumHome />} />
+        <Route path="/forum/ask" element={<ForumAsk />} />
+        <Route path="/forum/question/:id" element={<ForumDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         {/* ⚠️ QUAN TRỌNG: /checkout/success phải ĐẶT TRƯỚC /checkout/:courseId */}
         {/* Nếu đặt sau, React Router sẽ match "success" vào tham số :courseId => NaN */}

@@ -100,7 +100,7 @@ class HeaderTwo extends Component {
                                             <Link className="nav-link" to={"/instructors"}>Giảng viên</Link>
                                         </li>
                                         <li className="nav-item">
-                                            <Link className="nav-link" to={"/events"}>Sự kiện</Link>
+                                            <Link className="nav-link" to={"/forum"}>Hỏi đáp</Link>
                                         </li>
                                         <li className="nav-item">
                                             <Link className="nav-link" to={"/blog-grid"}>Bài viết</Link>

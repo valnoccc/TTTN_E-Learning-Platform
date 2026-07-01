@@ -74,7 +74,7 @@ class StickyMenu extends Component<{}, { isSticky: boolean }> {
                                             <Link className="nav-link" to={"/instructors"}>Giảng viên</Link>
                                         </li>
                                         <li className="nav-item">
-                                            <Link className="nav-link" to={"/events"}>Sự kiện</Link>
+                                            <Link className="nav-link" to={"/forum"}>Hỏi đáp</Link>
                                         </li>
                                         <li className="nav-item dropdown">
                                             <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Bài viết <i className="las la-angle-down"></i></Link>
