@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LessonsController } from './controllers/lesson-instructor.controller';
 import { LessonsService } from './services/lessons.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { VideoIntelligenceService } from './services/video-intelligence.service';
 
 describe('LessonsController', () => {
   let controller: LessonsController;
@@ -27,6 +28,7 @@ describe('LessonsController', () => {
       providers: [
         { provide: LessonsService, useValue: lessonsService },
         { provide: CloudinaryService, useValue: cloudinaryService },
+        { provide: VideoIntelligenceService, useValue: {} },
       ],
     }).compile();
 
