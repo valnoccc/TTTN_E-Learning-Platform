@@ -34,6 +34,7 @@ backend/dist/
 .nest/
 database/
 draft/
+docs/
 
 # =========================================
 # 🤖 AI TOOLS & CACHE (Công cụ AI)

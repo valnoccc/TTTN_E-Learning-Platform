@@ -26,6 +26,10 @@ describe('AdminDashboardService', () => {
         { total: '3', currentMonth: '1', lastMonth: '2' },
       ])
       .mockResolvedValueOnce([{ total: '8' }])
+      .mockResolvedValueOnce([{ total: '3' }])
+      .mockResolvedValueOnce([
+        { total: '5', currentMonth: '5', lastMonth: '2' },
+      ])
       .mockResolvedValueOnce([
         {
           total: '250000',
@@ -40,9 +44,11 @@ describe('AdminDashboardService', () => {
         {
           orderId: 1,
           customerName: 'Nguyen Van A',
-          totalAmount: '250000',
+          courseName: 'React Co Ban',
+          totalAmount: 250000,
           paidAt: '2026-06-01 08:00:00',
           paymentMethod: 'VNPAY',
+          paymentStatus: 'PAID',
         },
       ])
       .mockResolvedValueOnce([
@@ -106,6 +112,15 @@ describe('AdminDashboardService', () => {
           percentage: '32.5',
           avatar: 'https://example.com/avatar.png',
         },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          name: 'Lap trinh',
+          revenue: '900000',
+          adminRevenue: '180000',
+          instructorPayout: '720000',
+        },
       ]);
 
     await expect(service.getOverviewStats()).resolves.toEqual({
@@ -115,6 +130,10 @@ describe('AdminDashboardService', () => {
       instructorGrowth: -50,
       totalCourses: 8,
       courseGrowth: 0,
+      pendingCourses: 3,
+      pendingCourseGrowth: 0,
+      newEnrollments: 5,
+      newEnrollmentGrowth: 150,
       totalRevenue: 250000,
       grossRevenue: 1250000,
       adminRevenue: 250000,
@@ -124,9 +143,11 @@ describe('AdminDashboardService', () => {
         {
           orderId: 1,
           customerName: 'Nguyen Van A',
-          totalAmount: '250000',
+          courseName: 'React Co Ban',
+          totalAmount: 250000,
           paidAt: '2026-06-01 08:00:00',
           paymentMethod: 'VNPAY',
+          paymentStatus: 'PAID',
         },
       ],
       revenueChart: [
@@ -277,12 +298,21 @@ describe('AdminDashboardService', () => {
           avatar: 'https://example.com/avatar.png',
         },
       ],
+      categoryRevenue: [
+        {
+          id: 1,
+          name: 'Lap trinh',
+          revenue: 900000,
+          adminRevenue: 180000,
+          instructorPayout: 720000,
+        },
+      ],
     });
 
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
-    expect(queryCalls[3]?.[0]).toContain('* 0.2');
-    expect(queryCalls[3]?.[0]).toContain('* 0.8');
-    expect(queryCalls[6]?.[0]).toContain('* 0.2');
-    expect(queryCalls[6]?.[0]).toContain('* 0.8');
+    expect(queryCalls[5]?.[0]).toContain('* 0.2');
+    expect(queryCalls[5]?.[0]).toContain('* 0.8');
+    expect(queryCalls[8]?.[0]).toContain('* 0.2');
+    expect(queryCalls[8]?.[0]).toContain('* 0.8');
   });
 });

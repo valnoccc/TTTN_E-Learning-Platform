@@ -22,6 +22,35 @@ export default function Pagination({
 }: PaginationProps) {
     if (totalPages <= 1) return null;
 
+    const buildPageItems = () => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, index) => index + 1);
+        }
+
+        const pages = new Set<number>([1, totalPages]);
+
+        for (let page = currentPage - 1; page <= currentPage + 1; page += 1) {
+            if (page > 1 && page < totalPages) {
+                pages.add(page);
+            }
+        }
+
+        const sortedPages = Array.from(pages).sort((a, b) => a - b);
+        const items: Array<number | 'ellipsis'> = [];
+
+        sortedPages.forEach((page, index) => {
+            const previous = sortedPages[index - 1];
+            if (typeof previous === 'number' && page - previous > 1) {
+                items.push('ellipsis');
+            }
+            items.push(page);
+        });
+
+        return items;
+    };
+
+    const pageItems = buildPageItems();
+
     return (
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 bg-transparent w-full">
             {/* Dòng chữ thông báo bên trái */}
@@ -53,21 +82,29 @@ export default function Pagination({
 
                 {/* Danh sách số (Chỉ hiển thị nếu variant là 'numbers') */}
                 {variant === 'numbers' &&
-                    [...Array(totalPages)].map((_, index) => {
-                        const pageNum = index + 1;
-                        return (
+                    pageItems.map((item, index) =>
+                        item === 'ellipsis' ? (
+                            <span
+                                key={`ellipsis-${index}`}
+                                className="px-2 text-xs font-semibold text-slate-400 select-none"
+                                aria-hidden="true"
+                            >
+                                ...
+                            </span>
+                        ) : (
                             <button
-                                key={pageNum}
-                                onClick={() => onPageChange(pageNum)}
-                                className={`px-3 py-1 text-xs font-bold rounded border transition ${currentPage === pageNum
+                                key={item}
+                                onClick={() => onPageChange(item)}
+                                aria-current={currentPage === item ? 'page' : undefined}
+                                className={`min-w-9 px-3 py-1 text-xs font-bold rounded border transition ${currentPage === item
                                         ? 'bg-[#1dbf73] border-[#1dbf73] text-white shadow-sm'
                                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                                     }`}
                             >
-                                {pageNum}
+                                {item}
                             </button>
-                        );
-                    })}
+                        ),
+                    )}
 
                 {/* Nút Sau */}
                 <button

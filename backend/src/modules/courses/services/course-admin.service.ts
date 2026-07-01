@@ -40,6 +40,9 @@ type CurriculumRow = {
   noiDungBaiHoc?: string | null;
   videoURL?: string | null;
   trangThaiBaiHoc?: string | null;
+  aiStatus?: string | null;
+  aiLabels?: string | null;
+  aiRejectReason?: string | null;
 };
 type ModerationHistoryRow = {
   maLSKD?: string | number;
@@ -124,7 +127,10 @@ export class CourseAdminService {
           bh.ThuTu as thuTuBaiHoc,
           bh.NoiDung as noiDungBaiHoc,
           bh.VideoURL as videoURL,
-          bh.TrangThai as trangThaiBaiHoc
+          bh.TrangThai as trangThaiBaiHoc,
+          bh.AiStatus as aiStatus,
+          bh.AiLabels as aiLabels,
+          bh.AiRejectReason as aiRejectReason
         FROM ChuongHoc ch
         LEFT JOIN BaiHoc bh ON bh.MaChuong = ch.MaChuong
         WHERE ch.MaKH = ?
@@ -463,6 +469,9 @@ export class CourseAdminService {
           noiDung: string;
           videoURL: string | null;
           trangThai: string;
+          aiStatus: string | null;
+          aiLabels: string[];
+          aiRejectReason: string | null;
         }>;
       }
     >();
@@ -489,6 +498,12 @@ export class CourseAdminService {
         noiDung: row.noiDungBaiHoc ?? '',
         videoURL: row.videoURL ?? null,
         trangThai: row.trangThaiBaiHoc ?? 'ACTIVE',
+        aiStatus: row.aiStatus ?? null,
+        aiLabels:
+          typeof row.aiLabels === 'string'
+            ? JSON.parse(row.aiLabels)
+            : (row.aiLabels ?? []),
+        aiRejectReason: row.aiRejectReason ?? null,
       });
     }
 

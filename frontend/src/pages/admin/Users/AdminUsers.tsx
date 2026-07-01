@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   Download,
@@ -22,6 +22,7 @@ import {
   type AdminUserRole,
   type AdminUserStatus,
 } from './hooks/useAdminUsers';
+import Pagination from '../../../components/Pagination';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('vi-VN', {
@@ -136,12 +137,31 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
   const [drawerRole, setDrawerRole] = useState<Exclude<AdminUserRole, 'ALL'>>('STUDENT');
   const [drawerStatus, setDrawerStatus] = useState<Exclude<AdminUserStatus, 'ALL'>>('ACTIVE');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const indexOfLast = currentPage * pageSize;
+  const indexOfFirst = indexOfLast - pageSize;
+  const visibleUsers = useMemo(
+    () => users.slice(indexOfFirst, indexOfLast),
+    [users, indexOfFirst, indexOfLast],
+  );
 
   useEffect(() => {
     if (selectedUser && !users.some((user) => user.id === selectedUser.id)) {
       setSelectedUser(null);
     }
   }, [selectedUser, users]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, role, status]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -323,7 +343,9 @@ export default function AdminUsers() {
             <div>
               <h2 className="text-[18px] font-bold text-slate-900">Danh sách người dùng</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {loading ? 'Đang tải dữ liệu...' : `${users.length} tài khoản trong bộ lọc hiện tại`}
+                {loading
+                  ? 'Đang tải dữ liệu...'
+                  : `${users.length} tài khoản trong bộ lọc hiện tại`}
               </p>
             </div>
           </div>
@@ -372,19 +394,36 @@ export default function AdminUsers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {visibleUsers.map((user) => (
                     <tr key={user.id} className="border-t border-slate-100 align-top transition hover:bg-slate-50/70">
                       <td className="px-6 py-5">
                         <button
                           onClick={() => setSelectedUser(user)}
                           className="flex w-full items-start gap-4 text-left"
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
+                          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50">
                             {user.avatar ? (
-                              <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
+                              <>
+                                <img
+                                  src={user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `/assets/images/${user.avatar}`}
+                                  alt={user.fullName || 'User'}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <span
+                                  className="hidden h-full w-full items-center justify-center text-sm font-bold text-slate-500"
+                                >
+                                  {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                              </>
                             ) : (
                               <span className="text-sm font-bold text-slate-500">
-                                {user.fullName.charAt(0).toUpperCase()}
+                                {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
                               </span>
                             )}
                           </div>
@@ -470,6 +509,20 @@ export default function AdminUsers() {
               </table>
             </div>
           )}
+
+          {!loading && users.length > 0 && (
+            <div className="border-t border-slate-100 px-6 pb-5">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={users.length}
+                indexOfFirst={indexOfFirst}
+                indexOfLast={indexOfLast}
+                variant="numbers"
+              />
+            </div>
+          )}
         </section>
       </div>
 
@@ -499,16 +552,29 @@ export default function AdminUsers() {
             <div className="space-y-5 p-6">
               <div className="rounded-[20px] border border-slate-100 bg-slate-50/80 p-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700 ring-4 ring-white shadow-sm">
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700 ring-4 ring-white shadow-sm">
                     {selectedUser.avatar ? (
-                      <img
-                        src={selectedUser.avatar}
-                        alt={selectedUser.fullName}
-                        className="h-full w-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={selectedUser.avatar.startsWith('http') || selectedUser.avatar.startsWith('data:') ? selectedUser.avatar : `/assets/images/${selectedUser.avatar}`}
+                          alt={selectedUser.fullName || 'User'}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                        <span
+                          className="hidden h-full w-full items-center justify-center text-lg font-black text-emerald-700"
+                        >
+                          {selectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </>
                     ) : (
                       <span className="text-lg font-black text-emerald-700">
-                        {selectedUser.fullName.charAt(0).toUpperCase()}
+                        {selectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     )}
                   </div>

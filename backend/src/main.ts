@@ -30,3 +30,4 @@ async function bootstrap() {
   console.log(`======================================================\n`);
 }
 bootstrap();
+// trigger restart

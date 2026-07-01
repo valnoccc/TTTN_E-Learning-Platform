@@ -13,7 +13,7 @@ Source of truth:
 - `POST /auth/forgot-password` (Khoi phuc mat khau)
 
 ## Users (Admin - Quan ly nguoi dung)
-- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/adminRevenue = 20%`, `instructorPayout = 80%`, `grossRevenue = 100%`)
+- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; bao gom `grossRevenue`, `adminRevenue = 20%`, `instructorPayout = 80%`, `newEnrollments`, `pendingCourses`, `revenueChart`, `salesChart`, `categoryRevenue`, `topCourses`, `topInstructors`, `recentOrders` va cac KPI tang truong)
 - `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
 - `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
 - `PATCH /admin/users/:id/role` (Admin - Cap vai tro he thong, body: `{ role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)
@@ -73,6 +73,8 @@ Admin (Kiem duyet)
 - `PATCH /enrollments/:courseId/progress` (He thong tu dong cap nhat tien do xem video)
 - `POST /coupons/validate` (Kiem tra ma giam gia cho gio hang dang checkout, body: `{ maCode: string, courseIds: number[] }`)
 - `POST /coupons/:id/consume` (Tam thoi cap nhat `SoLuongDaDung` sau khi frontend mock payment thanh cong; can thay bang luong payment backend that khi co)
+- `POST /checkout/momo/return` (Student - Xac thuc payload return co chu ky tu MoMo va dong bo trang thai hoa don; body la query params MoMo tra ve, response gom `invoiceId`, `resultCode`, `paymentStatus`)
+- `DELETE /admin/coupons/:id` (Admin - Xoa cung coupon neu chua co luot su dung; neu da co `SoLuongDaDung > 0` thi tra loi chan xoa)
 
 ## Submissions & Grading (Thuc hanh & Cham diem)
 - `POST /lessons/:lessonId/submissions` (Student - Nop bai tap qua link GitHub)

@@ -63,6 +63,24 @@ type TopInstructorRow = {
   percentage?: string | number;
   avatar?: string | null;
 };
+type EnrollmentGrowthRow = CountGrowthRow;
+type PendingCourseRow = { total?: string | number };
+type RecentTransactionRow = {
+  orderId?: string | number;
+  customerName?: string;
+  courseName?: string;
+  totalAmount?: string | number;
+  paidAt?: string | Date;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+};
+type CategoryRevenueRow = {
+  id?: string | number;
+  name?: string;
+  revenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
+};
 
 @Injectable()
 export class AdminDashboardService {
@@ -104,6 +122,8 @@ export class AdminDashboardService {
       studentStats,
       instructorStats,
       courseStats,
+      pendingCourseStats,
+      enrollmentStats,
       revenueStats,
       recentOrders,
       chartData,
@@ -111,6 +131,7 @@ export class AdminDashboardService {
       salesChartRows,
       topCourseRows,
       topInstructorRows,
+      categoryRevenueRows,
     ] = await Promise.all([
       this.queryWithFallback<CountGrowthRow[]>(
         `
@@ -142,6 +163,25 @@ export class AdminDashboardService {
         `,
         [{ total: '0' }],
       ),
+      this.queryWithFallback<PendingCourseRow[]>(
+        `
+          SELECT COUNT(*) as total
+          FROM KhoaHoc
+          WHERE TrangThai = 'PENDING'
+        `,
+        [{ total: '0' }],
+      ),
+      this.queryWithFallback<EnrollmentGrowthRow[]>(
+        `
+          SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as currentMonth,
+            SUM(CASE WHEN NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY) AND NgayDangKy < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as lastMonth
+          FROM DangKyKhoaHoc
+          WHERE TrangThai = 'ACTIVE'
+        `,
+        [{ total: '0', currentMonth: '0', lastMonth: '0' }],
+      ),
       this.queryWithFallback<RevenueGrowthRow[]>(
         `
             SELECT 
@@ -165,19 +205,24 @@ export class AdminDashboardService {
           },
         ],
       ),
-      this.queryWithFallback<RevenueChartRow[]>(
+      this.queryWithFallback<RecentTransactionRow[]>(
         `
           SELECT 
             hd.MaHD as orderId,
             nd.HoTen as customerName,
+            GROUP_CONCAT(DISTINCT kh.TenKhoaHoc ORDER BY kh.TenKhoaHoc SEPARATOR ', ') as courseName,
             hd.TongTien as totalAmount,
             IFNULL(hd.NgayThanhToan, hd.NgayLap) as paidAt,
-            IFNULL(hd.PhuongThucThanhToan, 'Chuyen khoan') as paymentMethod
+            IFNULL(hd.PhuongThucThanhToan, 'Chuyen khoan') as paymentMethod,
+            hd.TrangThaiThanhToan as paymentStatus
           FROM HoaDon hd
           JOIN NguoiDung nd ON hd.MaND = nd.MaND
-          WHERE hd.TrangThaiThanhToan = 'PAID'
-          ORDER BY hd.NgayLap DESC
-          LIMIT 5
+          LEFT JOIN ChiTietHoaDon cthd ON cthd.MaHD = hd.MaHD
+          LEFT JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+          WHERE hd.TrangThaiThanhToan IN ('PAID', 'PENDING', 'FAILED')
+          GROUP BY hd.MaHD, nd.HoTen, hd.TongTien, hd.NgayThanhToan, hd.NgayLap, hd.PhuongThucThanhToan, hd.TrangThaiThanhToan
+          ORDER BY COALESCE(hd.NgayThanhToan, hd.NgayLap) DESC
+          LIMIT 7
         `,
         [],
       ),
@@ -307,6 +352,31 @@ export class AdminDashboardService {
         `,
         [],
       ),
+      this.queryWithFallback<CategoryRevenueRow[]>(
+        `
+          SELECT
+            COALESCE(dm.MaDM, 0) as id,
+            COALESCE(dm.TenDM, 'Khác') as name,
+            SUM(${lineNetRevenueSql}) as revenue,
+            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
+            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as instructorPayout
+          FROM ChiTietHoaDon cthd
+          JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
+          JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
+          LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+          WHERE hd.TrangThaiThanhToan = 'PAID'
+          GROUP BY dm.MaDM, dm.TenDM
+          ORDER BY revenue DESC
+          LIMIT 6
+        `,
+        [],
+      ),
     ]);
 
     const salesChart = this.buildSalesChart(salesChartRows);
@@ -324,6 +394,16 @@ export class AdminDashboardService {
       ),
       totalCourses: parseInt(String(courseStats[0]?.total ?? 0), 10),
       courseGrowth: 0,
+      pendingCourses: parseInt(String(pendingCourseStats[0]?.total ?? 0), 10),
+      pendingCourseGrowth: 0,
+      newEnrollments: parseInt(
+        String(enrollmentStats[0]?.currentMonth ?? 0),
+        10,
+      ),
+      newEnrollmentGrowth: this.calculateGrowth(
+        enrollmentStats[0]?.currentMonth,
+        enrollmentStats[0]?.lastMonth,
+      ),
       totalRevenue: parseFloat(String(revenueStats[0]?.total ?? 0)),
       grossRevenue: parseFloat(String(revenueStats[0]?.grossRevenue ?? 0)),
       adminRevenue: parseFloat(String(revenueStats[0]?.adminRevenue ?? 0)),
@@ -334,7 +414,18 @@ export class AdminDashboardService {
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
       ),
-      recentOrders,
+      recentOrders: recentOrders.map((row) => ({
+        orderId: Number(row.orderId ?? 0),
+        customerName: row.customerName ?? '',
+        courseName: row.courseName ?? '',
+        totalAmount: Number(row.totalAmount ?? 0),
+        paidAt:
+          row.paidAt instanceof Date
+            ? row.paidAt.toISOString()
+            : String(row.paidAt ?? ''),
+        paymentMethod: row.paymentMethod ?? 'Chuyen khoan',
+        paymentStatus: row.paymentStatus ?? 'PENDING',
+      })),
       revenueChart: (chartData as RevenueChartRow[])
         .slice()
         .reverse()
@@ -373,6 +464,13 @@ export class AdminDashboardService {
         adminRevenue: Number(row.adminRevenue ?? 0),
         percentage: Number(row.percentage ?? 0),
         avatar: row.avatar ?? '',
+      })),
+      categoryRevenue: categoryRevenueRows.map((row) => ({
+        id: Number(row.id ?? 0),
+        name: row.name ?? 'Khác',
+        revenue: Number(row.revenue ?? 0),
+        adminRevenue: Number(row.adminRevenue ?? 0),
+        instructorPayout: Number(row.instructorPayout ?? 0),
       })),
     };
   }

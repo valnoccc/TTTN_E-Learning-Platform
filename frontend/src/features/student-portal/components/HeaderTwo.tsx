@@ -94,7 +94,7 @@ class HeaderTwo extends Component {
                                         </li>
                                         <CourseCategoryDropdown />
                                         {/* <li className="nav-item">
-                                            <Link className="nav-link" to={"/student/my-courses"}>Khóa học của tôi</Link>
+                                            <Link className="nav-link" to={"/student/profile?tab=courses"}>Khóa học của tôi</Link>
                                         </li> */}
                                         <li className="nav-item">
                                             <Link className="nav-link" to={"/instructors"}>Giảng viên</Link>

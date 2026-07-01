@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserRole } from '../entities/user.entity';
 
@@ -36,7 +40,11 @@ export interface AdminUserSummary {
 }
 
 const USER_STATUSES: AdminUserStatus[] = ['ACTIVE', 'INACTIVE', 'DELETED'];
-const USER_ROLES: AdminUserRole[] = [UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.STUDENT];
+const USER_ROLES: AdminUserRole[] = [
+  UserRole.ADMIN,
+  UserRole.INSTRUCTOR,
+  UserRole.STUDENT,
+];
 
 @Injectable()
 export class UserAdminService {
@@ -108,10 +116,10 @@ export class UserAdminService {
       throw new NotFoundException('Người dùng không tồn tại.');
     }
 
-    await this.dataSource.query('UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?', [
-      normalizedStatus,
-      userId,
-    ]);
+    await this.dataSource.query(
+      'UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?',
+      [normalizedStatus, userId],
+    );
 
     return {
       message: 'Cập nhật trạng thái người dùng thành công.',
@@ -130,10 +138,10 @@ export class UserAdminService {
       throw new NotFoundException('Người dùng không tồn tại.');
     }
 
-    await this.dataSource.query('UPDATE NguoiDung SET VaiTro = ? WHERE MaND = ?', [
-      normalizedRole,
-      userId,
-    ]);
+    await this.dataSource.query(
+      'UPDATE NguoiDung SET VaiTro = ? WHERE MaND = ?',
+      [normalizedRole, userId],
+    );
 
     return {
       message: 'Cập nhật vai trò người dùng thành công.',

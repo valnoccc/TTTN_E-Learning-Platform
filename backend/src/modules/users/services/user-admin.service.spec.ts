@@ -42,7 +42,11 @@ describe('UserAdminService', () => {
       ]);
 
     await expect(
-      service.getUsers({ search: 'le thi', role: 'instructor', status: 'active' }),
+      service.getUsers({
+        search: 'le thi',
+        role: 'instructor',
+        status: 'active',
+      }),
     ).resolves.toEqual({
       message: 'Lấy danh sách người dùng thành công.',
       data: [
@@ -113,8 +117,8 @@ describe('UserAdminService', () => {
   it('throws when target user does not exist', async () => {
     dataSource.query.mockResolvedValueOnce([]);
 
-    await expect(service.updateUserStatus(999, 'ACTIVE')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.updateUserStatus(999, 'ACTIVE'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

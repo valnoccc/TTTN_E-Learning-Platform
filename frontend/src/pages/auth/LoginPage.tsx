@@ -97,7 +97,7 @@ export default function LoginPage() {
                                                 </label>
                                             </div>
                                             <div className="forget-password">
-                                                <Link to="#">Quên mật khẩu?</Link>
+                                                <Link to="/forgot-password">Quên mật khẩu?</Link>
                                             </div>
                                         </div>
                                         <div className="not_account-btn text-center">

@@ -4,7 +4,7 @@ import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useLessonCreateForm } from './hooks/useLessonForm';
 
 export default function LessonCreate() {
-    const { formData, loading, navigate, videoPreview, handleChange, handleFileChange, handleSave } =
+    const { formData, loading, navigate, videoPreview, isQuotaExceeded, handleChange, handleFileChange, handleSave } =
         useLessonCreateForm();
     const remainingTitleChars = 60 - Math.min(formData.tieu_de.length, 60);
 
@@ -80,38 +80,47 @@ export default function LessonCreate() {
                             <h3 className="mb-6 flex items-center gap-2 text-lg font-bold text-slate-800">
                                 <Video size={18} className="text-[#1dbf73]" /> Nội dung video
                             </h3>
-                            <div
-                                onClick={() => document.getElementById('video-upload')?.click()}
-                                className="group relative cursor-pointer rounded-md border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center transition hover:border-[#1dbf73] hover:bg-[#ebf8f2]/60"
-                            >
-                                <input
-                                    id="video-upload"
-                                    type="file"
-                                    accept="video/*"
-                                    hidden
-                                    onChange={handleFileChange}
-                                />
-
-                                {videoPreview ? (
-                                    <video
-                                        src={videoPreview}
-                                        className="mx-auto max-h-[300px] rounded-md shadow-md"
-                                        controls
+                            {isQuotaExceeded ? (
+                                <div className="rounded-md border border-rose-200 bg-rose-50 p-6 text-center">
+                                    <p className="font-bold text-rose-700">🚫 Đã vượt hạn mức 1.000 phút AI</p>
+                                    <p className="mt-2 text-sm text-rose-600">
+                                        Tính năng tải lên video tạm thời bị khóa. Vui lòng chờ đến tháng sau.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={() => document.getElementById('video-upload')?.click()}
+                                    className="group relative cursor-pointer rounded-md border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center transition hover:border-[#1dbf73] hover:bg-[#ebf8f2]/60"
+                                >
+                                    <input
+                                        id="video-upload"
+                                        type="file"
+                                        accept="video/*"
+                                        hidden
+                                        onChange={handleFileChange}
                                     />
-                                ) : (
-                                    <>
-                                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ebf8f2] transition-transform group-hover:scale-105">
-                                            <Upload className="text-[#1dbf73]" size={28} />
-                                        </div>
-                                        <p className="font-bold text-slate-700">
-                                            Nhấn để tải video bài giảng
-                                        </p>
-                                        <p className="mt-2 text-xs italic text-slate-400">
-                                            Dung lượng tối đa hỗ trợ 100MB
-                                        </p>
-                                    </>
-                                )}
-                            </div>
+
+                                    {videoPreview ? (
+                                        <video
+                                            src={videoPreview}
+                                            className="mx-auto max-h-[300px] rounded-md shadow-md"
+                                            controls
+                                        />
+                                    ) : (
+                                        <>
+                                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ebf8f2] transition-transform group-hover:scale-105">
+                                                <Upload className="text-[#1dbf73]" size={28} />
+                                            </div>
+                                            <p className="font-bold text-slate-700">
+                                                Nhấn để tải video bài giảng
+                                            </p>
+                                            <p className="mt-2 text-xs italic text-slate-400">
+                                                Dung lượng tối đa hỗ trợ 100MB
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </section>
                     </div>
 

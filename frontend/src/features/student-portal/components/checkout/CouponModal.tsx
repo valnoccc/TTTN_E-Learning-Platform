@@ -24,6 +24,15 @@ export const CouponModal: React.FC<CouponModalProps> = ({ show, onHide, courseId
     try {
       setLoading(true);
       const data = await getAvailableCoupons(courseIds);
+      
+      // Sắp xếp: dùng được (isAvailable = true) lên trên, sau đó giảm giá (calculatedDiscount) nhiều nhất lên trên
+      data.sort((a, b) => {
+        if (a.isAvailable !== b.isAvailable) {
+          return a.isAvailable ? -1 : 1;
+        }
+        return (b.calculatedDiscount || 0) - (a.calculatedDiscount || 0);
+      });
+      
       setCoupons(data);
     } catch (error) {
       console.error('Lỗi khi tải danh sách mã giảm giá', error);
@@ -83,14 +92,22 @@ export const CouponModal: React.FC<CouponModalProps> = ({ show, onHide, courseId
               Chưa có mã giảm giá nào phù hợp.
             </div>
           ) : (
-            coupons.map((coupon) => (
+            coupons.map((coupon, index) => {
+              const isBestChoice = index === 0 && coupon.isAvailable && (coupon.calculatedDiscount || 0) > 0;
+              return (
               <div 
                 key={coupon.id} 
-                className={`flex bg-white rounded-lg shadow-sm overflow-hidden border border-slate-100 transition-all ${!coupon.isAvailable ? 'opacity-50' : 'hover:shadow-md'}`}
+                className={`flex bg-white rounded-lg shadow-sm overflow-hidden border transition-all relative ${!coupon.isAvailable ? 'opacity-50 border-slate-100' : isBestChoice ? 'border-orange-400 shadow-md ring-1 ring-orange-200' : 'border-slate-100 hover:shadow-md'}`}
                 style={{ pointerEvents: coupon.isAvailable ? 'auto' : 'none' }}
               >
+                {isBestChoice && (
+                  <div className="absolute top-0 left-0 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg shadow-sm z-10">
+                    Lựa chọn tốt nhất
+                  </div>
+                )}
+                
                 {/* Left side: Value */}
-                <div className="w-1/3 bg-orange-50 flex flex-col items-center justify-center p-3 text-center border-r-2 border-dashed border-slate-200">
+                <div className="w-1/3 bg-orange-50 flex flex-col items-center justify-center p-3 text-center border-r-2 border-dashed border-slate-200 relative pt-6">
                   <span className="text-orange-600 font-bold text-lg leading-tight">
                     {coupon.discountType === 'PERCENT' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue)}
                   </span>
@@ -131,7 +148,7 @@ export const CouponModal: React.FC<CouponModalProps> = ({ show, onHide, courseId
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
       </Modal.Body>

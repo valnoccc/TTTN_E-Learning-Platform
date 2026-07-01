@@ -2,12 +2,19 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Lesson } from './entities/lesson.entity';
+import { AiQuotaTracker } from './entities/ai-quota-tracker.entity';
 import { LessonsController } from './controllers/lesson-instructor.controller';
+import { AiModerationController } from './controllers/ai-moderation.controller';
 import { LessonsService } from './services/lessons.service';
+import { VideoIntelligenceService } from './services/video-intelligence.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Lesson]), CloudinaryModule],
-  controllers: [LessonsController],
-  providers: [LessonsService],
+  imports: [
+    TypeOrmModule.forFeature([Lesson, AiQuotaTracker]),
+    CloudinaryModule,
+  ],
+  controllers: [LessonsController, AiModerationController],
+  providers: [LessonsService, VideoIntelligenceService],
+  exports: [VideoIntelligenceService],
 })
 export class LessonsModule {}

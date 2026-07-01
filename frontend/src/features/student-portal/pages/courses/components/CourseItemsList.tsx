@@ -8,12 +8,12 @@ import axiosClient from '../../../../../api/axios';
 import toast from 'react-hot-toast';
 
 const formatPrice = (price: any) => {
-    return new Intl.NumberFormat('en-US', { 
+    return new Intl.NumberFormat('vi-VN', { 
         style: 'currency', 
-        currency: 'USD',
+        currency: 'VND',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0 
-    }).format(price || 0);
+    }).format(price || 0).replace('₫', 'đ');
 };
 
 const CourseItemList = ({ filters }: { filters?: any }) => {

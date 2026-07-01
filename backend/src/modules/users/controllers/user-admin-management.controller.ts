@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -32,17 +40,26 @@ export class UserAdminController {
 
   @Patch('bulk/status')
   async bulkUpdateStatus(@Body() body: BulkUpdatePayload) {
-    return this.userAdminService.bulkUpdateStatus(body.ids ?? [], body.status ?? '');
+    return this.userAdminService.bulkUpdateStatus(
+      body.ids ?? [],
+      body.status ?? '',
+    );
   }
 
   @Patch('bulk/role')
   async bulkUpdateRole(@Body() body: BulkUpdatePayload) {
-    return this.userAdminService.bulkUpdateRole(body.ids ?? [], body.role ?? '');
+    return this.userAdminService.bulkUpdateRole(
+      body.ids ?? [],
+      body.role ?? '',
+    );
   }
 
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Body() body: UpdateUserPayload) {
-    return this.userAdminService.updateUserStatus(Number(id), body.status ?? '');
+    return this.userAdminService.updateUserStatus(
+      Number(id),
+      body.status ?? '',
+    );
   }
 
   @Patch(':id/role')

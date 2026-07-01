@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import AdminLayout from '../../../layouts/AdminLayout';
+import Pagination from '../../../components/Pagination';
 import {
     useAdminCourseModeration,
     type AdminCourseStatus,
@@ -48,8 +49,29 @@ export default function AdminCourseModeration() {
     const navigate = useNavigate();
     const [rejectingCourseId, setRejectingCourseId] = useState<number | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
+    const totalPages = Math.max(1, Math.ceil(courses.length / pageSize));
+    const indexOfLast = currentPage * pageSize;
+    const indexOfFirst = indexOfLast - pageSize;
+
+    const visibleCourses = useMemo(
+        () => courses.slice(indexOfFirst, indexOfLast),
+        [courses, indexOfFirst, indexOfLast],
+    );
 
     const selectedCourse = courses.find((course) => course.id === rejectingCourseId) ?? null;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, status]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const handleOpenReject = (courseId: number) => {
         setRejectingCourseId(courseId);
@@ -173,21 +195,36 @@ export default function AdminCourseModeration() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {courses.map((course) => (
+                                    {visibleCourses.map((course) => (
                                         <tr
                                             key={course.id}
                                             className="border-t border-slate-100 align-top transition hover:bg-slate-50/60"
                                         >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-start gap-4">
-                                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center">
                                                         {course.hinhThuNho ? (
-                                                            <img
-                                                                src={course.hinhThuNho}
-                                                                alt={course.tenKhoaHoc}
-                                                                className="h-full w-full object-cover"
-                                                            />
-                                                        ) : null}
+                                                            <>
+                                                                <img
+                                                                    src={course.hinhThuNho.startsWith('http') || course.hinhThuNho.startsWith('data:') ? course.hinhThuNho : `/assets/images/${course.hinhThuNho}`}
+                                                                    alt={course.tenKhoaHoc}
+                                                                    className="h-full w-full object-cover"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        if (e.currentTarget.nextElementSibling) {
+                                                                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <span className="hidden h-full w-full items-center justify-center text-slate-400">
+                                                                    <BookOpen size={24} />
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="flex h-full w-full items-center justify-center text-slate-400">
+                                                                <BookOpen size={24} />
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {/* min-w-0 giúp text truncate hoạt động đúng trong flexbox */}
                                                     <div className="min-w-0 flex-1">
@@ -205,14 +242,29 @@ export default function AdminCourseModeration() {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                                                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center">
                                                         {course.instructorAvatar ? (
-                                                            <img
-                                                                src={course.instructorAvatar}
-                                                                alt={course.instructorName}
-                                                                className="h-full w-full object-cover"
-                                                            />
-                                                        ) : null}
+                                                            <>
+                                                                <img
+                                                                    src={course.instructorAvatar.startsWith('http') || course.instructorAvatar.startsWith('data:') ? course.instructorAvatar : `/assets/images/${course.instructorAvatar}`}
+                                                                    alt={course.instructorName}
+                                                                    className="h-full w-full object-cover"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        if (e.currentTarget.nextElementSibling) {
+                                                                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <span className="hidden h-full w-full items-center justify-center text-sm font-bold text-slate-500">
+                                                                    {course.instructorName?.charAt(0)?.toUpperCase() || '?'}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="flex h-full w-full items-center justify-center text-sm font-bold text-slate-500">
+                                                                {course.instructorName?.charAt(0)?.toUpperCase() || '?'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-[14px] font-semibold text-slate-800">
@@ -264,6 +316,19 @@ export default function AdminCourseModeration() {
                             </table>
                         </div>
                     )}
+                    {!loading && courses.length > 0 ? (
+                        <div className="border-t border-slate-100 px-6 pb-5">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                totalItems={courses.length}
+                                indexOfFirst={indexOfFirst}
+                                indexOfLast={indexOfLast}
+                                variant="numbers"
+                            />
+                        </div>
+                    ) : null}
                 </div>
             </div>
 

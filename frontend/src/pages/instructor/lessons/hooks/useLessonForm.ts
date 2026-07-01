@@ -15,6 +15,11 @@ export interface LessonForm {
     video_url?: string;
     video_file: File | null;
     choPhepXemTruoc: boolean;
+    id?: number | string;
+    maBH?: number | string;
+    aiStatus?: string | null;
+    aiLabels?: string[] | null;
+    aiRejectReason?: string | null;
 }
 
 interface LessonApiData {
@@ -25,6 +30,11 @@ interface LessonApiData {
     video_url?: string;
     choPhepXemTruoc?: boolean;
     cho_phep_xem_truoc?: boolean;
+    id?: number | string;
+    maBH?: number | string;
+    aiStatus?: string | null;
+    aiLabels?: string[] | null;
+    aiRejectReason?: string | null;
 }
 
 interface LessonApiResponse {
@@ -44,6 +54,22 @@ export function useLessonCreateForm() {
         video_file: null,
         choPhepXemTruoc: false,
     });
+    const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+
+    useEffect(() => {
+        const fetchQuota = async () => {
+            try {
+                const res: any = await axiosClient.get('/ai/quota');
+                const quota = res?.data ?? res;
+                if (quota?.isExceeded) {
+                    setIsQuotaExceeded(true);
+                }
+            } catch {
+                // Ignore error
+            }
+        };
+        void fetchQuota();
+    }, []);
 
     const handleChange = (field: keyof LessonForm, value: LessonForm[keyof LessonForm]) => {
         setFormData((current) => ({ ...current, [field]: value }));
@@ -108,6 +134,7 @@ export function useLessonCreateForm() {
         loading,
         navigate,
         videoPreview,
+        isQuotaExceeded,
         handleChange,
         handleFileChange,
         handleSave,
@@ -130,6 +157,7 @@ export function useLessonDetailForm() {
         video_file: null,
         choPhepXemTruoc: false,
     });
+    const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
     useEffect(() => {
         const fetchLesson = async () => {
@@ -155,6 +183,11 @@ export function useLessonDetailForm() {
                     video_file: null,
                     choPhepXemTruoc:
                         lesson.choPhepXemTruoc ?? lesson.cho_phep_xem_truoc ?? false,
+                    id: lesson.id ?? lesson.maBH,
+                    maBH: lesson.maBH ?? lesson.id,
+                    aiStatus: lesson.aiStatus ?? null,
+                    aiLabels: lesson.aiLabels ?? null,
+                    aiRejectReason: lesson.aiRejectReason ?? null,
                 });
 
                 if (lesson.video_url) {
@@ -168,7 +201,20 @@ export function useLessonDetailForm() {
             }
         };
 
+        const fetchQuota = async () => {
+            try {
+                const res: any = await axiosClient.get('/ai/quota');
+                const quota = res?.data ?? res;
+                if (quota?.isExceeded) {
+                    setIsQuotaExceeded(true);
+                }
+            } catch {
+                // Ignore error
+            }
+        };
+
         void fetchLesson();
+        void fetchQuota();
     }, [navigate, targetId]);
 
     const handleChange = (field: keyof LessonForm, value: LessonForm[keyof LessonForm]) => {
@@ -225,6 +271,7 @@ export function useLessonDetailForm() {
         loading,
         navigate,
         videoPreview,
+        isQuotaExceeded,
         handleChange,
         handleFileChange,
         handleUpdate,

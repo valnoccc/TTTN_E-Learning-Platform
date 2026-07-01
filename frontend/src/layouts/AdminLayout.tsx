@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 
 import AdminSidebar from '../components/common/AdminSidebar';
+import { AiQuotaWarningBanner } from '../components/AiQuotaWarningBanner';
 
 // Nếu bạn có một Header chung cho Admin ở trên cùng, bạn có thể import vào đây
 // import AdminTopHeader from '../components/admin/AdminTopHeader'; 
@@ -17,6 +18,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {/* <AdminTopHeader /> */}
+                <AiQuotaWarningBanner />
 
                 <main className="min-h-0 flex-1 overflow-y-auto p-6 lg:p-8">
                     <div className="mx-auto w-full max-w-[1320px]">

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Post,
@@ -19,39 +19,41 @@ import type { PaymentRequest, MomoOrderData } from './checkout.service';
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
 
-  // ─── Lấy danh sách voucher khả dụng (Public) ───────────────────────────────
+  // â”€â”€â”€ Láº¥y danh sÃ¡ch voucher kháº£ dá»¥ng (YÃªu cáº§u Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('available-coupons')
-  async getAvailableCoupons(@Query('courseIds') courseIdsStr: string) {
-    return this.checkoutService.getAvailableCoupons(courseIdsStr);
+  @UseGuards(JwtAuthGuard)
+  async getAvailableCoupons(
+    @Query('courseIds') courseIdsStr: string,
+    @Request() req,
+  ) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.getAvailableCoupons(courseIdsStr, userId);
   }
 
-  // ─── Tạo thanh toán MoMo QR động (Cần đăng nhập) ──────────────────────────
+  // â”€â”€â”€ Táº¡o thanh toÃ¡n MoMo QR Ä‘á»™ng (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('momo/create-payment')
   @UseGuards(JwtAuthGuard)
   async createMomoPayment(@Body() payload: MomoOrderData, @Request() req) {
     const userId = req.user.sub || req.user.maND;
-    console.log(
-      '[Controller] createMomoPayment | userId:',
-      userId,
-      '| payload:',
-      JSON.stringify(payload),
-    );
     return this.checkoutService.createMomoPayment(userId, payload);
   }
 
-  // ─── IPN Webhook từ MoMo (PUBLIC - Không dùng JwtAuthGuard) ──────────────
+  // â”€â”€â”€ IPN Webhook tá»« MoMo (PUBLIC - KhÃ´ng dÃ¹ng JwtAuthGuard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('momo-ipn')
   @HttpCode(HttpStatus.OK)
   async handleMomoIPN(@Body() body: any, @Req() req: any) {
-    console.log(
-      '>>> [IPN TOUCH] Đã nhận được tín hiệu Webhook từ MoMo Server!',
-      req.body,
-    );
-    console.log('[Controller] handleMomoIPN | body:', JSON.stringify(body));
     return this.checkoutService.handleMomoIPN(body);
   }
 
-  // ─── Thanh toán thủ công (BANK / VNPAY / PAYPAL) (Cần đăng nhập) ──────────
+  // â”€â”€â”€ Browser return tá»« MoMo: xÃ¡c thá»±c chá»¯ kÃ½ rá»“i Ä‘á»“ng bá»™ tráº¡ng thÃ¡i â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Post('momo/return')
+  @UseGuards(JwtAuthGuard)
+  async handleMomoReturn(@Body() body: any, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.handleMomoReturn(body, userId);
+  }
+
+  // â”€â”€â”€ Thanh toÃ¡n thá»§ cÃ´ng (BANK / VNPAY / PAYPAL) (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('process-payment')
   @UseGuards(JwtAuthGuard)
   async processPayment(@Body() payload: PaymentRequest, @Request() req) {
@@ -59,7 +61,7 @@ export class CheckoutController {
     return this.checkoutService.processPayment(payload, userId);
   }
 
-  // ─── Lấy chi tiết hoá đơn (Cần đăng nhập) ─────────────────────────────────
+  // â”€â”€â”€ Láº¥y chi tiáº¿t hoÃ¡ Ä‘Æ¡n (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('invoice/:id')
   @UseGuards(JwtAuthGuard)
   async getInvoiceDetails(@Param('id') invoiceId: string, @Request() req) {
@@ -67,3 +69,4 @@ export class CheckoutController {
     return this.checkoutService.getInvoiceDetails(Number(invoiceId), userId);
   }
 }
+

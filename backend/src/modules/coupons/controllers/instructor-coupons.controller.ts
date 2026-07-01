@@ -17,13 +17,15 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateCouponDto } from '../dto/create-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
-import { CouponsService } from '../services/coupons.service';
+import { InstructorCouponsService } from '../services/instructor-coupons.service';
 
 @Controller('instructor/coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('INSTRUCTOR')
 export class InstructorCouponsController {
-  constructor(private readonly couponsService: CouponsService) {}
+  constructor(
+    private readonly instructorCouponsService: InstructorCouponsService,
+  ) {}
 
   private getInstructorId(request: Request & { user: { sub: number } }) {
     return request.user.sub;
@@ -34,7 +36,7 @@ export class InstructorCouponsController {
     @Req() req: Request & { user: { sub: number } },
     @Query() query: QueryCouponsDto,
   ) {
-    const data = await this.couponsService.getInstructorCoupons(
+    const data = await this.instructorCouponsService.getInstructorCoupons(
       this.getInstructorId(req),
       query,
     );
@@ -50,7 +52,7 @@ export class InstructorCouponsController {
     @Req() req: Request & { user: { sub: number } },
     @Body() body: CreateCouponDto,
   ) {
-    const data = await this.couponsService.createCoupon(
+    const data = await this.instructorCouponsService.createCoupon(
       this.getInstructorId(req),
       body,
     );
@@ -67,7 +69,7 @@ export class InstructorCouponsController {
     @Param('id') id: string,
     @Body() body: UpdateCouponStatusDto,
   ) {
-    const data = await this.couponsService.updateCouponStatus(
+    const data = await this.instructorCouponsService.updateCouponStatus(
       this.getInstructorId(req),
       Number(id),
       body.trangThai,

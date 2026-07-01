@@ -2,10 +2,14 @@ import { ArrowLeft, FileText, Layout, Loader2, PlayCircle, Save, Upload, Video }
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useLessonDetailForm } from './hooks/useLessonForm';
+import { AiStatusBadge } from '../../../components/AiStatusBadge';
 
 export default function LessonDetail() {
-    const { formData, isSaving, loading, navigate, videoPreview, handleChange, handleFileChange, handleUpdate } =
+    const { formData, isSaving, loading, navigate, videoPreview, isQuotaExceeded, handleChange, handleFileChange, handleUpdate } =
         useLessonDetailForm();
+    
+    // Trạng thái AI real-time
+    const lessonId = formData?.id ?? formData?.maBH ?? null;
 
     if (loading) {
         return (
@@ -87,44 +91,70 @@ export default function LessonDetail() {
                                 </h3>
                             </div>
 
-                            <input id="video-upload" type="file" accept="video/*" hidden onChange={handleFileChange} />
-
-                            {videoPreview ? (
-                                <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
-                                    <div className="flex w-full justify-center overflow-hidden rounded-md bg-black shadow-sm">
-                                        <video
-                                            src={videoPreview}
-                                            className="max-h-[350px] w-full"
-                                            controls
-                                            controlsList="nodownload"
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-2">
-                                        <p className="text-xs italic text-slate-500">
-                                            {formData.video_file
-                                                ? `Đã chọn file: ${formData.video_file.name}`
-                                                : 'Đang hiển thị video hiện tại'}
-                                        </p>
-                                        <button
-                                            onClick={() => document.getElementById('video-upload')?.click()}
-                                            className="flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#1dbf73]"
-                                        >
-                                            <Upload size={16} /> Thay đổi video
-                                        </button>
-                                    </div>
+                            {isQuotaExceeded ? (
+                                <div className="rounded-md border border-rose-200 bg-rose-50 p-6 text-center">
+                                    <p className="font-bold text-rose-700">🚫 Đã vượt hạn mức 1.000 phút AI</p>
+                                    <p className="mt-2 text-sm text-rose-600">
+                                        Tính năng tải lên video tạm thời bị khóa. Vui lòng chờ đến tháng sau.
+                                    </p>
                                 </div>
                             ) : (
-                                <div
-                                    onClick={() => document.getElementById('video-upload')?.click()}
-                                    className="group cursor-pointer rounded-md border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center transition hover:border-[#1dbf73] hover:bg-[#ebf8f2]/60"
-                                >
-                                    <Upload className="mx-auto mb-4 text-[#1dbf73]" size={28} />
-                                    <p className="font-semibold text-slate-800">Chưa có video cho bài học này</p>
-                                    <p className="mt-2 text-xs text-slate-400">Nhấn để tải lên video mới</p>
-                                </div>
+                                <>
+                                    <input id="video-upload" type="file" accept="video/*" hidden onChange={handleFileChange} />
+
+                                    {videoPreview ? (
+                                        <div className="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+                                            <div className="flex w-full justify-center overflow-hidden rounded-md bg-black shadow-sm">
+                                                <video
+                                                    src={videoPreview}
+                                                    className="max-h-[350px] w-full"
+                                                    controls
+                                                    controlsList="nodownload"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2">
+                                                <p className="text-xs italic text-slate-500">
+                                                    {formData.video_file
+                                                        ? `Đã chọn file: ${formData.video_file.name}`
+                                                        : 'Đang hiển thị video hiện tại'}
+                                                </p>
+                                                <button
+                                                    onClick={() => document.getElementById('video-upload')?.click()}
+                                                    className="flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#1dbf73]"
+                                                >
+                                                    <Upload size={16} /> Thay đổi video
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => document.getElementById('video-upload')?.click()}
+                                            className="group cursor-pointer rounded-md border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center transition hover:border-[#1dbf73] hover:bg-[#ebf8f2]/60"
+                                        >
+                                            <Upload className="mx-auto mb-4 text-[#1dbf73]" size={28} />
+                                            <p className="font-semibold text-slate-800">Chưa có video cho bài học này</p>
+                                            <p className="mt-2 text-xs text-slate-400">Nhấn để tải lên video mới</p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </section>
+
+                        {/* AI Status Panel */}
+                        {lessonId && formData?.aiStatus && (
+                            <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
+                                    🤖 Trạng thái kiểm duyệt AI
+                                </h3>
+                                <AiStatusBadge
+                                    lessonId={lessonId}
+                                    initialStatus={formData.aiStatus}
+                                    initialLabels={formData.aiLabels ?? []}
+                                    initialRejectReason={formData.aiRejectReason ?? null}
+                                />
+                            </section>
+                        )}
                     </div>
 
                     <div className="col-span-4 space-y-6">

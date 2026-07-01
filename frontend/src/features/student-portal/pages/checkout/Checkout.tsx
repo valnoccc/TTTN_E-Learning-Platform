@@ -100,10 +100,32 @@ export default function Checkout() {
     }
   }, [successData]);
 
-  // Handle auto-apply coupon from Cart
+  const autoApplyBestCoupon = async (courseIds: number[]) => {
+    try {
+      const availableCoupons = await getAvailableCoupons(courseIds);
+      if (availableCoupons && availableCoupons.length > 0) {
+        availableCoupons.sort((a, b) => {
+          if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
+          return (b.calculatedDiscount || 0) - (a.calculatedDiscount || 0);
+        });
+        const bestCoupon = availableCoupons[0];
+        if (bestCoupon && bestCoupon.isAvailable && (bestCoupon.calculatedDiscount || 0) > 0) {
+          handleApplyCoupon(bestCoupon.code);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to auto-apply best coupon', err);
+    }
+  };
+
   useEffect(() => {
-    if (courses.length > 0 && location.state?.appliedCouponCode && !couponCode) {
-      handleApplyCoupon(location.state.appliedCouponCode);
+    // Handle auto-apply coupon from Cart or automatically find the best one
+    if (courses.length > 0 && !couponCode) {
+      if (location.state?.appliedCouponCode) {
+        handleApplyCoupon(location.state.appliedCouponCode);
+      } else {
+        autoApplyBestCoupon(courses.map(c => c.id));
+      }
     }
   }, [courses, location.state?.appliedCouponCode, couponCode]);
 
@@ -199,8 +221,9 @@ export default function Checkout() {
         toast.dismiss('momo-loading');
         if (res.payUrl) {
           toast.success('Đang chuyển đến MoMo...');
-          // Xóa giỏ hàng trước khi rời trang
-          courses.forEach((course) => dispatch(removeFromCart(course.id)));
+          // Xóa gợi ý cross-sell cũ
+          localStorage.removeItem('edumeo_cross_sell');
+          window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
           window.location.href = res.payUrl;
         } else {
           toast.error('Không nhận được link thanh toán MoMo.');
@@ -217,6 +240,9 @@ export default function Checkout() {
       });
 
       if (res.success) {
+        // Xóa gợi ý cross-sell cũ
+        localStorage.removeItem('edumeo_cross_sell');
+        window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
         courses.forEach((course) => dispatch(removeFromCart(course.id)));
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);

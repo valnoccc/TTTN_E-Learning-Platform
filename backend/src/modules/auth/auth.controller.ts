@@ -27,4 +27,18 @@ export class AuthController {
       body.newPassword,
     );
   }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() body: any) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(
+      body.token,
+      body.email,
+      body.newPassword,
+    );
+  }
 }

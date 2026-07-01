@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../../../hooks/useNotifications';
 
 // A custom toggle to look like the bell icon
@@ -25,17 +26,68 @@ CustomToggle.displayName = 'CustomToggle';
 
 export const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const navigate = useNavigate();
+  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+
+  const fetchCrossSellData = () => {
+    try {
+      const crossSellData = localStorage.getItem('edumeo_cross_sell');
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const currentUserId = currentUser ? (currentUser.id || currentUser.maND) : null;
+
+      if (crossSellData) {
+        const parsed = JSON.parse(crossSellData);
+        if (parsed.expiresAt && Date.now() >= parsed.expiresAt) {
+          localStorage.removeItem('edumeo_cross_sell');
+          setRecommendedCourses([]);
+          return;
+        }
+
+        if (parsed.userId && parsed.userId !== currentUserId) {
+          setRecommendedCourses([]);
+          return;
+        }
+
+        if (parsed.expiresAt && Date.now() < parsed.expiresAt && parsed.courses && Array.isArray(parsed.courses)) {
+          setRecommendedCourses(parsed.courses);
+        }
+      } else {
+        setRecommendedCourses([]);
+      }
+    } catch (e) {
+      console.error('Failed to parse cross-sell data from localStorage', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchCrossSellData();
+
+    window.addEventListener('edumeo_cross_sell_updated', fetchCrossSellData);
+    window.addEventListener('storage', fetchCrossSellData);
+    window.addEventListener('auth-change', fetchCrossSellData);
+
+    return () => {
+      window.removeEventListener('edumeo_cross_sell_updated', fetchCrossSellData);
+      window.removeEventListener('storage', fetchCrossSellData);
+      window.removeEventListener('auth-change', fetchCrossSellData);
+    };
+  }, [notifications]); // Re-check occasionally or when notifications change
+
+  const totalItems = notifications.length + recommendedCourses.length;
+  // Bao gồm khóa học gợi ý vào số lượng chưa đọc trên badge để user nhận ra
+  const displayUnreadCount = unreadCount + recommendedCourses.length;
 
   return (
     <Dropdown align="end">
       <Dropdown.Toggle as={CustomToggle} id="dropdown-notifications">
         <i className="las la-bell" style={{ fontSize: '24px' }}></i>
-        {unreadCount > 0 && (
+        {displayUnreadCount > 0 && (
           <span
             className="position-absolute badge rounded-pill bg-danger text-white"
             style={{ fontSize: '11px', top: '0', right: '0' }}
           >
-            {unreadCount}
+            {displayUnreadCount}
           </span>
         )}
       </Dropdown.Toggle>
@@ -54,20 +106,54 @@ export const NotificationDropdown = () => {
           )}
         </div>
         
-        {notifications.length === 0 ? (
+        {totalItems === 0 ? (
           <div className="p-4 text-center text-muted">
             <i className="las la-bell-slash mb-2" style={{ fontSize: '32px', color: '#ccc' }}></i>
             <p className="m-0" style={{ fontSize: '14px' }}>Không có thông báo nào</p>
           </div>
         ) : (
           <ul className="list-unstyled mb-0">
-            {notifications.map(notif => (
+            {recommendedCourses.map(course => (
+              <li 
+                key={`rec-${course.maKH}`} 
+                className="p-3 border-bottom bg-light"
+                style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                onClick={() => {
+                  navigate(`/course-details/${course.maKH}`);
+                  // Note: clicking doesn't remove it from localstorage until it expires.
+                  // But clicking navigation will redirect user.
+                }}
+              >
+                <div className="d-flex justify-content-between align-items-start">
+                  <strong style={{ fontSize: '14px', color: '#f59e0b', marginBottom: '4px' }}>
+                    <i className="las la-star me-1"></i> Gợi ý cho bạn
+                  </strong>
+                </div>
+                <div className="mt-1" style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
+                  {course.tenKhoaHoc}
+                </div>
+                <div className="mt-1 text-muted" style={{ fontSize: '12px' }}>
+                  Mua ngay để nhận mã giảm giá đặc biệt!
+                </div>
+              </li>
+            ))}
+            {notifications.map(notif => {
+              let displayContent = notif.noiDung;
+              let link = '';
+              if (notif.noiDung && notif.noiDung.includes('|||')) {
+                const parts = notif.noiDung.split('|||');
+                displayContent = parts[0];
+                link = parts[1];
+              }
+
+              return (
               <li 
                 key={notif.maTB} 
                 className={`p-3 border-bottom ${!notif.daDoc ? 'bg-light' : ''}`}
                 style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
                 onClick={() => {
                   if (!notif.daDoc) markAsRead(notif.maTB);
+                  if (link) navigate(link);
                 }}
               >
                 <div className="d-flex justify-content-between align-items-start">
@@ -79,10 +165,11 @@ export const NotificationDropdown = () => {
                   </small>
                 </div>
                 <div className="mt-1 text-muted" style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>
-                  {notif.noiDung}
+                  {displayContent}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </Dropdown.Menu>

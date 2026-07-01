@@ -6,6 +6,7 @@ import AdminCategories from '../pages/admin/Categories/AdminCategories';
 import AdminPosts from '../pages/admin/Posts/AdminPosts';
 import AdminPostForm from '../pages/admin/Posts/AdminPostForm';
 import AdminUsers from '../pages/admin/Users/AdminUsers';
+import AdminCoupons from '../pages/admin/Coupons/AdminCoupons';
 
 export default function AdminRoutes() {
     return (
@@ -15,6 +16,7 @@ export default function AdminRoutes() {
             <Route path="courses" element={<AdminCourseModeration />} />
             <Route path="courses/:id" element={<AdminCourseDetail />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="coupons" element={<AdminCoupons />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="posts" element={<AdminPosts />} />
             <Route path="posts/new" element={<AdminPostForm />} />

@@ -7,6 +7,12 @@ import {
 } from 'typeorm';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 
+export enum AiStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
 @Entity('BaiHoc')
 export class Lesson {
   @PrimaryGeneratedColumn({ name: 'MaBH' })
@@ -37,4 +43,27 @@ export class Lesson {
   @ManyToOne(() => KhoaHoc)
   @JoinColumn({ name: 'MaKH' })
   khoaHoc!: KhoaHoc;
+
+  @Column({
+    name: 'AiStatus',
+    type: 'enum',
+    enum: AiStatus,
+    nullable: true,
+    default: null,
+  })
+  aiStatus?: AiStatus | null;
+
+  @Column({ name: 'AiLabels', type: 'json', nullable: true })
+  aiLabels?: string[] | null;
+
+  @Column({
+    name: 'AiRejectReason',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  aiRejectReason?: string | null;
+
+  @Column({ name: 'DurationSeconds', type: 'int', default: 0 })
+  durationSeconds!: number;
 }
