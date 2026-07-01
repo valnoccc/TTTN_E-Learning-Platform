@@ -54,7 +54,7 @@ describe('LessonsController', () => {
         thu_tu: '2',
         choPhepXemTruoc: 'true',
       },
-      undefined,
+      undefined as any,
     );
 
     expect(lessonsService.create).toHaveBeenCalledWith(
@@ -80,7 +80,7 @@ describe('LessonsController', () => {
         thu_tu: '3',
         cho_phep_xem_truoc: 'false',
       },
-      undefined,
+      undefined as any,
     );
 
     expect(lessonsService.update).toHaveBeenCalledWith(
