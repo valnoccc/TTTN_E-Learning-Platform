@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -17,13 +18,17 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateAdminCouponDto } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
+import { AdminCouponsService } from '../services/admin-coupons.service';
 import { CouponsService } from '../services/coupons.service';
 
 @Controller('admin/coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminCouponsController {
-  constructor(private readonly couponsService: CouponsService) {}
+  constructor(
+    private readonly couponsService: CouponsService,
+    private readonly adminCouponsService: AdminCouponsService,
+  ) {}
 
   private getAdminId(request: Request & { user: { sub: number } }) {
     return request.user.sub;
@@ -44,7 +49,7 @@ export class AdminCouponsController {
     @Req() req: Request & { user: { sub: number } },
     @Body() body: CreateAdminCouponDto,
   ) {
-    const data = await this.couponsService.createAdminCoupon(
+    const data = await this.adminCouponsService.createAdminCoupon(
       this.getAdminId(req),
       body,
     );
@@ -61,7 +66,7 @@ export class AdminCouponsController {
     @Param('id') id: string,
     @Body() body: UpdateCouponStatusDto,
   ) {
-    const data = await this.couponsService.updateAdminCouponStatus(
+    const data = await this.adminCouponsService.updateAdminCouponStatus(
       this.getAdminId(req),
       Number(id),
       body.trangThai,
@@ -69,6 +74,22 @@ export class AdminCouponsController {
 
     return {
       message: 'Cập nhật trạng thái mã giảm giá thành công',
+      data,
+    };
+  }
+
+  @Delete(':id')
+  async deleteCoupon(
+    @Req() req: Request & { user: { sub: number } },
+    @Param('id') id: string,
+  ) {
+    const data = await this.adminCouponsService.deleteAdminCoupon(
+      this.getAdminId(req),
+      Number(id),
+    );
+
+    return {
+      message: 'Xóa mã giảm giá thành công',
       data,
     };
   }

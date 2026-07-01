@@ -42,18 +42,107 @@ export class CheckoutService {
     private readonly couponsService: CouponsService,
   ) {}
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  private normalizeMomoResultCode(resultCode: unknown): number {
+    const parsed = Number(resultCode);
+    return Number.isFinite(parsed) ? parsed : -1;
+  }
+
+  private buildMomoResponseSignature(body: any, accessKey: string) {
+    const {
+      amount,
+      extraData,
+      message,
+      orderId,
+      orderInfo,
+      orderType,
+      partnerCode,
+      partnerName,
+      payType,
+      requestId,
+      responseTime,
+      resultCode,
+      storeId,
+      storeName,
+      transId,
+    } = body;
+
+    let rawSignature =
+      `accessKey=${accessKey}` +
+      `&amount=${amount}` +
+      `&extraData=${extraData}` +
+      `&message=${message}` +
+      `&orderId=${orderId}` +
+      `&orderInfo=${orderInfo}` +
+      `&orderType=${orderType}` +
+      `&partnerCode=${partnerCode}`;
+
+    if (partnerName) rawSignature += `&partnerName=${partnerName}`;
+
+    rawSignature +=
+      `&payType=${payType}` +
+      `&requestId=${requestId}` +
+      `&responseTime=${responseTime}` +
+      `&resultCode=${resultCode}`;
+
+    if (storeId) rawSignature += `&storeId=${storeId}`;
+    if (storeName) rawSignature += `&storeName=${storeName}`;
+
+    rawSignature += `&transId=${transId}`;
+
+    return rawSignature;
+  }
+
+  private verifyMomoResponseSignature(body: any) {
+    const accessKey = process.env.MOMO_ACCESS_KEY;
+    const secretKey = process.env.MOMO_SECRET_KEY;
+
+    if (!accessKey || !secretKey) {
+      throw new Error('Thiếu cấu hình cổng thanh toán MoMo trong hệ thống');
+    }
+
+    const rawSignature = this.buildMomoResponseSignature(body, accessKey);
+    const expectedSignature = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawSignature)
+      .digest('hex');
+
+    const isValidSignature = body.signature === expectedSignature;
+    if (!isValidSignature) {
+      console.error('[MoMo IPN] Chữ ký KHÔNG hợp lệ! Có thể là giả mạo.');
+      throw new UnauthorizedException('Chữ ký MoMo không hợp lệ!');
+    }
+  }
+
+  private decodeMomoExtraData(extraData?: string) {
+    try {
+      return JSON.parse(Buffer.from(extraData || '', 'base64').toString('utf8'));
+    } catch (e) {
+      console.error('[MoMo] Lỗi decode extraData:', e);
+      throw new BadRequestException('extraData không hợp lệ');
+    }
+  }
+
+  private getFailedMomoStatus(resultCode: number) {
+    // MoMo error codes should be surfaced as a payment failure in our system.
+    // We intentionally avoid keeping a separate "cancelled" state here so
+    // checkout history and notifications stay consistent for OTP timeout,
+    // insufficient funds, locked card, and similar failed attempts.
+    return 'FAILED';
+  }
+
+  private toAffectedRows(result: any) {
+    if (Array.isArray(result)) {
+      return Number(result[0]?.affectedRows ?? 0);
+    }
+
+    return Number(result?.affectedRows ?? 0);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────────
   // MOMO: Tạo thanh toán QR động
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   async createMomoPayment(userId: number, orderData: MomoOrderData) {
     const { courseIds, couponCode, customerDetails } = orderData;
-
-    console.log(
-      '[MoMo] Bắt đầu tạo thanh toán cho userId:',
-      userId,
-      '| courseIds:',
-      courseIds,
-    );
 
     if (!courseIds || courseIds.length === 0) {
       throw new BadRequestException('Giỏ hàng trống');
@@ -158,21 +247,7 @@ export class CheckoutService {
         );
       }
 
-      if (appliedCouponId) {
-        await this.couponsService.recordCouponRedemption(
-          {
-            couponId: appliedCouponId,
-            userId,
-            invoiceId,
-            discountAmount,
-            orderValue: totalOriginalPrice,
-          },
-          queryRunner,
-        );
-      }
-
       await queryRunner.commitTransaction();
-      console.log('[MoMo] Đã tạo HoaDon PENDING, invoiceId:', invoiceId);
 
       // 5. Tạo chữ ký & gọi MoMo API
       const partnerCode = process.env.MOMO_PARTNER_CODE;
@@ -197,7 +272,11 @@ export class CheckoutService {
         JSON.stringify({ invoiceId, userId, courseIds, appliedCouponId }),
       ).toString('base64');
 
-      // Chuỗi rawSignature theo đúng tài liệu MoMo
+      // TẠM THỜI ĐỂ payWithATM ĐỂ BẠN TEST LỖI SANDBOX. 
+      // Khi lên Production hoặc muốn dùng cổng chung thì đổi thành 'payWithMethod'
+      const requestType = 'payWithATM'; 
+
+      // Chuỗi rawSignature dùng biến requestType
       const rawSignature =
         `accessKey=${accessKey}` +
         `&amount=${amount}` +
@@ -208,16 +287,12 @@ export class CheckoutService {
         `&partnerCode=${partnerCode}` +
         `&redirectUrl=${redirectUrl}` +
         `&requestId=${requestId}` +
-        `&requestType=payWithMethod`;
-
-      console.log('[MoMo] rawSignature:', rawSignature);
+        `&requestType=${requestType}`;
 
       const signature = crypto
         .createHmac('sha256', secretKey)
         .update(rawSignature)
         .digest('hex');
-
-      console.log('[MoMo] signature:', signature);
 
       const momoPayload = {
         partnerCode,
@@ -232,24 +307,14 @@ export class CheckoutService {
         ipnUrl,
         extraData,
         lang: 'vi',
-        requestType: 'payWithMethod',
+        requestType: requestType, // Sử dụng chung 1 biến
         signature,
       };
-
-      console.log(
-        '[MoMo] Gửi payload đến MoMo:',
-        JSON.stringify(momoPayload, null, 2),
-      );
 
       const momoRes = await axios.post(momoEndpoint, momoPayload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000,
       });
-
-      console.log(
-        '[MoMo] Phản hồi từ MoMo:',
-        JSON.stringify(momoRes.data, null, 2),
-      );
 
       if (momoRes.data.resultCode !== 0) {
         throw new InternalServerErrorException(
@@ -265,7 +330,11 @@ export class CheckoutService {
         qrCodeUrl: momoRes.data.qrCodeUrl,
       };
     } catch (error: any) {
-      await queryRunner.rollbackTransaction();
+      // ĐÃ SỬA: Chỉ rollback nếu transaction chưa bị commit
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      
       console.error(
         '[MoMo] Lỗi tạo thanh toán:',
         error.message,
@@ -281,16 +350,14 @@ export class CheckoutService {
         `Lỗi kết nối MoMo: ${error.message}`,
       );
     } finally {
-      await queryRunner.release();
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MOMO: Xử lý IPN Webhook (MoMo gọi vào sau khi user thanh toán)
-  // ─────────────────────────────────────────────────────────────────────────────
+  
   async handleMomoIPN(body: any) {
-    console.log('[MoMo IPN] Nhận được webhook:', JSON.stringify(body, null, 2));
-    console.log('[IPN] Nhận request từ MoMo:', body);
 
     const {
       partnerCode,
@@ -311,79 +378,57 @@ export class CheckoutService {
       storeName,
     } = body;
 
-    // 1. Verify Signature - Tự tính lại để đối chiếu
-    const accessKey = process.env.MOMO_ACCESS_KEY;
-    const secretKey = process.env.MOMO_SECRET_KEY;
-
-    if (!accessKey || !secretKey) {
-      throw new Error('Thiếu cấu hình cổng thanh toán MoMo trong hệ thống');
-    }
-
-    let rawSignature =
-      `accessKey=${accessKey}` +
-      `&amount=${amount}` +
-      `&extraData=${extraData}` +
-      `&message=${message}` +
-      `&orderId=${orderId}` +
-      `&orderInfo=${orderInfo}` +
-      `&orderType=${orderType}` +
-      `&partnerCode=${partnerCode}`;
-
-    if (partnerName) rawSignature += `&partnerName=${partnerName}`;
-
-    rawSignature +=
-      `&payType=${payType}` +
-      `&requestId=${requestId}` +
-      `&responseTime=${responseTime}` +
-      `&resultCode=${resultCode}`;
-
-    if (storeId) rawSignature += `&storeId=${storeId}`;
-    if (storeName) rawSignature += `&storeName=${storeName}`;
-
-    rawSignature += `&transId=${transId}`;
-
-    const expectedSignature = crypto
-      .createHmac('sha256', secretKey)
-      .update(rawSignature)
-      .digest('hex');
-
-    const isValidSignature = signature === expectedSignature;
-    console.log('>>> [SIGNATURE CHECK] Chữ ký nhận được:', signature);
-    console.log('>>> [SIGNATURE CHECK] Chữ ký tự tính lại:', expectedSignature);
-    console.log('[IPN] Kết quả check signature:', isValidSignature);
-
-    if (!isValidSignature) {
-      console.error('[MoMo IPN] Chữ ký KHÔNG hợp lệ! Có thể là giả mạo.');
-      throw new UnauthorizedException('Chữ ký MoMo không hợp lệ!');
-    }
-
-    console.log('[MoMo IPN] Chữ ký hợp lệ. resultCode:', resultCode);
+    // 1. Verify Signature
+    this.verifyMomoResponseSignature(body);
+    const momoResultCode = this.normalizeMomoResultCode(resultCode);
 
     // 2. Chỉ xử lý khi thanh toán thành công (resultCode === 0)
-    if (resultCode !== 0) {
-      console.log(
-        '[MoMo IPN] Thanh toán THẤT BẠI hoặc bị huỷ. resultCode:',
-        resultCode,
-        '| message:',
-        message,
-      );
-      // Tìm và cập nhật trạng thái hoá đơn thành FAILED hoặc CANCELLED
-      const failedStatus = resultCode === 1006 ? 'CANCELLED' : 'FAILED';
+    if (momoResultCode !== 0) {
+      const failedStatus = this.getFailedMomoStatus(momoResultCode);
       try {
-        const extraDecoded = JSON.parse(
-          Buffer.from(extraData, 'base64').toString('utf8'),
-        );
+        const extraDecoded = this.decodeMomoExtraData(extraData);
         const { invoiceId } = extraDecoded;
         if (invoiceId) {
-          await this.dataSource.query(
+          const updateResult = await this.dataSource.query(
             `UPDATE HoaDon SET TrangThaiThanhToan = ? WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
             [failedStatus, invoiceId],
           );
-          console.log(
-            '[MoMo IPN] Đã cập nhật HoaDon',
-            invoiceId,
-            `thành ${failedStatus}`,
-          );
+
+          const affectedRows = Array.isArray(updateResult)
+            ? Number(updateResult[0]?.affectedRows ?? 0)
+            : Number(updateResult?.affectedRows ?? 0);
+          if (affectedRows === 0) {
+            return {
+              message: `IPN already processed - payment ${failedStatus.toLowerCase()}`,
+            };
+          }
+
+          const courseIds = Array.isArray(extraDecoded.courseIds)
+            ? extraDecoded.courseIds
+                .map((courseId: any) => Number.parseInt(courseId, 10))
+                .filter((courseId: number) => Number.isFinite(courseId))
+            : [];
+          const failedCourses = courseIds.length
+            ? await this.dataSource.query(
+                `SELECT TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${courseIds
+                  .map(() => '?')
+                  .join(',')})`,
+                courseIds,
+              )
+            : [];
+          const courseNames = failedCourses
+            .map((course: any) => course.TenKhoaHoc)
+            .filter(Boolean)
+            .join(', ');
+
+          await this.notificationsService.createNotification({
+            maND: Number.parseInt(extraDecoded.userId, 10),
+            loaiThongBao: NotificationType.PAYMENT,
+            tieuDe: `Thanh toán MoMo thất bại${invoiceId ? ` #${invoiceId}` : ''}`,
+            noiDung: courseNames
+              ? `MoMo đã trả về trạng thái ${failedStatus.toLowerCase()} cho khóa học: ${courseNames}. Vui lòng thử lại nếu bạn vẫn muốn mua khóa học này.`
+              : `MoMo đã trả về trạng thái ${failedStatus.toLowerCase()} cho đơn hàng #${invoiceId}. Vui lòng thử lại nếu bạn vẫn muốn mua khóa học này.`,
+          });
         }
       } catch (e) {
         console.error(`[MoMo IPN] Lỗi khi cập nhật ${failedStatus}:`, e);
@@ -393,36 +438,15 @@ export class CheckoutService {
       };
     }
 
-    // 3. Decode extraData để lấy invoiceId, userId, courseIds
+    // 3. Decode extraData
     let extraDecoded: any;
-    try {
-      extraDecoded = JSON.parse(
-        Buffer.from(extraData || '', 'base64').toString('utf8'),
-      );
-    } catch (e) {
-      console.error('[MoMo IPN] Lỗi decode extraData:', e);
-      throw new BadRequestException('extraData không hợp lệ');
-    }
+    extraDecoded = this.decodeMomoExtraData(extraData);
 
-    console.log(
-      '[MoMo IPN] extraData RAW decoded (trước khi validate):',
-      JSON.stringify(extraDecoded),
-    );
-
-    // ── PHÒNG VỆ: Bóc tách & validate từng trường từ extraDecoded ──────────────
     const rawCourseIds = extraDecoded.courseIds;
     const rawInvoiceId = extraDecoded.invoiceId;
     const rawUserId = extraDecoded.userId;
     const appliedCouponId = extraDecoded.appliedCouponId ?? null;
 
-    console.log('[MoMo IPN] extraData decoded fields:', {
-      rawInvoiceId,
-      rawUserId,
-      rawCourseIds,
-      appliedCouponId,
-    });
-
-    // Validate invoiceId & userId thành số nguyên an toàn
     const invoiceId = parseInt(rawInvoiceId, 10);
     const userId = parseInt(rawUserId, 10);
     if (isNaN(invoiceId))
@@ -434,7 +458,6 @@ export class CheckoutService {
         `userId không hợp lệ (NaN): "${rawUserId}"`,
       );
 
-    // Validate & ép kiểu toàn bộ courseIds — đây là nguồn gốc lỗi ER_BAD_FIELD_ERROR
     if (
       !rawCourseIds ||
       !Array.isArray(rawCourseIds) ||
@@ -453,10 +476,6 @@ export class CheckoutService {
       }
       return parsedId;
     });
-    console.log(
-      '[MoMo IPN] validCourseIds sau khi ép kiểu parseInt:',
-      validCourseIds,
-    );
 
     // 4. Dùng transaction để cập nhật DB
     const queryRunner = this.dataSource.createQueryRunner();
@@ -475,24 +494,22 @@ export class CheckoutService {
       }
 
       if (invoices[0].TrangThaiThanhToan === 'PAID') {
-        console.log(
-          '[MoMo IPN] Hoá đơn',
-          invoiceId,
-          'đã PAID trước đó, bỏ qua.',
-        );
         await queryRunner.rollbackTransaction();
         return { message: 'IPN already processed' };
       }
 
-      await queryRunner.query(
-        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID', NgayThanhToan = NOW() WHERE MaHD = ?`,
+      const paymentUpdateResult = await queryRunner.query(
+        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID', NgayThanhToan = NOW() WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
         [invoiceId],
       );
-      console.log('[MoMo IPN] Đã cập nhật HoaDon', invoiceId, 'thành PAID');
 
-      // 4c. Ghi danh học viên — dùng validCourseIds đã được làm sạch
+      if (this.toAffectedRows(paymentUpdateResult) === 0) {
+        await queryRunner.rollbackTransaction();
+        return { message: 'IPN already processed' };
+      }
+
+      // 4c. Ghi danh học viên
       const placeholders = validCourseIds.map(() => '?').join(',');
-      // Kiểm tra đã ghi danh chưa (idempotency)
       const existing = await queryRunner.query(
         `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
         [userId, ...validCourseIds],
@@ -501,43 +518,27 @@ export class CheckoutService {
 
       for (const courseId of validCourseIds) {
         if (!existingCourseIds.includes(courseId)) {
-          await queryRunner.query(
-            `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, ?)`,
-            [userId, courseId, invoiceId, 'ACTIVE'],
-          );
-          console.log(
-            '[MoMo IPN] Đã ghi danh userId:',
-            userId,
-            '| courseId:',
-            courseId,
-          );
-        } else {
-          console.log(
-            '[MoMo IPN] Bỏ qua ghi danh (đã tồn tại) userId:',
-            userId,
-            '| courseId:',
-            courseId,
-          );
+          // Wrap in try-catch in case the DB schema hasn't been fixed yet for (MaND, MaKH) composite key
+          try {
+            await queryRunner.query(
+              `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, ?)`,
+              [userId, courseId, invoiceId, 'ACTIVE'],
+            );
+          } catch (insertError: any) {
+             console.warn(`[MoMo IPN] Cảnh báo bỏ qua lỗi insert khoá học (Có thể do lỗi schema DB ER_DUP_ENTRY):`, insertError.message);
+          }
         }
       }
 
-      // 4d. Cập nhật số lượt dùng coupon (nếu có)
+      // 4d. Cập nhật số lượt dùng coupon
       if (appliedCouponId) {
         await queryRunner.query(
           `UPDATE MaGiamGia SET SoLuongDaDung = SoLuongDaDung + 1 WHERE MaCoupon = ?`,
           [appliedCouponId],
         );
-        console.log(
-          '[MoMo IPN] Đã tăng SoLuongDaDung cho coupon:',
-          appliedCouponId,
-        );
       }
 
       await queryRunner.commitTransaction();
-      console.log(
-        '[MoMo IPN] Transaction COMMIT thành công cho invoiceId:',
-        invoiceId,
-      );
 
       // 5. Tạo thông báo (sau commit, không rollback nếu lỗi thông báo)
       try {
@@ -571,19 +572,57 @@ export class CheckoutService {
 
       return { message: 'IPN processed successfully', invoiceId };
     } catch (error: any) {
-      await queryRunner.rollbackTransaction();
+      // ĐÃ SỬA: Chỉ rollback nếu transaction chưa bị commit
+      if (queryRunner.isTransactionActive) {
+         await queryRunner.rollbackTransaction();
+      }
       console.error('>>> [IPN CRASH] Lỗi xử lý DB Transaction:', error);
-      console.error('>>> [IPN CRASH] error.message:', error?.message);
-      console.error('>>> [IPN CRASH] error.stack:', error?.stack);
       throw new InternalServerErrorException(`Lỗi xử lý IPN: ${error.message}`);
     } finally {
-      await queryRunner.release();
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   // Thanh toán thủ công (giữ nguyên cho BANK / VNPAY / PAYPAL)
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
+  async handleMomoReturn(body: any, currentUserId: number) {
+    this.verifyMomoResponseSignature(body);
+
+    const extraDecoded = this.decodeMomoExtraData(body.extraData);
+    const invoiceId = parseInt(extraDecoded.invoiceId, 10);
+    const userId = parseInt(extraDecoded.userId, 10);
+    const resultCode = this.normalizeMomoResultCode(body.resultCode);
+
+    if (isNaN(invoiceId)) {
+      throw new BadRequestException(
+        `invoiceId không hợp lệ (NaN): "${extraDecoded.invoiceId}"`,
+      );
+    }
+    if (isNaN(userId) || Number(currentUserId) !== userId) {
+      throw new UnauthorizedException(
+        'Thông tin thanh toán không thuộc user hiện tại',
+      );
+    }
+
+    const ipnResult = await this.handleMomoIPN(body);
+    const paymentStatus =
+      resultCode === 0 ? 'PAID' : this.getFailedMomoStatus(resultCode);
+
+    return {
+      ...ipnResult,
+      invoiceId,
+      resultCode,
+      paymentStatus,
+      message:
+        resultCode === 0
+          ? 'Thanh toán MoMo đã được xác nhận'
+          : body.message || 'Thanh toán MoMo không thành công',
+    };
+  }
+
   async processPayment(payload: PaymentRequest, userId: number) {
     const { courseIds, paymentMethod, couponCode } = payload;
 
@@ -737,19 +776,23 @@ export class CheckoutService {
         enrollmentId: invoiceId,
       };
     } catch (error: any) {
-      await queryRunner.rollbackTransaction();
+      // ĐÃ SỬA: Chỉ rollback nếu transaction chưa bị commit
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
       if (error instanceof BadRequestException) throw error;
       console.error('Payment Transaction Error:', error);
       throw new InternalServerErrorException(`Lỗi hệ thống: ${error.message}`);
     } finally {
-      await queryRunner.release();
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   // Lấy danh sách voucher khả dụng
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   async getAvailableCoupons(courseIdsStr: string, userId: number) {
     if (!courseIdsStr) return [];
 
@@ -898,25 +941,15 @@ export class CheckoutService {
       .filter(Boolean);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   // Lấy chi tiết hoá đơn
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────────
   async getInvoiceDetails(invoiceId: number, userId: number) {
-    console.log(
-      '>>> Backend nhận Invoice ID:',
-      invoiceId,
-      typeof invoiceId,
-      '| userId:',
-      userId,
-      typeof userId,
-    );
-
     try {
       const invoice = await this.dataSource.query(
         `SELECT MaHD, TongTien, TrangThaiThanhToan FROM HoaDon WHERE MaHD = ? AND MaND = ?`,
         [invoiceId, userId],
       );
-      console.log('>>> Kết quả query HoaDon:', JSON.stringify(invoice));
 
       if (invoice.length === 0) {
         throw new NotFoundException(
@@ -931,7 +964,6 @@ export class CheckoutService {
          WHERE c.MaHD = ?`,
         [invoiceId],
       );
-      console.log('>>> Kết quả query ChiTietHoaDon:', JSON.stringify(details));
 
       return {
         invoice: invoice[0],

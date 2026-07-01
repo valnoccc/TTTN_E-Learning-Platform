@@ -91,17 +91,18 @@ export class UsersService {
     );
     return payments.map((p: any) => {
       const d = new Date(p.date);
+      const normalizedStatus = String(p.status || '').toUpperCase();
       return {
         id: `INV-${p.id}`,
         MaHD: p.id,
         date: d.toISOString().split('T')[0],
         amount: Number(p.amount),
         status:
-          p.status === 'PAID'
+          normalizedStatus === 'PAID'
             ? 'Success'
-            : p.status === 'CANCELED'
-              ? 'Canceled'
-              : p.status === 'FAILED'
+            : normalizedStatus === 'CANCELED' ||
+                normalizedStatus === 'CANCELLED' ||
+                normalizedStatus === 'FAILED'
                 ? 'Failed'
                 : 'Pending',
       };

@@ -44,6 +44,7 @@ export default function StudentProfile() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [invoiceDetails, setInvoiceDetails] = useState<any[]>([]);
   const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
+  const normalizePaymentStatus = (status: unknown) => String(status || '').toUpperCase();
 
   const handleViewInvoice = async (invoiceId: number) => {
     if (!invoiceId || isNaN(invoiceId)) {
@@ -542,15 +543,30 @@ export default function StudentProfile() {
                             </td>
                             <td className="p-4 font-semibold text-slate-700">{invoice.amount.toLocaleString('vi-VN')} đ</td>
                             <td className="p-4 text-right">
-                              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                invoice.status === 'Success' 
-                                  ? 'bg-emerald-100 text-emerald-700' 
-                                  : (invoice.status === 'Canceled' || invoice.status === 'Failed')
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-amber-100 text-amber-700'
-                              }`}>
-                                {invoice.status === 'Success' ? 'Thành công' : (invoice.status === 'Canceled' ? 'Đã hủy' : (invoice.status === 'Failed' ? 'Lỗi' : 'Chờ xử lý'))}
-                              </span>
+                              {(() => {
+                                const normalizedStatus = normalizePaymentStatus(invoice.status);
+                                const isSuccess = normalizedStatus === 'SUCCESS';
+                                const isFailed =
+                                  normalizedStatus === 'FAILED' ||
+                                  normalizedStatus === 'CANCELED' ||
+                                  normalizedStatus === 'CANCELLED';
+
+                                return (
+                                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                    isSuccess
+                                      ? 'bg-emerald-100 text-emerald-700'
+                                      : isFailed
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {isSuccess
+                                      ? 'Thành công'
+                                      : isFailed
+                                        ? 'Lỗi'
+                                        : 'Chờ xử lý'}
+                                  </span>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}

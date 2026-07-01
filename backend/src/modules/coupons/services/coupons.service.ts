@@ -81,10 +81,10 @@ export class CouponsService implements OnModuleInit {
 
   constructor(
     @InjectRepository(Coupon)
-    private readonly couponRepository: Repository<Coupon>,
+    protected readonly couponRepository: Repository<Coupon>,
     @InjectRepository(KhoaHoc)
-    private readonly courseRepository: Repository<KhoaHoc>,
-    private readonly dataSource: DataSource,
+    protected readonly courseRepository: Repository<KhoaHoc>,
+    protected readonly dataSource: DataSource,
   ) {}
 
   async onModuleInit() {
@@ -616,7 +616,7 @@ export class CouponsService implements OnModuleInit {
     };
   }
 
-  private parseOptionalDate(value?: string | null) {
+  protected parseOptionalDate(value?: string | null) {
     if (!value) {
       return null;
     }
@@ -1228,5 +1228,62 @@ export class CouponsService implements OnModuleInit {
       throw new BadRequestException('Mã giảm giá không tồn tại');
     }
     return { couponId, status };
+  }
+
+  async deleteAdminCoupon(adminId: number, couponId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const coupons = await queryRunner.query(
+        `SELECT MaCoupon, SoLuongDaDung
+         FROM MaGiamGia
+         WHERE MaCoupon = ?
+         LIMIT 1`,
+        [couponId],
+      );
+
+      if (!coupons.length) {
+        throw new NotFoundException('Mã giảm giá không tồn tại');
+      }
+
+      const coupon = coupons[0] as { MaCoupon: number; SoLuongDaDung: number };
+      const usageCount = Number(
+        (coupon as any).SoLuongDaDung ??
+          (coupon as any).soLuongDaDung ??
+          (coupon as any).soLuongdadung ??
+          0,
+      );
+
+      if (usageCount > 0) {
+        throw new BadRequestException(
+          'Không thể xóa mã giảm giá đã có lượt sử dụng',
+        );
+      }
+
+      await queryRunner.query(`DELETE FROM MaGiamGiaPhamVi WHERE MaCoupon = ?`, [
+        couponId,
+      ]);
+      await queryRunner.query(`DELETE FROM MaGiamGiaDieuKien WHERE MaCoupon = ?`, [
+        couponId,
+      ]);
+      await queryRunner.query(
+        `DELETE FROM LichSuSuDungMaGiamGia WHERE MaCoupon = ?`,
+        [couponId],
+      );
+      await queryRunner.query(`DELETE FROM MaGiamGia WHERE MaCoupon = ?`, [
+        couponId,
+      ]);
+
+      await queryRunner.commitTransaction();
+
+      return { couponId, deleted: true };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

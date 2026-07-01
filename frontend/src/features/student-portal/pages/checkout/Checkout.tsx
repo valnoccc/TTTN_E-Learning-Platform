@@ -224,8 +224,6 @@ export default function Checkout() {
           // Xóa gợi ý cross-sell cũ
           localStorage.removeItem('edumeo_cross_sell');
           window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
-          // Xóa giỏ hàng trước khi rời trang
-          courses.forEach((course) => dispatch(removeFromCart(course.id)));
           window.location.href = res.payUrl;
         } else {
           toast.error('Không nhận được link thanh toán MoMo.');

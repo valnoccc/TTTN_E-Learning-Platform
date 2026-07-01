@@ -73,6 +73,8 @@ Admin (Kiem duyet)
 - `PATCH /enrollments/:courseId/progress` (He thong tu dong cap nhat tien do xem video)
 - `POST /coupons/validate` (Kiem tra ma giam gia cho gio hang dang checkout, body: `{ maCode: string, courseIds: number[] }`)
 - `POST /coupons/:id/consume` (Tam thoi cap nhat `SoLuongDaDung` sau khi frontend mock payment thanh cong; can thay bang luong payment backend that khi co)
+- `POST /checkout/momo/return` (Student - Xac thuc payload return co chu ky tu MoMo va dong bo trang thai hoa don; body la query params MoMo tra ve, response gom `invoiceId`, `resultCode`, `paymentStatus`)
+- `DELETE /admin/coupons/:id` (Admin - Xoa cung coupon neu chua co luot su dung; neu da co `SoLuongDaDung > 0` thi tra loi chan xoa)
 
 ## Submissions & Grading (Thuc hanh & Cham diem)
 - `POST /lessons/:lessonId/submissions` (Student - Nop bai tap qua link GitHub)

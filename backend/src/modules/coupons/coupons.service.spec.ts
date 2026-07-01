@@ -148,6 +148,62 @@ describe('CouponsService', () => {
     });
   });
 
+  it('deletes an admin coupon that has never been used', async () => {
+    queryRunner.query
+      .mockResolvedValueOnce([{ maCoupon: 77, soLuongDaDung: 0 }])
+      .mockResolvedValueOnce({ affectedRows: 0 })
+      .mockResolvedValueOnce({ affectedRows: 0 })
+      .mockResolvedValueOnce({ affectedRows: 0 })
+      .mockResolvedValueOnce({ affectedRows: 1 });
+
+    const result = await service.deleteAdminCoupon(1, 77);
+
+    expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+    expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.rollbackTransaction).not.toHaveBeenCalled();
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('SELECT MaCoupon, SoLuongDaDung'),
+      [77],
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('DELETE FROM MaGiamGiaPhamVi'),
+      [77],
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('DELETE FROM MaGiamGiaDieuKien'),
+      [77],
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('DELETE FROM LichSuSuDungMaGiamGia'),
+      [77],
+    );
+    expect(queryRunner.query).toHaveBeenNthCalledWith(
+      5,
+      expect.stringContaining('DELETE FROM MaGiamGia'),
+      [77],
+    );
+    expect(result).toEqual({ couponId: 77, deleted: true });
+  });
+
+  it('rejects deleting an admin coupon that already has usage', async () => {
+    queryRunner.query.mockResolvedValueOnce([
+      { maCoupon: 88, soLuongDaDung: 2 },
+    ]);
+
+    await expect(service.deleteAdminCoupon(1, 88)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
+    expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
+  });
+
   it('rejects percent coupons above 99', async () => {
     await expect(
       service.createCoupon(10, {

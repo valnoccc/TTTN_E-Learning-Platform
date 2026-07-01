@@ -147,11 +147,31 @@ export interface MomoPaymentResponse {
   qrCodeUrl?: string;
 }
 
+export type MomoPaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'CANCELLED';
+
+export interface MomoReturnSyncResponse {
+  invoiceId: number;
+  resultCode: number;
+  paymentStatus: MomoPaymentStatus;
+  message: string;
+}
+
 export const createMomoPayment = async (
   data: MomoPaymentRequest,
 ): Promise<MomoPaymentResponse> => {
   try {
     const response: any = await axiosClient.post('/checkout/momo/create-payment', data);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const syncMomoReturn = async (
+  data: Record<string, string>,
+): Promise<MomoReturnSyncResponse> => {
+  try {
+    const response: any = await axiosClient.post('/checkout/momo/return', data);
     return response?.data ?? response;
   } catch (error) {
     throw error;
