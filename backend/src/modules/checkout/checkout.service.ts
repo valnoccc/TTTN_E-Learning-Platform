@@ -11,7 +11,7 @@ import axios from 'axios';
 import { INSTRUCTOR_REVENUE_PERCENT } from '../../common/constants/revenue-share';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
-import { CouponsService } from '../coupons/services/coupons.service';
+import { StudentCouponsService } from '../coupons/services/student-coupons.service';
 
 export interface PaymentRequest {
   courseIds: number[];
@@ -39,7 +39,7 @@ export class CheckoutService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
-    private readonly couponsService: CouponsService,
+    private readonly couponsService: StudentCouponsService,
   ) {}
 
   private normalizeMomoResultCode(resultCode: unknown): number {

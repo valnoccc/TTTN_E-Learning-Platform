@@ -16,6 +16,64 @@ const getDecodedMessage = (message: string | null) => {
   }
 };
 
+function StatusIcon({ state }: { state: 'success' | 'pending' | 'failed' }) {
+  const commonProps = {
+    fill: 'none',
+    viewBox: '0 0 24 24',
+    stroke: 'currentColor',
+    strokeWidth: 2.2,
+  } as const;
+
+  if (state === 'success') {
+    return (
+      <svg className="h-6 w-6 text-emerald-600" aria-hidden="true" {...commonProps}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    );
+  }
+
+  if (state === 'pending') {
+    return (
+      <svg className="h-6 w-6 text-amber-600" aria-hidden="true" {...commonProps}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 8v4l3 3m4 0a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="h-6 w-6 text-rose-600" aria-hidden="true" {...commonProps}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  variant = 'secondary',
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}) {
+  const base =
+    'inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const styles =
+    variant === 'primary'
+      ? 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-400 shadow-sm'
+      : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-300';
+
+  return (
+    <button type="button" onClick={onClick} className={`${base} ${styles}`}>
+      {children}
+    </button>
+  );
+}
+
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -124,15 +182,27 @@ export default function CheckoutSuccess() {
 
   if (returnState === 'CHECKING') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 px-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full text-center">
-          <div className="mx-auto mb-6 w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Đang xác nhận thanh toán
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Hệ thống đang kiểm tra kết quả trả về từ MoMo. Vui lòng chờ trong giây lát.
-          </p>
+      <div className="min-h-screen bg-stone-50 px-4 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+          <div className="w-full rounded-[28px] border border-stone-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-10">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/5">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Đang xác nhận thanh toán
+                </p>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                  Hệ thống đang kiểm tra kết quả từ MoMo
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
+              Vui lòng chờ trong giây lát. Hóa đơn sẽ được cập nhật ngay khi giao dịch
+              được đồng bộ xong.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -140,125 +210,157 @@ export default function CheckoutSuccess() {
 
   if (returnState === 'PAID') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 px-4 py-12">
-        <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full text-center relative overflow-hidden z-10">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-100 rounded-full opacity-50 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-100 rounded-full opacity-50 pointer-events-none" />
+      <div className="min-h-screen bg-stone-50 px-4 py-10">
+        <main className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+          <section className="overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+            <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="p-8 sm:p-10">
+                <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
+                  <StatusIcon state="success" />
+                  Thanh toán thành công
+                </div>
 
-          <div className="relative mx-auto mb-6 w-28 h-28">
-            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center shadow-xl animate-bounce-slow">
-              <svg
-                className="w-14 h-14 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+                <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                  Ghi danh hoàn tất
+                </h1>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+                  MoMo đã xác nhận giao dịch và khóa học đã được thêm vào tài khoản của bạn.
+                  Bạn có thể vào học ngay hoặc xem lại lịch sử thanh toán bất cứ lúc nào.
+                </p>
+
+                {displayMessage && (
+                  <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-6 text-emerald-900">
+                    {displayMessage}
+                  </div>
+                )}
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <ActionButton onClick={() => navigate('/student/my-courses')} variant="primary">
+                    Vào học ngay
+                  </ActionButton>
+                  <ActionButton onClick={() => navigate('/student/profile')}>
+                    Xem lịch sử thanh toán
+                  </ActionButton>
+                </div>
+              </div>
+
+              <aside className="border-t border-stone-200 bg-stone-50/70 p-8 sm:p-10 lg:border-l lg:border-t-0">
+                <p className="text-sm font-medium text-slate-500">Tóm tắt giao dịch</p>
+
+                <dl className="mt-5 space-y-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-sm text-slate-500">Trạng thái</dt>
+                    <dd className="text-sm font-semibold text-emerald-700">Thành công</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-sm text-slate-500">Phương thức</dt>
+                    <dd className="text-sm font-medium text-slate-900">MoMo</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-sm text-slate-500">Số khóa học</dt>
+                    <dd className="text-sm font-medium text-slate-900">
+                      {parsedCourseIds.length > 0 ? `${parsedCourseIds.length} khóa học` : 'Không xác định'}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-sm text-slate-500">Đồng bộ giỏ hàng</dt>
+                    <dd className="text-sm font-medium text-slate-900">Đã cập nhật</dd>
+                  </div>
+                </dl>
+
+                {parsedCourseIds.length > 0 && (
+                  <div className="mt-8">
+                    <p className="text-sm font-medium text-slate-500">Mã khóa học</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {parsedCourseIds.map((courseId) => (
+                        <span
+                          key={courseId}
+                          className="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
+                        >
+                          #{courseId}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </aside>
             </div>
-          </div>
+          </section>
 
-          <h1 className="text-3xl font-extrabold text-gray-800 mb-2">
-            Chúc mừng bạn!
-          </h1>
-          <p className="text-gray-500 mb-1 text-base">
-            Thanh toán MoMo <span className="font-semibold text-green-500">thành công</span>.
-          </p>
-          <p className="text-gray-400 text-sm mb-6">
-            Khóa học đã được ghi danh vào tài khoản của bạn.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-            <button
-              onClick={() => navigate('/student/my-courses')}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-base transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              Vào học ngay
-            </button>
-            <button
-              onClick={() => navigate('/student/profile')}
-              className="px-6 py-3 rounded-xl border-2 border-gray-200 hover:border-purple-300 text-gray-600 hover:text-purple-600 font-semibold transition-all duration-200"
-            >
-              Xem hồ sơ của tôi
-            </button>
-          </div>
-        </div>
-
-        {parsedCourseId && (
-          <CourseRecommendations courseId={parsedCourseId} userId={parsedUserId || undefined} />
-        )}
-
-        <style>{`
-          @keyframes bounce-slow {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-          }
-          .animate-bounce-slow {
-            animation: bounce-slow 2s ease-in-out infinite;
-          }
-        `}</style>
+          {parsedCourseId && (
+            <CourseRecommendations
+              courseId={parsedCourseId}
+              userId={parsedUserId || undefined}
+            />
+          )}
+        </main>
       </div>
     );
   }
 
   if (returnState === 'PENDING') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-amber-50 px-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full text-center">
-          <div className="mx-auto mb-6 w-24 h-24 rounded-full flex items-center justify-center bg-amber-100">
-            <svg className="w-12 h-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <div className="min-h-screen bg-stone-50 px-4 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+          <div className="w-full rounded-[28px] border border-stone-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-10">
+            <div className="inline-flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
+              <StatusIcon state="pending" />
+              Đang xử lý
+            </div>
+            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">
+              Thanh toán đang được xác nhận
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+              MoMo chưa trả về trạng thái cuối cùng. Hóa đơn sẽ được cập nhật khi hệ thống
+              nhận đủ kết quả xác nhận.
+            </p>
+            {displayMessage && (
+              <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3 text-sm leading-6 text-amber-900">
+                {displayMessage}
+              </div>
+            )}
+            <div className="mt-8">
+              <ActionButton onClick={() => navigate('/student/profile')}>
+                Xem lịch sử thanh toán
+              </ActionButton>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Thanh toán đang được xử lý
-          </h1>
-          <p className="text-gray-500 mb-6 text-sm">
-            MoMo chưa xác nhận hoàn tất giao dịch. Hóa đơn sẽ được cập nhật khi hệ thống nhận được kết quả cuối cùng.
-          </p>
-          <button onClick={() => navigate('/student/profile')} className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all duration-200">
-            Xem lịch sử thanh toán
-          </button>
         </div>
       </div>
     );
   }
 
-  const isCancelled = false;
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50 px-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full text-center">
-        <div className={`mx-auto mb-6 w-24 h-24 rounded-full flex items-center justify-center ${isCancelled ? 'bg-orange-100' : 'bg-red-100'}`}>
-          <svg className={`w-12 h-12 ${isCancelled ? 'text-orange-500' : 'text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isCancelled ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            )}
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          {isCancelled ? 'Thanh toán đã bị hủy' : 'Thanh toán thất bại'}
-        </h1>
-        <p className="text-gray-500 mb-2 text-sm">
-          {isCancelled
-            ? 'Bạn đã hủy giao dịch hoặc giao dịch đã bị MoMo hủy.'
-            : 'Giao dịch của bạn không thành công. Khóa học chưa được ghi danh.'}
-        </p>
-        {displayMessage && (
-          <p className={`text-xs rounded-lg px-3 py-2 mb-6 ${isCancelled ? 'text-orange-600 bg-orange-50' : 'text-red-600 bg-red-50'}`}>
-            {displayMessage}
+    <div className="min-h-screen bg-stone-50 px-4 py-10">
+      <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+        <div className="w-full rounded-[28px] border border-stone-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-10">
+          <div
+            className="inline-flex items-center gap-3 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+          >
+            <StatusIcon state="failed" />
+            Thanh toán thất bại
+          </div>
+
+          <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">
+            Thanh toán không thành công
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+            Thanh toán chưa hoàn tất và khóa học chưa được ghi danh vào tài khoản của bạn.
           </p>
-        )}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={() => navigate(-1)} className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all duration-200">
-            Thử lại
-          </button>
-          <button onClick={() => navigate('/student')} className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold transition-all duration-200 shadow-lg">
-            Về trang chủ
-          </button>
+          {displayMessage && (
+            <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm leading-6 text-rose-900">
+              {displayMessage}
+            </div>
+          )}
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <ActionButton onClick={() => navigate('/student')}>
+              Về trang chủ
+            </ActionButton>
+            <ActionButton onClick={() => navigate('/student/profile')}>
+              Xem lịch sử thanh toán
+            </ActionButton>
+          </div>
         </div>
       </div>
     </div>

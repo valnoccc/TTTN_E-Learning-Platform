@@ -9,12 +9,12 @@ import {
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
-import { CouponsService } from '../services/coupons.service';
+import { StudentCouponsService } from '../services/student-coupons.service';
 
 @Controller('coupons')
 @UseGuards(JwtAuthGuard)
 export class PublicCouponsController {
-  constructor(private readonly couponsService: CouponsService) {}
+  constructor(private readonly couponsService: StudentCouponsService) {}
 
   @Post('validate')
   async validateCoupon(@Body() body: ValidateCouponDto, @Request() req) {

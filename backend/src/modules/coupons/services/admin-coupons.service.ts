@@ -2,17 +2,26 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
-import { CreateAdminCouponDto, type AdminCouponRuleInput, type AdminCouponRuleType, type AdminCouponScopeType } from '../dto/create-admin-coupon.dto';
-import { CouponsService } from './coupons.service';
+import {
+  CreateAdminCouponDto,
+  type AdminCouponRuleInput,
+  type AdminCouponRuleType,
+  type AdminCouponScopeType,
+} from '../dto/create-admin-coupon.dto';
+import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { Coupon } from '../entities/coupon.entity';
 import { KhoaHoc } from '../../courses/entities/course.entity';
+import { CouponsService } from './coupons.service';
 
 @Injectable()
-export class AdminCouponsService extends CouponsService {
+export class AdminCouponsService extends CouponsService implements OnModuleInit {
+  private adminCouponSchemaReady: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(Coupon)
     couponRepository: any,
@@ -23,7 +32,201 @@ export class AdminCouponsService extends CouponsService {
     super(couponRepository, courseRepository, dataSource);
   }
 
-  async createAdminCoupon(adminId: number, payload: CreateAdminCouponDto) {
+  async onModuleInit() {
+    await this.ensureAdminCouponSchema();
+  }
+
+  private ensureAdminCouponSchema() {
+    if (!this.adminCouponSchemaReady) {
+      this.adminCouponSchemaReady = (async () => {
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`MaKM\` varchar(100) DEFAULT NULL AFTER \`GhiChu\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`LoaiKM\` enum('FIRST_TIME','CROSS_SELL','HOLIDAY','STANDARD') DEFAULT 'STANDARD' AFTER \`MaKM\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`MaGiamGiaDieuKien\` (
+            \`MaDK\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`LoaiDieuKien\` enum(
+              'NEW_USER_24H',
+              'FIRST_PURCHASE',
+              'COMBO_ONLY',
+              'MIN_ORDER_VALUE',
+              'MIN_COURSE_COUNT'
+            ) NOT NULL,
+            \`GiaTriDieuKien\` decimal(12,2) DEFAULT NULL,
+            \`MoTa\` varchar(255) DEFAULT NULL,
+            \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaDK\`),
+            KEY \`idx_coupon_rule_coupon\` (\`MaCoupon\`),
+            KEY \`idx_coupon_rule_type\` (\`LoaiDieuKien\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           MODIFY COLUMN \`LoaiDieuKien\` enum(
+             'NEW_USER_24H',
+             'FIRST_PURCHASE',
+             'COMBO_ONLY',
+             'MIN_ORDER_VALUE',
+             'MIN_COURSE_COUNT',
+             'ACCOUNT_AGE_HOURS',
+             'REPEAT_PURCHASE',
+             'NEW_USER_ONLY'
+           ) NOT NULL`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`GiaTriDieuKien\` decimal(12,2) DEFAULT NULL AFTER \`LoaiDieuKien\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`MoTa\` varchar(255) DEFAULT NULL AFTER \`GiaTriDieuKien\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaDieuKien\`
+           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MoTa\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`MaGiamGiaPhamVi\` (
+            \`MaPV\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`LoaiPhamVi\` enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL,
+            \`MaDoiTuong\` int DEFAULT NULL,
+            \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaPV\`),
+            KEY \`idx_coupon_scope_coupon\` (\`MaCoupon\`),
+            KEY \`idx_coupon_scope_type\` (\`LoaiPhamVi\`),
+            KEY \`idx_coupon_scope_target\` (\`MaDoiTuong\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`LoaiPhamVi\` enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL AFTER \`MaCoupon\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`MaDoiTuong\` int DEFAULT NULL AFTER \`LoaiPhamVi\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`MaGiamGiaPhamVi\`
+           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MaDoiTuong\``,
+        );
+
+        await this.dataSource.query(
+          `CREATE TABLE IF NOT EXISTS \`LichSuSuDungMaGiamGia\` (
+            \`MaLSSD\` int NOT NULL AUTO_INCREMENT,
+            \`MaCoupon\` int NOT NULL,
+            \`MaND\` int NOT NULL,
+            \`MaHD\` int NOT NULL,
+            \`GiaTriDonHang\` decimal(12,2) NOT NULL DEFAULT '0.00',
+            \`SoTienGiam\` decimal(12,2) NOT NULL DEFAULT '0.00',
+            \`ThoiGianSuDung\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (\`MaLSSD\`),
+            UNIQUE KEY \`uq_coupon_invoice\` (\`MaCoupon\`, \`MaHD\`),
+            KEY \`idx_coupon_redemption_user\` (\`MaND\`),
+            KEY \`idx_coupon_redemption_invoice\` (\`MaHD\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`GiaTriDonHang\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`MaHD\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`SoTienGiam\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`GiaTriDonHang\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
+           ADD COLUMN IF NOT EXISTS \`ThoiGianSuDung\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`SoTienGiam\``,
+        );
+      })();
+    }
+
+    return this.adminCouponSchemaReady;
+  }
+
+  async getAdminCoupons(query: QueryCouponsDto) {
+    const normalizedSearch = query.search?.trim() ?? '';
+    const normalizedStatus = query.status?.trim().toUpperCase();
+
+    const conditions = ['1=1'];
+    const params: Array<string | number> = [];
+
+    if (normalizedSearch) {
+      conditions.push('mg.MaCode LIKE ?');
+      params.push(`%${normalizedSearch}%`);
+    }
+
+    if (normalizedStatus && ['ACTIVE', 'INACTIVE'].includes(normalizedStatus)) {
+      conditions.push('mg.TrangThai = ?');
+      params.push(normalizedStatus);
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT
+          mg.MaCoupon AS maCoupon,
+          mg.MaCode AS maCode,
+          mg.GiaTriGiam AS giaTriGiam,
+          mg.LoaiGiam AS loaiGiam,
+          mg.TrangThai AS trangThai,
+          mg.NgayBatDau AS ngayBatDau,
+          mg.NgayKetThuc AS ngayKetThuc,
+          mg.MaKH AS maKH,
+          kh.TenKhoaHoc AS tenKhoaHoc,
+          mg.SoLuongGioiHan AS soLuongGioiHan,
+          mg.SoLuongDaDung AS soLuongDaDung,
+          mg.GhiChu AS ghiChu,
+          mg.LoaiKM AS loaiKM
+       FROM MaGiamGia mg
+       LEFT JOIN KhoaHoc kh ON kh.MaKH = mg.MaKH
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY mg.MaCoupon DESC`,
+      params,
+    );
+
+    const summaryResult = await this.dataSource.query(
+      `SELECT
+          COUNT(*) AS totalCouponCount,
+          SUM(CASE WHEN TrangThai = 'ACTIVE' THEN 1 ELSE 0 END) AS activeCount,
+          COALESCE(SUM(SoLuongDaDung), 0) AS totalUsageCount
+       FROM MaGiamGia`,
+    );
+
+    const summary = summaryResult[0] ?? {
+      totalCouponCount: 0,
+      activeCount: 0,
+      totalUsageCount: 0,
+    };
+
+    return {
+      summary: {
+        totalCouponCount: Number(summary.totalCouponCount ?? 0),
+        activeCount: Number(summary.activeCount ?? 0),
+        totalUsageCount: Number(summary.totalUsageCount ?? 0),
+      },
+      items: rows.map((row) => this.normalizeCouponRow(row)),
+    };
+  }
+
+  async createAdminCoupon(_adminId: number, payload: CreateAdminCouponDto) {
     const maCode = payload.maCode?.trim().toUpperCase();
     if (!maCode) {
       throw new BadRequestException('Mã giảm giá không được để trống');
@@ -181,7 +384,7 @@ export class AdminCouponsService extends CouponsService {
   }
 
   async updateAdminCouponStatus(
-    adminId: number,
+    _adminId: number,
     couponId: number,
     status: string,
   ) {
@@ -195,7 +398,7 @@ export class AdminCouponsService extends CouponsService {
     return { couponId, status };
   }
 
-  async deleteAdminCoupon(adminId: number, couponId: number) {
+  async deleteAdminCoupon(_adminId: number, couponId: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

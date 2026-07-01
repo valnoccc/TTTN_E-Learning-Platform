@@ -18,14 +18,12 @@ import { CreateCouponDto } from '../dto/create-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
 import { InstructorCouponsService } from '../services/instructor-coupons.service';
-import { CouponsService } from '../services/coupons.service';
 
 @Controller('instructor/coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('INSTRUCTOR')
 export class InstructorCouponsController {
   constructor(
-    private readonly couponsService: CouponsService,
     private readonly instructorCouponsService: InstructorCouponsService,
   ) {}
 
@@ -38,7 +36,7 @@ export class InstructorCouponsController {
     @Req() req: Request & { user: { sub: number } },
     @Query() query: QueryCouponsDto,
   ) {
-    const data = await this.couponsService.getInstructorCoupons(
+    const data = await this.instructorCouponsService.getInstructorCoupons(
       this.getInstructorId(req),
       query,
     );

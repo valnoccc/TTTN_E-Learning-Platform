@@ -11,6 +11,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { CourseInstructorCurriculumService } from './services/course-instructor-curriculum.service';
 import { CoursesService } from './services/course-instructor.service';
 import { CourseAdminService } from './services/course-admin.service';
+import { CourseStudentService } from './services/course-student.service';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CourseAdminService } from './services/course-admin.service';
     CoursesService,
     CourseInstructorCurriculumService,
     CourseAdminService,
+    CourseStudentService,
   ],
 })
 export class CoursesModule {}

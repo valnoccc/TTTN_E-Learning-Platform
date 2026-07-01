@@ -7,8 +7,8 @@ import { PublicCouponsController } from './controllers/public-coupons.controller
 import { InstructorCouponsController } from './controllers/instructor-coupons.controller';
 import { Coupon } from './entities/coupon.entity';
 import { AdminCouponsService } from './services/admin-coupons.service';
-import { CouponsService } from './services/coupons.service';
 import { InstructorCouponsService } from './services/instructor-coupons.service';
+import { StudentCouponsService } from './services/student-coupons.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Coupon, KhoaHoc])],
@@ -17,7 +17,7 @@ import { InstructorCouponsService } from './services/instructor-coupons.service'
     InstructorCouponsController,
     PublicCouponsController,
   ],
-  providers: [CouponsService, AdminCouponsService, InstructorCouponsService],
-  exports: [CouponsService, AdminCouponsService, InstructorCouponsService],
+  providers: [AdminCouponsService, InstructorCouponsService, StudentCouponsService],
+  exports: [AdminCouponsService, InstructorCouponsService, StudentCouponsService],
 })
 export class CouponsModule {}

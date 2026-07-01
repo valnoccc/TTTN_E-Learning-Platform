@@ -9,10 +9,14 @@ import { DataSource } from 'typeorm';
 
 import { KhoaHoc } from '../courses/entities/course.entity';
 import { Coupon } from './entities/coupon.entity';
-import { CouponsService } from './services/coupons.service';
+import { AdminCouponsService } from './services/admin-coupons.service';
+import { InstructorCouponsService } from './services/instructor-coupons.service';
+import { StudentCouponsService } from './services/student-coupons.service';
 
-describe('CouponsService', () => {
-  let service: CouponsService;
+describe('Coupons services', () => {
+  let adminService: AdminCouponsService;
+  let instructorService: InstructorCouponsService;
+  let studentService: StudentCouponsService;
   let dataSource: { query: jest.Mock; createQueryRunner: jest.Mock };
   let queryRunner: {
     connect: jest.Mock;
@@ -60,18 +64,22 @@ describe('CouponsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        CouponsService,
+        AdminCouponsService,
+        InstructorCouponsService,
+        StudentCouponsService,
         { provide: DataSource, useValue: dataSource },
         { provide: getRepositoryToken(Coupon), useValue: couponRepository },
         { provide: getRepositoryToken(KhoaHoc), useValue: courseRepository },
       ],
     }).compile();
 
-    service = module.get<CouponsService>(CouponsService);
+    adminService = module.get(AdminCouponsService);
+    instructorService = module.get(InstructorCouponsService);
+    studentService = module.get(StudentCouponsService);
   });
 
   it('ensures admin coupon schema exists on module init', async () => {
-    await service.onModuleInit();
+    await adminService.onModuleInit();
 
     expect(dataSource.query).toHaveBeenCalledWith(
       expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaPhamVi`'),
@@ -84,6 +92,77 @@ describe('CouponsService', () => {
     );
   });
 
+  it('lists admin coupons with summary data', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([
+        {
+          maCoupon: 11,
+          maCode: 'ADMIN11',
+          giaTriGiam: 10,
+          loaiGiam: 'PERCENT',
+          trangThai: 'ACTIVE',
+          ngayBatDau: null,
+          ngayKetThuc: null,
+          maKH: null,
+          tenKhoaHoc: null,
+          soLuongGioiHan: null,
+          soLuongDaDung: 3,
+          ghiChu: null,
+          loaiKM: 'STANDARD',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          totalCouponCount: 1,
+          activeCount: 1,
+          totalUsageCount: 3,
+        },
+      ]);
+
+    const result = await adminService.getAdminCoupons({ search: 'admin' } as any);
+
+    expect(result.summary).toEqual({
+      totalCouponCount: 1,
+      activeCount: 1,
+      totalUsageCount: 3,
+    });
+    expect(result.items[0].maCode).toBe('ADMIN11');
+  });
+
+  it('lists instructor coupons with summary data', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([
+        {
+          maCoupon: 22,
+          maCode: 'INS22',
+          giaTriGiam: 20,
+          loaiGiam: 'PERCENT',
+          trangThai: 'ACTIVE',
+          ngayBatDau: null,
+          ngayKetThuc: null,
+          maKH: 10,
+          tenKhoaHoc: 'React',
+          soLuongGioiHan: null,
+          soLuongDaDung: 1,
+          ghiChu: null,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          totalCouponCount: 1,
+          activeCount: 1,
+          totalUsageCount: 1,
+        },
+      ]);
+
+    const result = await instructorService.getInstructorCoupons(7, {
+      search: 'ins',
+    } as any);
+
+    expect(result.summary.totalCouponCount).toBe(1);
+    expect(result.items[0].maCode).toBe('INS22');
+  });
+
   it('stores admin coupon scope and conditions in dedicated tables', async () => {
     queryRunner.query
       .mockResolvedValueOnce({ insertId: 120009 })
@@ -92,7 +171,7 @@ describe('CouponsService', () => {
       .mockResolvedValueOnce({ affectedRows: 1 })
       .mockResolvedValueOnce({ affectedRows: 1 });
 
-    const result = await service.createAdminCoupon(1, {
+    const result = await adminService.createAdminCoupon(1, {
       maCode: '8MARCH-2026',
       giaTriGiam: 20,
       loaiGiam: 'PERCENT',
@@ -156,7 +235,7 @@ describe('CouponsService', () => {
       .mockResolvedValueOnce({ affectedRows: 0 })
       .mockResolvedValueOnce({ affectedRows: 1 });
 
-    const result = await service.deleteAdminCoupon(1, 77);
+    const result = await adminService.deleteAdminCoupon(1, 77);
 
     expect(queryRunner.connect).toHaveBeenCalledTimes(1);
     expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
@@ -195,7 +274,7 @@ describe('CouponsService', () => {
       { maCoupon: 88, soLuongDaDung: 2 },
     ]);
 
-    await expect(service.deleteAdminCoupon(1, 88)).rejects.toBeInstanceOf(
+    await expect(adminService.deleteAdminCoupon(1, 88)).rejects.toBeInstanceOf(
       BadRequestException,
     );
 
@@ -206,7 +285,7 @@ describe('CouponsService', () => {
 
   it('rejects percent coupons above 99', async () => {
     await expect(
-      service.createCoupon(10, {
+      instructorService.createCoupon(10, {
         maCode: 'BIG100',
         giaTriGiam: 100,
         loaiGiam: 'PERCENT',
@@ -220,7 +299,7 @@ describe('CouponsService', () => {
     courseRepository.findOne.mockResolvedValue(null);
 
     await expect(
-      service.createCoupon(99, {
+      instructorService.createCoupon(99, {
         maCode: 'PRIVATE50',
         giaTriGiam: 50,
         loaiGiam: 'PERCENT',
@@ -248,7 +327,7 @@ describe('CouponsService', () => {
     ]);
 
     await expect(
-      service.validateCoupon({ maCode: 'OFF50', courseIds: [10, 11] }),
+      studentService.validateCoupon({ maCode: 'OFF50', courseIds: [10, 11] }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -256,7 +335,7 @@ describe('CouponsService', () => {
     dataSource.query.mockResolvedValueOnce([]);
 
     await expect(
-      service.validateCoupon({ maCode: 'MISSING', courseIds: [10] }),
+      studentService.validateCoupon({ maCode: 'MISSING', courseIds: [10] }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -281,7 +360,7 @@ describe('CouponsService', () => {
     dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([{ TotalPrice: 300000 }]);
 
-    const result = await service.validateCoupon({
+    const result = await studentService.validateCoupon({
       maCode: 'REACT10',
       courseIds: [12, 10, 99],
     });
@@ -328,7 +407,7 @@ describe('CouponsService', () => {
     dataSource.query.mockResolvedValueOnce([{ TotalPrice: 300000 }]);
 
     await expect(
-      service.validateCoupon({ maCode: 'SALE8', courseIds: [10] }, 1),
+      studentService.validateCoupon({ maCode: 'SALE8', courseIds: [10] }, 1),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -353,7 +432,7 @@ describe('CouponsService', () => {
     dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([{ TotalPrice: 250000 }]);
 
-    const result = await service.validateCoupon({
+    const result = await studentService.validateCoupon({
       maCode: 'FREE999',
       courseIds: [5],
     });
@@ -366,7 +445,7 @@ describe('CouponsService', () => {
       affectedRows: 1,
     });
 
-    const result = await service.consumeCouponUsage(7);
+    const result = await studentService.consumeCouponUsage(7);
 
     expect(dataSource.query).toHaveBeenCalledWith(
       expect.stringContaining('SET SoLuongDaDung = SoLuongDaDung + 1'),
@@ -386,7 +465,7 @@ describe('CouponsService', () => {
         .mockResolvedValueOnce({ affectedRows: 1 }),
     };
 
-    await service.recordCouponRedemption(
+    await studentService.recordCouponRedemption(
       {
         couponId: 7,
         userId: 88,

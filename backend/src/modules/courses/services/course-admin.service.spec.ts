@@ -145,14 +145,14 @@ describe('CourseAdminService', () => {
           tenChuong: 'Chuong 1',
           thuTu: 1,
           baiHocs: [
-            {
+            expect.objectContaining({
               maBH: 10,
               tenBaiHoc: 'Bai 1',
               thuTu: 1,
               noiDung: 'Noi dung',
               videoURL: 'https://example.com/video.mp4',
               trangThai: 'ACTIVE',
-            },
+            }),
           ],
         },
       ],

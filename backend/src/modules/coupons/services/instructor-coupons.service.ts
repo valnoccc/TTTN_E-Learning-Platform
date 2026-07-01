@@ -4,13 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
-import { CouponsService } from './coupons.service';
 import { CreateCouponDto } from '../dto/create-coupon.dto';
+import { QueryCouponsDto } from '../dto/query-coupons.dto';
+import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
 import { Coupon } from '../entities/coupon.entity';
 import { KhoaHoc } from '../../courses/entities/course.entity';
+import { CouponsService } from './coupons.service';
 
 @Injectable()
 export class InstructorCouponsService extends CouponsService {
@@ -22,6 +24,70 @@ export class InstructorCouponsService extends CouponsService {
     dataSource: DataSource,
   ) {
     super(couponRepository, courseRepository, dataSource);
+  }
+
+  async getInstructorCoupons(instructorId: number, query: QueryCouponsDto) {
+    const normalizedSearch = query.search?.trim() ?? '';
+    const normalizedStatus = query.status?.trim().toUpperCase();
+
+    const conditions = ['mg.MaND_GiangVien = ?'];
+    const params: Array<string | number> = [instructorId];
+
+    if (normalizedSearch) {
+      conditions.push('mg.MaCode LIKE ?');
+      params.push(`%${normalizedSearch}%`);
+    }
+
+    if (normalizedStatus && ['ACTIVE', 'INACTIVE'].includes(normalizedStatus)) {
+      conditions.push('mg.TrangThai = ?');
+      params.push(normalizedStatus);
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT
+          mg.MaCoupon AS maCoupon,
+          mg.MaCode AS maCode,
+          mg.GiaTriGiam AS giaTriGiam,
+          mg.LoaiGiam AS loaiGiam,
+          mg.TrangThai AS trangThai,
+          mg.NgayBatDau AS ngayBatDau,
+          mg.NgayKetThuc AS ngayKetThuc,
+          mg.MaKH AS maKH,
+          kh.TenKhoaHoc AS tenKhoaHoc,
+          mg.SoLuongGioiHan AS soLuongGioiHan,
+          mg.SoLuongDaDung AS soLuongDaDung,
+          mg.GhiChu AS ghiChu
+       FROM MaGiamGia mg
+       INNER JOIN KhoaHoc kh ON kh.MaKH = mg.MaKH
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY mg.MaCoupon DESC`,
+      params,
+    );
+
+    const summaryResult = await this.dataSource.query(
+      `SELECT
+          COUNT(*) AS totalCouponCount,
+          SUM(CASE WHEN TrangThai = 'ACTIVE' THEN 1 ELSE 0 END) AS activeCount,
+          COALESCE(SUM(SoLuongDaDung), 0) AS totalUsageCount
+       FROM MaGiamGia
+       WHERE MaND_GiangVien = ?`,
+      [instructorId],
+    );
+
+    const summary = summaryResult[0] ?? {
+      totalCouponCount: 0,
+      activeCount: 0,
+      totalUsageCount: 0,
+    };
+
+    return {
+      summary: {
+        totalCouponCount: Number(summary.totalCouponCount ?? 0),
+        activeCount: Number(summary.activeCount ?? 0),
+        totalUsageCount: Number(summary.totalUsageCount ?? 0),
+      },
+      items: rows.map((row) => this.normalizeCouponRow(row)),
+    };
   }
 
   async createCoupon(instructorId: number, payload: CreateCouponDto) {
@@ -113,7 +179,7 @@ export class InstructorCouponsService extends CouponsService {
   async updateCouponStatus(
     instructorId: number,
     couponId: number,
-    trangThai: 'ACTIVE' | 'INACTIVE',
+    trangThai: UpdateCouponStatusDto['trangThai'],
   ) {
     if (!['ACTIVE', 'INACTIVE'].includes(trangThai)) {
       throw new BadRequestException('Trạng thái mã giảm giá không hợp lệ');

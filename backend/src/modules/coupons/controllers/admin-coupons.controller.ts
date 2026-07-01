@@ -19,14 +19,12 @@ import { CreateAdminCouponDto } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
 import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
 import { AdminCouponsService } from '../services/admin-coupons.service';
-import { CouponsService } from '../services/coupons.service';
 
 @Controller('admin/coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminCouponsController {
   constructor(
-    private readonly couponsService: CouponsService,
     private readonly adminCouponsService: AdminCouponsService,
   ) {}
 
@@ -36,7 +34,7 @@ export class AdminCouponsController {
 
   @Get()
   async getAdminCoupons(@Query() query: QueryCouponsDto) {
-    const data = await this.couponsService.getAdminCoupons(query);
+    const data = await this.adminCouponsService.getAdminCoupons(query);
 
     return {
       message: 'Lấy danh sách mã giảm giá admin thành công',
