@@ -15,7 +15,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ForumService } from './forum.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { FilterQuestionDto, CreateQuestionDto, CreateAnswerDto } from './dto/forum.dto';
+import {
+  FilterQuestionDto,
+  CreateQuestionDto,
+  CreateAnswerDto,
+} from './dto/forum.dto';
 
 @Controller('forum')
 export class ForumController {
@@ -30,7 +34,10 @@ export class ForumController {
   }
 
   @Get('questions/:id')
-  async layChiTietCauHoi(@Param('id') id: string, @Query('increment') increment?: string) {
+  async layChiTietCauHoi(
+    @Param('id') id: string,
+    @Query('increment') increment?: string,
+  ) {
     const shouldIncrement = increment === 'true';
     return this.forumService.layChiTietCauHoi(+id, shouldIncrement);
   }
@@ -84,6 +91,9 @@ export class ForumController {
     @Req() req: Request & { user: { sub: number } },
   ) {
     const result = await this.forumService.upvoteAnswer(id, req.user.sub);
-    return { message: 'Cập nhật bình chọn câu trả lời thành công', data: result };
+    return {
+      message: 'Cập nhật bình chọn câu trả lời thành công',
+      data: result,
+    };
   }
 }

@@ -12,7 +12,12 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CauHoiDienDan, TheTuDienDan, CauTraLoiDienDan, User]),
+    TypeOrmModule.forFeature([
+      CauHoiDienDan,
+      TheTuDienDan,
+      CauTraLoiDienDan,
+      User,
+    ]),
     CloudinaryModule,
     NotificationsModule,
   ],

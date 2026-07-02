@@ -88,7 +88,9 @@ describe('Coupons services', () => {
       expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaDieuKien`'),
     );
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`'),
+      expect.stringContaining(
+        'CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`',
+      ),
     );
   });
 
@@ -119,7 +121,9 @@ describe('Coupons services', () => {
         },
       ]);
 
-    const result = await adminService.getAdminCoupons({ search: 'admin' } as any);
+    const result = await adminService.getAdminCoupons({
+      search: 'admin',
+    } as any);
 
     expect(result.summary).toEqual({
       totalCouponCount: 1,

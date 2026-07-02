@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText, BookOpen } from 'lucide-react';
+import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText, BookOpen, Share2 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 const Player: any = ReactPlayer;
 import axiosClient from '../../../../api/axios';
 import CourseOverview from './components/CourseOverview';
 import CourseQA from './components/CourseQA';
 import CourseReviews from './components/CourseReviews';
+import CourseLearningTools from './components/CourseLearningTools';
 import FooterTwo from '../../components/FooterTwo';
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -44,7 +45,7 @@ export default function CourseLearning() {
   const { id } = useParams<{ id: string }>();
   const [courseName, setCourseName] = useState<string>(`Không gian học tập (Khóa học: ${id})`);
   const [courseData, setCourseData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState('overview');
   const [curriculum, setCurriculum] = useState<any[]>([]);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [expandedModules, setExpandedModules] = useState<number[]>([]);
@@ -306,32 +307,37 @@ export default function CourseLearning() {
   }
 
   const tabs = [
-    { id: 'content', label: 'Nội dung khóa học' },
     { id: 'overview', label: 'Tổng quan' },
     { id: 'qa', label: 'Hỏi đáp' },
     { id: 'reviews', label: 'Đánh giá' },
+    { id: 'learning-tools', label: 'Công cụ học tập' },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-slate-200" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Top Navbar */}
-      <div className="h-16 bg-slate-950 border-b border-slate-800 flex items-center px-4 shrink-0 justify-between">
+      <div className="h-16 bg-slate-950 border-b border-slate-800 flex items-center px-4 shrink-0 justify-between z-20 sticky top-0">
         <div className="flex items-center gap-4">
           <Link to="/student/profile" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ChevronLeft size={20} />
-            <span className="font-medium hidden sm:inline">Trở về bảng điều khiển</span>
+            <span className="font-medium hidden sm:inline">Trở về</span>
           </Link>
           <div className="h-6 w-px bg-slate-700 mx-2 hidden sm:block"></div>
-          <h1 className="font-semibold text-white line-clamp-1">{courseName}</h1>
+          <h1 className="font-semibold text-white line-clamp-1 hidden md:block">{courseName}</h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-slate-400">Tiến độ: <span className="text-emerald-400 font-bold">{progress}%</span></div>
+          <div className="text-sm text-slate-400 hidden sm:block">Tiến độ: <span className="text-emerald-400 font-bold">{progress}%</span></div>
+          <button className="flex items-center gap-2 text-sm font-medium border border-slate-700 px-3 py-1.5 hover:bg-slate-800 transition-colors">
+            <span className="hidden sm:inline">Chia sẻ</span>
+            <Share2 size={14} />
+          </button>
         </div>
       </div>
 
-      <div className="flex-grow flex flex-col bg-white" style={{ flexGrow: 1 }}>
-        {/* Video Player */}
-        <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
+      <div className="flex-grow flex flex-col lg:flex-row bg-white" style={{ flexGrow: 1, alignItems: 'stretch' }}>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Video Player */}
+          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
           {activeLesson?.videoUrl ? (
             activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
               <video
@@ -377,7 +383,7 @@ export default function CourseLearning() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 font-semibold whitespace-nowrap border-b-2 transition-all duration-300 ${
+                className={`py-4 font-semibold whitespace-nowrap border-b-2 transition-all duration-300 outline-none focus:outline-none ${
                   activeTab === tab.id
                     ? 'border-emerald-500 text-emerald-600'
                     : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -391,105 +397,104 @@ export default function CourseLearning() {
 
         {/* Tab Content */}
         <div className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto w-full flex-1 pb-24">
-          {activeTab === 'content' && (
-            <div className="animate-fade-in space-y-8">
 
-              {/* ─── Banner "Tiếp tục học" ─────────────────────────────────── */}
-              {resumeBanner && (
-                <div className="flex items-center gap-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <BookOpen size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-emerald-800">Tiếp tục từ lần học trước</p>
-                    <p className="text-sm text-emerald-600 truncate">
-                      {resumeBanner.module.tenChuong} · {resumeBanner.lesson.tenBaiHoc}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setResumeBanner(null)}
-                    className="flex-shrink-0 text-emerald-400 hover:text-emerald-600 text-xl leading-none"
-                    aria-label="Đóng banner"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
 
-              {/* ─── Tên & nội dung bài học hiện tại ─────────────────────── */}
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-4">{activeLesson?.tenBaiHoc}</h2>
-                {activeLesson?.noiDung ? (
-                  <div className="text-slate-700 leading-relaxed prose max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.noiDung }}></div>
-                ) : (
-                  <p className="text-slate-500 italic">Bài học này cung cấp những kiến thức cần thiết để bạn nắm vững phần nội dung hiện tại. Hãy chú ý ghi chép và thực hành lại nhé.</p>
-                )}
-              </div>
-
-              {/* ─── Danh sách bài học ────────────────────────────────────── */}
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Danh sách bài học</h3>
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                  {curriculum && curriculum.length > 0 ? (
-                    curriculum.map(module => (
-                      <div key={module.maChuong} className="border-b border-slate-200 last:border-0">
-                        <button
-                          onClick={() => toggleModule(module.maChuong)}
-                          className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-left"
-                        >
-                          <span className="font-semibold text-slate-800">{module.tenChuong}</span>
-                          <span className="text-sm text-slate-500 font-medium">0/{module.baiHocs?.length || 0}</span>
-                        </button>
-                        {expandedModules.includes(module.maChuong) && module.baiHocs && (
-                          <div className="bg-slate-50 p-2 space-y-1 border-t border-slate-100">
-                            {module.baiHocs.map((lesson: any) => (
-                              <button
-                                key={lesson.maBH}
-                                onClick={() => handleLessonClick(lesson)}
-                                className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
-                                  activeLesson?.maBH === lesson.maBH
-                                    ? 'bg-emerald-50 border border-emerald-200'
-                                    : 'hover:bg-white border border-transparent'
-                                }`}
-                              >
-                                <div className="mt-0.5 shrink-0">
-                                  {lesson.completed ? (
-                                    <CheckCircle size={16} className="text-emerald-500" />
-                                  ) : lesson.videoUrl ? (
-                                    <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
-                                  ) : (
-                                    <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-600 font-bold' : 'text-slate-700 font-medium'}`}>
-                                    {lesson.tenBaiHoc}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
-                                    <span className="text-xs text-slate-400">•</span>
-                                    <span className="text-xs text-slate-500">{lesson.thoiLuong ? `${Math.round(lesson.thoiLuong / 60)} phút` : ''}</span>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center p-3 text-muted">Đang tải danh sách bài học hoặc dữ liệu trống...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'overview' && <CourseOverview courseData={courseData} />}
-          {activeTab === 'qa' && <CourseQA courseId={id || ''} />}
+          {activeTab === 'overview' && <CourseOverview courseData={courseData} curriculum={curriculum} />}
+          {activeTab === 'qa' && <CourseQA courseId={id || ''} currentLesson={activeLesson} />}
           {activeTab === 'reviews' && <CourseReviews courseId={id || ''} />}
+          {activeTab === 'learning-tools' && <CourseLearningTools courseId={id || ''} courseName={courseName || ''} />}
 
           <div className="w-full h-40 clear-both" style={{ height: '160px' }}></div>
+        </div>
+        </div>
+
+        {/* Right Side (Curriculum Sidebar) */}
+        <div className="w-full lg:w-96 lg:min-w-[24rem] flex-shrink-0 border-l border-slate-200 bg-white flex flex-col lg:max-h-[calc(100vh-64px)] lg:sticky lg:top-16">
+          <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between shadow-sm">
+            <h3 className="font-bold text-lg text-slate-800">Nội dung khóa học</h3>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
+            {/* ─── Banner "Tiếp tục học" ─────────────────────────────────── */}
+            {resumeBanner && (
+              <div className="m-4 flex items-center gap-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <BookOpen size={20} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-800">Tiếp tục học</p>
+                  <p className="text-xs text-emerald-600 truncate">
+                    {resumeBanner.lesson.tenBaiHoc}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setResumeBanner(null)}
+                  className="flex-shrink-0 text-emerald-400 hover:text-emerald-600 text-xl leading-none"
+                  aria-label="Đóng banner"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* ─── Danh sách bài học ────────────────────────────────────── */}
+            <div className="bg-slate-50">
+              {curriculum && curriculum.length > 0 ? (
+                curriculum.map(module => (
+                  <div key={module.maChuong} className="border-b border-slate-200 last:border-0">
+                    <button
+                      onClick={() => toggleModule(module.maChuong)}
+                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <span className="font-semibold text-slate-800 text-sm">{module.tenChuong}</span>
+                      <span className="text-xs text-slate-500 font-medium whitespace-nowrap ml-2">0/{module.baiHocs?.length || 0}</span>
+                    </button>
+                    {expandedModules.includes(module.maChuong) && module.baiHocs && (
+                      <div className="bg-slate-50 p-2 space-y-1 border-t border-slate-100">
+                        {module.baiHocs.map((lesson: any) => (
+                          <button
+                            key={lesson.maBH}
+                            onClick={() => handleLessonClick(lesson)}
+                            className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
+                              activeLesson?.maBH === lesson.maBH
+                                ? 'bg-emerald-50 border border-emerald-200'
+                                : 'hover:bg-white border border-transparent'
+                            }`}
+                          >
+                            <div className="mt-0.5 shrink-0">
+                              {lesson.completed ? (
+                                <CheckCircle size={16} className="text-emerald-500" />
+                              ) : lesson.videoUrl ? (
+                                <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                              ) : (
+                                <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-600 font-bold' : 'text-slate-700 font-medium'}`}>
+                                {lesson.tenBaiHoc}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
+                                {lesson.thoiLuong && (
+                                  <>
+                                    <span className="text-xs text-slate-400">•</span>
+                                    <span className="text-xs text-slate-500">{Math.round(lesson.thoiLuong / 60)} phút</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-center p-3 text-sm text-slate-500">Đang tải danh sách bài học hoặc dữ liệu trống...</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

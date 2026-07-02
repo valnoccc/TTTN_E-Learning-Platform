@@ -94,7 +94,7 @@ export class CourseAdminService {
       ngayCapNhat:
         row.ngayCapNhat instanceof Date
           ? row.ngayCapNhat.toISOString()
-          : row.ngayCapNhat ?? null,
+          : (row.ngayCapNhat ?? null),
       instructorId: Number(row.instructorId ?? 0),
       instructorName: row.instructorName ?? '',
       instructorEmail: row.instructorEmail ?? '',
@@ -188,7 +188,7 @@ export class CourseAdminService {
       ngayCapNhat:
         course.ngayCapNhat instanceof Date
           ? course.ngayCapNhat.toISOString()
-          : course.ngayCapNhat ?? null,
+          : (course.ngayCapNhat ?? null),
       maDM: course.maDM,
       instructorId: course.maND_GiangVien,
       mucTieu: mucTieuRows

@@ -14,6 +14,8 @@ export interface InstructorCourseReview {
     studentAvatar: string | null;
     courseId: number;
     courseTitle: string;
+    isReported?: boolean;
+    reportReason?: string | null;
 }
 
 type RatingFilter = '' | '5' | '4' | 'low';

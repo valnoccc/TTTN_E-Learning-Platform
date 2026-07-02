@@ -122,7 +122,7 @@ export class DiscussionsService {
    * Dùng cho học viên xem và đặt câu hỏi
    */
   async getPublicCourseDiscussions(courseId: number) {
-    return await this.dataSource.query(
+    const rawData = await this.dataSource.query(
       `
       SELECT
         tl.MaThaoLuan AS discussionId,
@@ -132,15 +132,77 @@ export class DiscussionsService {
         u.MaND AS userId,
         u.HoTen AS userName,
         u.AnhDaiDien AS userAvatar,
-        u.VaiTro AS userRole
+        u.VaiTro AS userRole,
+        (SELECT COUNT(*) FROM ThaoLuan_LuotThich WHERE MaThaoLuan = tl.MaThaoLuan) AS upvotes,
+        (SELECT GROUP_CONCAT(MaND) FROM ThaoLuan_LuotThich WHERE MaThaoLuan = tl.MaThaoLuan) AS likedUserIds
       FROM ThaoLuanKhoaHoc tl
       INNER JOIN NguoiDung u ON tl.MaND = u.MaND
       WHERE tl.MaKH = ?
-        AND tl.MaThaoLuanCha IS NULL
-      ORDER BY tl.ThoiGian DESC
+      ORDER BY tl.ThoiGian ASC
       `,
       [courseId],
     );
+
+    const processDiscussion = (d: any) => {
+      d.upvotes = parseInt(d.upvotes, 10) || 0;
+      d.likedUserIds = d.likedUserIds ? d.likedUserIds.split(',').map(Number) : [];
+      return d;
+    };
+
+    const parents = rawData.filter((d: any) => !d.parentId).map(processDiscussion);
+    const replies = rawData.filter((d: any) => d.parentId).map(processDiscussion);
+
+    const result = parents.map((p: any) => {
+      const pReplies = replies.filter(
+        (r: any) => r.parentId === p.discussionId,
+      );
+
+      return {
+        ...p,
+        replies: pReplies.sort(
+          (a: any, b: any) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        ),
+      };
+    });
+
+    return result.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }
+
+  async toggleLikeDiscussion(discussionId: number, userId: number) {
+    const existingLike = await this.dataSource.query(
+      `SELECT * FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ? AND MaND = ?`,
+      [discussionId, userId],
+    );
+
+    let isLiked = false;
+    if (existingLike.length > 0) {
+      await this.dataSource.query(
+        `DELETE FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ? AND MaND = ?`,
+        [discussionId, userId],
+      );
+      isLiked = false;
+    } else {
+      await this.dataSource.query(
+        `INSERT INTO ThaoLuan_LuotThich (MaThaoLuan, MaND) VALUES (?, ?)`,
+        [discussionId, userId],
+      );
+      isLiked = true;
+    }
+
+    const countRes = await this.dataSource.query(
+      `SELECT COUNT(*) as count FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ?`,
+      [discussionId],
+    );
+
+    return {
+      discussionId,
+      isLiked,
+      upvotes: parseInt(countRes[0].count, 10),
+    };
   }
 
   /**
@@ -151,6 +213,7 @@ export class DiscussionsService {
     courseId: number,
     userId: number,
     noiDung: string,
+    parentId?: number,
   ) {
     // Kiểm tra khóa học tồn tại
     const course = await this.khoaHocRepository.findOne({
@@ -163,8 +226,8 @@ export class DiscussionsService {
 
     const result = await this.dataSource.query(
       `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha)
-       VALUES (?, ?, ?, NOW(), NULL)`,
-      [courseId, userId, noiDung],
+       VALUES (?, ?, ?, NOW(), ?)`,
+      [courseId, userId, noiDung, parentId || null],
     );
 
     const user = await this.dataSource.query(

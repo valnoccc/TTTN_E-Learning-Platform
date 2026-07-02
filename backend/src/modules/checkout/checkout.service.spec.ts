@@ -72,7 +72,8 @@ describe('CheckoutService', () => {
       orderType: 'momo_wallet',
       transId: '123456',
       resultCode,
-      message: resultCode === '0' || resultCode === 0 ? 'Successful.' : 'Card failed.',
+      message:
+        resultCode === '0' || resultCode === 0 ? 'Successful.' : 'Card failed.',
       payType: 'atm',
       responseTime: '1700000000000',
       extraData: Buffer.from(JSON.stringify(extra)).toString('base64'),

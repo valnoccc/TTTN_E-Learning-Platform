@@ -69,4 +69,3 @@ export class CheckoutController {
     return this.checkoutService.getInvoiceDetails(Number(invoiceId), userId);
   }
 }
-

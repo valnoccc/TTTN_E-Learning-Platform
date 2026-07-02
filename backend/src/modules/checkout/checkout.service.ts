@@ -115,7 +115,9 @@ export class CheckoutService {
 
   private decodeMomoExtraData(extraData?: string) {
     try {
-      return JSON.parse(Buffer.from(extraData || '', 'base64').toString('utf8'));
+      return JSON.parse(
+        Buffer.from(extraData || '', 'base64').toString('utf8'),
+      );
     } catch (e) {
       console.error('[MoMo] Lỗi decode extraData:', e);
       throw new BadRequestException('extraData không hợp lệ');
@@ -272,9 +274,9 @@ export class CheckoutService {
         JSON.stringify({ invoiceId, userId, courseIds, appliedCouponId }),
       ).toString('base64');
 
-      // TẠM THỜI ĐỂ payWithATM ĐỂ BẠN TEST LỖI SANDBOX. 
+      // TẠM THỜI ĐỂ payWithATM ĐỂ BẠN TEST LỖI SANDBOX.
       // Khi lên Production hoặc muốn dùng cổng chung thì đổi thành 'payWithMethod'
-      const requestType = 'payWithATM'; 
+      const requestType = 'payWithATM';
 
       // Chuỗi rawSignature dùng biến requestType
       const rawSignature =
@@ -334,7 +336,7 @@ export class CheckoutService {
       if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
       }
-      
+
       console.error(
         '[MoMo] Lỗi tạo thanh toán:',
         error.message,
@@ -356,9 +358,7 @@ export class CheckoutService {
     }
   }
 
-  
   async handleMomoIPN(body: any) {
-
     const {
       partnerCode,
       orderId,
@@ -525,7 +525,10 @@ export class CheckoutService {
               [userId, courseId, invoiceId, 'ACTIVE'],
             );
           } catch (insertError: any) {
-             console.warn(`[MoMo IPN] Cảnh báo bỏ qua lỗi insert khoá học (Có thể do lỗi schema DB ER_DUP_ENTRY):`, insertError.message);
+            console.warn(
+              `[MoMo IPN] Cảnh báo bỏ qua lỗi insert khoá học (Có thể do lỗi schema DB ER_DUP_ENTRY):`,
+              insertError.message,
+            );
           }
         }
       }
@@ -597,7 +600,7 @@ export class CheckoutService {
     } catch (error: any) {
       // ĐÃ SỬA: Chỉ rollback nếu transaction chưa bị commit
       if (queryRunner.isTransactionActive) {
-         await queryRunner.rollbackTransaction();
+        await queryRunner.rollbackTransaction();
       }
       console.error('>>> [IPN CRASH] Lỗi xử lý DB Transaction:', error);
       throw new InternalServerErrorException(`Lỗi xử lý IPN: ${error.message}`);

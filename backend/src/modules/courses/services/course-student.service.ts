@@ -166,8 +166,7 @@ export class CourseStudentService {
     if (userId) {
       const parsedUserId = Number.parseInt(userId, 10);
       if (!Number.isNaN(parsedUserId)) {
-        excludeCondition +=
-          ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
         params.push(parsedUserId);
       }
     }
@@ -208,7 +207,9 @@ export class CourseStudentService {
       recommendations: recommendations.map((r: any) => ({
         ...r,
         giaBan: Number(r.giaBan),
-        averageRating: r.averageRating ? Number(r.averageRating).toFixed(1) : '0.0',
+        averageRating: r.averageRating
+          ? Number(r.averageRating).toFixed(1)
+          : '0.0',
       })),
       crossSellVoucher,
     };

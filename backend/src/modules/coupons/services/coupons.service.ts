@@ -244,9 +244,10 @@ export class CouponsService {
 
   protected async getUserCouponContext(userId: number) {
     const [userRows, invoiceRows] = await Promise.all([
-      this.dataSource.query(`SELECT NgayTao FROM NguoiDung WHERE MaND = ? LIMIT 1`, [
-        userId,
-      ]),
+      this.dataSource.query(
+        `SELECT NgayTao FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+        [userId],
+      ),
       this.dataSource.query(
         `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
         [userId],

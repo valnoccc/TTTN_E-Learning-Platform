@@ -5,7 +5,12 @@ import { CauHoiDienDan } from './entities/cau-hoi-dien-dan.entity';
 import { TheTuDienDan } from './entities/the-tu-dien-dan.entity';
 import { CauTraLoiDienDan } from './entities/cau-tra-loi-dien-dan.entity';
 import { User } from '../users/entities/user.entity';
-import { FilterQuestionDto, SapXepCauHoi, CreateQuestionDto, CreateAnswerDto } from './dto/forum.dto';
+import {
+  FilterQuestionDto,
+  SapXepCauHoi,
+  CreateQuestionDto,
+  CreateAnswerDto,
+} from './dto/forum.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 
@@ -70,11 +75,12 @@ export class ForumService {
         hoTen: item.tacGia?.hoTen,
         anhDaiDien: item.tacGia?.anhDaiDien,
       },
-      danhSachThe: item.danhSachThe?.map((the) => ({
-        maThe: the.maThe,
-        tenThe: the.tenThe,
-        duongDan: the.duongDan,
-      })) || [],
+      danhSachThe:
+        item.danhSachThe?.map((the) => ({
+          maThe: the.maThe,
+          tenThe: the.tenThe,
+          duongDan: the.duongDan,
+        })) || [],
     }));
 
     return {
@@ -120,34 +126,45 @@ export class ForumService {
         hoTen: cauHoi.tacGia?.hoTen,
         anhDaiDien: cauHoi.tacGia?.anhDaiDien,
       },
-      danhSachThe: cauHoi.danhSachThe?.map((the) => ({
-        maThe: the.maThe,
-        tenThe: the.tenThe,
-        duongDan: the.duongDan,
-      })) || [],
-      danhSachTraLoi: cauHoi.danhSachTraLoi?.filter(tl => !tl.maCTL_Cha).map((tl) => ({
-        maCTL: tl.maCTL,
-        noiDung: tl.noiDung,
-        luotBinhChon: tl.luotBinhChon,
-        laDapAnDung: tl.laDapAnDung,
-        ngayTao: tl.ngayTao,
-        tacGia: {
-          maND: tl.tacGia?.maND,
-          hoTen: tl.tacGia?.hoTen,
-          anhDaiDien: tl.tacGia?.anhDaiDien,
-        },
-        cacPhanHoi: tl.cacPhanHoi?.map((ph) => ({
-          maCTL: ph.maCTL,
-          noiDung: ph.noiDung,
-          luotBinhChon: ph.luotBinhChon,
-          ngayTao: ph.ngayTao,
-          tacGia: {
-            maND: ph.tacGia?.maND,
-            hoTen: ph.tacGia?.hoTen,
-            anhDaiDien: ph.tacGia?.anhDaiDien,
-          },
-        })).sort((a,b) => new Date(a.ngayTao).getTime() - new Date(b.ngayTao).getTime()) || [],
-      })) || [],
+      danhSachThe:
+        cauHoi.danhSachThe?.map((the) => ({
+          maThe: the.maThe,
+          tenThe: the.tenThe,
+          duongDan: the.duongDan,
+        })) || [],
+      danhSachTraLoi:
+        cauHoi.danhSachTraLoi
+          ?.filter((tl) => !tl.maCTL_Cha)
+          .map((tl) => ({
+            maCTL: tl.maCTL,
+            noiDung: tl.noiDung,
+            luotBinhChon: tl.luotBinhChon,
+            laDapAnDung: tl.laDapAnDung,
+            ngayTao: tl.ngayTao,
+            tacGia: {
+              maND: tl.tacGia?.maND,
+              hoTen: tl.tacGia?.hoTen,
+              anhDaiDien: tl.tacGia?.anhDaiDien,
+            },
+            cacPhanHoi:
+              tl.cacPhanHoi
+                ?.map((ph) => ({
+                  maCTL: ph.maCTL,
+                  noiDung: ph.noiDung,
+                  luotBinhChon: ph.luotBinhChon,
+                  ngayTao: ph.ngayTao,
+                  tacGia: {
+                    maND: ph.tacGia?.maND,
+                    hoTen: ph.tacGia?.hoTen,
+                    anhDaiDien: ph.tacGia?.anhDaiDien,
+                  },
+                }))
+                .sort(
+                  (a, b) =>
+                    new Date(a.ngayTao).getTime() -
+                    new Date(b.ngayTao).getTime(),
+                ) || [],
+          })) || [],
     };
   }
 
@@ -198,11 +215,15 @@ export class ForumService {
       let recipientId: number | null = null;
       let title = '';
       let message = '';
-      const nguoiTraLoi = await this.userRepository.findOne({ where: { maND } });
+      const nguoiTraLoi = await this.userRepository.findOne({
+        where: { maND },
+      });
       const ten = nguoiTraLoi ? nguoiTraLoi.hoTen : 'Một người dùng';
 
       if (createDto.maCTL_Cha) {
-        const cauTraLoiCha = await this.cauTraLoiRepository.findOne({ where: { maCTL: createDto.maCTL_Cha } });
+        const cauTraLoiCha = await this.cauTraLoiRepository.findOne({
+          where: { maCTL: createDto.maCTL_Cha },
+        });
         if (cauTraLoiCha && cauTraLoiCha.maND !== maND) {
           recipientId = cauTraLoiCha.maND;
           title = 'Phản hồi mới';
@@ -239,7 +260,7 @@ export class ForumService {
     let isLiked = false;
 
     if (nguoiThich.includes(userIdStr as any)) {
-      nguoiThich = nguoiThich.filter(id => id.toString() !== userIdStr);
+      nguoiThich = nguoiThich.filter((id) => id.toString() !== userIdStr);
       cauHoi.luotBinhChon = Math.max(0, cauHoi.luotBinhChon - 1);
     } else {
       nguoiThich.push(userIdStr as any);
@@ -252,7 +273,9 @@ export class ForumService {
 
     if (isLiked && cauHoi.maND !== maND) {
       try {
-        const nguoiLike = await this.userRepository.findOne({ where: { maND } });
+        const nguoiLike = await this.userRepository.findOne({
+          where: { maND },
+        });
         const ten = nguoiLike ? nguoiLike.hoTen : 'Một người dùng';
         await this.notificationsService.createNotification({
           maND: cauHoi.maND,
@@ -270,7 +293,9 @@ export class ForumService {
   }
 
   async upvoteAnswer(maCTL: number, maND: number) {
-    const cauTraLoi = await this.cauTraLoiRepository.findOne({ where: { maCTL } });
+    const cauTraLoi = await this.cauTraLoiRepository.findOne({
+      where: { maCTL },
+    });
     if (!cauTraLoi) throw new Error('Câu trả lời không tồn tại');
 
     let nguoiThich = cauTraLoi.nguoiThich || [];
@@ -278,7 +303,7 @@ export class ForumService {
     let isLiked = false;
 
     if (nguoiThich.includes(userIdStr as any)) {
-      nguoiThich = nguoiThich.filter(id => id.toString() !== userIdStr);
+      nguoiThich = nguoiThich.filter((id) => id.toString() !== userIdStr);
       cauTraLoi.luotBinhChon = Math.max(0, cauTraLoi.luotBinhChon - 1);
     } else {
       nguoiThich.push(userIdStr as any);
@@ -291,7 +316,9 @@ export class ForumService {
 
     if (isLiked && cauTraLoi.maND !== maND) {
       try {
-        const nguoiLike = await this.userRepository.findOne({ where: { maND } });
+        const nguoiLike = await this.userRepository.findOne({
+          where: { maND },
+        });
         const ten = nguoiLike ? nguoiLike.hoTen : 'Một người dùng';
         await this.notificationsService.createNotification({
           maND: cauTraLoi.maND,

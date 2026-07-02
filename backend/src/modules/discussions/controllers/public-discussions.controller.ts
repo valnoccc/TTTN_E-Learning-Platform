@@ -40,17 +40,40 @@ export class PublicDiscussionsController {
   async createStudentDiscussion(
     @Param('id') id: string,
     @Req() req: Request & { user: { sub: number } },
-    @Body() body: { noiDung: string },
+    @Body() body: { noiDung: string; parentId?: number },
   ) {
     const discussion = await this.discussionsService.createStudentDiscussion(
       Number(id),
       req.user.sub,
       body.noiDung,
+      body.parentId,
     );
 
     return {
       message: 'Đăng câu hỏi thành công',
       data: discussion,
+    };
+  }
+
+  /**
+   * POST /public/courses/:id/discussions/:discussionId/toggle-like
+   * Toggle like for a discussion (parent or reply)
+   */
+  @Post(':id/discussions/:discussionId/toggle-like')
+  @UseGuards(JwtAuthGuard)
+  async toggleLikeDiscussion(
+    @Param('id') id: string,
+    @Param('discussionId') discussionId: string,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.discussionsService.toggleLikeDiscussion(
+      Number(discussionId),
+      req.user.sub,
+    );
+
+    return {
+      message: result.isLiked ? 'Đã thích' : 'Đã bỏ thích',
+      data: result,
     };
   }
 }

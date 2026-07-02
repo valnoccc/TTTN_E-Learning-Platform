@@ -19,7 +19,10 @@ import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CouponsService } from './coupons.service';
 
 @Injectable()
-export class AdminCouponsService extends CouponsService implements OnModuleInit {
+export class AdminCouponsService
+  extends CouponsService
+  implements OnModuleInit
+{
   private adminCouponSchemaReady: Promise<void> | null = null;
 
   constructor(
@@ -430,12 +433,14 @@ export class AdminCouponsService extends CouponsService implements OnModuleInit 
         );
       }
 
-      await queryRunner.query(`DELETE FROM MaGiamGiaPhamVi WHERE MaCoupon = ?`, [
-        couponId,
-      ]);
-      await queryRunner.query(`DELETE FROM MaGiamGiaDieuKien WHERE MaCoupon = ?`, [
-        couponId,
-      ]);
+      await queryRunner.query(
+        `DELETE FROM MaGiamGiaPhamVi WHERE MaCoupon = ?`,
+        [couponId],
+      );
+      await queryRunner.query(
+        `DELETE FROM MaGiamGiaDieuKien WHERE MaCoupon = ?`,
+        [couponId],
+      );
       await queryRunner.query(
         `DELETE FROM LichSuSuDungMaGiamGia WHERE MaCoupon = ?`,
         [couponId],

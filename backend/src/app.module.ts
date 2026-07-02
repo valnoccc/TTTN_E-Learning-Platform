@@ -24,6 +24,7 @@ import { CheckoutModule } from './modules/checkout/checkout.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { ForumModule } from './modules/forum/forum.module';
+import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ForumModule } from './modules/forum/forum.module';
     NotificationsModule,
     PostsModule,
     ForumModule,
+    LearningToolsModule,
   ],
 })
 export class AppModule {}

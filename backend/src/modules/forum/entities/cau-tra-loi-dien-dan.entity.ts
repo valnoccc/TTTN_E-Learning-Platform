@@ -44,14 +44,18 @@ export class CauTraLoiDienDan {
   @JoinColumn({ name: 'MaND' })
   tacGia!: User;
 
-  @ManyToOne(() => CauHoiDienDan, (cauHoi) => cauHoi.danhSachTraLoi, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CauHoiDienDan, (cauHoi) => cauHoi.danhSachTraLoi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'MaCH' })
   cauHoi!: CauHoiDienDan;
 
   @Column({ name: 'MaCTL_Cha', type: 'int', nullable: true })
   maCTL_Cha!: number | null;
 
-  @ManyToOne(() => CauTraLoiDienDan, (traLoi) => traLoi.cacPhanHoi, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CauTraLoiDienDan, (traLoi) => traLoi.cacPhanHoi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'MaCTL_Cha' })
   cauTraLoiCha!: CauTraLoiDienDan;
 

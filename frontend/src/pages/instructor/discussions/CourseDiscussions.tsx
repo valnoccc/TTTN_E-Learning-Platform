@@ -223,11 +223,20 @@ export default function InstructorCourseDiscussionsPage() {
                                                         <span className="rounded bg-slate-800 px-2 py-1 font-medium text-white">
                                                             Khóa học: {discussion.courseTitle}
                                                         </span>
+                                                        {discussion.lessonName && (
+                                                            <span className="rounded bg-emerald-100 px-2 py-1 font-medium text-emerald-800 border border-emerald-200">
+                                                                Bài: {discussion.lessonName}
+                                                            </span>
+                                                        )}
                                                     </div>
 
-                                                    <p className="mt-3 text-[14px] leading-relaxed text-slate-800">
-                                                        {discussion.content}
-                                                    </p>
+                                                    <div className="mt-3 text-[14px] font-bold text-slate-900 leading-relaxed">
+                                                        {discussion.parsedTitle}
+                                                    </div>
+                                                    <div 
+                                                        className="mt-1 text-[14px] leading-relaxed text-slate-700 prose prose-sm max-w-none prose-img:rounded-lg prose-img:shadow-sm"
+                                                        dangerouslySetInnerHTML={{ __html: discussion.parsedBody || '' }} 
+                                                    />
 
                                                     {hasReplies && (
                                                         <button
@@ -291,9 +300,10 @@ export default function InstructorCourseDiscussionsPage() {
                                                                                 </button>
                                                                             )}
                                                                         </div>
-                                                                        <p className="mt-1 text-[14px] text-slate-700">
-                                                                            {reply.content}
-                                                                        </p>
+                                                                        <div 
+                                                                            className="mt-1 text-[14px] text-slate-700 prose prose-sm max-w-none prose-img:rounded-lg prose-img:shadow-sm"
+                                                                            dangerouslySetInnerHTML={{ __html: reply.parsedBody || '' }} 
+                                                                        />
                                                                     </div>
                                                                 </div>
                                                             ))}

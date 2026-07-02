@@ -11,6 +11,7 @@ import * as nodemailer from 'nodemailer';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { normalizeRole } from '../../common/utils/role-utils';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -31,11 +32,15 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng!');
     }
 
+    return this.buildAuthResponse(user);
+  }
+
+  private buildAuthResponse(user: User) {
     const vaiTro = normalizeRole(user.vaiTro);
     const payload = { sub: user.maND, email: user.email, vaiTro };
 
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: this.jwtService.sign(payload),
       user: {
         maND: user.maND,
         hoTen: user.hoTen,
@@ -51,6 +56,46 @@ export class AuthService {
         soDienThoai: user.soDienThoai ?? null,
       },
     };
+  }
+
+  async googleLogin(token: string) {
+    // Gọi API Google lấy thông tin user từ access_token
+    let googleUser: { email: string; name: string; picture: string };
+    try {
+      const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      googleUser = {
+        email: data.email,
+        name: data.name,
+        picture: data.picture,
+      };
+    } catch {
+      throw new UnauthorizedException('Token Google không hợp lệ hoặc đã hết hạn!');
+    }
+
+    // Kiểm tra email đã tồn tại trong DB chưa
+    let user = await this.userRepository.findOne({ where: { email: googleUser.email } });
+
+    if (!user) {
+      // Tạo tài khoản mới tự động
+      const randomPassword = crypto.randomBytes(16).toString('hex');
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      user = this.userRepository.create({
+        email: googleUser.email,
+        hoTen: googleUser.name,
+        anhDaiDien: googleUser.picture,
+        matKhau: hashedPassword,
+      });
+      await this.userRepository.save(user);
+    } else if (googleUser.picture && !user.anhDaiDien) {
+      // Cập nhật ảnh nếu chưa có
+      await this.userRepository.update(user.maND, { anhDaiDien: googleUser.picture });
+      user.anhDaiDien = googleUser.picture;
+    }
+
+    return this.buildAuthResponse(user);
   }
 
   async register(email: string, pass: string, hoTen: string) {

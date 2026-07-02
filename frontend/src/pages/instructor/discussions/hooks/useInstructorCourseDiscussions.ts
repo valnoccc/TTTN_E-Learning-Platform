@@ -14,6 +14,40 @@ export interface InstructorCourseDiscussion {
     userRole?: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
     courseId: number;
     courseTitle: string;
+    parsedTitle?: string;
+    parsedBody?: string;
+    lessonName?: string;
+}
+
+function parseDiscussionContent(discussion: InstructorCourseDiscussion): InstructorCourseDiscussion {
+    let title = 'Không có tiêu đề';
+    let body = discussion.content || '';
+    let lessonName = '';
+    
+    if (!discussion.parentId) {
+        try {
+            const parsed = JSON.parse(discussion.content);
+            if (parsed && typeof parsed === 'object' && parsed.title) {
+                title = parsed.title;
+                body = parsed.content;
+                lessonName = parsed.lessonName || '';
+            }
+        } catch {
+            const lines = body.split('\n');
+            if (lines.length > 1) {
+                title = lines[0];
+                body = lines.slice(1).join('\n');
+            } else {
+                title = body;
+                body = '';
+            }
+        }
+    } else {
+        // Replies usually don't have JSON format
+        body = discussion.content;
+    }
+    
+    return { ...discussion, parsedTitle: title, parsedBody: body, lessonName };
 }
 
 interface InstructorCourseOption {
@@ -33,11 +67,10 @@ type ReplyStatusFilter = 'unreplied' | 'replied' | 'all';
 const DISCUSSIONS_PER_PAGE = 10;
 
 function unwrapDiscussions(response: unknown): InstructorCourseDiscussion[] {
+    let raw: InstructorCourseDiscussion[] = [];
     if (Array.isArray(response)) {
-        return response as InstructorCourseDiscussion[];
-    }
-
-    if (
+        raw = response as InstructorCourseDiscussion[];
+    } else if (
         response &&
         typeof response === 'object' &&
         'data' in response &&
@@ -46,31 +79,28 @@ function unwrapDiscussions(response: unknown): InstructorCourseDiscussion[] {
         'data' in ((response as { data: object }).data) &&
         Array.isArray(((response as { data: { data?: unknown } }).data).data)
     ) {
-        return (response as { data: { data: InstructorCourseDiscussion[] } }).data.data;
-    }
-
-    if (
+        raw = (response as { data: { data: InstructorCourseDiscussion[] } }).data.data;
+    } else if (
         response &&
         typeof response === 'object' &&
         'data' in response &&
         Array.isArray((response as { data?: unknown }).data)
     ) {
-        return (response as { data: InstructorCourseDiscussion[] }).data;
+        raw = (response as { data: InstructorCourseDiscussion[] }).data;
     }
 
-    return [];
+    return raw.map(parseDiscussionContent);
 }
 
 function unwrapDiscussion(response: unknown): InstructorCourseDiscussion | null {
+    let raw: InstructorCourseDiscussion | null = null;
     if (
         response &&
         typeof response === 'object' &&
         'discussionId' in response
     ) {
-        return response as InstructorCourseDiscussion;
-    }
-
-    if (
+        raw = response as InstructorCourseDiscussion;
+    } else if (
         response &&
         typeof response === 'object' &&
         'data' in response &&
@@ -80,20 +110,18 @@ function unwrapDiscussion(response: unknown): InstructorCourseDiscussion | null 
         ((response as { data: { data?: unknown } }).data).data &&
         typeof ((response as { data: { data?: unknown } }).data).data === 'object'
     ) {
-        return (response as { data: { data: InstructorCourseDiscussion } }).data.data;
-    }
-
-    if (
+        raw = (response as { data: { data: InstructorCourseDiscussion } }).data.data;
+    } else if (
         response &&
         typeof response === 'object' &&
         'data' in response &&
         (response as { data?: unknown }).data &&
         typeof (response as { data?: unknown }).data === 'object'
     ) {
-        return (response as { data: InstructorCourseDiscussion }).data;
+        raw = (response as { data: InstructorCourseDiscussion }).data;
     }
 
-    return null;
+    return raw ? parseDiscussionContent(raw) : null;
 }
 
 function unwrapCourses(response: unknown): InstructorCourseOption[] {

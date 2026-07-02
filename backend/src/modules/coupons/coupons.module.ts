@@ -17,7 +17,15 @@ import { StudentCouponsService } from './services/student-coupons.service';
     InstructorCouponsController,
     PublicCouponsController,
   ],
-  providers: [AdminCouponsService, InstructorCouponsService, StudentCouponsService],
-  exports: [AdminCouponsService, InstructorCouponsService, StudentCouponsService],
+  providers: [
+    AdminCouponsService,
+    InstructorCouponsService,
+    StudentCouponsService,
+  ],
+  exports: [
+    AdminCouponsService,
+    InstructorCouponsService,
+    StudentCouponsService,
+  ],
 })
 export class CouponsModule {}

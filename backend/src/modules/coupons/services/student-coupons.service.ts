@@ -136,9 +136,8 @@ export class StudentCouponsService extends CouponsService {
 
     let applicablePrice = 0;
     if (coupon.loaiKM === 'CROSS_SELL' && userId) {
-      const validCrossSellCourseIds = await this.getValidCrossSellCourseIds(
-        userId,
-      );
+      const validCrossSellCourseIds =
+        await this.getValidCrossSellCourseIds(userId);
 
       const validCartCourseIds = targetCourseIds.filter((id) =>
         validCrossSellCourseIds.includes(Number(id)),
@@ -254,7 +253,11 @@ export class StudentCouponsService extends CouponsService {
       }
 
       if (
-        await this.hasUserRedeemedCoupon(payload.couponId, payload.userId, runner)
+        await this.hasUserRedeemedCoupon(
+          payload.couponId,
+          payload.userId,
+          runner,
+        )
       ) {
         throw new BadRequestException(
           'Mã giảm giá này đã được tài khoản này sử dụng trước đó.',
@@ -331,5 +334,4 @@ export class StudentCouponsService extends CouponsService {
 
     return validCrossSellCourseIds;
   }
-
 }

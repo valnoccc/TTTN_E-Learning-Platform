@@ -14,9 +14,7 @@ import {
 
 @Controller('public/courses')
 export class PublicCoursesController {
-  constructor(
-    private readonly courseStudentService: CourseStudentService,
-  ) {}
+  constructor(private readonly courseStudentService: CourseStudentService) {}
 
   @Get()
   async getAllCourses(
@@ -25,9 +23,8 @@ export class PublicCoursesController {
     @Query('price') price?: string,
   ) {
     const filters: PublicCourseFilters = { search, categoryId, price };
-    const data = await this.courseStudentService.getAllPublishedCourses(
-      filters,
-    );
+    const data =
+      await this.courseStudentService.getAllPublishedCourses(filters);
 
     return {
       message: 'Lấy danh sách khóa học thành công',
@@ -57,9 +54,8 @@ export class PublicCoursesController {
       );
     }
 
-    const data = await this.courseStudentService.getPublishedCourseById(
-      courseId,
-    );
+    const data =
+      await this.courseStudentService.getPublishedCourseById(courseId);
 
     return {
       message: 'Lấy chi tiết khóa học thành công',
