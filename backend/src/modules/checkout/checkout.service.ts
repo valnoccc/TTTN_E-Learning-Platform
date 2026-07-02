@@ -530,11 +530,34 @@ export class CheckoutService {
         }
       }
 
-      // 4d. Cập nhật số lượt dùng coupon
+      // 4d. Ghi nhận coupon đã được tài khoản này sử dụng
       if (appliedCouponId) {
-        await queryRunner.query(
-          `UPDATE MaGiamGia SET SoLuongDaDung = SoLuongDaDung + 1 WHERE MaCoupon = ?`,
-          [appliedCouponId],
+        const [invoiceRows, detailRows] = await Promise.all([
+          queryRunner.query(
+            `SELECT TongTien FROM HoaDon WHERE MaHD = ? LIMIT 1`,
+            [invoiceId],
+          ),
+          queryRunner.query(
+            `SELECT COALESCE(SUM(GiaGhiNhan), 0) AS totalOrderValue
+             FROM ChiTietHoaDon
+             WHERE MaHD = ?`,
+            [invoiceId],
+          ),
+        ]);
+
+        const orderValue = Number(detailRows?.[0]?.totalOrderValue ?? 0);
+        const paidAmount = Number(invoiceRows?.[0]?.TongTien ?? 0);
+        const discountAmount = Math.max(0, orderValue - paidAmount);
+
+        await this.couponsService.recordCouponRedemption(
+          {
+            couponId: appliedCouponId,
+            userId,
+            invoiceId,
+            discountAmount,
+            orderValue,
+          },
+          queryRunner,
         );
       }
 

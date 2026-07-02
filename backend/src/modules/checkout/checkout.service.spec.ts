@@ -197,6 +197,42 @@ describe('CheckoutService', () => {
     );
   });
 
+  it('records coupon redemption history for successful MoMo payments', async () => {
+    queryRunner.query
+      .mockResolvedValueOnce([
+        {
+          MaHD: 99,
+          TrangThaiThanhToan: 'PENDING',
+        },
+      ])
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce([{ TongTien: 250000 }])
+      .mockResolvedValueOnce([{ totalOrderValue: 300000 }]);
+    dataSource.query.mockResolvedValueOnce([{ TenKhoaHoc: 'React Co Ban' }]);
+
+    await service.handleMomoIPN(
+      createMomoBody('0', {
+        invoiceId: 99,
+        userId: 7,
+        courseIds: [101],
+        appliedCouponId: 12,
+      }),
+    );
+
+    expect(couponsService.recordCouponRedemption).toHaveBeenCalledWith(
+      {
+        couponId: 12,
+        userId: 7,
+        invoiceId: 99,
+        discountAmount: 50000,
+        orderValue: 300000,
+      },
+      queryRunner,
+    );
+  });
+
   it('skips duplicate MoMo IPN processing when the invoice was already handled', async () => {
     queryRunner.query.mockResolvedValueOnce([
       {
