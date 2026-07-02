@@ -5,6 +5,35 @@ export const Styles = styled.div`
     .service-area {
         padding: 56px 0 42px;
 
+        .container {
+            width     : 80%;
+            max-width : 80%;
+            margin    : 0 auto;
+        }
+
+        @media(max-width: 1399px) {
+            .container {
+                width     : 88%;
+                max-width : 88%;
+            }
+        }
+
+        @media(max-width: 991px) {
+            .container {
+                width     : 92%;
+                max-width : 92%;
+            }
+        }
+
+        @media(max-width: 767px) {
+            .container {
+                width        : 100%;
+                max-width    : 100%;
+                padding-left : 15px;
+                padding-right: 15px;
+            }
+        }
+
         .sec-title {
             h4 {
                 color        : ${colors.black1};

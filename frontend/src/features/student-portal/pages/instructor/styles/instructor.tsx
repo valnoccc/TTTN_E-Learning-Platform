@@ -5,6 +5,36 @@ export const Styles = styled.div`
     .instructor-page {
         .instructor-area {
             padding: 70px 0;
+
+            .container {
+                width     : 80%;
+                max-width : 80%;
+                margin    : 0 auto;
+            }
+
+            @media(max-width: 1399px) {
+                .container {
+                    width     : 88%;
+                    max-width : 88%;
+                }
+            }
+
+            @media(max-width: 991px) {
+                .container {
+                    width     : 92%;
+                    max-width : 92%;
+                }
+            }
+
+            @media(max-width: 767px) {
+                .container {
+                    width        : 100%;
+                    max-width    : 100%;
+                    padding-left : 15px;
+                    padding-right: 15px;
+                }
+            }
+
             .instructor-item {
                 position     : relative;
                 margin-bottom: 62px;
@@ -90,6 +120,36 @@ export const Styles = styled.div`
     .instructor-details-page {
         .instructor-details-area {
             padding : 70px 0 63px;
+
+            .container {
+                width     : 80%;
+                max-width : 80%;
+                margin    : 0 auto;
+            }
+
+            @media(max-width: 1399px) {
+                .container {
+                    width     : 88%;
+                    max-width : 88%;
+                }
+            }
+
+            @media(max-width: 991px) {
+                .container {
+                    width     : 92%;
+                    max-width : 92%;
+                }
+            }
+
+            @media(max-width: 767px) {
+                .container {
+                    width        : 100%;
+                    max-width    : 100%;
+                    padding-left : 15px;
+                    padding-right: 15px;
+                }
+            }
+
             .instructor-img {
                 margin-bottom : 55px;
                 img {

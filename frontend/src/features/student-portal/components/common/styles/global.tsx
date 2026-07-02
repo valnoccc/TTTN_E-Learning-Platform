@@ -11,8 +11,8 @@ import { colors, fonts } from "../element/elements";
 export const GlobalStyle = createGlobalStyle`
     html {
         color      : ${colors.bg1};
-        font-size  : 13px;
-        line-height: 1.4;
+        font-size  : 15px;
+        line-height: 1.5;
     }
 
     ::-moz-selection {
@@ -54,7 +54,7 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     body {
-        font-size     : 13px;
+        font-size     : 15px;
         background    : #ffffff;
         color         : ${colors.text1};
         letter-spacing: 0.3px;
@@ -63,32 +63,32 @@ export const GlobalStyle = createGlobalStyle`
 
     h1,
     h1 a {
-        font-size: 40px;
+        font-size: 44px;
     }
 
     h2,
     h2 a {
-        font-size: 32px;
+        font-size: 36px;
     }
 
     h3,
     h3 a {
-        font-size: 28px;
+        font-size: 32px;
     }
 
     h4,
     h4 a {
-        font-size: 24px;
+        font-size: 28px;
     }
 
     h5,
     h5 a {
-        font-size: 20px;
+        font-size: 24px;
     }
 
     h6,
     h6 a {
-        font-size: 16px;
+        font-size: 20px;
     }
 
     h1,
@@ -111,7 +111,7 @@ export const GlobalStyle = createGlobalStyle`
     button,
     li,
     p {
-        font-size     : 13px;
+        font-size     : 15px;
         font-family   : ${fonts.roboto};
         margin        : 0;
         letter-spacing: 0.3px;
