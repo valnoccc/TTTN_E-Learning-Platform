@@ -387,6 +387,7 @@ describe('Coupons services', () => {
         loaiKM: 'STANDARD',
       },
     ]);
+    dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([
       {
         maPV: 1,
@@ -408,6 +409,31 @@ describe('Coupons services', () => {
 
     await expect(
       studentService.validateCoupon({ maCode: 'SALE8', courseIds: [10] }, 1),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects a coupon that the same user already redeemed', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      {
+        maCoupon: 9,
+        maCode: 'ONCEONLY',
+        giaTriGiam: 50,
+        loaiGiam: 'PERCENT',
+        trangThai: 'ACTIVE',
+        ngayBatDau: null,
+        ngayKetThuc: null,
+        maKH: null,
+        soLuongGioiHan: null,
+        soLuongDaDung: 0,
+        tenKhoaHoc: '',
+        giaBan: 300000,
+        loaiKM: 'STANDARD',
+      },
+    ]);
+    dataSource.query.mockResolvedValueOnce([{ MaCoupon: 9 }]);
+
+    await expect(
+      studentService.validateCoupon({ maCode: 'ONCEONLY', courseIds: [10] }, 7),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -461,6 +487,8 @@ describe('Coupons services', () => {
     const historyRunner = {
       query: jest
         .fn()
+        .mockResolvedValueOnce([{ lockResult: 1 }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce({ affectedRows: 1 })
         .mockResolvedValueOnce({ affectedRows: 1 }),
     };
@@ -478,13 +506,55 @@ describe('Coupons services', () => {
 
     expect(historyRunner.query).toHaveBeenNthCalledWith(
       1,
+      expect.stringContaining('SELECT GET_LOCK'),
+      ['coupon-redemption:7:88'],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('SELECT 1 FROM LichSuSuDungMaGiamGia'),
+      [7, 88],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      3,
       expect.stringContaining('UPDATE MaGiamGia'),
       [7],
     );
     expect(historyRunner.query).toHaveBeenNthCalledWith(
-      2,
+      4,
       expect.stringContaining('INSERT INTO LichSuSuDungMaGiamGia'),
       [7, 88, 123, 300000, 45000],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      5,
+      expect.stringContaining('SELECT RELEASE_LOCK'),
+      ['coupon-redemption:7:88'],
+    );
+  });
+
+  it('rejects duplicate coupon redemption for the same user', async () => {
+    const historyRunner = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce([{ lockResult: 1 }])
+        .mockResolvedValueOnce([{ MaCoupon: 7 }]),
+    };
+
+    await expect(
+      studentService.recordCouponRedemption(
+        {
+          couponId: 7,
+          userId: 88,
+          invoiceId: 123,
+          discountAmount: 45000,
+          orderValue: 300000,
+        },
+        historyRunner,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(historyRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT GET_LOCK'),
+      ['coupon-redemption:7:88'],
     );
   });
 });

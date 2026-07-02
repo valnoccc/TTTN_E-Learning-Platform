@@ -23,6 +23,19 @@ export class StudentCouponsService extends CouponsService {
     super(couponRepository, courseRepository, dataSource);
   }
 
+  private async hasUserRedeemedCoupon(
+    couponId: number,
+    userId: number,
+    runner: any = this.dataSource,
+  ) {
+    const rows = await runner.query(
+      `SELECT 1 FROM LichSuSuDungMaGiamGia WHERE MaCoupon = ? AND MaND = ? LIMIT 1`,
+      [couponId, userId],
+    );
+
+    return rows.length > 0;
+  }
+
   async validateCoupon(payload: ValidateCouponDto, userId?: number) {
     const maCode = payload.maCode?.trim().toUpperCase();
     if (!maCode) {
@@ -69,6 +82,12 @@ export class StudentCouponsService extends CouponsService {
 
     const coupon = this.normalizeCouponValidationRow(rows[0]);
     this.ensureCouponIsUsable(coupon);
+
+    if (userId && (await this.hasUserRedeemedCoupon(coupon.maCoupon, userId))) {
+      throw new BadRequestException(
+        'Mã giảm giá này đã được bạn sử dụng trước đó. Mỗi tài khoản chỉ được dùng một lần.',
+      );
+    }
 
     const scopeRows = await this.loadAdminCouponScopeRows(coupon.maCoupon);
     const ruleRows = await this.loadAdminCouponRuleRows(coupon.maCoupon);
@@ -218,29 +237,58 @@ export class StudentCouponsService extends CouponsService {
     queryRunner?: any,
   ) {
     const runner = queryRunner || this.dataSource;
-    await runner.query(
-      `UPDATE MaGiamGia
-       SET SoLuongDaDung = SoLuongDaDung + 1
-       WHERE MaCoupon = ?`,
-      [payload.couponId],
-    );
+    const useLock = Boolean(queryRunner);
+    const lockName = `coupon-redemption:${payload.couponId}:${payload.userId}`;
 
-    await runner.query(
-      `INSERT INTO LichSuSuDungMaGiamGia (
-          MaCoupon,
-          MaND,
-          MaHD,
-          GiaTriDonHang,
-          SoTienGiam
-       ) VALUES (?, ?, ?, ?, ?)`,
-      [
-        payload.couponId,
-        payload.userId,
-        payload.invoiceId,
-        payload.orderValue,
-        payload.discountAmount,
-      ],
-    );
+    try {
+      if (useLock) {
+        const lockResult = await runner.query(
+          `SELECT GET_LOCK(?, 5) AS lockResult`,
+          [lockName],
+        );
+        if (Number(lockResult?.[0]?.lockResult ?? 0) !== 1) {
+          throw new BadRequestException(
+            'Hệ thống đang xử lý yêu cầu coupon này, vui lòng thử lại sau.',
+          );
+        }
+      }
+
+      if (
+        await this.hasUserRedeemedCoupon(payload.couponId, payload.userId, runner)
+      ) {
+        throw new BadRequestException(
+          'Mã giảm giá này đã được tài khoản này sử dụng trước đó.',
+        );
+      }
+
+      await runner.query(
+        `UPDATE MaGiamGia
+         SET SoLuongDaDung = SoLuongDaDung + 1
+         WHERE MaCoupon = ?`,
+        [payload.couponId],
+      );
+
+      await runner.query(
+        `INSERT INTO LichSuSuDungMaGiamGia (
+            MaCoupon,
+            MaND,
+            MaHD,
+            GiaTriDonHang,
+            SoTienGiam
+         ) VALUES (?, ?, ?, ?, ?)`,
+        [
+          payload.couponId,
+          payload.userId,
+          payload.invoiceId,
+          payload.orderValue,
+          payload.discountAmount,
+        ],
+      );
+    } finally {
+      if (useLock) {
+        await runner.query(`SELECT RELEASE_LOCK(?)`, [lockName]);
+      }
+    }
   }
 
   private async getValidCrossSellCourseIds(userId: number) {
@@ -283,4 +331,5 @@ export class StudentCouponsService extends CouponsService {
 
     return validCrossSellCourseIds;
   }
+
 }

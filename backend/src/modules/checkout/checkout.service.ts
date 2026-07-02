@@ -818,6 +818,17 @@ export class CheckoutService {
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
     );
 
+    const redeemedCouponIds = new Set<number>();
+    if (userId) {
+      const redemptionRows = await this.dataSource.query(
+        `SELECT MaCoupon FROM LichSuSuDungMaGiamGia WHERE MaND = ?`,
+        [userId],
+      );
+      redemptionRows.forEach((row: any) =>
+        redeemedCouponIds.add(Number(row.MaCoupon)),
+      );
+    }
+
     const lastInvoices = await this.dataSource.query(
       `SELECT MaHD FROM HoaDon 
        WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
@@ -878,6 +889,10 @@ export class CheckoutService {
 
     return coupons
       .map((coupon: any) => {
+        if (redeemedCouponIds.has(Number(coupon.MaCoupon))) {
+          return null;
+        }
+
         let isAvailable = true;
         let reason: string | undefined = undefined;
         let applicablePrice = 0;
