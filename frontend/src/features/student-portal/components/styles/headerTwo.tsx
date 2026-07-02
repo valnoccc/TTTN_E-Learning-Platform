@@ -244,7 +244,9 @@ export const Styles = styled.div`
                         position  : absolute;
                         left      : 0;
                         top       : 100%;
-                        min-width : 190px;
+                        min-width : 220px;
+                        max-height: 360px;
+                        overflow-y: auto;
                         background: #fff;
                         border    : 1px solid ${colors.border1};
                         text-align: left;
