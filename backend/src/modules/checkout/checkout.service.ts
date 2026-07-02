@@ -976,7 +976,9 @@ export class CheckoutService {
           calculatedDiscount,
         };
       })
-      .filter(Boolean);
+      .filter((coupon): coupon is NonNullable<typeof coupon> => {
+        return Boolean(coupon?.isAvailable);
+      });
   }
 
   // ────────────────────────────────────────────────────────────────────────────────

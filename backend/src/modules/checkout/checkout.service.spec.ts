@@ -233,6 +233,49 @@ describe('CheckoutService', () => {
     );
   });
 
+  it('returns only coupons that are valid for the current account', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ count: 0 }])
+      .mockResolvedValueOnce([
+        {
+          MaCoupon: 1,
+          MaCode: 'VALID10',
+          GiaTriGiam: 10,
+          LoaiGiam: 'PERCENT',
+          MaKH: null,
+          SoLuongGioiHan: null,
+          SoLuongDaDung: 0,
+          TrangThai: 'ACTIVE',
+          NgayBatDau: null,
+          NgayKetThuc: null,
+          GhiChu: null,
+          LoaiKM: 'STANDARD',
+        },
+        {
+          MaCoupon: 2,
+          MaCode: 'USED10',
+          GiaTriGiam: 10,
+          LoaiGiam: 'PERCENT',
+          MaKH: null,
+          SoLuongGioiHan: null,
+          SoLuongDaDung: 0,
+          TrangThai: 'ACTIVE',
+          NgayBatDau: null,
+          NgayKetThuc: null,
+          GhiChu: null,
+          LoaiKM: 'STANDARD',
+        },
+      ])
+      .mockResolvedValueOnce([{ MaCoupon: 2 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.getAvailableCoupons('101', 7);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].code).toBe('VALID10');
+  });
+
   it('skips duplicate MoMo IPN processing when the invoice was already handled', async () => {
     queryRunner.query.mockResolvedValueOnce([
       {
