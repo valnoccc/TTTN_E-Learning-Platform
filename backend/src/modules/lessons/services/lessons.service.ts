@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { KhoaHoc } from '../../courses/entities/course.entity';
 import { Lesson } from '../entities/lesson.entity';
 
 @Injectable()
@@ -14,12 +15,23 @@ export class LessonsService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(KhoaHoc)
+    private readonly courseRepository: Repository<KhoaHoc>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  private async touchCourse(courseId: number) {
+    await this.courseRepository.update(courseId, {
+      ngayCapNhat: new Date(),
+    });
+  }
 
   async create(payload: any): Promise<Lesson> {
     try {
       const result = await this.lessonRepository.save(payload);
+      if (result?.maKH) {
+        await this.touchCourse(Number(result.maKH));
+      }
       return result;
     } catch {
       throw new InternalServerErrorException(
@@ -67,6 +79,9 @@ export class LessonsService {
 
     try {
       const updatedLesson = await this.lessonRepository.save(lesson);
+      if (updatedLesson?.maKH) {
+        await this.touchCourse(Number(updatedLesson.maKH));
+      }
 
       if (
         previousVideoUrl &&
@@ -109,6 +124,7 @@ export class LessonsService {
 
     try {
       await this.lessonRepository.remove(lesson);
+      await this.touchCourse(Number(lesson.maKH));
     } catch {
       throw new InternalServerErrorException('Lỗi hệ thống khi xóa dữ liệu');
     }

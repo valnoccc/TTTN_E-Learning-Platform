@@ -78,5 +78,10 @@ describe('CoursesService', () => {
       'course_thumbnails/old-thumb',
       'image',
     );
+    expect(khoaHocRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ngayCapNhat: expect.any(Date),
+      }),
+    );
   });
 });

@@ -20,6 +20,7 @@ type AdminCourseRow = {
   trangThai?: string;
   hinhThuNho?: string | null;
   moTa?: string | null;
+  ngayCapNhat?: string | Date | null;
   instructorId?: string | number;
   instructorName?: string;
   instructorEmail?: string;
@@ -90,6 +91,10 @@ export class CourseAdminService {
       trangThai: row.trangThai ?? 'DRAFT',
       hinhThuNho: row.hinhThuNho ?? null,
       moTa: row.moTa ?? '',
+      ngayCapNhat:
+        row.ngayCapNhat instanceof Date
+          ? row.ngayCapNhat.toISOString()
+          : row.ngayCapNhat ?? null,
       instructorId: Number(row.instructorId ?? 0),
       instructorName: row.instructorName ?? '',
       instructorEmail: row.instructorEmail ?? '',
@@ -180,6 +185,10 @@ export class CourseAdminService {
       giaBan: Number(course.giaBan ?? 0),
       trangThai: course.trangThai,
       hinhThuNho: course.hinhThuNho ?? null,
+      ngayCapNhat:
+        course.ngayCapNhat instanceof Date
+          ? course.ngayCapNhat.toISOString()
+          : course.ngayCapNhat ?? null,
       maDM: course.maDM,
       instructorId: course.maND_GiangVien,
       mucTieu: mucTieuRows
@@ -345,6 +354,7 @@ export class CourseAdminService {
         kh.TrangThai as trangThai,
         kh.HinhThuNho as hinhThuNho,
         kh.MoTa as moTa,
+        kh.NgayCapNhat as ngayCapNhat,
         nd.MaND as instructorId,
         nd.HoTen as instructorName,
         nd.Email as instructorEmail,
@@ -380,6 +390,7 @@ export class CourseAdminService {
         kh.TrangThai,
         kh.HinhThuNho,
         kh.MoTa,
+        kh.NgayCapNhat,
         nd.MaND,
         nd.HoTen,
         nd.Email,

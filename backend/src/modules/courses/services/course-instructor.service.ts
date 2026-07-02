@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -10,13 +11,37 @@ import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../entities/course.entity';
 
 @Injectable()
-export class CoursesService {
+export class CoursesService implements OnModuleInit {
+  private courseSchemaReady: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  async onModuleInit() {
+    await this.ensureCourseSchema();
+  }
+
+  private ensureCourseSchema() {
+    if (!this.courseSchemaReady) {
+      this.courseSchemaReady = (async () => {
+        await this.dataSource.query(
+          `ALTER TABLE \`KhoaHoc\`
+           ADD COLUMN IF NOT EXISTS \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`YeuCauKhoaHoc\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`KhoaHoc\`
+           MODIFY COLUMN \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
+        );
+      })();
+    }
+
+    return this.courseSchemaReady;
+  }
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
@@ -26,7 +51,10 @@ export class CoursesService {
   }
 
   async createCourse(payload: any, mucTieu: string[], yeuCau: string[]) {
-    const newCourse = this.khoaHocRepository.create(payload);
+    const newCourse = this.khoaHocRepository.create({
+      ...payload,
+      ngayCapNhat: new Date(),
+    });
     const savedCourse = await this.khoaHocRepository.save(newCourse);
     const courseId = (savedCourse as any).maKH;
 
@@ -70,7 +98,10 @@ export class CoursesService {
     );
 
     if (hasBuyers[0].count > 0) {
-      await this.khoaHocRepository.update(courseId, { trangThai: 'DRAFT' });
+      await this.khoaHocRepository.update(courseId, {
+        trangThai: 'DRAFT',
+        ngayCapNhat: new Date(),
+      });
       return {
         message:
           'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẩn.',
@@ -156,7 +187,10 @@ export class CoursesService {
       }
     }
 
-    await this.khoaHocRepository.update(courseId, { trangThai });
+    await this.khoaHocRepository.update(courseId, {
+      trangThai,
+      ngayCapNhat: new Date(),
+    });
     return { message: 'Cập nhật trạng thái thành công' };
   }
 
@@ -205,7 +239,7 @@ export class CoursesService {
     const previousThumbnail = course.hinhThuNho;
     const nextThumbnail = payload.hinhThuNho;
 
-    Object.assign(course, payload);
+    Object.assign(course, payload, { ngayCapNhat: new Date() });
     const updatedCourse = await this.khoaHocRepository.save(course);
 
     if (mucTieu !== undefined) {

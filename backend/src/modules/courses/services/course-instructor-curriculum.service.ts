@@ -30,6 +30,12 @@ export class CourseInstructorCurriculumService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private async touchCourse(courseId: number) {
+    await this.khoaHocRepository.update(courseId, {
+      ngayCapNhat: new Date(),
+    });
+  }
+
   async getCourseCurriculum(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
@@ -91,6 +97,8 @@ export class CourseInstructorCurriculumService {
       [courseId, payload.tenChuong, payload.thuTu],
     );
 
+    await this.touchCourse(courseId);
+
     return {
       maChuong: result.insertId,
       maKH: courseId,
@@ -108,6 +116,8 @@ export class CourseInstructorCurriculumService {
       `INSERT INTO BaiHoc (MaKH, MaChuong, TenBaiHoc, ThuTu, TrangThai) VALUES (?, ?, ?, ?, 'ACTIVE')`,
       [payload.maKH, chapterId, payload.tenBaiHoc, payload.thuTu],
     );
+
+    await this.touchCourse(payload.maKH);
 
     return {
       maBH: result.insertId,
@@ -143,6 +153,8 @@ export class CourseInstructorCurriculumService {
       [chapterId],
     );
 
+    await this.touchCourse(chapter.maKH);
+
     return {
       ...chapter,
       tenChuong: nextTitle || chapter.tenChuong,
@@ -153,7 +165,7 @@ export class CourseInstructorCurriculumService {
   }
 
   async deleteChapter(chapterId: number, instructorId: number) {
-    await this.getOwnedChapter(chapterId, instructorId);
+    const chapter = await this.getOwnedChapter(chapterId, instructorId);
 
     await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaChuong = ?`, [
       chapterId,
@@ -161,6 +173,8 @@ export class CourseInstructorCurriculumService {
     await this.dataSource.query(`DELETE FROM ChuongHoc WHERE MaChuong = ?`, [
       chapterId,
     ]);
+
+    await this.touchCourse(chapter.maKH);
   }
 
   private async getOwnedChapter(chapterId: number, instructorId: number) {

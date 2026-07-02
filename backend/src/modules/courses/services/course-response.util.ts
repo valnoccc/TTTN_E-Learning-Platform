@@ -14,6 +14,7 @@ function serializeSingleCourse(course: KhoaHoc | null | undefined) {
     moTa: course.moTa ?? '',
     giaBan: course.giaBan,
     trangThai: course.trangThai,
+    ngayCapNhat: course.ngayCapNhat ?? null,
     id: course.maKH,
     id_danh_muc: course.maDM,
     id_giang_vien: course.maND_GiangVien,
@@ -23,6 +24,8 @@ function serializeSingleCourse(course: KhoaHoc | null | undefined) {
     trang_thai: course.trangThai,
     hinh_thu_nho: course.hinhThuNho ?? null,
     hinh_anh: course.hinhThuNho ?? null,
+    ngay_cap_nhat: course.ngayCapNhat ?? null,
+    updatedAt: course.ngayCapNhat ?? null,
   };
 }
 
