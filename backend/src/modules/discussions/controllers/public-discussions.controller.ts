@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -18,7 +20,7 @@ export class PublicDiscussionsController {
 
   /**
    * GET /public/courses/:id/discussions
-   * Học viên (và người dùng chưa đăng nhập) xem danh sách thảo luận
+   * Tất cả mọi người đều xem được thảo luận (lọc sẵn IsHidden=FALSE, IsDeleted=FALSE trong service)
    */
   @Get(':id/discussions')
   async getPublicCourseDiscussions(@Param('id') id: string) {
@@ -33,13 +35,13 @@ export class PublicDiscussionsController {
 
   /**
    * POST /public/courses/:id/discussions
-   * Học viên đã đăng nhập đăng câu hỏi mới
+   * Học viên đã đăng nhập đăng câu hỏi mới hoặc phản hồi
    */
   @Post(':id/discussions')
   @UseGuards(JwtAuthGuard)
   async createStudentDiscussion(
     @Param('id') id: string,
-    @Req() req: Request & { user: { sub: number } },
+    @Req() req: Request & { user: { sub: number; vaiTro: string } },
     @Body() body: { noiDung: string; parentId?: number },
   ) {
     const discussion = await this.discussionsService.createStudentDiscussion(
@@ -57,7 +59,7 @@ export class PublicDiscussionsController {
 
   /**
    * POST /public/courses/:id/discussions/:discussionId/toggle-like
-   * Toggle like for a discussion (parent or reply)
+   * Toggle like cho một bình luận
    */
   @Post(':id/discussions/:discussionId/toggle-like')
   @UseGuards(JwtAuthGuard)
@@ -73,6 +75,52 @@ export class PublicDiscussionsController {
 
     return {
       message: result.isLiked ? 'Đã thích' : 'Đã bỏ thích',
+      data: result,
+    };
+  }
+
+  /**
+   * PATCH /public/courses/:id/discussions/:discussionId/hide
+   * Ẩn bình luận (INSTRUCTOR của khóa học hoặc ADMIN)
+   */
+  @Patch(':id/discussions/:discussionId/hide')
+  @UseGuards(JwtAuthGuard)
+  async hideDiscussion(
+    @Param('id') _id: string,
+    @Param('discussionId') discussionId: string,
+    @Req() req: Request & { user: { sub: number; vaiTro: string } },
+  ) {
+    const result = await this.discussionsService.hideDiscussion(
+      Number(discussionId),
+      req.user.sub,
+      req.user.vaiTro,
+    );
+
+    return {
+      message: 'Đã ẩn bình luận thành công',
+      data: result,
+    };
+  }
+
+  /**
+   * DELETE /public/courses/:id/discussions/:discussionId
+   * Xóa mềm bình luận theo phân quyền RBAC
+   */
+  @Delete(':id/discussions/:discussionId')
+  @UseGuards(JwtAuthGuard)
+  async deleteDiscussion(
+    @Param('id') _id: string,
+    @Param('discussionId') discussionId: string,
+    @Req() req: Request & { user: { sub: number; vaiTro: string } },
+  ) {
+    const result = await this.discussionsService.deleteDiscussion(
+      Number(discussionId),
+      req.user.sub,
+      req.user.vaiTro,
+    );
+
+    return {
+      message: 'Đã xóa bình luận thành công',
       data: result,
     };
   }

@@ -25,6 +25,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PostsModule } from './modules/posts/posts.module';
 import { ForumModule } from './modules/forum/forum.module';
 import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
+import { ReportsModule } from './modules/reports/reports.module';
+
 
 @Module({
   imports: [
@@ -63,6 +65,7 @@ import { LearningToolsModule } from './modules/learning-tools/learning-tools.mod
     PostsModule,
     ForumModule,
     LearningToolsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

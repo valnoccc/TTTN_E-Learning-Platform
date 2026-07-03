@@ -7,6 +7,7 @@ import AdminPosts from '../pages/admin/Posts/AdminPosts';
 import AdminPostForm from '../pages/admin/Posts/AdminPostForm';
 import AdminUsers from '../pages/admin/Users/AdminUsers';
 import AdminCoupons from '../pages/admin/Coupons/AdminCoupons';
+import ModerationDashboard from '../pages/admin/Moderation/ModerationDashboard';
 
 export default function AdminRoutes() {
     return (
@@ -21,6 +22,7 @@ export default function AdminRoutes() {
             <Route path="posts" element={<AdminPosts />} />
             <Route path="posts/new" element={<AdminPostForm />} />
             <Route path="posts/:id/edit" element={<AdminPostForm />} />
+            <Route path="moderation" element={<ModerationDashboard />} />
         </Routes>
     );
 }

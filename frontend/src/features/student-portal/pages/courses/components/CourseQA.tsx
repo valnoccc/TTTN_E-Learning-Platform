@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import axiosClient from '../../../../../api/axios';
-import { User, MessageCircle, Send, Search, ArrowLeft, ThumbsUp, Plus, X, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
+import { User, MessageCircle, Send, Search, ArrowLeft, ThumbsUp, Plus, X, ChevronLeft, ChevronRight, ImageIcon, MoreVertical, EyeOff, Trash2, Flag, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ReportModal from './ReportModal';
 
 // Helper component for avatar
 const UserAvatar = ({ src, name, size = 'md' }: { src?: string, name?: string, size?: 'sm' | 'md' | 'lg' }) => {
@@ -78,6 +79,14 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
   // Refs for file input
   const fileInputNewRef = useRef<HTMLInputElement>(null);
   const fileInputReplyRef = useRef<HTMLInputElement>(null);
+
+  // State cho modal báo cáo vi phạm
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    discussionId: number;
+    reportedUserId: number;
+    reportedUserName: string;
+  } | null>(null);
 
   useEffect(() => {
     const userString = localStorage.getItem('user');
@@ -268,6 +277,162 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
       setModalImage((target as HTMLImageElement).src);
     }
   }, []);
+
+  // ─── Ẩn bình luận (INSTRUCTOR/ADMIN) ────────────────────────────────────────
+  const handleHideDiscussion = async (courseId: string, discussionId: number) => {
+    try {
+      await axiosClient.patch(`/public/courses/${courseId}/discussions/${discussionId}/hide`);
+      toast.success('Đã xử lý bình luận!');
+      // Xóa khỏi danh sách hiện tại (optimistic)
+      setDiscussions(prev => prev.filter(d => d.discussionId !== discussionId));
+      if (selectedThread?.discussionId === discussionId) {
+        setViewState('list');
+        setSelectedThread(null);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể ẩn bình luận');
+    }
+  };
+
+  // ─── Xóa mềm bình luận (USER=own, INSTRUCTOR=own course, ADMIN=all) ─────────
+  const handleDeleteDiscussion = async (courseId: string, discussionId: number) => {
+    if (!window.confirm('Bạn có chắc muốn xóa bình luận này?')) return;
+    try {
+      await axiosClient.delete(`/public/courses/${courseId}/discussions/${discussionId}`);
+      toast.success('Đã xử lý bình luận!');
+      setDiscussions(prev => prev.filter(d => d.discussionId !== discussionId));
+      if (selectedThread?.discussionId === discussionId) {
+        setViewState('list');
+        setSelectedThread(null);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể xóa bình luận');
+    }
+  };
+
+  /**
+   * Menu 3 chấm cho mỗi bình luận — Conditional rendering theo role:
+   * - Tác giả bình luận: Xóa
+   * - USER khác: Báo cáo vi phạm
+   * - INSTRUCTOR (khóa học): Ẩn + Xóa
+   * - ADMIN: Ẩn + Xóa + Cảnh báo/Khóa
+   */
+  const DiscussionMenu = ({ disc, courseIdStr }: { disc: any; courseIdStr: string }) => {
+    const [open, setOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const currentUserId = currentUser?.maND || currentUser?.id || currentUser?.sub;
+    const currentRole = (currentUser?.vaiTro || currentUser?.role || '').toUpperCase();
+    const isAuthor = disc.userId === currentUserId;
+    const isAdmin = currentRole === 'ADMIN';
+    const isInstructor = currentRole === 'INSTRUCTOR';
+
+    // Đóng menu khi click ra ngoài
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    if (!isAuthenticated) return null;
+
+    return (
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+          className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+          title="Tùy chọn"
+        >
+          <MoreVertical size={15} />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden">
+            {/* Tác giả: Xóa bình luận của chính mình */}
+            {isAuthor && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); handleDeleteDiscussion(courseIdStr, disc.discussionId); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={14} />
+                Xóa bình luận của tôi
+              </button>
+            )}
+
+            {/* USER khác: Báo cáo vi phạm */}
+            {!isAuthor && !isAdmin && !isInstructor && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                  setReportModal({ isOpen: true, discussionId: disc.discussionId, reportedUserId: disc.userId, reportedUserName: disc.userName });
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition-colors"
+              >
+                <Flag size={14} />
+                Báo cáo vi phạm
+              </button>
+            )}
+
+            {/* INSTRUCTOR: Ẩn + Xóa (trong khóa học mình dạy) */}
+            {isInstructor && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); handleHideDiscussion(courseIdStr, disc.discussionId); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <EyeOff size={14} />
+                  Ẩn bình luận
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); handleDeleteDiscussion(courseIdStr, disc.discussionId); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Xóa bình luận
+                </button>
+              </>
+            )}
+
+            {/* ADMIN: Ẩn + Xóa + Cảnh báo/Khóa */}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); handleHideDiscussion(courseIdStr, disc.discussionId); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <EyeOff size={14} />
+                  Ẩn bình luận
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); handleDeleteDiscussion(courseIdStr, disc.discussionId); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Xóa bình luận
+                </button>
+                <div className="border-t border-slate-100 my-1" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    setReportModal({ isOpen: true, discussionId: disc.discussionId, reportedUserId: disc.userId, reportedUserName: disc.userName });
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 transition-colors font-semibold"
+                >
+                  <ShieldAlert size={14} />
+                  Cảnh báo / Khóa user
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handlePostReply = async () => {
     if (!replyContent.trim()) {
@@ -467,7 +632,7 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
                 <h2 className="text-xl font-bold text-slate-900 leading-snug">
                   {selectedThread.parsedTitle}
                 </h2>
-                <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
+              <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
                   <span className="font-semibold text-sm">{selectedThread.upvotes || 0}</span>
                   <button 
                     onClick={(e) => handleToggleLike(e, selectedThread.discussionId)}
@@ -475,7 +640,8 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
                   >
                     <ThumbsUp size={16} className={selectedThread.likedUserIds?.includes(currentUser?.maND || currentUser?.id || currentUser?.sub) ? 'fill-current' : ''} />
                   </button>
-                  <button className="hover:bg-slate-100 p-1.5 rounded-full transition-colors font-bold">⋮</button>
+                  {/* Menu 3 chấm cho câu hỏi gốc */}
+                  <DiscussionMenu disc={selectedThread} courseIdStr={courseId} />
                 </div>
               </div>
               
@@ -515,14 +681,18 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
                <div key={reply.discussionId} className="flex gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
                  <UserAvatar src={reply.userAvatar} name={reply.userName} size="sm" />
                  <div className="flex-1 min-w-0">
-                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                     <span className="font-bold text-slate-800 text-[14px]">{reply.userName || 'Người dùng'}</span>
-                     {reply.userRole === 'INSTRUCTOR' && (
-                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                         Giảng viên
-                       </span>
-                     )}
-                     <span className="text-slate-500 text-xs">• {timeAgo(reply.createdAt)}</span>
+                   <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <span className="font-bold text-slate-800 text-[14px]">{reply.userName || 'Người dùng'}</span>
+                       {reply.userRole === 'INSTRUCTOR' && (
+                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                           Giảng viên
+                         </span>
+                       )}
+                       <span className="text-slate-500 text-xs">• {timeAgo(reply.createdAt)}</span>
+                     </div>
+                     {/* Menu 3 chấm cho reply */}
+                     <DiscussionMenu disc={reply} courseIdStr={courseId} />
                    </div>
                    
                    <div 
@@ -601,6 +771,17 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
               onClick={(e) => e.stopPropagation()} 
             />
           </div>
+        )}
+
+        {/* Modal Báo cáo vi phạm */}
+        {reportModal?.isOpen && (
+          <ReportModal
+            isOpen={reportModal.isOpen}
+            onClose={() => setReportModal(null)}
+            discussionId={reportModal.discussionId}
+            reportedUserId={reportModal.reportedUserId}
+            reportedUserName={reportModal.reportedUserName}
+          />
         )}
       </div>
     );
@@ -718,6 +899,10 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
                     <span className="font-semibold text-slate-700">{disc.replies?.length || 0}</span>
                     <MessageCircle size={15} />
                   </div>
+                  {/* Menu 3 chấm trong danh sách */}
+                  <div onClick={e => e.stopPropagation()}>
+                    <DiscussionMenu disc={disc} courseIdStr={courseId} />
+                  </div>
                 </div>
               </div>
             );
@@ -786,6 +971,17 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
              <Plus size={18} /> Đặt câu hỏi mới
            </button>
         </div>
+      )}
+
+      {/* Modal Báo cáo vi phạm */}
+      {reportModal?.isOpen && (
+        <ReportModal
+          isOpen={reportModal.isOpen}
+          onClose={() => setReportModal(null)}
+          discussionId={reportModal.discussionId}
+          reportedUserId={reportModal.reportedUserId}
+          reportedUserName={reportModal.reportedUserName}
+        />
       )}
     </div>
   );
