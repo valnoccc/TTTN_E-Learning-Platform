@@ -2,10 +2,10 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { VideoIntelligenceServiceClient } from '@google-cloud/video-intelligence';
-import * as path from 'path';
 
 import { Lesson, AiStatus } from '../entities/lesson.entity';
 import { AiQuotaTracker } from '../entities/ai-quota-tracker.entity';
+import { KhoaHoc } from '../../courses/entities/course.entity';
 
 // Giới hạn hạn mức miễn phí: 60.000 giây = 1.000 phút
 const QUOTA_LIMIT_SECONDS = 60_000;
@@ -22,6 +22,8 @@ export class VideoIntelligenceService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(AiQuotaTracker)
     private readonly quotaRepository: Repository<AiQuotaTracker>,
+    @InjectRepository(KhoaHoc)
+    private readonly courseRepository: Repository<KhoaHoc>,
   ) {
     // Mặc định Google Cloud SDK sẽ tự động nhận diện biến môi trường GOOGLE_APPLICATION_CREDENTIALS
     this.client = new VideoIntelligenceServiceClient();
@@ -125,10 +127,7 @@ export class VideoIntelligenceService {
    * Phân tích video bằng Google Video Intelligence API.
    * Chạy ngầm (fire-and-forget) để không block luồng chính.
    */
-  async analyzeVideoBackground(
-    lessonId: number,
-    videoUrl: string,
-  ): Promise<void> {
+  analyzeVideoBackground(lessonId: number, videoUrl: string): void {
     // Không dùng await khi gọi - fire and forget
     this.runAnalysis(lessonId, videoUrl).catch((err) => {
       this.logger.error(`[Lesson ${lessonId}] Phân tích video thất bại:`, err);
@@ -174,30 +173,69 @@ export class VideoIntelligenceService {
 
       // Kiểm tra nội dung nhạy cảm
       const sensitiveFrames = annotation.explicitAnnotation?.frames ?? [];
-      const RISKY_LIKELIHOOD = [3, 4]; // LIKELY = 3, VERY_LIKELY = 4 trong Google Enum
-      const RISKY_STRINGS = ['LIKELY', 'VERY_LIKELY'];
-
-      const hasSensitiveContent = sensitiveFrames.some((frame) => {
+      const riskyFrames = sensitiveFrames.filter((frame) => {
         const likelihood = frame.pornographyLikelihood;
         if (typeof likelihood === 'number') {
-          return RISKY_LIKELIHOOD.includes(likelihood);
+          const numericLikelihood = Number(likelihood);
+          return Number.isFinite(numericLikelihood) && numericLikelihood >= 4;
         }
         if (typeof likelihood === 'string') {
-          return RISKY_STRINGS.includes(likelihood.toUpperCase());
+          return likelihood.toUpperCase() === 'VERY_LIKELY';
         }
         return false;
       });
+
+      const frameLogPayload = sensitiveFrames.map((frame, index) => {
+        const likelihood = frame.pornographyLikelihood;
+        const timeOffset =
+          typeof frame.timeOffset === 'string'
+            ? frame.timeOffset
+            : frame.timeOffset && typeof frame.timeOffset === 'object'
+              ? JSON.stringify(frame.timeOffset)
+              : 'unknown';
+
+        return {
+          index: index + 1,
+          likelihood,
+          timeOffset,
+        };
+      });
+
+      const likelyFrames = sensitiveFrames.filter((frame) => {
+        const likelihood = frame.pornographyLikelihood;
+        if (typeof likelihood === 'number') {
+          const numericLikelihood = Number(likelihood);
+          return Number.isFinite(numericLikelihood) && numericLikelihood === 3;
+        }
+        if (typeof likelihood === 'string') {
+          return likelihood.toUpperCase() === 'LIKELY';
+        }
+        return false;
+      });
+
+      this.logger.log(
+        `[Lesson ${lessonId}] AI explicit frames=${sensitiveFrames.length}, risky=${riskyFrames.length}, likely=${likelyFrames.length}, details=${JSON.stringify(frameLogPayload)}`,
+      );
+
+      // Chỉ reject khi AI thấy bằng chứng đủ mạnh. Một frame VERY_LIKELY
+      // đơn lẻ vẫn có thể là false positive ở video giảng dạy, nên cần nhiều
+      // tín hiệu hơn trước khi chặn tự động.
+      const hasSensitiveContent =
+        riskyFrames.length >= 3 ||
+        (riskyFrames.length >= 1 && likelyFrames.length >= 4) ||
+        likelyFrames.length >= 6;
 
       if (hasSensitiveContent) {
         // Từ chối video vi phạm
         await this.lessonRepository.update(lessonId, {
           aiStatus: AiStatus.REJECTED,
           aiRejectReason:
-            'Video chứa nội dung khiêu dâm hoặc bạo lực mức LIKELY/VERY_LIKELY theo Google Video Intelligence AI.',
+            'Video chứa nội dung nhạy cảm với mức độ đủ mạnh để bị từ chối tự động theo Google Video Intelligence AI.',
+          thoiLuong: durationSeconds,
           durationSeconds,
         });
         this.logger.warn(
-          `[Lesson ${lessonId}] Video BỊ TỪ CHỐI - Nội dung nhạy cảm`,
+          `[Lesson ${lessonId}] Video BỊ TỪ CHỐI - Nội dung nhạy cảm (risky=${riskyFrames.length}, likely=${likelyFrames.length})`,
         );
       } else {
         // Lấy top 5 nhãn phân loại nội dung
@@ -217,18 +255,24 @@ export class VideoIntelligenceService {
           aiStatus: AiStatus.APPROVED,
           aiLabels: top5Labels,
           aiRejectReason: null,
+          thoiLuong: durationSeconds,
           durationSeconds,
         });
         this.logger.log(
-          `[Lesson ${lessonId}] Video ĐƯỢC DUYỆT. Labels: ${top5Labels.join(', ')}`,
+          `[Lesson ${lessonId}] Video ĐƯỢC DUYỆT. Labels: ${top5Labels.join(', ') || 'none'}`,
         );
+        await this.tryAutoPublishCourse(lessonId);
       }
-    } catch (error: any) {
-      this.logger.error(`[Lesson ${lessonId}] Lỗi phân tích:`, error.message);
-      // Đánh dấu lỗi kỹ thuật - không reject hẳn
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `[Lesson ${lessonId}] Lỗi phân tích: ${message} | videoUrl=${videoUrl}`,
+      );
+      // Lỗi kỹ thuật không nên bị hiểu nhầm là vi phạm nội dung.
+      // Giữ trạng thái PENDING để giảng viên có thể chờ hệ thống xử lý lại.
       await this.lessonRepository.update(lessonId, {
-        aiStatus: AiStatus.REJECTED,
-        aiRejectReason: `Lỗi kỹ thuật khi phân tích: ${error.message}`,
+        aiStatus: AiStatus.PENDING,
+        aiRejectReason: null,
       });
     } finally {
       // BẮT BUỘC: Cộng dồn quota dù thành công hay thất bại
@@ -239,5 +283,50 @@ export class VideoIntelligenceService {
         );
       }
     }
+  }
+
+  private async tryAutoPublishCourse(lessonId: number): Promise<void> {
+    const lesson = await this.lessonRepository.findOne({
+      where: { maBH: lessonId },
+      select: ['maKH', 'aiStatus', 'videoURL'],
+    });
+
+    if (!lesson?.maKH) {
+      return;
+    }
+
+    const course = await this.courseRepository.findOne({
+      where: { maKH: lesson.maKH },
+      select: ['maKH', 'trangThai'],
+    });
+
+    if (!course || course.trangThai !== 'PENDING') {
+      return;
+    }
+
+    const lessons = await this.lessonRepository.find({
+      where: { maKH: lesson.maKH },
+      select: ['maBH', 'videoURL', 'aiStatus'],
+      order: { maBH: 'ASC' },
+    });
+
+    const hasRejectedVideo = lessons.some(
+      (item) => !!item.videoURL && item.aiStatus === AiStatus.REJECTED,
+    );
+    const hasPendingVideo = lessons.some(
+      (item) => !!item.videoURL && item.aiStatus !== AiStatus.APPROVED,
+    );
+
+    if (hasRejectedVideo || hasPendingVideo) {
+      return;
+    }
+
+    await this.courseRepository.update(course.maKH, {
+      trangThai: 'PUBLISHED',
+      ngayCapNhat: new Date(),
+    });
+    this.logger.log(
+      `[Course ${course.maKH}] Tự động xuất bản sau khi toàn bộ video được duyệt`,
+    );
   }
 }

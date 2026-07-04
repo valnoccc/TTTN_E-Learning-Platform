@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { getApps, initializeApp } from 'firebase-admin/app';
@@ -46,7 +50,14 @@ export class ReportsService {
     await this.dataSource.query(
       `INSERT INTO BaoCaoViPham (MaBaoCao, MaNguoiBaoCao, MaThaoLuan, MaUserBiBaoCao, LyDo, ChiTiet)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [maBaoCao, reporterId, discussionId, reportedUserId, reason, details || null],
+      [
+        maBaoCao,
+        reporterId,
+        discussionId,
+        reportedUserId,
+        reason,
+        details || null,
+      ],
     );
 
     // --- Thông báo cho Giảng viên ---
@@ -63,29 +74,32 @@ export class ReportsService {
           JOIN NguoiDung nd ON nd.MaND = ?
           WHERE tl.MaThaoLuan = ?
         `;
-        const result = await this.dataSource.query(query, [reporterId, discussionId]);
-        
+        const result = await this.dataSource.query(query, [
+          reporterId,
+          discussionId,
+        ]);
+
         if (result && result.length > 0) {
           const instructorId = result[0].MaND_GiangVien;
           const courseName = result[0].TenKhoaHoc;
           const reporterName = result[0].ReporterName;
-          
+
           const reasonLabels: Record<ReportReason, string> = {
             SPAM: 'Spam',
             HATE_SPEECH: 'Ngôn từ thù địch',
             HARASSMENT: 'Quấy rối',
             FALSE_INFO: 'Thông tin sai sự thật',
-            OTHER: 'Lý do khác'
+            OTHER: 'Lý do khác',
           };
-          
+
           const reasonText = reasonLabels[reason] || 'Khác';
           const notificationTitle = 'Bình luận hỏi đáp bị báo cáo';
           const notificationBody = `Học viên ${reporterName} đã báo cáo một bình luận hỏi đáp trong khóa học "${courseName}" với lý do: ${reasonText}.`;
-          
+
           await this.dataSource.query(
             `INSERT INTO ThongBao (MaND, LoaiThongBao, TieuDe, NoiDung, DaDoc, MaNguoiGui)
              VALUES (?, 'COURSE', ?, ?, 0, ?)`,
-            [instructorId, notificationTitle, notificationBody, reporterId]
+            [instructorId, notificationTitle, notificationBody, reporterId],
           );
         }
       } catch (err) {
@@ -97,11 +111,7 @@ export class ReportsService {
   }
 
   // ─── Lấy danh sách báo cáo (Admin) ────────────────────────────────────────
-  async getReports(
-    status: string | undefined,
-    page: number,
-    limit: number,
-  ) {
+  async getReports(status: string | undefined, page: number, limit: number) {
     const offset = (page - 1) * limit;
     const whereClause = status ? `WHERE bc.TrangThai = ?` : '';
     const params: any[] = status ? [status, limit, offset] : [limit, offset];
@@ -154,11 +164,7 @@ export class ReportsService {
   }
 
   // ─── Xử lý báo cáo (Admin) ────────────────────────────────────────────────
-  async resolveReport(
-    reportId: string,
-    action: ResolveAction,
-    notes?: string,
-  ) {
+  async resolveReport(reportId: string, action: ResolveAction, notes?: string) {
     // Lấy thông tin báo cáo
     const reportRows = await this.dataSource.query(
       `SELECT MaBaoCao, MaThaoLuan, MaUserBiBaoCao, TrangThai FROM BaoCaoViPham WHERE MaBaoCao = ?`,
@@ -178,7 +184,9 @@ export class ReportsService {
     // Thực thi hành động theo action
     if (action === 'HIDE_COMMENT') {
       if (!report.MaThaoLuan) {
-        throw new BadRequestException('Báo cáo này không liên kết với bình luận nào');
+        throw new BadRequestException(
+          'Báo cáo này không liên kết với bình luận nào',
+        );
       }
       await this.dataSource.query(
         `UPDATE ThaoLuanKhoaHoc SET IsHidden = TRUE WHERE MaThaoLuan = ?`,
@@ -237,7 +245,8 @@ export class ReportsService {
 
           if (action === 'WARN_USER') {
             title = 'Cảnh cáo vi phạm ⚠️';
-            body = 'Bình luận của bạn vi phạm tiêu chuẩn cộng đồng. Hệ thống đã ghi nhận 1 lần cảnh cáo.';
+            body =
+              'Bình luận của bạn vi phạm tiêu chuẩn cộng đồng. Hệ thống đã ghi nhận 1 lần cảnh cáo.';
           } else if (action === 'BLOCK_USER') {
             title = 'Tài khoản bị khóa ⛔';
             body = 'Tài khoản của bạn đã bị khóa do vi phạm nghiêm trọng.';

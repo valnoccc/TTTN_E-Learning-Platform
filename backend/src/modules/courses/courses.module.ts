@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { LessonVideoStorageModule } from '../lesson-video-storage/lesson-video-storage.module';
 import { CoursesController } from './controllers/course-instructor.controller';
 import { CourseAdminController } from './controllers/course-admin.controller';
 import { PublicCoursesController } from './controllers/public-courses.controller';
@@ -17,6 +18,7 @@ import { CourseStudentService } from './services/course-student.service';
   imports: [
     TypeOrmModule.forFeature([KhoaHoc, CourseModerationHistory]),
     CloudinaryModule,
+    LessonVideoStorageModule,
     NotificationsModule,
   ],
   controllers: [

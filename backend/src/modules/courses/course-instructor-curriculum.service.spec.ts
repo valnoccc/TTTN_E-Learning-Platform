@@ -1,26 +1,39 @@
+jest.mock('../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
+
 import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { KhoaHoc } from './entities/course.entity';
+import { LessonVideoStorageService } from '../lesson-video-storage/lesson-video-storage.service';
 import { CourseInstructorCurriculumService } from './services/course-instructor-curriculum.service';
 
 describe('CourseInstructorCurriculumService', () => {
   let service: CourseInstructorCurriculumService;
   let khoaHocRepository: {
     findOne: jest.Mock;
+    update: jest.Mock;
   };
   let dataSource: {
     query: jest.Mock;
+  };
+  let lessonVideoStorageService: {
+    getPlayableUrl: jest.Mock;
   };
 
   beforeEach(async () => {
     khoaHocRepository = {
       findOne: jest.fn(),
+      update: jest.fn(),
     };
     dataSource = {
       query: jest.fn(),
+    };
+    lessonVideoStorageService = {
+      getPlayableUrl: jest.fn(async (url) => url),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -28,6 +41,10 @@ describe('CourseInstructorCurriculumService', () => {
         CourseInstructorCurriculumService,
         { provide: getRepositoryToken(KhoaHoc), useValue: khoaHocRepository },
         { provide: DataSource, useValue: dataSource },
+        {
+          provide: LessonVideoStorageService,
+          useValue: lessonVideoStorageService,
+        },
       ],
     }).compile();
 
@@ -77,6 +94,8 @@ describe('CourseInstructorCurriculumService', () => {
         expect.objectContaining({ maBH: 12, thuTu: 2 }),
       ],
     });
+
+    expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledTimes(2);
   });
 
   it('throws when deleting a chapter outside the instructor ownership', async () => {

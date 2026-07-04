@@ -156,7 +156,9 @@ export class DiscussionsService {
 
     const processDiscussion = (d: any) => {
       d.upvotes = parseInt(d.upvotes, 10) || 0;
-      d.likedUserIds = d.likedUserIds ? d.likedUserIds.split(',').map(Number) : [];
+      d.likedUserIds = d.likedUserIds
+        ? d.likedUserIds.split(',').map(Number)
+        : [];
       d.isHidden = Boolean(d.isHidden);
       d.isDeleted = Boolean(d.isDeleted);
       return d;
@@ -407,7 +409,9 @@ export class DiscussionsService {
     );
 
     if (ownedDiscussion.length === 0) {
-      throw new ForbiddenException('Bạn không có quyền xử lý báo cáo của khóa học này');
+      throw new ForbiddenException(
+        'Bạn không có quyền xử lý báo cáo của khóa học này',
+      );
     }
 
     await this.dataSource.query(

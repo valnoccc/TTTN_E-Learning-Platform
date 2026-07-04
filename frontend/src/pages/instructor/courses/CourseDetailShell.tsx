@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
     AlertTriangle,
@@ -37,6 +37,7 @@ export default function InstructorCourseDetail({
 }: InstructorCourseDetailProps) {
     const course = useCourseDetail({ mode });
     const {
+        id,
         isNewCourse,
         isLocked,
         formData,
@@ -53,11 +54,48 @@ export default function InstructorCourseDetail({
     } = course as any;
 
     const isAiChecking = lessons?.some((l: any) => l.aiStatus === 'PENDING');
-    const hasAiRejected = lessons?.some((l: any) => l.aiStatus === 'REJECTED');
+    const isTechnicalAiReject = (lesson: any) => {
+        const reason = String(lesson?.aiRejectReason ?? '').toLowerCase();
+        return reason.includes('lỗi kỹ thuật') || reason.includes('invalid_argument') || reason.includes('request contains an invalid argument');
+    };
+    const hardRejectedLessons = (lessons ?? []).filter((lesson: any) => {
+        return lesson.aiStatus === 'REJECTED' && !isTechnicalAiReject(lesson);
+    });
+    const technicalRejectedLessons = (lessons ?? []).filter((lesson: any) => {
+        return lesson.aiStatus === 'REJECTED' && isTechnicalAiReject(lesson);
+    });
+    const hasAiRejected = hardRejectedLessons.length > 0;
+    const firstRejectedLesson = hardRejectedLessons[0] ?? technicalRejectedLessons[0] ?? null;
     const disablePublish = isSaving || isStatusChanging;
     let publishBtnTitle = '';
     if (isAiChecking) publishBtnTitle = 'Có video đang chờ AI kiểm duyệt';
-    else if (hasAiRejected) publishBtnTitle = 'Có video bị AI từ chối, vui lòng kiểm tra lại';
+    else if (hasAiRejected) {
+        publishBtnTitle = firstRejectedLesson?.aiRejectReason
+            ? `Có video bị AI từ chối: ${firstRejectedLesson.aiRejectReason}`
+            : 'Có video bị AI từ chối, vui lòng kiểm tra lại';
+    } else if (technicalRejectedLessons.length > 0) {
+        publishBtnTitle = 'Có video bị lỗi kỹ thuật khi kiểm duyệt. Có thể gửi yêu cầu duyệt lại.';
+    }
+
+    useEffect(() => {
+        const rejectedLessons = (lessons ?? []).filter((lesson: any) => lesson.aiStatus === 'REJECTED');
+        if (rejectedLessons.length > 0) {
+            console.groupCollapsed(
+                `[Course AI Debug] Course ${formData.title || id || ''} has ${rejectedLessons.length} rejected lesson(s)`,
+            );
+            console.table(
+                rejectedLessons.map((lesson: any) => ({
+                    id: lesson.id,
+                    title: lesson.tieu_de,
+                    aiStatus: lesson.aiStatus,
+                    aiRejectReason: lesson.aiRejectReason || 'no reason provided',
+                    rejectType: isTechnicalAiReject(lesson) ? 'technical' : 'hard',
+                    videoUrl: lesson.video_url || '',
+                })),
+            );
+            console.groupEnd();
+        }
+    }, [formData.title, id, lessons]);
 
     return (
         <InstructorLayout>
@@ -115,14 +153,47 @@ export default function InstructorCourseDetail({
 
                                         {!isLocked && !isNewCourse ? (
                                             <button
-                                                onClick={() => {
+                                            onClick={() => {
                                                     if (isAiChecking) {
+                                                        console.warn('[Course AI Debug] Publish blocked because AI is still checking lessons', {
+                                                            courseId: id,
+                                                            courseTitle: formData.title,
+                                                            lessons,
+                                                        });
                                                         toast.error('Khóa học có video đang chờ AI duyệt. Không thể gửi yêu cầu!');
                                                         return;
                                                     }
                                                     if (hasAiRejected) {
-                                                        toast.error('Khóa học có video bị AI từ chối. Vui lòng kiểm tra lại!');
+                                                        console.error('[Course AI Debug] Publish blocked because AI rejected at least one lesson', {
+                                                            courseId: id,
+                                                            courseTitle: formData.title,
+                                                            rejectedLessons: hardRejectedLessons
+                                                                .map((lesson: any) => ({
+                                                                    id: lesson.id,
+                                                                    title: lesson.tieu_de,
+                                                                    aiStatus: lesson.aiStatus,
+                                                                    aiRejectReason: lesson.aiRejectReason || 'no reason provided',
+                                                                    videoUrl: lesson.video_url || '',
+                                                                })),
+                                                        });
+                                                        toast.error(
+                                                            firstRejectedLesson?.aiRejectReason
+                                                                ? `Khóa học có video bị AI từ chối: ${firstRejectedLesson.aiRejectReason}`
+                                                                : 'Khóa học có video bị AI từ chối. Vui lòng kiểm tra lại!',
+                                                        );
                                                         return;
+                                                    }
+                                                    if (technicalRejectedLessons.length > 0) {
+                                                        console.warn('[Course AI Debug] Publish allowed despite technical AI rejection(s)', {
+                                                            courseId: id,
+                                                            courseTitle: formData.title,
+                                                            technicalRejectedLessons: technicalRejectedLessons.map((lesson: any) => ({
+                                                                id: lesson.id,
+                                                                title: lesson.tieu_de,
+                                                                aiRejectReason: lesson.aiRejectReason || 'no reason provided',
+                                                                videoUrl: lesson.video_url || '',
+                                                            })),
+                                                        });
                                                     }
                                                     void handleStatusChange('PENDING');
                                                 }}

@@ -21,6 +21,8 @@ export interface Lesson {
     tieu_de: string;
     thu_tu: number;
     video_url?: string;
+    aiStatus?: string | null;
+    aiRejectReason?: string | null;
 }
 
 interface CourseDetailApiData {

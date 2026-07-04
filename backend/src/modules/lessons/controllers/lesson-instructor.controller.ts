@@ -18,13 +18,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  CloudinaryService,
-  type UploadedAsset,
-} from '../../cloudinary/cloudinary.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import {
+  LessonVideoStorageService,
+  type LessonVideoUploadResult,
+} from '../../lesson-video-storage/lesson-video-storage.service';
 import { AiStatus } from '../entities/lesson.entity';
 import { serializeLesson } from '../services/lesson-response.util';
 import { LessonsService } from '../services/lessons.service';
@@ -69,7 +69,7 @@ function parseVideoDuration(value: unknown): number {
 export class LessonsController {
   constructor(
     private readonly lessonsService: LessonsService,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
     private readonly videoIntelligenceService: VideoIntelligenceService,
   ) {}
 
@@ -78,22 +78,33 @@ export class LessonsController {
   async create(
     @Request() req,
     @Body() lessonData: any,
-    @UploadedFile() file: UploadedAsset,
+    @UploadedFile() file: Express.Multer.File,
   ) {
+    let uploadedVideo: LessonVideoUploadResult | null = null;
+    let videoInputUri: string | null = null;
+    let payload: {
+      maKH: number;
+      tenBaiHoc: any;
+      noi_dung: string;
+      thuTu: number;
+      choPhepXemTruoc: boolean;
+      videoURL: string | null;
+      thoiLuong: number;
+    };
+
     try {
-      let videoUrl = null;
-      let videoDuration = 0;
+      let videoDuration = parseVideoDuration(
+        lessonData.thoiLuong ?? lessonData.thoi_luong,
+      );
 
       if (file) {
-        const uploadResult = await this.cloudinaryService.uploadFile(
-          file,
-          'video',
-        );
-        videoUrl = uploadResult.secure_url;
-        videoDuration = parseVideoDuration(uploadResult.duration);
+        uploadedVideo = await this.lessonVideoStorageService.uploadVideo(file, {
+          courseId: Number(lessonData.maKH ?? lessonData.id_khoa_hoc),
+        });
+        videoInputUri = uploadedVideo.gcsUri;
       }
 
-      const payload = {
+      payload = {
         maKH: Number(lessonData.maKH ?? lessonData.id_khoa_hoc),
         tenBaiHoc: lessonData.tenBaiHoc ?? lessonData.tieu_de,
         noi_dung: lessonData.noi_dung || '',
@@ -101,7 +112,7 @@ export class LessonsController {
         choPhepXemTruoc: parseBooleanLike(
           lessonData.choPhepXemTruoc ?? lessonData.cho_phep_xem_truoc,
         ),
-        videoURL: videoUrl,
+        videoURL: uploadedVideo?.gcsUri ?? null,
         thoiLuong: videoDuration,
       };
 
@@ -116,31 +127,18 @@ export class LessonsController {
 
       const newLesson = await this.lessonsService.create(payload);
 
-      // Kích hoạt AI kiểm duyệt video ngầm (fire & forget)
-      // Không dùng await để không block response
-      if (videoUrl && videoDuration > 0) {
-        // Kiểm tra quota trước khi phân tích
-        this.videoIntelligenceService
-          .checkQuota(videoDuration)
-          .then(() => {
-            return this.videoIntelligenceService.analyzeVideoBackground(
-              newLesson.maBH,
-              videoUrl,
-            );
-          })
-          .catch((quotaErr) => {
-            // Nếu vượt quota: ghi log nhưng KHÔNG block việc tạo bài học
-            console.warn(
-              `[AI Quota] Bỏ qua kiểm duyệt bài học ${newLesson.maBH}: ${quotaErr.message}`,
-            );
-          });
-      }
+      this.queueLessonAnalysis(newLesson.maBH, videoInputUri, videoDuration);
 
       return {
         message: 'Thêm bài học thành công',
-        data: serializeLesson(newLesson),
+        data: await this.serializeLessonResponse(newLesson),
       };
     } catch (error: any) {
+      if (file) {
+        await this.lessonVideoStorageService.deleteVideo(
+          uploadedVideo?.gcsUri ?? uploadedVideo?.url,
+        );
+      }
       if (error instanceof HttpException) {
         throw error;
       }
@@ -164,9 +162,12 @@ export class LessonsController {
 
     try {
       const lessons = await this.lessonsService.findAllByCourse(parsedCourseId);
+      const serializedLessons = await Promise.all(
+        lessons.map((lesson) => this.serializeLessonResponse(lesson)),
+      );
       return {
         message: 'Lấy danh sách bài học thành công',
-        data: lessons.map(serializeLesson),
+        data: serializedLessons,
       };
     } catch (error: any) {
       if (error instanceof HttpException) {
@@ -186,7 +187,7 @@ export class LessonsController {
     }
     return {
       message: 'Lấy chi tiết bài học thành công',
-      data: serializeLesson(lesson),
+      data: await this.serializeLessonResponse(lesson),
     };
   }
 
@@ -195,8 +196,9 @@ export class LessonsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: any,
-    @UploadedFile() file: UploadedAsset,
+    @UploadedFile() file: Express.Multer.File,
   ) {
+    let videoInputUri: string | null = null;
     const updateData = {
       tenBaiHoc: body.tenBaiHoc ?? body.tieu_de,
       noi_dung: body.noi_dung,
@@ -229,12 +231,21 @@ export class LessonsController {
     }
 
     if (file) {
-      const uploadResult = await this.cloudinaryService.uploadFile(
+      const uploadResult = await this.lessonVideoStorageService.uploadVideo(
         file,
-        'video',
+        {
+          courseId:
+            body.maKH !== undefined || body.id_khoa_hoc !== undefined
+              ? Number(body.maKH ?? body.id_khoa_hoc)
+              : undefined,
+          lessonId: id,
+        },
       );
-      updateData['videoURL'] = uploadResult.secure_url;
-      updateData['thoiLuong'] = parseVideoDuration(uploadResult.duration);
+      updateData['videoURL'] = uploadResult.gcsUri;
+      videoInputUri = uploadResult.gcsUri;
+      updateData['thoiLuong'] = parseVideoDuration(
+        body.thoiLuong ?? body.thoi_luong,
+      );
 
       // Đặt lại trạng thái AI về chờ xử lý khi video thay đổi
       updateData['aiStatus'] = AiStatus.PENDING;
@@ -244,24 +255,13 @@ export class LessonsController {
 
     const lesson = await this.lessonsService.update(id, updateData);
 
-    // Kích hoạt AI nếu có tải video mới lên
-    if (file && updateData['videoURL'] && updateData['thoiLuong'] > 0) {
-      this.videoIntelligenceService
-        .checkQuota(updateData['thoiLuong'] as number)
-        .then(() => {
-          return this.videoIntelligenceService.analyzeVideoBackground(
-            lesson.maBH,
-            updateData['videoURL'] as string,
-          );
-        })
-        .catch((quotaErr) => {
-          console.warn(
-            `[AI Quota] Bỏ qua kiểm duyệt bài học ${lesson.maBH}: ${quotaErr.message}`,
-          );
-        });
-    }
+    this.queueLessonAnalysis(
+      lesson.maBH,
+      videoInputUri,
+      updateData['thoiLuong'] as number,
+    );
 
-    return serializeLesson(lesson);
+    return this.serializeLessonResponse(lesson);
   }
 
   @Delete(':id')
@@ -274,5 +274,46 @@ export class LessonsController {
         'Lỗi khi xóa bài học: ' + error.message,
       );
     }
+  }
+
+  private queueLessonAnalysis(
+    lessonId: number,
+    videoUrl: string | null | undefined,
+    videoDuration: number,
+  ) {
+    if (!videoUrl) {
+      return;
+    }
+
+    if (videoDuration > 0) {
+      this.videoIntelligenceService
+        .checkQuota(videoDuration)
+        .then(() => {
+          return this.videoIntelligenceService.analyzeVideoBackground(
+            lessonId,
+            videoUrl,
+          );
+        })
+        .catch((quotaErr) => {
+          console.warn(
+            `[AI Quota] Bỏ qua kiểm duyệt bài học ${lessonId}: ${quotaErr.message}`,
+          );
+        });
+      return;
+    }
+
+    this.videoIntelligenceService.analyzeVideoBackground(lessonId, videoUrl);
+  }
+
+  private async serializeLessonResponse(lesson: any) {
+    const videoURL = await this.lessonVideoStorageService.getPlayableUrl(
+      lesson.videoURL ?? lesson.video_url ?? null,
+    );
+    const serialized = serializeLesson(lesson);
+    return {
+      ...serialized,
+      videoURL,
+      video_url: videoURL,
+    };
   }
 }

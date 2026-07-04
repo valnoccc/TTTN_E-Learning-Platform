@@ -27,7 +27,6 @@ import { ForumModule } from './modules/forum/forum.module';
 import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
 import { ReportsModule } from './modules/reports/reports.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({

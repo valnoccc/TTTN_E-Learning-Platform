@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../../courses/entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 import { Lesson } from '../entities/lesson.entity';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class LessonsService {
     @InjectRepository(KhoaHoc)
     private readonly courseRepository: Repository<KhoaHoc>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   private async touchCourse(courseId: number) {
@@ -88,11 +90,7 @@ export class LessonsService {
         nextVideoUrl &&
         previousVideoUrl !== nextVideoUrl
       ) {
-        const oldPublicId =
-          this.cloudinaryService.extractPublicId(previousVideoUrl);
-        if (oldPublicId) {
-          await this.cloudinaryService.deleteFile(oldPublicId, 'video');
-        }
+        await this.deletePreviousVideo(previousVideoUrl);
       }
 
       return updatedLesson;
@@ -110,16 +108,7 @@ export class LessonsService {
     }
 
     if (lesson.videoURL) {
-      try {
-        const publicId = this.cloudinaryService.extractPublicId(
-          lesson.videoURL,
-        );
-        if (publicId) {
-          await this.cloudinaryService.deleteFile(publicId, 'video');
-        }
-      } catch (cloudError) {
-        console.error('Lỗi khi xóa video trên Cloudinary:', cloudError);
-      }
+      await this.deletePreviousVideo(lesson.videoURL);
     }
 
     try {
@@ -127,6 +116,22 @@ export class LessonsService {
       await this.touchCourse(Number(lesson.maKH));
     } catch {
       throw new InternalServerErrorException('Lỗi hệ thống khi xóa dữ liệu');
+    }
+  }
+
+  private async deletePreviousVideo(videoUrl: string): Promise<void> {
+    try {
+      if (videoUrl.includes('cloudinary.com')) {
+        const publicId = this.cloudinaryService.extractPublicId(videoUrl);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
+        return;
+      }
+
+      await this.lessonVideoStorageService.deleteVideo(videoUrl);
+    } catch (error) {
+      console.error('Không thể xóa video cũ:', error);
     }
   }
 }

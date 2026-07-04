@@ -518,7 +518,7 @@ export class AdminDashboardService {
     const monthLabel = this.buildMonthLabel(selectedMonth, selectedYear);
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
 
-    const rows = (await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `
         SELECT
           nd.MaND AS instructorId,
@@ -549,7 +549,7 @@ export class AdminDashboardService {
         ORDER BY instructorPayout DESC, grossRevenue DESC, nd.MaND DESC
       `,
       [selectedYear, selectedMonth],
-    )) as InstructorDebtRow[];
+    );
 
     const items = rows.map((row) => {
       const grossRevenue = Number(row.grossRevenue ?? 0);
@@ -576,7 +576,10 @@ export class AdminDashboardService {
       totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
       grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),
       adminRevenue: items.reduce((sum, item) => sum + item.adminRevenue, 0),
-      instructorPayout: items.reduce((sum, item) => sum + item.instructorPayout, 0),
+      instructorPayout: items.reduce(
+        (sum, item) => sum + item.instructorPayout,
+        0,
+      ),
       topDebtAmount: items[0]?.debtAmount ?? 0,
     };
 

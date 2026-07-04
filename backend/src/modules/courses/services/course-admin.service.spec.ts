@@ -1,5 +1,10 @@
+jest.mock('../../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
+
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CourseAdminService } from './course-admin.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 describe('CourseAdminService', () => {
   const resolveValue = <T>(value: T) => Promise.resolve(value);
@@ -17,6 +22,10 @@ describe('CourseAdminService', () => {
     createNotification: jest.fn(),
   };
 
+  const lessonVideoStorageService = {
+    getPlayableUrl: jest.fn(async (url) => url),
+  };
+
   const moderationHistoryRepository = {
     create: jest.fn(),
     save: jest.fn(),
@@ -27,6 +36,7 @@ describe('CourseAdminService', () => {
     moderationHistoryRepository as never,
     notificationsService as never,
     dataSource as never,
+    lessonVideoStorageService as never,
   );
 
   beforeEach(() => {
@@ -183,6 +193,10 @@ describe('CourseAdminService', () => {
         },
       ],
     });
+
+    expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledWith(
+      'https://example.com/video.mp4',
+    );
   });
 
   it('approves pending courses and writes moderation history', async () => {

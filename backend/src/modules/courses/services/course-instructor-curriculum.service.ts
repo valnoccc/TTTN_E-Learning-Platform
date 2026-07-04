@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 interface ChapterRecord {
   maChuong: number;
@@ -28,6 +29,7 @@ export class CourseInstructorCurriculumService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   private async touchCourse(courseId: number) {
@@ -69,12 +71,25 @@ export class CourseInstructorCurriculumService {
       [...chapterIds],
     );
 
-    return chapters.map((chapter: any) => ({
-      ...chapter,
-      baiHocs: lessons.filter(
-        (lesson: any) => lesson.maChuong === chapter.maChuong,
-      ),
-    }));
+    return Promise.all(
+      chapters.map(async (chapter: any) => {
+        const baiHocs = await Promise.all(
+          lessons
+            .filter((lesson: any) => lesson.maChuong === chapter.maChuong)
+            .map(async (lesson: any) => ({
+              ...lesson,
+              videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoUrl,
+              ),
+            })),
+        );
+
+        return {
+          ...chapter,
+          baiHocs,
+        };
+      }),
+    );
   }
 
   async addChapter(
@@ -119,13 +134,15 @@ export class CourseInstructorCurriculumService {
 
     await this.touchCourse(payload.maKH);
 
+    const videoUrl = await this.lessonVideoStorageService.getPlayableUrl(null);
+
     return {
       maBH: result.insertId,
       maKH: payload.maKH,
       maChuong: chapterId,
       tenBaiHoc: payload.tenBaiHoc,
       thuTu: payload.thuTu,
-      videoUrl: null,
+      videoUrl,
       noiDung: null,
       thoiLuong: 0,
     };
@@ -155,12 +172,21 @@ export class CourseInstructorCurriculumService {
 
     await this.touchCourse(chapter.maKH);
 
+    const baiHocs = await Promise.all(
+      lessons.sort((a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu).map(
+        async (lesson: LessonRecord) => ({
+          ...lesson,
+          videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+            lesson.videoUrl,
+          ),
+        }),
+      ),
+    );
+
     return {
       ...chapter,
       tenChuong: nextTitle || chapter.tenChuong,
-      baiHocs: lessons.sort(
-        (a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu,
-      ),
+      baiHocs,
     };
   }
 

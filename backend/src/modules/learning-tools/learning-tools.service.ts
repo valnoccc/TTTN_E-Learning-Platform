@@ -67,9 +67,11 @@ export class LearningToolsService {
   // Đồng bộ nhắc nhở học tập với Google Calendar API
   // ─────────────────────────────────────────────────────────────────────────
   async syncGoogleCalendar(dto: SyncCalendarDto) {
-    const { accessToken, tenNhacNho, tanSuat, thoiGian, cacThu, ngayCuThe } = dto;
+    const { accessToken, tenNhacNho, tanSuat, thoiGian, cacThu, ngayCuThe } =
+      dto;
     const TIMEZONE = 'Asia/Ho_Chi_Minh';
-    const GOOGLE_CALENDAR_API = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+    const GOOGLE_CALENDAR_API =
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
     // ----- Tính toán ngày bắt đầu và kết thúc -----
     let startDateTime: string;
@@ -116,7 +118,9 @@ export class LearningToolsService {
       recurrence = ['RRULE:FREQ=DAILY'];
     } else if (tanSuat === 'HANG_TUAN') {
       if (!cacThu) {
-        throw new BadRequestException('Vui lòng chọn các thứ trong tuần (cacThu)');
+        throw new BadRequestException(
+          'Vui lòng chọn các thứ trong tuần (cacThu)',
+        );
       }
       // Chuyển đổi "T2,T4,T6" → "MO,WE,FR"
       const byDay = cacThu
@@ -130,7 +134,8 @@ export class LearningToolsService {
     // ----- Cấu trúc Event body gửi lên Google Calendar -----
     const eventBody: Record<string, any> = {
       summary: `Lịch học Edumeo: ${tenNhacNho}`,
-      description: 'Lịch nhắc học tập định kỳ được đồng bộ tự động từ hệ thống Edumeo.',
+      description:
+        'Lịch nhắc học tập định kỳ được đồng bộ tự động từ hệ thống Edumeo.',
       start: {
         dateTime: startDateTime,
         timeZone: TIMEZONE,
@@ -141,9 +146,7 @@ export class LearningToolsService {
       },
       reminders: {
         useDefault: false,
-        overrides: [
-          { method: 'popup', minutes: 10 },
-        ],
+        overrides: [{ method: 'popup', minutes: 10 }],
       },
     };
 

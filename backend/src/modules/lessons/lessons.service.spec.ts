@@ -1,8 +1,16 @@
+jest.mock(
+  '../lesson-video-storage/lesson-video-storage.service',
+  () => ({
+    LessonVideoStorageService: class LessonVideoStorageService {},
+  }),
+);
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { KhoaHoc } from '../courses/entities/course.entity';
 import { Lesson } from './entities/lesson.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { LessonVideoStorageService } from '../lesson-video-storage/lesson-video-storage.service';
 import { LessonsService } from './services/lessons.service';
 
 describe('LessonsService', () => {
@@ -21,6 +29,9 @@ describe('LessonsService', () => {
     extractPublicId: jest.Mock;
     deleteFile: jest.Mock;
   };
+  let lessonVideoStorageService: {
+    deleteVideo: jest.Mock;
+  };
 
   beforeEach(async () => {
     lessonRepository = {
@@ -37,6 +48,9 @@ describe('LessonsService', () => {
       extractPublicId: jest.fn(),
       deleteFile: jest.fn(),
     };
+    lessonVideoStorageService = {
+      deleteVideo: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +58,10 @@ describe('LessonsService', () => {
         { provide: getRepositoryToken(Lesson), useValue: lessonRepository },
         { provide: getRepositoryToken(KhoaHoc), useValue: courseRepository },
         { provide: CloudinaryService, useValue: cloudinaryService },
+        {
+          provide: LessonVideoStorageService,
+          useValue: lessonVideoStorageService,
+        },
       ],
     }).compile();
 
@@ -52,6 +70,42 @@ describe('LessonsService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('deletes the previous GCS video when replacing a lesson video', async () => {
+    lessonRepository.findOne.mockResolvedValue({
+      maBH: 1,
+      videoURL:
+        'https://storage.googleapis.com/demo-bucket/lessons-videos/course-1/old-video.mp4',
+    });
+    lessonRepository.preload.mockResolvedValue({
+      maBH: 1,
+      maKH: 1,
+      videoURL:
+        'https://storage.googleapis.com/demo-bucket/lessons-videos/course-1/new-video.mp4',
+    });
+    lessonRepository.save.mockResolvedValue({
+      maBH: 1,
+      maKH: 1,
+      videoURL:
+        'https://storage.googleapis.com/demo-bucket/lessons-videos/course-1/new-video.mp4',
+    });
+
+    await service.update(1, {
+      videoURL:
+        'https://storage.googleapis.com/demo-bucket/lessons-videos/course-1/new-video.mp4',
+    });
+
+    expect(lessonVideoStorageService.deleteVideo).toHaveBeenCalledWith(
+      'https://storage.googleapis.com/demo-bucket/lessons-videos/course-1/old-video.mp4',
+    );
+    expect(cloudinaryService.deleteFile).not.toHaveBeenCalled();
+    expect(courseRepository.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        ngayCapNhat: expect.any(Date),
+      }),
+    );
   });
 
   it('deletes the previous Cloudinary video when replacing a lesson video', async () => {
@@ -75,7 +129,6 @@ describe('LessonsService', () => {
     cloudinaryService.extractPublicId.mockReturnValue(
       'lessons_videos/old-video',
     );
-
     await service.update(1, {
       videoURL:
         'https://res.cloudinary.com/demo/video/upload/v456/lessons_videos/new-video.mp4',
@@ -88,6 +141,7 @@ describe('LessonsService', () => {
       'lessons_videos/old-video',
       'video',
     );
+    expect(lessonVideoStorageService.deleteVideo).not.toHaveBeenCalled();
     expect(courseRepository.update).toHaveBeenCalledWith(
       1,
       expect.objectContaining({

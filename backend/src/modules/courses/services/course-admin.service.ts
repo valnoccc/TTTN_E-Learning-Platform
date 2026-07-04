@@ -12,6 +12,7 @@ import {
 } from '../entities/course-moderation-history.entity';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 type AdminCourseRow = {
   id?: string | number;
@@ -78,6 +79,7 @@ export class CourseAdminService {
     private readonly moderationHistoryRepository: Repository<CourseModerationHistory>,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   async getCourses(filters: AdminCourseFilters) {
@@ -197,7 +199,7 @@ export class CourseAdminService {
       yeuCau: yeuCauRows
         .map((item) => item.NoiDung?.trim() ?? '')
         .filter(Boolean),
-      curriculum: this.mapCurriculum(curriculumRows),
+      curriculum: await this.mapCurriculum(curriculumRows),
       reviews: reviewRows.map((row) => ({
         reviewId: Number(row.reviewId ?? 0),
         rating: row.rating == null ? null : Number(row.rating),
@@ -466,7 +468,7 @@ export class CourseAdminService {
     };
   }
 
-  private mapCurriculum(rows: CurriculumRow[]) {
+  private async mapCurriculum(rows: CurriculumRow[]) {
     const chapters = new Map<
       number,
       {
@@ -502,12 +504,16 @@ export class CourseAdminService {
         continue;
       }
 
+      const playableUrl = await this.lessonVideoStorageService.getPlayableUrl(
+        row.videoURL,
+      );
+
       chapters.get(maChuong)?.baiHocs.push({
         maBH: Number(row.maBH),
         tenBaiHoc: row.tenBaiHoc ?? '',
         thuTu: Number(row.thuTuBaiHoc ?? 0),
         noiDung: row.noiDungBaiHoc ?? '',
-        videoURL: row.videoURL ?? null,
+        videoURL: playableUrl,
         trangThai: row.trangThaiBaiHoc ?? 'ACTIVE',
         aiStatus: row.aiStatus ?? null,
         aiLabels:

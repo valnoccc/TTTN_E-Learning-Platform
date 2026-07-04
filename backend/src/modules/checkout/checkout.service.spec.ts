@@ -270,7 +270,9 @@ describe('CheckoutService', () => {
         discountAmount: 10000,
         targetCourseIds: [101],
       })
-      .mockRejectedValueOnce(new Error('Mã chỉ áp dụng cho tài khoản mới trong 24 giờ đầu'));
+      .mockRejectedValueOnce(
+        new Error('Mã chỉ áp dụng cho tài khoản mới trong 24 giờ đầu'),
+      );
 
     const result = await service.getAvailableCoupons('101', 7);
 

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 export interface PublicCourseFilters {
   search?: string;
@@ -21,6 +22,7 @@ export class CourseStudentService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   async getAllPublishedCourses(filters: PublicCourseFilters = {}) {
@@ -156,6 +158,16 @@ export class CourseStudentService {
       totalStudents: Number(stats.courseTotalStudents ?? 0),
       muc_tieu: mucTieuRows.map((item: any) => item.NoiDung).filter(Boolean),
       yeu_cau: yeuCauRows.map((item: any) => item.NoiDung).filter(Boolean),
+      baiHocs: Array.isArray(course.baiHocs)
+        ? await Promise.all(
+            course.baiHocs.map(async (lesson: any) => ({
+              ...lesson,
+              videoURL: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoURL ?? null,
+              ),
+            })),
+          )
+        : [],
     };
   }
 
@@ -249,11 +261,26 @@ export class CourseStudentService {
       [...chapterIds],
     );
 
-    return chapters.map((chapter: any) => ({
-      ...chapter,
-      baiHocs: lessons.filter(
-        (lesson: any) => lesson.maChuong === chapter.maChuong,
-      ),
-    }));
+    const lessonsByChapter = await Promise.all(
+      chapters.map(async (chapter: any) => {
+        const baiHocs = await Promise.all(
+          lessons
+            .filter((lesson: any) => lesson.maChuong === chapter.maChuong)
+            .map(async (lesson: any) => ({
+              ...lesson,
+              videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoUrl,
+              ),
+            })),
+        );
+
+        return {
+          ...chapter,
+          baiHocs,
+        };
+      }),
+    );
+
+    return lessonsByChapter;
   }
 }

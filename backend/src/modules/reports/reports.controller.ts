@@ -18,16 +18,16 @@ import { ReportsService, ReportReason, ResolveAction } from './reports.service';
 
 // ─── DTO gửi báo cáo ─────────────────────────────────────────────────────────
 interface CreateReportBody {
-  discussionId?: number;       // Mã bình luận bị báo cáo (nullable)
-  reportedUserId: number;      // Mã người bị báo cáo
-  reason: ReportReason;        // Lý do vi phạm
-  details?: string;            // Chi tiết bổ sung
+  discussionId?: number; // Mã bình luận bị báo cáo (nullable)
+  reportedUserId: number; // Mã người bị báo cáo
+  reason: ReportReason; // Lý do vi phạm
+  details?: string; // Chi tiết bổ sung
 }
 
 // ─── DTO xử lý báo cáo ───────────────────────────────────────────────────────
 interface ResolveReportBody {
-  action: ResolveAction;       // Hành động: HIDE_COMMENT | WARN_USER | BLOCK_USER | REJECT
-  notes?: string;              // Ghi chú của admin
+  action: ResolveAction; // Hành động: HIDE_COMMENT | WARN_USER | BLOCK_USER | REJECT
+  notes?: string; // Ghi chú của admin
 }
 
 @Controller()
