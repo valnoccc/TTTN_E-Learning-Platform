@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText, BookOpen, Share2 } from 'lucide-react';
-import ReactPlayer from 'react-player';
-const Player: any = ReactPlayer;
+import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2 } from 'lucide-react';
 import axiosClient from '../../../../api/axios';
 import CourseOverview from './components/CourseOverview';
 import CourseQA from './components/CourseQA';
 import CourseReviews from './components/CourseReviews';
 import CourseLearningTools from './components/CourseLearningTools';
+import CustomVideoPlayer, { VideoPlaceholder } from './components/CustomVideoPlayer';
 import FooterTwo from '../../components/FooterTwo';
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -241,16 +240,30 @@ export default function CourseLearning() {
     );
   };
 
+  // ─── Flatten all lessons for prev/next navigation ──────────────────────────
+  const allLessons = curriculum.flatMap((m: any) => m.baiHocs ?? []);
+  const activeLessonIndex = allLessons.findIndex((l: any) => l.maBH === activeLesson?.maBH);
+  const nextLesson = activeLessonIndex >= 0 && activeLessonIndex < allLessons.length - 1
+    ? allLessons[activeLessonIndex + 1]
+    : null;
+  const prevLesson = activeLessonIndex > 0 ? allLessons[activeLessonIndex - 1] : null;
+
   // ─── Khi học viên click chuyển bài ────────────────────────────────────────
   const handleLessonClick = (lesson: any) => {
     setActiveLesson(lesson);
-    // Ẩn banner khi đã tự chọn bài
+    // Auto-expand module containing this lesson
+    const parentModule = curriculum.find((m: any) =>
+      m.baiHocs?.some((l: any) => l.maBH === lesson.maBH)
+    );
+    if (parentModule) setExpandedModules([parentModule.maChuong]);
     setResumeBanner(null);
-    // Lưu vết lên server (fail-safe, bất đồng bộ)
     if (id && lesson.maBH) {
       saveCurrentLessonSilently(id, lesson.maBH);
     }
   };
+
+  const handleNextLesson = () => { if (nextLesson) handleLessonClick(nextLesson); };
+  const handlePrevLesson = () => { if (prevLesson) handleLessonClick(prevLesson); };
 
   const handleVideoEnded = async () => {
     if (!activeLesson) return;
@@ -336,45 +349,37 @@ export default function CourseLearning() {
 
       <div className="flex-grow flex flex-col lg:flex-row bg-white" style={{ flexGrow: 1, alignItems: 'stretch' }}>
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Video Player */}
-          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
-          {activeLesson?.videoUrl ? (
-            (!activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be')) ? (
-              <video
+          {/* ── Custom Video Player ─────────────────────────────────────── */}
+          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative shrink-0">
+            {activeLesson?.videoUrl && !activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be') ? (
+              <CustomVideoPlayer
+                key={activeLesson.maBH}
                 src={activeLesson.videoUrl}
-                controls
-                className="w-full h-full absolute inset-0"
+                nextLessonName={nextLesson?.tenBaiHoc}
                 onEnded={handleVideoEnded}
-                controlsList="nodownload"
+                onNextLesson={handleNextLesson}
+                onPrevLesson={handlePrevLesson}
+                hasPrev={!!prevLesson}
+                hasNext={!!nextLesson}
               />
-            ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
-              <div className="absolute inset-0">
-                <Player
-                  url={activeLesson.videoUrl}
-                  width="100%"
-                  height="100%"
-                  controls={true}
-                  onEnded={handleVideoEnded}
-                />
-              </div>
+            ) : activeLesson?.videoUrl ? (
+              // YouTube fallback (iframe)
+              <iframe
+                src={`https://www.youtube.com/embed/${activeLesson.videoUrl.includes('youtu.be/')
+                  ? activeLesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
+                  : new URLSearchParams(new URL(activeLesson.videoUrl).search).get('v') ?? ''
+                }?rel=0`}
+                className="w-full h-full absolute inset-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={activeLesson?.tenBaiHoc ?? 'Video bài học'}
+              />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800 absolute inset-0">
-                <FileText size={64} className="mb-4 text-slate-600" />
-                <h3 className="text-xl font-medium text-slate-300">Định dạng không được hỗ trợ</h3>
-              </div>
-            )
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
-              <FileText size={64} className="mb-4 text-slate-600" />
-              <h3 className="text-xl font-medium text-slate-300">
-                {activeLesson?.videoUrl ? 'Video không hợp lệ' : 'Tài liệu học tập'}
-              </h3>
-              <p>
-                {activeLesson?.videoUrl ? 'Đường dẫn video bị lỗi hoặc chưa được hỗ trợ.' : 'Vui lòng xem tài liệu bên dưới'}
-              </p>
-            </div>
-          )}
-        </div>
+              <VideoPlaceholder
+                message={activeLesson ? 'Tài liệu học tập' : 'Chọn bài học để bắt đầu'}
+              />
+            )}
+          </div>
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-200 bg-white sticky top-0 z-10 px-4 sm:px-6 md:px-10 shrink-0 shadow-sm">
