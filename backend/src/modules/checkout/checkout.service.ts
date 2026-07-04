@@ -140,6 +140,24 @@ export class CheckoutService {
     return Number(result?.affectedRows ?? 0);
   }
 
+  private async getUserCouponContext(userId: number) {
+    const [userRows, invoiceRows] = await Promise.all([
+      this.dataSource.query(
+        `SELECT NgayTao FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+        [userId],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+        [userId],
+      ),
+    ]);
+
+    return {
+      ngayTao: userRows[0]?.NgayTao ? new Date(userRows[0].NgayTao) : null,
+      paidInvoiceCount: Number(invoiceRows[0]?.count ?? 0),
+    };
+  }
+
   // ────────────────────────────────────────────────────────────────────────────────
   // MOMO: Tạo thanh toán QR động
   // ────────────────────────────────────────────────────────────────────────────────
@@ -828,6 +846,49 @@ export class CheckoutService {
       .filter((id) => !isNaN(id));
     if (courseIds.length === 0) return [];
 
+    const coupons = await this.dataSource.query(
+      `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu, LoaiKM 
+       FROM MaGiamGia 
+       WHERE TrangThai = 'ACTIVE' 
+         AND (NgayBatDau IS NULL OR NgayBatDau <= NOW())
+         AND (NgayKetThuc IS NULL OR NgayKetThuc >= NOW())
+         AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
+    );
+
+    const validatedCoupons = await Promise.all(
+      coupons.map(async (coupon: any) => {
+        try {
+          const validated = await this.couponsService.validateCoupon(
+            { maCode: coupon.MaCode, courseIds },
+            userId,
+          );
+
+          return {
+            id: coupon.MaCoupon,
+            code: coupon.MaCode,
+            discountValue: Number(coupon.GiaTriGiam),
+            discountType: coupon.LoaiGiam,
+            courseId: coupon.MaKH,
+            startDate: coupon.NgayBatDau,
+            endDate: coupon.NgayKetThuc,
+            usageLimit: coupon.SoLuongGioiHan,
+            usageCount: coupon.SoLuongDaDung,
+            description: coupon.GhiChu,
+            isAvailable: true,
+            reason: undefined,
+            calculatedDiscount: validated.discountAmount,
+          };
+        } catch (error) {
+          return null;
+        }
+      }),
+    );
+
+    return validatedCoupons.filter((coupon): coupon is NonNullable<typeof coupon> =>
+      Boolean(coupon?.isAvailable),
+    );
+    if (false) {
+
     // Kiểm tra xem user đã từng mua khóa học nào thành công chưa
     const paidInvoices = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
@@ -843,6 +904,8 @@ export class CheckoutService {
          AND (NgayKetThuc IS NULL OR NgayKetThuc >= NOW())
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
     );
+
+    const userContext = await this.getUserCouponContext(userId);
 
     const redeemedCouponIds = new Set<number>();
     if (userId) {
@@ -914,7 +977,7 @@ export class CheckoutService {
     );
 
     return coupons
-      .map((coupon: any) => {
+      .map(async (coupon: any) => {
         if (redeemedCouponIds.has(Number(coupon.MaCoupon))) {
           return null;
         }
@@ -922,6 +985,13 @@ export class CheckoutService {
         let isAvailable = true;
         let reason: string | undefined = undefined;
         let applicablePrice = 0;
+        const ruleRows = await this.dataSource.query(
+          `SELECT MaDK, LoaiDieuKien, GiaTriDieuKien
+           FROM MaGiamGiaDieuKien
+           WHERE MaCoupon = ?
+           ORDER BY MaDK ASC`,
+          [coupon.MaCoupon],
+        );
 
         if (coupon.LoaiKM === 'CROSS_SELL') {
           if (validCartCourseIds.length === 0) {
@@ -948,6 +1018,83 @@ export class CheckoutService {
         if (isAvailable && coupon.LoaiKM === 'FIRST_TIME' && hasPurchased) {
           isAvailable = false;
           reason = 'Mã chỉ áp dụng cho lần đầu mua khóa học';
+        }
+
+        if (isAvailable && ruleRows.length > 0) {
+          for (const rule of ruleRows) {
+            const ruleType = String(rule.LoaiDieuKien || '').toUpperCase();
+            const ruleValue =
+              rule.GiaTriDieuKien === null ? null : Number(rule.GiaTriDieuKien);
+            const accountAgeHours = userContext.ngayTao
+              ? (Date.now() - userContext.ngayTao.getTime()) / (1000 * 60 * 60)
+              : null;
+
+            if (
+              ['FIRST_PURCHASE', 'NEW_USER_ONLY'].includes(ruleType) &&
+              userContext.paidInvoiceCount > 0
+            ) {
+              isAvailable = false;
+              reason = 'MÃ£ chá»‰ Ã¡p dá»¥ng cho khÃ¡ch hÃ ng mua láº§n Ä‘áº§u';
+              break;
+            }
+
+            if (ruleType === 'REPEAT_PURCHASE' && userContext.paidInvoiceCount === 0) {
+              isAvailable = false;
+              reason = 'MÃ£ chá»‰ Ã¡p dá»¥ng cho khÃ¡ch hÃ ng Ä‘Ã£ mua trÆ°á»›c Ä‘Ã³';
+              break;
+            }
+
+            if (
+              ruleType === 'NEW_USER_24H' &&
+              accountAgeHours !== null &&
+              accountAgeHours > 24
+            ) {
+              isAvailable = false;
+              reason = 'MÃ£ chá»‰ Ã¡p dá»¥ng cho tÃ i khoáº£n má»›i trong 24 giá» Ä‘áº§u';
+              break;
+            }
+
+            if (
+              ruleType === 'ACCOUNT_AGE_HOURS' &&
+              accountAgeHours !== null &&
+              accountAgeHours >
+                (Number.isFinite(ruleValue) && ruleValue !== null ? ruleValue : 24)
+            ) {
+              isAvailable = false;
+              reason = 'TÃ i khoáº£n khÃ´ng thá»a Ä‘iá»u kiá»‡n thá»i gian táº¡o';
+              break;
+            }
+
+            if (
+              ruleType === 'COMBO_ONLY' &&
+              courseIds.length <
+                (Number.isFinite(ruleValue) && ruleValue !== null ? ruleValue : 2)
+            ) {
+              isAvailable = false;
+              reason = 'MÃ£ giáº£m giÃ¡ nÃ y chá»‰ Ã¡p dá»¥ng khi mua combo Ä‘á»§ sá»‘ lÆ°á»£ng khÃ³a há»c yÃªu cáº§u';
+              break;
+            }
+
+            if (
+              ruleType === 'MIN_ORDER_VALUE' &&
+              applicablePrice <
+                (Number.isFinite(ruleValue) && ruleValue !== null ? ruleValue : 0)
+            ) {
+              isAvailable = false;
+              reason = 'GiÃ¡ trá»‹ Ä‘Æ¡n hÃ ng chÆ°a Ä‘áº¡t má»©c tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡';
+              break;
+            }
+
+            if (
+              ruleType === 'MIN_COURSE_COUNT' &&
+              courseIds.length <
+                (Number.isFinite(ruleValue) && ruleValue !== null ? ruleValue : 1)
+            ) {
+              isAvailable = false;
+              reason = 'Sá»‘ lÆ°á»£ng khÃ³a há»c trong giá» chÆ°a Ä‘áº¡t má»©c tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡';
+              break;
+            }
+          }
         }
 
         let calculatedDiscount = 0;
@@ -982,6 +1129,7 @@ export class CheckoutService {
       .filter((coupon): coupon is NonNullable<typeof coupon> => {
         return Boolean(coupon?.isAvailable);
       });
+    }
   }
 
   // ────────────────────────────────────────────────────────────────────────────────

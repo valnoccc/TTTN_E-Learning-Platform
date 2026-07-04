@@ -235,46 +235,57 @@ describe('CheckoutService', () => {
   });
 
   it('returns only coupons that are valid for the current account', async () => {
-    dataSource.query
-      .mockResolvedValueOnce([{ count: 0 }])
-      .mockResolvedValueOnce([
-        {
-          MaCoupon: 1,
-          MaCode: 'VALID10',
-          GiaTriGiam: 10,
-          LoaiGiam: 'PERCENT',
-          MaKH: null,
-          SoLuongGioiHan: null,
-          SoLuongDaDung: 0,
-          TrangThai: 'ACTIVE',
-          NgayBatDau: null,
-          NgayKetThuc: null,
-          GhiChu: null,
-          LoaiKM: 'STANDARD',
-        },
-        {
-          MaCoupon: 2,
-          MaCode: 'USED10',
-          GiaTriGiam: 10,
-          LoaiGiam: 'PERCENT',
-          MaKH: null,
-          SoLuongGioiHan: null,
-          SoLuongDaDung: 0,
-          TrangThai: 'ACTIVE',
-          NgayBatDau: null,
-          NgayKetThuc: null,
-          GhiChu: null,
-          LoaiKM: 'STANDARD',
-        },
-      ])
-      .mockResolvedValueOnce([{ MaCoupon: 2 }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    dataSource.query.mockResolvedValueOnce([
+      {
+        MaCoupon: 1,
+        MaCode: 'VALID10',
+        GiaTriGiam: 10,
+        LoaiGiam: 'PERCENT',
+        MaKH: null,
+        SoLuongGioiHan: null,
+        SoLuongDaDung: 0,
+        TrangThai: 'ACTIVE',
+        NgayBatDau: null,
+        NgayKetThuc: null,
+        GhiChu: null,
+        LoaiKM: 'STANDARD',
+      },
+      {
+        MaCoupon: 2,
+        MaCode: 'NEWBIE306',
+        GiaTriGiam: 25,
+        LoaiGiam: 'PERCENT',
+        MaKH: null,
+        SoLuongGioiHan: null,
+        SoLuongDaDung: 0,
+        TrangThai: 'ACTIVE',
+        NgayBatDau: null,
+        NgayKetThuc: null,
+        GhiChu: 'Mã giảm giá cho tài khoản mới tạo trong 24h đầu tiên',
+        LoaiKM: 'STANDARD',
+      },
+    ]);
+    couponsService.validateCoupon
+      .mockResolvedValueOnce({
+        discountAmount: 10000,
+        targetCourseIds: [101],
+      })
+      .mockRejectedValueOnce(new Error('Mã chỉ áp dụng cho tài khoản mới trong 24 giờ đầu'));
 
     const result = await service.getAvailableCoupons('101', 7);
 
     expect(result).toHaveLength(1);
     expect(result[0].code).toBe('VALID10');
+    expect(couponsService.validateCoupon).toHaveBeenNthCalledWith(
+      1,
+      { maCode: 'VALID10', courseIds: [101] },
+      7,
+    );
+    expect(couponsService.validateCoupon).toHaveBeenNthCalledWith(
+      2,
+      { maCode: 'NEWBIE306', courseIds: [101] },
+      7,
+    );
   });
 
   it('skips duplicate MoMo IPN processing when the invoice was already handled', async () => {
