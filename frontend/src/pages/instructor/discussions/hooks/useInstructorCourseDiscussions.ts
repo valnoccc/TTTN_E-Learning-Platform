@@ -17,6 +17,7 @@ export interface InstructorCourseDiscussion {
     parsedTitle?: string;
     parsedBody?: string;
     lessonName?: string;
+    reportCount?: number;
 }
 
 function parseDiscussionContent(discussion: InstructorCourseDiscussion): InstructorCourseDiscussion {
@@ -47,7 +48,10 @@ function parseDiscussionContent(discussion: InstructorCourseDiscussion): Instruc
         body = discussion.content;
     }
     
-    return { ...discussion, parsedTitle: title, parsedBody: body, lessonName };
+    // cast reportCount to number in case backend returns string
+    const reportCount = discussion.reportCount ? Number(discussion.reportCount) : 0;
+    
+    return { ...discussion, parsedTitle: title, parsedBody: body, lessonName, reportCount };
 }
 
 interface InstructorCourseOption {
@@ -322,6 +326,22 @@ export function useInstructorCourseDiscussions() {
         }
     };
 
+    const handleRejectReport = async (discussionId: number) => {
+        try {
+            await axiosClient.patch(`/courses/discussions/${discussionId}/reject-reports`);
+            setDiscussions((current) =>
+                current.map((discussion) =>
+                    discussion.discussionId === discussionId
+                        ? { ...discussion, reportCount: 0 }
+                        : discussion
+                ),
+            );
+            toast.success('Đã bỏ qua báo cáo sai');
+        } catch {
+            toast.error('Không thể bỏ qua báo cáo lúc này');
+        }
+    };
+
     const toggleReplies = (discussionId: number) => {
         setExpandedReplies((current) => ({
             ...current,
@@ -355,6 +375,7 @@ export function useInstructorCourseDiscussions() {
         handleStartReply,
         handleSubmitReply,
         handleDeleteDiscussion,
+        handleRejectReport,
         getReplies,
         toggleReplies,
     };

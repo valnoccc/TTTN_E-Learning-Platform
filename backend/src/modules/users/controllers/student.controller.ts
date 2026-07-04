@@ -53,6 +53,15 @@ export class StudentController {
     return this.studentProfileService.getMyCourses(+id);
   }
 
+  // Use the JWT token directly.
+  @Get('me/payments')
+  getMyPaymentsFromToken(
+    @Req() req: Request & { user: { sub?: number; maND?: number } },
+  ) {
+    const userId = this.getUserId(req);
+    return this.studentPaymentHistoryService.getMyPayments(userId);
+  }
+
   @Get(':id/payments')
   getMyPayments(
     @Param('id') id: string,
@@ -63,13 +72,13 @@ export class StudentController {
     return this.studentPaymentHistoryService.getMyPayments(+id);
   }
 
-  // Use the JWT token directly.
-  @Get('me/payments')
-  getMyPaymentsFromToken(
+  @Post('me/lessons/:lessonId/complete')
+  markLessonCompleteFromToken(
+    @Param('lessonId') lessonId: string,
     @Req() req: Request & { user: { sub?: number; maND?: number } },
   ) {
     const userId = this.getUserId(req);
-    return this.studentPaymentHistoryService.getMyPayments(userId);
+    return this.studentProgressService.markLessonComplete(userId, +lessonId);
   }
 
   @Post(':id/lessons/:lessonId/complete')
@@ -83,13 +92,12 @@ export class StudentController {
     return this.studentProgressService.markLessonComplete(+id, +lessonId);
   }
 
-  @Post('me/lessons/:lessonId/complete')
-  markLessonCompleteFromToken(
-    @Param('lessonId') lessonId: string,
+  @Get('me/progress')
+  getMyProgressFromToken(
     @Req() req: Request & { user: { sub?: number; maND?: number } },
   ) {
     const userId = this.getUserId(req);
-    return this.studentProgressService.markLessonComplete(userId, +lessonId);
+    return this.studentProgressService.getMyProgress(userId);
   }
 
   @Get(':id/progress')
@@ -100,14 +108,6 @@ export class StudentController {
     const userId = this.getUserId(req);
     if (userId !== +id) throw new ForbiddenException('Access denied');
     return this.studentProgressService.getMyProgress(+id);
-  }
-
-  @Get('me/progress')
-  getMyProgressFromToken(
-    @Req() req: Request & { user: { sub?: number; maND?: number } },
-  ) {
-    const userId = this.getUserId(req);
-    return this.studentProgressService.getMyProgress(userId);
   }
 
   // Save the most recently viewed lesson using the JWT token.

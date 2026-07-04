@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { LearningToolsService } from './learning-tools.service';
 import { CreateLearningReminderDto } from './dto/create-learning-reminder.dto';
+import { SyncCalendarDto } from './dto/sync-calendar.dto';
 
 @Controller('learning-tools')
 @UseGuards(JwtAuthGuard)
@@ -30,6 +31,17 @@ export class LearningToolsController {
     return {
       message: 'Tạo nhắc nhở học tập thành công',
       data: reminder,
+    };
+  }
+
+  @Post('sync-calendar')
+  async syncCalendar(@Body() dto: SyncCalendarDto) {
+    // Người dùng đã đăng nhập app (JWT được xác thực bởi guard cấp controller).
+    // dto.accessToken là Google OAuth token riêng (calendar scope) nhận từ popup.
+    const result = await this.learningToolsService.syncGoogleCalendar(dto);
+    return {
+      message: 'Đồng bộ Google Calendar thành công',
+      data: result,
     };
   }
 

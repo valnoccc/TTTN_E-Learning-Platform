@@ -72,6 +72,7 @@ export default function InstructorCourseDiscussionsPage() {
         handleStartReply,
         handleSubmitReply,
         handleDeleteDiscussion,
+        handleRejectReport,
         getReplies,
         toggleReplies,
     } = useInstructorCourseDiscussions();
@@ -208,15 +209,23 @@ export default function InstructorCourseDiscussionsPage() {
                                                                 {formatDate(discussion.createdAt)}
                                                             </p>
                                                         </div>
-                                                        <span
-                                                            className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold ${
-                                                                hasReplies
-                                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                                    : 'border-rose-200 bg-rose-50 text-rose-600'
-                                                            }`}
-                                                        >
-                                                            {hasReplies ? 'Đã phản hồi' : 'Chưa phản hồi'}
-                                                        </span>
+                                                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                                                            <span
+                                                                className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold ${
+                                                                    hasReplies
+                                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                                        : 'border-rose-200 bg-rose-50 text-rose-600'
+                                                                }`}
+                                                            >
+                                                                {hasReplies ? 'Đã phản hồi' : 'Chưa phản hồi'}
+                                                            </span>
+                                                            {(discussion.reportCount ?? 0) > 0 && (
+                                                                <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-bold border-amber-200 bg-amber-50 text-amber-600">
+                                                                    <AlertCircle size={12} />
+                                                                    Bị báo cáo ({discussion.reportCount})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
@@ -283,17 +292,35 @@ export default function InstructorCourseDiscussionsPage() {
                                                                                 <span className="text-[11px] text-slate-400">
                                                                                     {formatDate(reply.createdAt)}
                                                                                 </span>
+                                                                                {(reply.reportCount ?? 0) > 0 && (
+                                                                                    <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-bold border-amber-200 bg-amber-50 text-amber-600">
+                                                                                        <AlertCircle size={10} />
+                                                                                        Bị báo cáo ({reply.reportCount})
+                                                                                    </span>
+                                                                                )}
                                                                             </div>
-                                                                            {reply.userRole === 'INSTRUCTOR' && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => void handleDeleteDiscussion(reply.discussionId)}
-                                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-100 bg-white text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                                                                    title="Xóa bình luận"
-                                                                                >
-                                                                                    <Trash2 size={14} />
-                                                                                </button>
-                                                                            )}
+                                                                            <div className="flex items-center gap-1">
+                                                                                {(reply.reportCount ?? 0) > 0 && (
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleRejectReport(reply.discussionId)}
+                                                                                        className="inline-flex h-7 w-7 items-center justify-center rounded border border-amber-200 bg-amber-50 text-amber-600 transition hover:bg-amber-100"
+                                                                                        title="Bỏ qua báo cáo sai"
+                                                                                    >
+                                                                                        <X size={14} />
+                                                                                    </button>
+                                                                                )}
+                                                                                {reply.userRole === 'INSTRUCTOR' && (
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => void handleDeleteDiscussion(reply.discussionId)}
+                                                                                        className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-100 bg-white text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                                                                        title="Xóa bình luận"
+                                                                                    >
+                                                                                        <Trash2 size={14} />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                         <div 
                                                                             className="mt-1 text-[14px] text-slate-700 prose prose-sm max-w-none prose-img:rounded-lg prose-img:shadow-sm"
@@ -314,6 +341,16 @@ export default function InstructorCourseDiscussionsPage() {
                                                             {isReplyOpen ? <X size={16} /> : <Reply size={16} />}
                                                             {isReplyOpen ? 'Hủy' : hasReplies ? 'Trả lời tiếp' : 'Trả lời Q&A'}
                                                         </button>
+                                                        {(discussion.reportCount ?? 0) > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRejectReport(discussion.discussionId)}
+                                                                className="inline-flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-4 py-2 text-[13px] font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100"
+                                                            >
+                                                                <X size={16} />
+                                                                Bỏ qua báo cáo
+                                                            </button>
+                                                        )}
                                                     </div>
 
                                                     {isReplyOpen && (
