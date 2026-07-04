@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 import { KhoaHoc } from '../entities/course.entity';
 
 type CourseLessonRow = {
@@ -28,6 +29,7 @@ export class CoursesService implements OnModuleInit {
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   async onModuleInit() {
@@ -117,6 +119,8 @@ export class CoursesService implements OnModuleInit {
       };
     }
 
+    await this.deleteStoredCourseAssets(courseId, course.hinhThuNho ?? null);
+
     // Xóa các bảng phụ thuộc trước để tránh lỗi Foreign Key Constraint
     // 1. Mục tiêu và Yêu cầu
     await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [
@@ -168,6 +172,54 @@ export class CoursesService implements OnModuleInit {
     // Cuối cùng mới xóa khóa học
     await this.khoaHocRepository.delete(courseId);
     return { message: 'Đã xóa khóa học thành công.' };
+  }
+
+  private async deleteStoredCourseAssets(
+    courseId: number,
+    thumbnailUrl: string | null,
+  ) {
+    const lessonRows: Array<{ maBH?: number | string; videoURL?: string | null }> =
+      await this.dataSource.query(
+        `SELECT MaBH AS maBH, VideoURL AS videoURL
+         FROM BaiHoc
+         WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
+        [courseId],
+      );
+
+    await Promise.all(
+      lessonRows.map(async (lesson) => {
+        const videoUrl = lesson.videoURL?.trim();
+        if (!videoUrl) return;
+        await this.deleteStoredVideo(videoUrl);
+      }),
+    );
+
+    if (thumbnailUrl?.trim() && thumbnailUrl.includes('cloudinary.com')) {
+      const publicId = this.cloudinaryService.extractPublicId(thumbnailUrl);
+      if (publicId) {
+        try {
+          await this.cloudinaryService.deleteFile(publicId, 'image');
+        } catch (error) {
+          console.error('Khong the xoa thumbnail khoa hoc:', error);
+        }
+      }
+    }
+  }
+
+  private async deleteStoredVideo(videoUrl: string) {
+    try {
+      if (videoUrl.includes('cloudinary.com')) {
+        const publicId = this.cloudinaryService.extractPublicId(videoUrl);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
+        return;
+      }
+
+      await this.lessonVideoStorageService.deleteVideo(videoUrl);
+    } catch (error) {
+      console.error('Khong the xoa video bai hoc khi xoa khoa hoc:', error);
+    }
   }
 
   async updateCourseStatus(

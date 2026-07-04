@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../entities/course.entity';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
@@ -29,6 +30,7 @@ export class CourseInstructorCurriculumService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly cloudinaryService: CloudinaryService,
     private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
@@ -193,6 +195,22 @@ export class CourseInstructorCurriculumService {
   async deleteChapter(chapterId: number, instructorId: number) {
     const chapter = await this.getOwnedChapter(chapterId, instructorId);
 
+    const lessonRows: Array<{ maBH?: number | string; videoUrl?: string | null }> =
+      await this.dataSource.query(
+        `SELECT MaBH AS maBH, VideoURL AS videoUrl
+         FROM BaiHoc
+         WHERE MaChuong = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
+        [chapterId],
+      );
+
+    await Promise.all(
+      lessonRows.map(async (lesson) => {
+        const videoUrl = lesson.videoUrl?.trim();
+        if (!videoUrl) return;
+        await this.deleteStoredVideo(videoUrl);
+      }),
+    );
+
     await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaChuong = ?`, [
       chapterId,
     ]);
@@ -201,6 +219,22 @@ export class CourseInstructorCurriculumService {
     ]);
 
     await this.touchCourse(chapter.maKH);
+  }
+
+  private async deleteStoredVideo(videoUrl: string) {
+    try {
+      if (videoUrl.includes('cloudinary.com')) {
+        const publicId = this.cloudinaryService.extractPublicId(videoUrl);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
+        return;
+      }
+
+      await this.lessonVideoStorageService.deleteVideo(videoUrl);
+    } catch (error) {
+      console.error('Khong the xoa video bai hoc khi xoa chuong:', error);
+    }
   }
 
   private async getOwnedChapter(chapterId: number, instructorId: number) {
