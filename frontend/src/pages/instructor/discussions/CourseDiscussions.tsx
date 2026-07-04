@@ -223,14 +223,9 @@ export default function InstructorCourseDiscussionsPage() {
                                                         <span className="rounded bg-slate-800 px-2 py-1 font-medium text-white">
                                                             Khóa học: {discussion.courseTitle}
                                                         </span>
-                                                        {discussion.lessonName && (
-                                                            <span className="rounded bg-emerald-100 px-2 py-1 font-medium text-emerald-800 border border-emerald-200">
-                                                                Bài: {discussion.lessonName}
-                                                            </span>
-                                                        )}
                                                     </div>
 
-                                                    <div className="mt-3 text-[14px] font-bold text-slate-900 leading-relaxed">
+                                                    <div className="mt-3 text-[14px] font-normal text-slate-900 leading-relaxed">
                                                         {discussion.parsedTitle}
                                                     </div>
                                                     <div 
