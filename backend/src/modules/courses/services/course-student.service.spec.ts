@@ -70,6 +70,7 @@ describe('CourseStudentService', () => {
           {
             averageRating: '4.6',
             totalLessons: '12',
+            totalDurationSeconds: '7200',
           },
         ],
       }),
@@ -89,6 +90,7 @@ describe('CourseStudentService', () => {
         giaBan: 0,
         averageRating: '4.6',
         totalLessons: 12,
+        totalDurationSeconds: 7200,
       },
     ]);
 
