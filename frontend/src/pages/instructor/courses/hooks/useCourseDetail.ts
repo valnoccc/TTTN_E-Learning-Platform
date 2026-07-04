@@ -387,11 +387,20 @@ export function useCourseDetail(
 
             console.log('[handleStatusChange] Gọi API PATCH /courses/' + id + '/status');
             // 3. NẾU LƯU DỮ LIỆU THÀNH CÔNG -> GỌI API CẬP NHẬT TRẠNG THÁI (PATCH)
-            await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
+            const statusResponse = await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
+            const responseMessage =
+                statusResponse?.data?.message ||
+                'Đã lưu lại nội dung và cập nhật trạng thái mới!';
 
             console.log('[handleStatusChange] THÀNH CÔNG!');
-            toast.success('Đã lưu lại nội dung và cập nhật trạng thái mới!');
-            setFormData((current) => ({ ...current, trang_thai: newStatus }));
+            toast.success(responseMessage);
+            setFormData((current) => ({
+                ...current,
+                trang_thai:
+                    statusResponse?.data?.data?.trangThai ||
+                    statusResponse?.data?.data?.trang_thai ||
+                    newStatus,
+            }));
 
         } catch (error: unknown) {
             console.error('[handleStatusChange] CATCH LỖI:', error);

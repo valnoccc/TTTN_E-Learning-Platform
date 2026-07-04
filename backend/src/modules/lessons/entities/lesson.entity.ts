@@ -9,8 +9,10 @@ import { KhoaHoc } from '../../courses/entities/course.entity';
 
 export enum AiStatus {
   PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+  NEEDS_REVIEW = 'NEEDS_REVIEW',
 }
 
 @Entity('BaiHoc')

@@ -4,7 +4,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { AiQuotaTracker } from '../entities/ai-quota-tracker.entity';
 import { AiStatus, Lesson } from '../entities/lesson.entity';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { VideoIntelligenceService } from './video-intelligence.service';
+import { DataSource } from 'typeorm';
 
 const annotateVideoMock = jest.fn();
 
@@ -26,18 +28,36 @@ describe('VideoIntelligenceService', () => {
     update: jest.Mock;
     findOne: jest.Mock;
     find: jest.Mock;
+    query: jest.Mock;
   };
   let quotaRepository: {
     findOne: jest.Mock;
     save: jest.Mock;
     query: jest.Mock;
   };
+  let dataSource: {
+    query: jest.Mock;
+  };
+  let notificationsService: {
+    createNotification: jest.Mock;
+  };
   let courseRepository: {
     findOne: jest.Mock;
     update: jest.Mock;
   };
   type TestableVideoIntelligenceService = {
-    runAnalysis: (lessonId: number, videoUrl: string) => Promise<void>;
+    runAnalysis: (
+      lessonId: number,
+      videoUrl: string,
+    ) => Promise<{
+      lessonId: number;
+      status: AiStatus;
+      labels: string[];
+      rejectReason: string | null;
+      durationSeconds: number;
+      riskyFrameCount: number;
+      likelyFrameCount: number;
+    }>;
   };
 
   beforeEach(async () => {
@@ -47,11 +67,18 @@ describe('VideoIntelligenceService', () => {
       update: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
     };
     quotaRepository = {
       findOne: jest.fn(),
       save: jest.fn(),
       query: jest.fn(),
+    };
+    dataSource = {
+      query: jest.fn().mockResolvedValue([]),
+    };
+    notificationsService = {
+      createNotification: jest.fn(),
     };
     courseRepository = {
       findOne: jest.fn(),
@@ -67,6 +94,8 @@ describe('VideoIntelligenceService', () => {
           useValue: quotaRepository,
         },
         { provide: getRepositoryToken(KhoaHoc), useValue: courseRepository },
+        { provide: DataSource, useValue: dataSource },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 
@@ -158,7 +187,7 @@ describe('VideoIntelligenceService', () => {
     const analysisService =
       service as unknown as TestableVideoIntelligenceService;
 
-    await analysisService.runAnalysis(
+    const result = await analysisService.runAnalysis(
       1,
       'https://cdn.example.com/lesson-1.mp4',
     );
@@ -170,12 +199,8 @@ describe('VideoIntelligenceService', () => {
         aiRejectReason: null,
       }),
     );
-    expect(courseRepository.update).toHaveBeenCalledWith(
-      10,
-      expect.objectContaining({
-        trangThai: 'PUBLISHED',
-      }),
-    );
+    expect(result.status).toBe(AiStatus.APPROVED);
+    expect(courseRepository.update).not.toHaveBeenCalled();
   });
 
   it('rejects only when the explicit signal is very strong', async () => {
@@ -248,7 +273,7 @@ describe('VideoIntelligenceService', () => {
     expect(courseRepository.update).not.toHaveBeenCalled();
   });
 
-  it('keeps the lesson pending when the AI provider fails', async () => {
+  it('marks the lesson as needs review when the AI provider fails', async () => {
     lessonRepository.findOne.mockImplementation(
       ({ where }: { where: { maBH?: number; maKH?: number } }) => {
         if ('maBH' in where) {
@@ -271,7 +296,7 @@ describe('VideoIntelligenceService', () => {
     const analysisService =
       service as unknown as TestableVideoIntelligenceService;
 
-    await analysisService.runAnalysis(
+    const result = await analysisService.runAnalysis(
       1,
       'https://cdn.example.com/lesson-1.mp4',
     );
@@ -279,10 +304,11 @@ describe('VideoIntelligenceService', () => {
     expect(lessonRepository.update).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
-        aiStatus: AiStatus.PENDING,
-        aiRejectReason: null,
+        aiStatus: AiStatus.NEEDS_REVIEW,
+        aiRejectReason: expect.stringContaining('Lỗi kỹ thuật khi phân tích'),
       }),
     );
+    expect(result.status).toBe(AiStatus.NEEDS_REVIEW);
     expect(courseRepository.update).not.toHaveBeenCalled();
   });
 });

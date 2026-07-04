@@ -45,6 +45,22 @@ export class AiModerationController {
         aiRejectReason: null,
       },
     );
+    await this.lessonRepository.update(
+      { aiStatus: AiStatus.PROCESSING },
+      {
+        aiStatus: AiStatus.APPROVED,
+        aiLabels: ['Lập trình', 'Giáo dục (Dev Mode)'],
+        aiRejectReason: null,
+      },
+    );
+    await this.lessonRepository.update(
+      { aiStatus: AiStatus.NEEDS_REVIEW },
+      {
+        aiStatus: AiStatus.APPROVED,
+        aiLabels: ['Lập trình', 'Giáo dục (Dev Mode)'],
+        aiRejectReason: null,
+      },
+    );
     return { message: 'Đã duyệt tất cả video đang chờ!' };
   }
 }

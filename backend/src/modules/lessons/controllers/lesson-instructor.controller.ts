@@ -12,7 +12,6 @@ import {
   Post,
   Put,
   Query,
-  Request,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -25,10 +24,8 @@ import {
   LessonVideoStorageService,
   type LessonVideoUploadResult,
 } from '../../lesson-video-storage/lesson-video-storage.service';
-import { AiStatus } from '../entities/lesson.entity';
 import { serializeLesson } from '../services/lesson-response.util';
 import { LessonsService } from '../services/lessons.service';
-import { VideoIntelligenceService } from '../services/video-intelligence.service';
 
 const LESSON_TITLE_MAX_LENGTH = 60;
 
@@ -70,18 +67,15 @@ export class LessonsController {
   constructor(
     private readonly lessonsService: LessonsService,
     private readonly lessonVideoStorageService: LessonVideoStorageService,
-    private readonly videoIntelligenceService: VideoIntelligenceService,
   ) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('video'))
   async create(
-    @Request() req,
     @Body() lessonData: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
     let uploadedVideo: LessonVideoUploadResult | null = null;
-    let videoInputUri: string | null = null;
     let payload: {
       maKH: number;
       tenBaiHoc: any;
@@ -90,18 +84,16 @@ export class LessonsController {
       choPhepXemTruoc: boolean;
       videoURL: string | null;
       thoiLuong: number;
+      aiStatus: string | null;
+      aiLabels: string[] | null;
+      aiRejectReason: string | null;
     };
 
     try {
-      let videoDuration = parseVideoDuration(
-        lessonData.thoiLuong ?? lessonData.thoi_luong,
-      );
-
       if (file) {
         uploadedVideo = await this.lessonVideoStorageService.uploadVideo(file, {
           courseId: Number(lessonData.maKH ?? lessonData.id_khoa_hoc),
         });
-        videoInputUri = uploadedVideo.gcsUri;
       }
 
       payload = {
@@ -113,7 +105,12 @@ export class LessonsController {
           lessonData.choPhepXemTruoc ?? lessonData.cho_phep_xem_truoc,
         ),
         videoURL: uploadedVideo?.gcsUri ?? null,
-        thoiLuong: videoDuration,
+        thoiLuong: parseVideoDuration(
+          lessonData.thoiLuong ?? lessonData.thoi_luong,
+        ),
+        aiStatus: uploadedVideo ? 'PROCESSING' : null,
+        aiLabels: null,
+        aiRejectReason: null,
       };
 
       if (!payload.tenBaiHoc || !String(payload.tenBaiHoc).trim()) {
@@ -126,8 +123,6 @@ export class LessonsController {
       }
 
       const newLesson = await this.lessonsService.create(payload);
-
-      this.queueLessonAnalysis(newLesson.maBH, videoInputUri, videoDuration);
 
       return {
         message: 'Thêm bài học thành công',
@@ -198,8 +193,18 @@ export class LessonsController {
     @Body() body: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    let videoInputUri: string | null = null;
-    const updateData = {
+    const updateData: {
+      tenBaiHoc?: string;
+      noi_dung?: string;
+      thuTu?: number;
+      maKH?: number;
+      choPhepXemTruoc?: boolean;
+      videoURL?: string;
+      thoiLuong?: number;
+      aiStatus?: string | null;
+      aiLabels?: string[] | null;
+      aiRejectReason?: string | null;
+    } = {
       tenBaiHoc: body.tenBaiHoc ?? body.tieu_de,
       noi_dung: body.noi_dung,
       thuTu:
@@ -242,24 +247,17 @@ export class LessonsController {
         },
       );
       updateData['videoURL'] = uploadResult.gcsUri;
-      videoInputUri = uploadResult.gcsUri;
       updateData['thoiLuong'] = parseVideoDuration(
         body.thoiLuong ?? body.thoi_luong,
       );
 
-      // Đặt lại trạng thái AI về chờ xử lý khi video thay đổi
-      updateData['aiStatus'] = AiStatus.PENDING;
+      // Gỡ trạng thái AI cũ để chờ kiểm duyệt khi giảng viên gửi duyệt khóa học
+      updateData['aiStatus'] = 'PROCESSING';
       updateData['aiLabels'] = null;
       updateData['aiRejectReason'] = null;
     }
 
     const lesson = await this.lessonsService.update(id, updateData);
-
-    this.queueLessonAnalysis(
-      lesson.maBH,
-      videoInputUri,
-      updateData['thoiLuong'] as number,
-    );
 
     return this.serializeLessonResponse(lesson);
   }
@@ -274,35 +272,6 @@ export class LessonsController {
         'Lỗi khi xóa bài học: ' + error.message,
       );
     }
-  }
-
-  private queueLessonAnalysis(
-    lessonId: number,
-    videoUrl: string | null | undefined,
-    videoDuration: number,
-  ) {
-    if (!videoUrl) {
-      return;
-    }
-
-    if (videoDuration > 0) {
-      this.videoIntelligenceService
-        .checkQuota(videoDuration)
-        .then(() => {
-          return this.videoIntelligenceService.analyzeVideoBackground(
-            lessonId,
-            videoUrl,
-          );
-        })
-        .catch((quotaErr) => {
-          console.warn(
-            `[AI Quota] Bỏ qua kiểm duyệt bài học ${lessonId}: ${quotaErr.message}`,
-          );
-        });
-      return;
-    }
-
-    this.videoIntelligenceService.analyzeVideoBackground(lessonId, videoUrl);
   }
 
   private async serializeLessonResponse(lesson: any) {

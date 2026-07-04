@@ -53,29 +53,85 @@ export default function InstructorCourseDetail({
         isStatusChanging,
     } = course as any;
 
-    const isAiChecking = lessons?.some((l: any) => l.aiStatus === 'PENDING');
+    const videoLessons = (lessons ?? []).filter(
+        (lesson: any) => Boolean(lesson.video_url || lesson.videoUrl),
+    );
+    const isAiChecking = videoLessons.some(
+        (lesson: any) => lesson.aiStatus === 'PROCESSING' || lesson.aiStatus === 'PENDING',
+    );
+    const needsReviewLessons = videoLessons.filter(
+        (lesson: any) => lesson.aiStatus === 'NEEDS_REVIEW',
+    );
     const isTechnicalAiReject = (lesson: any) => {
         const reason = String(lesson?.aiRejectReason ?? '').toLowerCase();
         return reason.includes('lỗi kỹ thuật') || reason.includes('invalid_argument') || reason.includes('request contains an invalid argument');
     };
-    const hardRejectedLessons = (lessons ?? []).filter((lesson: any) => {
+    const hardRejectedLessons = videoLessons.filter((lesson: any) => {
         return lesson.aiStatus === 'REJECTED' && !isTechnicalAiReject(lesson);
     });
-    const technicalRejectedLessons = (lessons ?? []).filter((lesson: any) => {
+    const technicalRejectedLessons = videoLessons.filter((lesson: any) => {
         return lesson.aiStatus === 'REJECTED' && isTechnicalAiReject(lesson);
     });
     const hasAiRejected = hardRejectedLessons.length > 0;
+    const hasNeedsReview = needsReviewLessons.length > 0;
+    const canRequestPublish =
+        videoLessons.length > 0 && videoLessons.every((lesson: any) => lesson.aiStatus === 'APPROVED');
     const firstRejectedLesson = hardRejectedLessons[0] ?? technicalRejectedLessons[0] ?? null;
     const disablePublish = isSaving || isStatusChanging;
     let publishBtnTitle = '';
-    if (isAiChecking) publishBtnTitle = 'Có video đang chờ AI kiểm duyệt';
+    if (isAiChecking) publishBtnTitle = 'Có video đang được AI xử lý';
     else if (hasAiRejected) {
         publishBtnTitle = firstRejectedLesson?.aiRejectReason
             ? `Có video bị AI từ chối: ${firstRejectedLesson.aiRejectReason}`
             : 'Có video bị AI từ chối, vui lòng kiểm tra lại';
     } else if (technicalRejectedLessons.length > 0) {
         publishBtnTitle = 'Có video bị lỗi kỹ thuật khi kiểm duyệt. Có thể gửi yêu cầu duyệt lại.';
+    } else if (hasNeedsReview) {
+        publishBtnTitle = 'Có video cần admin duyệt thêm.';
+    } else if (!canRequestPublish) {
+        publishBtnTitle = 'Khóa học chưa sẵn sàng để gửi duyệt. Hãy chờ toàn bộ video được AI duyệt.';
     }
+
+    const courseReviewBanner = (() => {
+        if (isAiChecking) {
+            return {
+                tone: 'amber',
+                title: 'Khóa học đang được AI kiểm duyệt',
+                description:
+                    'Một số video vẫn đang được xử lý. Bạn có thể tiếp tục chỉnh sửa các phần khác trong lúc chờ.',
+            };
+        }
+
+        if (hasAiRejected) {
+            return {
+                tone: 'rose',
+                title: 'Có video bị từ chối',
+                description: firstRejectedLesson?.aiRejectReason
+                    ? `Ít nhất một video chưa đạt yêu cầu: ${firstRejectedLesson.aiRejectReason}`
+                    : 'Ít nhất một video chưa đạt yêu cầu. Vui lòng kiểm tra lại bài học tương ứng.',
+            };
+        }
+
+        if (hasNeedsReview) {
+            return {
+                tone: 'sky',
+                title: 'Khóa học đang chờ admin duyệt thêm',
+                description:
+                    'AI đã đánh dấu một số video cần xem xét thủ công. Hệ thống sẽ chờ admin xử lý tiếp.',
+            };
+        }
+
+        if (canRequestPublish && videoLessons.length > 0) {
+            return {
+                tone: 'emerald',
+                title: 'Tất cả video đã được AI duyệt',
+                description:
+                    'Bạn có thể gửi yêu cầu duyệt khóa học ngay bây giờ để hệ thống chuyển sang bước public.',
+            };
+        }
+
+        return null;
+    })();
 
     useEffect(() => {
         const rejectedLessons = (lessons ?? []).filter((lesson: any) => lesson.aiStatus === 'REJECTED');
@@ -111,6 +167,32 @@ export default function InstructorCourseDetail({
                                 </div>
 
                                 <div className="flex flex-col items-start gap-4 xl:items-end">
+                                    {courseReviewBanner ? (
+                                        <div
+                                            className={`max-w-xl rounded-xl border px-4 py-3 text-sm shadow-sm ${
+                                                courseReviewBanner.tone === 'amber'
+                                                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                                    : courseReviewBanner.tone === 'rose'
+                                                        ? 'border-rose-200 bg-rose-50 text-rose-800'
+                                                        : courseReviewBanner.tone === 'sky'
+                                                            ? 'border-sky-200 bg-sky-50 text-sky-800'
+                                                            : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                                                <div>
+                                                    <p className="font-bold">
+                                                        {courseReviewBanner.title}
+                                                    </p>
+                                                    <p className="mt-1 leading-5">
+                                                        {courseReviewBanner.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
                                     {!isNewCourse && (
                                         <StatusActions
                                             status={formData.trang_thai}
@@ -160,7 +242,11 @@ export default function InstructorCourseDetail({
                                                             courseTitle: formData.title,
                                                             lessons,
                                                         });
-                                                        toast.error('Khóa học có video đang chờ AI duyệt. Không thể gửi yêu cầu!');
+                                                        toast.error('Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.');
+                                                        return;
+                                                    }
+                                                    if (!canRequestPublish && !hasAiRejected && !hasNeedsReview && technicalRejectedLessons.length === 0) {
+                                                        toast.error('Khóa học đang được AI kiểm duyệt. Vui lòng chờ tất cả video hoàn tất trước khi gửi duyệt.');
                                                         return;
                                                     }
                                                     if (hasAiRejected) {
@@ -182,18 +268,6 @@ export default function InstructorCourseDetail({
                                                                 : 'Khóa học có video bị AI từ chối. Vui lòng kiểm tra lại!',
                                                         );
                                                         return;
-                                                    }
-                                                    if (technicalRejectedLessons.length > 0) {
-                                                        console.warn('[Course AI Debug] Publish allowed despite technical AI rejection(s)', {
-                                                            courseId: id,
-                                                            courseTitle: formData.title,
-                                                            technicalRejectedLessons: technicalRejectedLessons.map((lesson: any) => ({
-                                                                id: lesson.id,
-                                                                title: lesson.tieu_de,
-                                                                aiRejectReason: lesson.aiRejectReason || 'no reason provided',
-                                                                videoUrl: lesson.video_url || '',
-                                                            })),
-                                                        });
                                                     }
                                                     void handleStatusChange('PENDING');
                                                 }}

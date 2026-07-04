@@ -10,6 +10,15 @@ import { DataSource, Repository } from 'typeorm';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../entities/course.entity';
 
+type CourseLessonRow = {
+  maBH?: number | string;
+  tenBaiHoc?: string | null;
+  videoURL?: string | null;
+  thuTu?: number | string | null;
+  aiStatus?: string | null;
+  aiRejectReason?: string | null;
+};
+
 @Injectable()
 export class CoursesService implements OnModuleInit {
   private courseSchemaReady: Promise<void> | null = null;
@@ -175,14 +184,36 @@ export class CoursesService implements OnModuleInit {
     }
 
     if (trangThai === 'PENDING') {
-      const lessonCount = await this.dataSource.query(
-        `SELECT COUNT(*) as count FROM BaiHoc WHERE MaKH = ?`,
+      const lessons: CourseLessonRow[] = await this.dataSource.query(
+        `SELECT MaBH AS maBH, TenBaiHoc AS tenBaiHoc, VideoURL AS videoURL, ThuTu AS thuTu, AiStatus AS aiStatus, AiRejectReason AS aiRejectReason
+         FROM BaiHoc
+         WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''
+         ORDER BY ThuTu ASC, MaBH ASC`,
         [courseId],
       );
 
-      if (Number(lessonCount[0].count) === 0) {
+      if (lessons.length === 0) {
         throw new BadRequestException(
-          'Khóa học chưa hoàn thiện. Cần ít nhất 1 bài học để gửi duyệt!',
+          'Khóa học chưa có video để gửi duyệt. Vui lòng thêm ít nhất 1 bài học có video.',
+        );
+      }
+
+      const notApprovedLessons = lessons.filter(
+        (lesson) => lesson.aiStatus !== 'APPROVED',
+      );
+
+      if (notApprovedLessons.length > 0) {
+        const details = notApprovedLessons
+          .map((lesson) => {
+            const lessonTitle = lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
+            const status = lesson.aiStatus || 'CHƯA KIỂM DUYỆT';
+            const reason = lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
+            return `- ${lessonTitle}: ${status} - ${reason}`;
+          })
+          .join('\n');
+
+        throw new BadRequestException(
+          `Khóa học chỉ có thể gửi duyệt khi 100% video đã được AI duyệt.\n${details}`,
         );
       }
     }
