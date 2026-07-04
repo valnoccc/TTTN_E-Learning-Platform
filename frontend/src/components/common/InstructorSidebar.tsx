@@ -18,6 +18,7 @@ type SidebarItem = {
   label: string;
   path: string;
   icon: ReactNode;
+  match?: 'exact' | 'prefix';
 };
 
 export default function InstructorSidebar() {
@@ -74,31 +75,37 @@ export default function InstructorSidebar() {
       label: 'Báo cáo & Thống kê',
       path: '/instructor/reports',
       icon: <BarChart3 size={18} />,
+      match: 'exact',
     },
     {
       label: 'Doanh thu theo tháng',
       path: '/instructor/reports/monthly-revenue',
       icon: <CalendarDays size={18} />,
+      match: 'exact',
     },
     {
       label: 'Khóa học của tôi',
       path: '/instructor/courses',
       icon: <BookOpen size={18} />,
+      match: 'prefix',
     },
     {
       label: 'Danh sách học viên',
       path: '/instructor/students',
       icon: <Users size={18} />,
+      match: 'exact',
     },
     {
       label: 'Hỏi đáp',
       path: '/instructor/discussions',
       icon: <MessageSquare size={18} />,
+      match: 'exact',
     },
     {
       label: 'Đánh giá khóa học',
       path: '/instructor/reviews',
       icon: <Star size={18} />,
+      match: 'exact',
     },
   ];
 
@@ -121,8 +128,10 @@ export default function InstructorSidebar() {
         <ul className="space-y-1">
           {items.map((item) => {
             const isActive =
-              location.pathname === item.path ||
-              location.pathname.startsWith(`${item.path}/`);
+              item.match === 'prefix'
+                ? location.pathname === item.path ||
+                  location.pathname.startsWith(`${item.path}/`)
+                : location.pathname === item.path;
 
             return (
               <li key={item.path}>
