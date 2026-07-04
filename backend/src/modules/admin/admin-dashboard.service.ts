@@ -525,26 +525,27 @@ export class AdminDashboardService {
           nd.HoTen AS instructorName,
           nd.AnhDaiDien AS instructorAvatar,
           COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') AS specialty,
-          COUNT(DISTINCT kh.MaKH) AS courseCount,
+          COUNT(DISTINCT CASE WHEN hd.MaHD IS NOT NULL THEN kh.MaKH END) AS courseCount,
           COUNT(DISTINCT hd.MaHD) AS orderCount,
-          COALESCE(SUM(${lineNetRevenueSql}), 0) AS grossRevenue,
-          COALESCE(SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}), 0) AS adminRevenue,
-          COALESCE(SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}), 0) AS instructorPayout
-        FROM ChiTietHoaDon cthd
-        JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
-        JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
-        JOIN NguoiDung nd ON kh.MaND_GiangVien = nd.MaND
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${lineNetRevenueSql} ELSE 0 END), 0) AS grossRevenue,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE} ELSE 0 END), 0) AS adminRevenue,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE} ELSE 0 END), 0) AS instructorPayout
+        FROM NguoiDung nd
+        LEFT JOIN KhoaHoc kh ON kh.MaND_GiangVien = nd.MaND
         LEFT JOIN HoSoGiangVien hsgv ON hsgv.MaND = nd.MaND
         LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
+        LEFT JOIN ChiTietHoaDon cthd ON cthd.MaKH = kh.MaKH
+        LEFT JOIN HoaDon hd ON cthd.MaHD = hd.MaHD 
+          AND hd.TrangThaiThanhToan = 'PAID'
+          AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+          AND MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
         LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
-        JOIN (
+        LEFT JOIN (
           SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
           FROM ChiTietHoaDon
           GROUP BY MaHD
         ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
-        WHERE hd.TrangThaiThanhToan = 'PAID'
-          AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
-          AND MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+        WHERE nd.VaiTro = 'INSTRUCTOR'
         GROUP BY nd.MaND, nd.HoTen, nd.AnhDaiDien
         ORDER BY instructorPayout DESC, grossRevenue DESC, nd.MaND DESC
       `,
@@ -571,7 +572,7 @@ export class AdminDashboardService {
     });
 
     const summary = {
-      totalInstructors: items.length,
+      totalInstructors: items.filter(item => item.grossRevenue > 0).length,
       totalCourses: items.reduce((sum, item) => sum + item.courseCount, 0),
       totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
       grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),

@@ -113,7 +113,7 @@ export function useLessonCreateForm() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             toast.success('Thêm bài học thành công!');
-            navigate(`/instructor/courses/${id}`);
+            navigate(`/instructor/courses/${id}/lessons`);
         } catch (error: unknown) {
             const message =
                 typeof error === 'object' &&
@@ -257,7 +257,7 @@ export function useLessonDetailForm() {
         try {
             await axiosClient.put(`/lessons/${targetId}`, data);
             toast.success('Cập nhật bài học thành công!');
-            navigate(`/instructor/courses/${formData.id_khoa_hoc}`);
+            navigate(`/instructor/courses/${formData.id_khoa_hoc}/lessons`);
         } catch {
             toast.error('Lỗi khi cập nhật bài học');
         } finally {

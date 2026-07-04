@@ -339,7 +339,7 @@ export default function CourseLearning() {
           {/* Video Player */}
           <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
           {activeLesson?.videoUrl ? (
-            activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
+            (!activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be')) ? (
               <video
                 src={activeLesson.videoUrl}
                 controls

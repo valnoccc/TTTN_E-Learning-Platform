@@ -76,11 +76,22 @@ function TableRow({ item }: { item: AdminInstructorDebtItem }) {
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
             {item.instructorAvatar ? (
-              <img
-                src={item.instructorAvatar}
-                alt={item.instructorName}
-                className="h-full w-full object-cover"
-              />
+              <>
+                <img
+                  src={item.instructorAvatar.startsWith('http') || item.instructorAvatar.startsWith('data:') ? item.instructorAvatar : `/assets/images/${item.instructorAvatar}`}
+                  alt={item.instructorName}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                          (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                      }
+                  }}
+                />
+                <span className="hidden h-full w-full items-center justify-center text-sm font-bold text-slate-500">
+                  {item.instructorName.charAt(0).toUpperCase()}
+                </span>
+              </>
             ) : (
               <span className="text-sm font-bold text-slate-500">
                 {item.instructorName.charAt(0).toUpperCase()}
