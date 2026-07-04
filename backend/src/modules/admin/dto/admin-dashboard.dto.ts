@@ -75,3 +75,34 @@ export class DashboardStatsDto {
     instructorPayout: number;
   }[];
 }
+
+export class AdminInstructorDebtItemDto {
+  instructorId!: number;
+  instructorName!: string;
+  instructorAvatar!: string | null;
+  specialty!: string | null;
+  courseCount!: number;
+  orderCount!: number;
+  grossRevenue!: number;
+  adminRevenue!: number;
+  instructorPayout!: number;
+  debtAmount!: number;
+}
+
+export class AdminInstructorDebtSummaryDto {
+  totalInstructors!: number;
+  totalCourses!: number;
+  totalOrders!: number;
+  grossRevenue!: number;
+  adminRevenue!: number;
+  instructorPayout!: number;
+  topDebtAmount!: number;
+}
+
+export class AdminInstructorDebtBoardDto {
+  month!: number;
+  year!: number;
+  monthLabel!: string;
+  summary!: AdminInstructorDebtSummaryDto;
+  items!: AdminInstructorDebtItemDto[];
+}

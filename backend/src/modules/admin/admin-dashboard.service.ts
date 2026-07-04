@@ -4,7 +4,10 @@ import {
   ADMIN_REVENUE_SHARE,
   INSTRUCTOR_REVENUE_SHARE,
 } from '../../common/constants/revenue-share';
-import { DashboardStatsDto } from './dto/admin-dashboard.dto';
+import {
+  AdminInstructorDebtBoardDto,
+  DashboardStatsDto,
+} from './dto/admin-dashboard.dto';
 
 type CountGrowthRow = {
   total?: string | number;
@@ -81,6 +84,17 @@ type CategoryRevenueRow = {
   adminRevenue?: string | number;
   instructorPayout?: string | number;
 };
+type InstructorDebtRow = {
+  instructorId?: string | number;
+  instructorName?: string;
+  instructorAvatar?: string | null;
+  specialty?: string | null;
+  courseCount?: string | number;
+  orderCount?: string | number;
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
+};
 
 @Injectable()
 export class AdminDashboardService {
@@ -113,6 +127,26 @@ export class AdminDashboardService {
     }
 
     return Number((((current - last) / last) * 100).toFixed(1));
+  }
+
+  private normalizeMonth(value?: number) {
+    if (!Number.isInteger(value) || !value || value < 1 || value > 12) {
+      return new Date().getMonth() + 1;
+    }
+
+    return value;
+  }
+
+  private normalizeYear(value?: number) {
+    if (!Number.isInteger(value) || !value || value < 2000 || value > 3000) {
+      return new Date().getFullYear();
+    }
+
+    return value;
+  }
+
+  private buildMonthLabel(month: number, year: number) {
+    return `Tháng ${String(month).padStart(2, '0')}/${year}`;
   }
 
   async getOverviewStats(): Promise<DashboardStatsDto> {
@@ -472,6 +506,86 @@ export class AdminDashboardService {
         adminRevenue: Number(row.adminRevenue ?? 0),
         instructorPayout: Number(row.instructorPayout ?? 0),
       })),
+    };
+  }
+
+  async getInstructorDebtBoard(
+    month?: number,
+    year?: number,
+  ): Promise<AdminInstructorDebtBoardDto> {
+    const selectedMonth = this.normalizeMonth(month);
+    const selectedYear = this.normalizeYear(year);
+    const monthLabel = this.buildMonthLabel(selectedMonth, selectedYear);
+    const lineNetRevenueSql = this.buildLineNetRevenueSql();
+
+    const rows = (await this.dataSource.query(
+      `
+        SELECT
+          nd.MaND AS instructorId,
+          nd.HoTen AS instructorName,
+          nd.AnhDaiDien AS instructorAvatar,
+          COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') AS specialty,
+          COUNT(DISTINCT kh.MaKH) AS courseCount,
+          COUNT(DISTINCT hd.MaHD) AS orderCount,
+          COALESCE(SUM(${lineNetRevenueSql}), 0) AS grossRevenue,
+          COALESCE(SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}), 0) AS adminRevenue,
+          COALESCE(SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}), 0) AS instructorPayout
+        FROM ChiTietHoaDon cthd
+        JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
+        JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
+        JOIN NguoiDung nd ON kh.MaND_GiangVien = nd.MaND
+        LEFT JOIN HoSoGiangVien hsgv ON hsgv.MaND = nd.MaND
+        LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
+        LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+        JOIN (
+          SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+          FROM ChiTietHoaDon
+          GROUP BY MaHD
+        ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+        WHERE hd.TrangThaiThanhToan = 'PAID'
+          AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+          AND MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+        GROUP BY nd.MaND, nd.HoTen, nd.AnhDaiDien
+        ORDER BY instructorPayout DESC, grossRevenue DESC, nd.MaND DESC
+      `,
+      [selectedYear, selectedMonth],
+    )) as InstructorDebtRow[];
+
+    const items = rows.map((row) => {
+      const grossRevenue = Number(row.grossRevenue ?? 0);
+      const adminRevenue = Number(row.adminRevenue ?? 0);
+      const instructorPayout = Number(row.instructorPayout ?? 0);
+
+      return {
+        instructorId: Number(row.instructorId ?? 0),
+        instructorName: row.instructorName ?? '',
+        instructorAvatar: row.instructorAvatar ?? null,
+        specialty: row.specialty ?? null,
+        courseCount: Number(row.courseCount ?? 0),
+        orderCount: Number(row.orderCount ?? 0),
+        grossRevenue,
+        adminRevenue,
+        instructorPayout,
+        debtAmount: instructorPayout,
+      };
+    });
+
+    const summary = {
+      totalInstructors: items.length,
+      totalCourses: items.reduce((sum, item) => sum + item.courseCount, 0),
+      totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
+      grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),
+      adminRevenue: items.reduce((sum, item) => sum + item.adminRevenue, 0),
+      instructorPayout: items.reduce((sum, item) => sum + item.instructorPayout, 0),
+      topDebtAmount: items[0]?.debtAmount ?? 0,
+    };
+
+    return {
+      month: selectedMonth,
+      year: selectedYear,
+      monthLabel,
+      summary,
+      items,
     };
   }
 
