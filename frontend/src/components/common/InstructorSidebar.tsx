@@ -7,7 +7,6 @@ import {
   CalendarDays,
   MessageSquare,
   Star,
-  Ticket,
   Users,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -100,11 +99,6 @@ export default function InstructorSidebar() {
       label: 'Đánh giá khóa học',
       path: '/instructor/reviews',
       icon: <Star size={18} />,
-    },
-    {
-      label: 'Mã giảm giá',
-      path: '/instructor/coupons',
-      icon: <Ticket size={18} />,
     },
   ];
 

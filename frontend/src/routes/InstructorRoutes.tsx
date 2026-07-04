@@ -5,7 +5,6 @@ import InstructorCourseDetail from '../pages/instructor/courses/CourseDetailShel
 import InstructorCourses from '../pages/instructor/courses/CourseList';
 import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
 import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
-import InstructorCouponManagement from '../pages/instructor/coupons/CouponManagement';
 import InstructorCourseDiscussionsPage from '../pages/instructor/discussions/CourseDiscussions';
 import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
 import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
@@ -20,7 +19,6 @@ export default function InstructorRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="reports" replace />} />
       <Route path="courses" element={<InstructorCourses />} />
-      <Route path="coupons" element={<InstructorCouponManagement />} />
       <Route path="courses/new" element={<InstructorCourseCreate />} />
       <Route path="courses/:id" element={<InstructorCourseDetail />}>
         <Route index element={<Navigate to="overview" replace />} />
@@ -36,6 +34,7 @@ export default function InstructorRoutes() {
       <Route path="reviews" element={<InstructorCourseReviewsPage />} />
       <Route path="reports" element={<InstructorReports />} />
       <Route path="reports/monthly-revenue" element={<MonthlyRevenueReport />} />
+      <Route path="*" element={<Navigate to="reports" replace />} />
     </Routes>
   );
 }
