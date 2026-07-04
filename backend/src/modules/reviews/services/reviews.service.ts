@@ -151,7 +151,12 @@ export class ReviewsService {
     return { deleted: true };
   }
 
-  async getPublicCourseReviews(courseId: number, tuKhoa?: string, soSao?: number, userId?: number) {
+  async getPublicCourseReviews(
+    courseId: number,
+    tuKhoa?: string,
+    soSao?: number,
+    userId?: number,
+  ) {
     const allReviews = await this.dataSource.query(
       `
       SELECT 
@@ -175,11 +180,12 @@ export class ReviewsService {
     );
 
     let rootReviews = allReviews.filter(
-      (r: any) => !r.parentId || r.parentId === null || Number(r.parentId) === 0
+      (r: any) =>
+        !r.parentId || r.parentId === null || Number(r.parentId) === 0,
     );
-    
+
     const replies = allReviews.filter(
-      (r: any) => r.parentId && Number(r.parentId) !== 0
+      (r: any) => r.parentId && Number(r.parentId) !== 0,
     );
 
     // Mới nhất lên đầu
@@ -187,13 +193,15 @@ export class ReviewsService {
 
     // Lọc bằng Javascript để xử lý an toàn
     if (soSao && soSao > 0) {
-      rootReviews = rootReviews.filter((r: any) => Number(r.rating) === Number(soSao));
+      rootReviews = rootReviews.filter(
+        (r: any) => Number(r.rating) === Number(soSao),
+      );
     }
 
     if (tuKhoa) {
       const keyword = tuKhoa.toLowerCase();
-      rootReviews = rootReviews.filter((r: any) => 
-        (r.content && r.content.toLowerCase().includes(keyword))
+      rootReviews = rootReviews.filter(
+        (r: any) => r.content && r.content.toLowerCase().includes(keyword),
       );
     }
 
@@ -201,7 +209,7 @@ export class ReviewsService {
       root.helpfulCount = Number(root.helpfulCount || 0);
       root.notHelpfulCount = Number(root.notHelpfulCount || 0);
       root.userVote = Number(root.userVote || 0);
-      
+
       root.replies = replies.filter(
         (r: any) => Number(r.parentId) === Number(root.reviewId),
       );
@@ -273,19 +281,23 @@ export class ReviewsService {
          INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
          INNER JOIN NguoiDung u ON u.MaND = ?
          WHERE dg.MaDanhGia = ?`,
-        [userId, reviewId]
+        [userId, reviewId],
       );
-      
+
       if (courseInfo && courseInfo.length > 0) {
         const info = courseInfo[0];
-        const noiDungNgan = info.NoiDung ? (info.NoiDung.length > 30 ? info.NoiDung.substring(0, 30) + '...' : info.NoiDung) : 'Không có nội dung';
-        
+        const noiDungNgan = info.NoiDung
+          ? info.NoiDung.length > 30
+            ? info.NoiDung.substring(0, 30) + '...'
+            : info.NoiDung
+          : 'Không có nội dung';
+
         await this.notificationsService.createNotification({
           maND: info.MaND_GiangVien,
           maNguoiGui: userId,
           loaiThongBao: NotificationType.COURSE,
           tieuDe: 'Đánh giá khóa học bị báo cáo',
-          noiDung: `Học viên ${info.ReporterName} đã báo cáo một đánh giá ("${noiDungNgan}") trong khóa học "${info.TenKhoaHoc}" với lý do: ${lyDo}`
+          noiDung: `Học viên ${info.ReporterName} đã báo cáo một đánh giá ("${noiDungNgan}") trong khóa học "${info.TenKhoaHoc}" với lý do: ${lyDo}`,
         });
       }
     } catch (error) {

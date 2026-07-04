@@ -21,7 +21,12 @@ export class LearningReminder {
   @Column({ name: 'MaKH', nullable: true })
   maKH: number;
 
-  @Column({ name: 'TenNhacNho', type: 'varchar', length: 255, default: 'Nhắc nhở học tập' })
+  @Column({
+    name: 'TenNhacNho',
+    type: 'varchar',
+    length: 255,
+    default: 'Nhắc nhở học tập',
+  })
   tenNhacNho: string;
 
   @Column({ name: 'TanSuat', type: 'varchar', length: 50 })

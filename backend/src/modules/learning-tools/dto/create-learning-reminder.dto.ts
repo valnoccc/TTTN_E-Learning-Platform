@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsIn, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsIn,
+  Matches,
+} from 'class-validator';
 
 export class CreateLearningReminderDto {
   @IsOptional()

@@ -16,6 +16,27 @@ import {
   InstructorTopCourseReport,
 } from '../../instructors/services/instructors.service';
 
+export interface InstructorMonthlyRevenueCourseRow {
+  courseId: number;
+  courseName: string;
+  purchases: number;
+  grossRevenue: number;
+  averageRevenue: number;
+}
+
+export interface InstructorMonthlyRevenueMonth {
+  month: string;
+  title: string;
+  totalPurchases: number;
+  totalGrossRevenue: number;
+  rows: InstructorMonthlyRevenueCourseRow[];
+}
+
+export interface InstructorMonthlyRevenueBoard {
+  year: number;
+  months: InstructorMonthlyRevenueMonth[];
+}
+
 type RawCourseStatusRow = {
   activeCourses: number | string | null;
   pendingCourses: number | string | null;
@@ -107,9 +128,112 @@ type RawRecentEnrollmentRow = {
   purchasedAt: string;
 };
 
+type RawMonthlyRevenueRow = {
+  monthLabel: string;
+  monthSort: string;
+  courseId: number | string;
+  courseName: string;
+  purchases: number | string | null;
+  grossRevenue: number | string | null;
+};
+
 @Injectable()
 export class InstructorDashboardService {
   constructor(private readonly dataSource: DataSource) {}
+
+  async getMyMonthlyRevenue(
+    principal: InstructorPrincipal,
+    year?: number,
+  ): Promise<InstructorMonthlyRevenueBoard> {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+    const selectedYear = Number.isInteger(year)
+      ? Number(year)
+      : new Date().getFullYear();
+
+    const grossRevenueSql = this.buildLineNetRevenueSql();
+    const paidRevenueJoins = this.buildPaidRevenueJoins();
+
+    const rows = await this.dataSource.query(
+      `
+        SELECT
+          DATE_FORMAT(dk.NgayDangKy, '%m/%Y') AS monthLabel,
+          DATE_FORMAT(dk.NgayDangKy, '%Y-%m') AS monthSort,
+          kh.MaKH AS courseId,
+          kh.TenKhoaHoc AS courseName,
+          COUNT(*) AS purchases,
+          COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue
+        FROM DangKyKhoaHoc dk
+        ${paidRevenueJoins}
+        WHERE kh.MaND_GiangVien = ?
+          AND dk.TrangThai = 'ACTIVE'
+          AND YEAR(dk.NgayDangKy) = ?
+        GROUP BY monthSort, monthLabel, kh.MaKH, kh.TenKhoaHoc
+        ORDER BY monthSort DESC, grossRevenue DESC, kh.MaKH DESC
+      `,
+      [instructorId, selectedYear],
+    );
+
+    const monthMap = new Map<
+      string,
+      InstructorMonthlyRevenueMonth & { monthSort: string }
+    >();
+
+    for (const row of rows as RawMonthlyRevenueRow[]) {
+      const monthLabel = row.monthLabel ?? '';
+      if (!monthLabel) {
+        continue;
+      }
+
+      if (!monthMap.has(monthLabel)) {
+        monthMap.set(monthLabel, {
+          month: monthLabel,
+          title: `Tháng ${monthLabel}`,
+          totalPurchases: 0,
+          totalGrossRevenue: 0,
+          rows: [],
+          monthSort: row.monthSort ?? monthLabel,
+        });
+      }
+
+      const monthEntry = monthMap.get(monthLabel)!;
+      const purchases = this.toNumber(row.purchases);
+      const grossRevenue = this.toNumber(row.grossRevenue);
+      monthEntry.totalPurchases += purchases;
+      monthEntry.totalGrossRevenue += grossRevenue;
+      monthEntry.rows.push({
+        courseId: Number(row.courseId),
+        courseName: row.courseName,
+        purchases,
+        grossRevenue,
+        averageRevenue:
+          purchases > 0 ? Number((grossRevenue / purchases).toFixed(0)) : 0,
+      });
+    }
+
+    const months = Array.from(monthMap.values())
+      .map((month) => ({
+        month: month.month,
+        title: month.title,
+        totalPurchases: month.totalPurchases,
+        totalGrossRevenue: month.totalGrossRevenue,
+        rows: month.rows,
+        monthSort: month.monthSort,
+      }))
+      .sort((left, right) => right.monthSort.localeCompare(left.monthSort))
+      .map(({ month, title, totalPurchases, totalGrossRevenue, rows }) => ({
+        month,
+        title,
+        totalPurchases,
+        totalGrossRevenue,
+        rows,
+      }));
+
+    return {
+      year: selectedYear,
+      months,
+    };
+  }
 
   async getMyReports(
     principal: InstructorPrincipal,

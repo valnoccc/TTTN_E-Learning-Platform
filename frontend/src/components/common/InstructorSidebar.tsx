@@ -4,6 +4,7 @@ import {
   BarChart3,
   ChevronUp,
   GraduationCap,
+  CalendarDays,
   MessageSquare,
   Star,
   Ticket,
@@ -74,6 +75,11 @@ export default function InstructorSidebar() {
       label: 'Báo cáo & Thống kê',
       path: '/instructor/reports',
       icon: <BarChart3 size={18} />,
+    },
+    {
+      label: 'Doanh thu theo tháng',
+      path: '/instructor/reports/monthly-revenue',
+      icon: <CalendarDays size={18} />,
     },
     {
       label: 'Khóa học của tôi',

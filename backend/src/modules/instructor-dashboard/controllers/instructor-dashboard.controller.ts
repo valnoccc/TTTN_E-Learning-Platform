@@ -29,4 +29,15 @@ export class InstructorDashboardController {
       range,
     });
   }
+
+  @Get('me/monthly-revenue')
+  getMyMonthlyRevenue(
+    @Req() req: { user: InstructorPrincipal },
+    @Query('year') year?: string,
+  ) {
+    return this.instructorDashboardService.getMyMonthlyRevenue(
+      req.user,
+      year ? Number(year) : undefined,
+    );
+  }
 }

@@ -62,20 +62,27 @@ export class AuthService {
     // Gọi API Google lấy thông tin user từ access_token
     let googleUser: { email: string; name: string; picture: string };
     try {
-      const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const { data } = await axios.get(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       googleUser = {
         email: data.email,
         name: data.name,
         picture: data.picture,
       };
     } catch {
-      throw new UnauthorizedException('Token Google không hợp lệ hoặc đã hết hạn!');
+      throw new UnauthorizedException(
+        'Token Google không hợp lệ hoặc đã hết hạn!',
+      );
     }
 
     // Kiểm tra email đã tồn tại trong DB chưa
-    let user = await this.userRepository.findOne({ where: { email: googleUser.email } });
+    let user = await this.userRepository.findOne({
+      where: { email: googleUser.email },
+    });
 
     if (!user) {
       // Tạo tài khoản mới tự động
@@ -91,7 +98,9 @@ export class AuthService {
       await this.userRepository.save(user);
     } else if (googleUser.picture && !user.anhDaiDien) {
       // Cập nhật ảnh nếu chưa có
-      await this.userRepository.update(user.maND, { anhDaiDien: googleUser.picture });
+      await this.userRepository.update(user.maND, {
+        anhDaiDien: googleUser.picture,
+      });
       user.anhDaiDien = googleUser.picture;
     }
 

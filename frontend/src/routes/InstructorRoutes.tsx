@@ -12,6 +12,7 @@ import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
 import InstructorProfile from '../pages/instructor/profile/InstructorProfile';
 import InstructorCourseReviewsPage from '../pages/instructor/reviews/CourseReviews';
 import InstructorReports from '../pages/instructor/reports/RevenueReports';
+import MonthlyRevenueReport from '../pages/instructor/reports/MonthlyRevenueReport';
 import InstructorStudents from '../pages/instructor/students/StudentEvaluations';
 
 export default function InstructorRoutes() {
@@ -34,6 +35,7 @@ export default function InstructorRoutes() {
       <Route path="discussions" element={<InstructorCourseDiscussionsPage />} />
       <Route path="reviews" element={<InstructorCourseReviewsPage />} />
       <Route path="reports" element={<InstructorReports />} />
+      <Route path="reports/monthly-revenue" element={<MonthlyRevenueReport />} />
     </Routes>
   );
 }

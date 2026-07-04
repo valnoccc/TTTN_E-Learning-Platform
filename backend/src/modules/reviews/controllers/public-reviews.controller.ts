@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Query, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ReviewsService } from '../services/reviews.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
@@ -34,7 +43,11 @@ export class PublicReviewsController {
     @Req() req: any,
   ) {
     const userId = req.user.sub || req.user.maND || req.user.id;
-    const result = await this.reviewsService.voteReview(Number(reviewId), Number(userId), trangThai);
+    const result = await this.reviewsService.voteReview(
+      Number(reviewId),
+      Number(userId),
+      trangThai,
+    );
     return { message: 'Đã lưu bình chọn', data: result };
   }
 
@@ -47,7 +60,11 @@ export class PublicReviewsController {
     @Req() req: any,
   ) {
     const userId = req.user.sub || req.user.maND || req.user.id;
-    const result = await this.reviewsService.reportReview(Number(reviewId), Number(userId), lyDo);
+    const result = await this.reviewsService.reportReview(
+      Number(reviewId),
+      Number(userId),
+      lyDo,
+    );
     return { message: 'Đã gửi báo cáo vi phạm', data: result };
   }
 }

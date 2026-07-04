@@ -13,7 +13,9 @@ export class LearningToolsService {
 
   async createReminder(userId: number, dto: CreateLearningReminderDto) {
     if (dto.tanSuat === 'HANG_TUAN' && !dto.cacThu) {
-      throw new BadRequestException('Vui lòng chọn các thứ trong tuần (cacThu)');
+      throw new BadRequestException(
+        'Vui lòng chọn các thứ trong tuần (cacThu)',
+      );
     }
     if (dto.tanSuat === 'MOT_LAN' && !dto.ngayCuThe) {
       throw new BadRequestException('Vui lòng chọn ngày cụ thể (ngayCuThe)');
@@ -26,7 +28,10 @@ export class LearningToolsService {
       tanSuat: dto.tanSuat,
       thoiGian: dto.thoiGian,
       cacThu: dto.tanSuat === 'HANG_TUAN' ? dto.cacThu : undefined,
-      ngayCuThe: dto.tanSuat === 'MOT_LAN' && dto.ngayCuThe ? new Date(dto.ngayCuThe) : undefined,
+      ngayCuThe:
+        dto.tanSuat === 'MOT_LAN' && dto.ngayCuThe
+          ? new Date(dto.ngayCuThe)
+          : undefined,
       trangThai: true,
     });
 
@@ -44,7 +49,7 @@ export class LearningToolsService {
     const reminder = await this.reminderRepository.findOne({
       where: { maNN: id, maND: userId },
     });
-    
+
     if (!reminder) {
       throw new BadRequestException('Không tìm thấy nhắc nhở này');
     }

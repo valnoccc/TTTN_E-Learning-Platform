@@ -145,12 +145,18 @@ export class DiscussionsService {
 
     const processDiscussion = (d: any) => {
       d.upvotes = parseInt(d.upvotes, 10) || 0;
-      d.likedUserIds = d.likedUserIds ? d.likedUserIds.split(',').map(Number) : [];
+      d.likedUserIds = d.likedUserIds
+        ? d.likedUserIds.split(',').map(Number)
+        : [];
       return d;
     };
 
-    const parents = rawData.filter((d: any) => !d.parentId).map(processDiscussion);
-    const replies = rawData.filter((d: any) => d.parentId).map(processDiscussion);
+    const parents = rawData
+      .filter((d: any) => !d.parentId)
+      .map(processDiscussion);
+    const replies = rawData
+      .filter((d: any) => d.parentId)
+      .map(processDiscussion);
 
     const result = parents.map((p: any) => {
       const pReplies = replies.filter(
