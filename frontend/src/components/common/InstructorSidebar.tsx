@@ -21,6 +21,11 @@ type SidebarItem = {
   match?: 'exact' | 'prefix';
 };
 
+type SidebarSection = {
+  title: string;
+  items: SidebarItem[];
+};
+
 export default function InstructorSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -70,42 +75,57 @@ export default function InstructorSidebar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const items: SidebarItem[] = [
+  const sections: SidebarSection[] = [
     {
-      label: 'Báo cáo & Thống kê',
-      path: '/instructor/reports',
-      icon: <BarChart3 size={18} />,
-      match: 'exact',
+      title: 'Tổng quan',
+      items: [
+        {
+          label: 'Báo cáo & Thống kê',
+          path: '/instructor/reports',
+          icon: <BarChart3 size={18} />,
+          match: 'exact',
+        },
+        {
+          label: 'Doanh thu theo tháng',
+          path: '/instructor/reports/monthly-revenue',
+          icon: <CalendarDays size={18} />,
+          match: 'exact',
+        },
+      ],
     },
     {
-      label: 'Doanh thu theo tháng',
-      path: '/instructor/reports/monthly-revenue',
-      icon: <CalendarDays size={18} />,
-      match: 'exact',
+      title: 'Quản lý khóa học',
+      items: [
+        {
+          label: 'Khóa học của tôi',
+          path: '/instructor/courses',
+          icon: <BookOpen size={18} />,
+          match: 'prefix',
+        },
+        {
+          label: 'Danh sách học viên',
+          path: '/instructor/students',
+          icon: <Users size={18} />,
+          match: 'exact',
+        },
+      ],
     },
     {
-      label: 'Khóa học của tôi',
-      path: '/instructor/courses',
-      icon: <BookOpen size={18} />,
-      match: 'prefix',
-    },
-    {
-      label: 'Danh sách học viên',
-      path: '/instructor/students',
-      icon: <Users size={18} />,
-      match: 'exact',
-    },
-    {
-      label: 'Hỏi đáp',
-      path: '/instructor/discussions',
-      icon: <MessageSquare size={18} />,
-      match: 'exact',
-    },
-    {
-      label: 'Đánh giá khóa học',
-      path: '/instructor/reviews',
-      icon: <Star size={18} />,
-      match: 'exact',
+      title: 'Tương tác',
+      items: [
+        {
+          label: 'Hỏi đáp',
+          path: '/instructor/discussions',
+          icon: <MessageSquare size={18} />,
+          match: 'exact',
+        },
+        {
+          label: 'Đánh giá khóa học',
+          path: '/instructor/reviews',
+          icon: <Star size={18} />,
+          match: 'exact',
+        },
+      ],
     },
   ];
 
@@ -124,33 +144,42 @@ export default function InstructorSidebar() {
         </div>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto py-3">
-        <ul className="space-y-1">
-          {items.map((item) => {
-            const isActive =
-              item.match === 'prefix'
-                ? location.pathname === item.path ||
-                  location.pathname.startsWith(`${item.path}/`)
-                : location.pathname === item.path;
+      <nav className="scrollbar-none min-h-0 flex-1 overflow-y-auto py-3">
+        <div className="space-y-4">
+          {sections.map((section, sectionIndex) => (
+            <section key={section.title} className={sectionIndex > 0 ? 'pt-1' : ''}>
+              <div className="px-5 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6f8198]">
+                {section.title}
+              </div>
+              <ul className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive =
+                    item.match === 'prefix'
+                      ? location.pathname === item.path ||
+                        location.pathname.startsWith(`${item.path}/`)
+                      : location.pathname === item.path;
 
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${isActive
-                      ? 'border-l-[#1dbf73] bg-[#1a324b] font-bold text-white'
-                      : 'border-l-transparent text-[#d0d6e2] hover:bg-[#1a324b] hover:text-white'
-                    }`}
-                >
-                  <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                  return (
+                    <li key={item.path}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${isActive
+                            ? 'border-l-[#1dbf73] bg-[#1a324b] font-bold text-white'
+                            : 'border-l-transparent text-[#d0d6e2] hover:bg-[#1a324b] hover:text-white'
+                          }`}
+                      >
+                        <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       </nav>
 
       <div className="border-t border-white/10 p-3">
