@@ -233,7 +233,9 @@ function QuotaCard({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             {title}
           </p>
-          <p className="mt-1.5 text-base font-bold text-slate-900">{subtitle}</p>
+          <p className="mt-1.5 text-base font-bold text-slate-900">
+            {subtitle}
+          </p>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -248,14 +250,18 @@ function QuotaCard({
         </span>
       </div>
 
-      <div className={`${embedded ? "h-2.5" : "mt-4 h-3"} overflow-hidden rounded-full ${trackTone}`}>
+      <div
+        className={`${embedded ? "h-2.5" : "mt-4 h-3"} overflow-hidden rounded-full ${trackTone}`}
+      >
         <div
           className={`h-full rounded-full transition-all duration-500 ${progressTone}`}
           style={{ width: `${Math.min(percentUsed, 100)}%` }}
         />
       </div>
 
-      <div className={`${embedded ? "flex items-center justify-between gap-3 text-[13px]" : "mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"}`}>
+      <div
+        className={`${embedded ? "flex items-center justify-between gap-3 text-[13px]" : "mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"}`}
+      >
         <span className="font-semibold text-slate-700">{usedLabel}</span>
         <span className="text-slate-500">{remainingLabel}</span>
       </div>
@@ -277,13 +283,16 @@ function QuotaStackCard({
   className?: string;
 }) {
   return (
-    <Panel title="Hạn mức sử dụng hệ thống" className={className}>
+    <Panel
+      title={`Hạn mức sử dụng hệ thống - Tháng ${aiQuota.monthYear}`}
+      className={className}
+    >
       <div className="px-5 py-4 sm:px-6">
         <div className="rounded-[24px] bg-slate-50/70 p-4">
           <QuotaCard
             embedded
             title="AI quota"
-            subtitle={`Tháng ${aiQuota.monthYear}`}
+            subtitle={""}
             usedLabel={`Đã dùng ${aiQuota.usedMinutes.toLocaleString("vi-VN")} / ${aiQuota.limitMinutes.toLocaleString("vi-VN")} phút`}
             remainingLabel={`Còn lại ${aiQuota.remainingMinutes.toLocaleString("vi-VN")} phút`}
             percentUsed={aiQuota.percentUsed}
@@ -296,7 +305,7 @@ function QuotaStackCard({
           <QuotaCard
             embedded
             title="Dung lượng GCS"
-            subtitle={`Tháng ${storageQuota.monthYear}`}
+            subtitle={""}
             usedLabel={`Đã dùng ${formatBytesToGb(storageQuota.usedBytes)} / ${formatBytesToGb(storageQuota.limitMegabytes * 1024 * 1024)} GB`}
             remainingLabel={`Còn lại ${formatBytesToGb(storageQuota.remainingMegabytes * 1024 * 1024)} GB`}
             percentUsed={storageQuota.percentUsed}
@@ -565,7 +574,11 @@ export default function AdminDashboard() {
               </div>
 
               <div className="contents">
-                <Panel title="Cơ cấu chia doanh thu" subtitle="" className="order-2 h-full">
+                <Panel
+                  title="Cơ cấu chia doanh thu"
+                  subtitle=""
+                  className="order-2 h-full"
+                >
                   <div className="px-4 pb-2 pt-4 sm:px-6">
                     <div className="relative h-[250px]">
                       <ResponsiveContainer width="100%" height="100%">
@@ -632,11 +645,7 @@ export default function AdminDashboard() {
                   </div>
                 </Panel>
 
-                <Panel
-                  title="Ghi danh theo tháng"
-                  subtitle="Số lượt thanh toán thành công đang tạo ra doanh thu."
-                  className="order-4 h-full"
-                >
+                <Panel title="Ghi danh theo tháng" className="order-4 h-full">
                   <div className="px-4 pb-5 pt-3 sm:px-6">
                     <div className="h-[210px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -685,10 +694,7 @@ export default function AdminDashboard() {
             </section>
 
             <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-              <Panel
-                title="Cơ cấu doanh thu theo danh mục"
-                subtitle="Cho thấy danh mục nào đang kéo doanh thu tốt nhất để ưu tiên marketing."
-              >
+              <Panel title="Cơ cấu doanh thu theo danh mục">
                 <div className="px-4 pb-5 pt-4 sm:px-6">
                   <div className="h-[320px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -751,10 +757,7 @@ export default function AdminDashboard() {
                 </div>
               </Panel>
 
-              <Panel
-                title="Top khóa học bán chạy"
-                subtitle="Tập trung vào khóa học đang mang lại doanh thu cao nhất."
-              >
+              <Panel title="Top khóa học bán chạy">
                 <div className="px-4 pb-5 pt-4 sm:px-6">
                   {topCourses.length === 0 ? (
                     <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
@@ -815,10 +818,7 @@ export default function AdminDashboard() {
             </section>
 
             <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-              <Panel
-                title="Top giảng viên"
-                subtitle="Đo theo doanh thu thực nhận 80% và số học viên đang trả tiền."
-              >
+              <Panel title="Top giảng viên">
                 <div className="px-4 pb-5 pt-4 sm:px-6">
                   {topInstructors.length === 0 ? (
                     <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
@@ -877,10 +877,7 @@ export default function AdminDashboard() {
                 </div>
               </Panel>
 
-              <Panel
-                title="Giao dịch mới nhất"
-                subtitle="Thông tin thanh toán thực tế từ hệ thống."
-              >
+              <Panel title="Giao dịch mới nhất">
                 <div className="max-h-[372px] space-y-3 overflow-y-auto px-4 py-4 sm:px-6 custom-scrollbar">
                   {recentTransactions.length === 0 ? (
                     <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
