@@ -9,6 +9,20 @@ import CourseLearningTools from './components/CourseLearningTools';
 import CustomVideoPlayer, { VideoPlaceholder } from './components/CustomVideoPlayer';
 import FooterTwo from '../../components/FooterTwo';
 
+const CourseCompletedScreen = () => {
+  return (
+    <div className="w-full h-full min-h-[500px] bg-white flex flex-col items-center justify-center absolute inset-0 z-10">
+      <h2 className="font-bold text-gray-800 text-2xl md:text-3xl mb-6">🙌 Chúc mừng bạn đã hoàn thành khóa học!</h2>
+      <Link 
+        to="/course-grid" 
+        className="bg-transparent border border-purple-600 text-purple-600 rounded-md px-6 py-2 hover:bg-purple-50 transition-colors font-semibold"
+      >
+        Tìm thêm khóa học
+      </Link>
+    </div>
+  );
+};
+
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return '';
   if (url.includes('youtube.com/embed/')) return url;
@@ -50,6 +64,7 @@ export default function CourseLearning() {
   const [expandedModules, setExpandedModules] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<number>(0);
+  const [isCourseCompleted, setIsCourseCompleted] = useState<boolean>(false);
   // Banner "Tiếp tục học" – hiển thị khi có bài học gần nhất
   const [resumeBanner, setResumeBanner] = useState<{ lesson: any; module: any } | null>(null);
   // Ref tránh lưu lần đầu khi vừa restore
@@ -251,6 +266,7 @@ export default function CourseLearning() {
   // ─── Khi học viên click chuyển bài ────────────────────────────────────────
   const handleLessonClick = (lesson: any) => {
     setActiveLesson(lesson);
+    setIsCourseCompleted(false);
     // Auto-expand module containing this lesson
     const parentModule = curriculum.find((m: any) =>
       m.baiHocs?.some((l: any) => l.maBH === lesson.maBH)
@@ -309,6 +325,10 @@ export default function CourseLearning() {
     } catch (error) {
       console.error('Error updating lesson progress', error);
     }
+
+    if (!nextLesson) {
+      setIsCourseCompleted(true);
+    }
   };
 
   if (loading) {
@@ -350,8 +370,10 @@ export default function CourseLearning() {
       <div className="flex-grow flex flex-col lg:flex-row bg-white" style={{ flexGrow: 1, alignItems: 'stretch' }}>
         <div className="flex-1 flex flex-col min-w-0">
           {/* ── Custom Video Player ─────────────────────────────────────── */}
-          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative shrink-0">
-            {activeLesson?.videoUrl && !activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be') ? (
+          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative shrink-0 overflow-hidden">
+            {isCourseCompleted ? (
+              <CourseCompletedScreen />
+            ) : activeLesson?.videoUrl && !activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be') ? (
               <CustomVideoPlayer
                 key={activeLesson.maBH}
                 src={activeLesson.videoUrl}
