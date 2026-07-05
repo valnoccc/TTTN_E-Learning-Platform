@@ -124,6 +124,12 @@ export class LessonsController {
 
       const newLesson = await this.lessonsService.create(payload);
 
+      if (uploadedVideo) {
+        await this.lessonVideoStorageService.recordMonthlyUsage(
+          file?.size ?? file?.buffer?.length ?? 0,
+        );
+      }
+
       return {
         message: 'Thêm bài học thành công',
         data: await this.serializeLessonResponse(newLesson),
@@ -258,6 +264,12 @@ export class LessonsController {
     }
 
     const lesson = await this.lessonsService.update(id, updateData);
+
+    if (file) {
+      await this.lessonVideoStorageService.recordMonthlyUsage(
+        file.size ?? file.buffer.length ?? 0,
+      );
+    }
 
     return this.serializeLessonResponse(lesson);
   }

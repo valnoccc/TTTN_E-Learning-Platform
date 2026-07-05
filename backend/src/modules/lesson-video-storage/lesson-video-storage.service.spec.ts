@@ -28,12 +28,18 @@ describe('LessonVideoStorageService', () => {
   let configService: {
     get: jest.Mock;
   };
+  let dataSource: {
+    query: jest.Mock;
+  };
 
   beforeEach(() => {
     saveMock.mockReset();
     makePublicMock.mockReset();
     deleteMock.mockReset();
     bucketMock.file.mockClear();
+    dataSource = {
+      query: jest.fn().mockResolvedValue(undefined),
+    };
     configService = {
       get: jest.fn((key: string) => {
         if (key === 'GCS_BUCKET_NAME') {
@@ -46,7 +52,10 @@ describe('LessonVideoStorageService', () => {
       }),
     };
 
-    service = new LessonVideoStorageService(configService as ConfigService);
+    service = new LessonVideoStorageService(
+      configService as ConfigService,
+      dataSource as never,
+    );
   });
 
   it('uploads a video to GCS without trying to set object ACLs', async () => {
@@ -82,5 +91,14 @@ describe('LessonVideoStorageService', () => {
       gcsUri:
         'gs://video-storage-lvtn/lessons-videos/course-480001/lesson-600001/test-uuid.mp4',
     });
+  });
+
+  it('records monthly storage usage into tracker table', async () => {
+    await service.recordMonthlyUsage(2_097_152);
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO VideoStorageQuotaTracker'),
+      expect.arrayContaining([expect.any(String), 2_097_152, 2_097_152]),
+    );
   });
 });

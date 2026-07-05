@@ -84,6 +84,11 @@ type CategoryRevenueRow = {
   adminRevenue?: string | number;
   instructorPayout?: string | number;
 };
+type QuotaRow = {
+  monthYear?: string;
+  usedSeconds?: string | number;
+  usedBytes?: string | number;
+};
 type InstructorDebtRow = {
   instructorId?: string | number;
   instructorName?: string;
@@ -95,6 +100,9 @@ type InstructorDebtRow = {
   adminRevenue?: string | number;
   instructorPayout?: string | number;
 };
+
+const AI_QUOTA_LIMIT_SECONDS = 60_000;
+const DEFAULT_STORAGE_QUOTA_LIMIT_GB = 100;
 
 @Injectable()
 export class AdminDashboardService {
@@ -149,8 +157,27 @@ export class AdminDashboardService {
     return `Tháng ${String(month).padStart(2, '0')}/${year}`;
   }
 
+  private getCurrentMonthYear(): string {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+  }
+
+  private getStorageQuotaLimitBytes(): number {
+    const configuredLimit = Number(
+      process.env.VIDEO_STORAGE_MONTHLY_LIMIT_GB ?? DEFAULT_STORAGE_QUOTA_LIMIT_GB,
+    );
+    const limitGb =
+      Number.isFinite(configuredLimit) && configuredLimit > 0
+        ? configuredLimit
+        : DEFAULT_STORAGE_QUOTA_LIMIT_GB;
+
+    return limitGb * 1024 * 1024 * 1024;
+  }
+
   async getOverviewStats(): Promise<DashboardStatsDto> {
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
+    const currentMonthYear = this.getCurrentMonthYear();
+    const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
 
     const [
       studentStats,
@@ -159,6 +186,8 @@ export class AdminDashboardService {
       pendingCourseStats,
       enrollmentStats,
       revenueStats,
+      aiQuotaRows,
+      storageQuotaRows,
       recentOrders,
       chartData,
       ordersOverview,
@@ -238,6 +267,40 @@ export class AdminDashboardService {
             instructorPayout: '0',
           },
         ],
+      ),
+      this.queryWithFallback<QuotaRow[]>(
+        `
+          SELECT
+            MonthYear as monthYear,
+            UsedSeconds as usedSeconds
+          FROM AiQuotaTracker
+          WHERE MonthYear = ?
+          LIMIT 1
+        `,
+        [
+          {
+            monthYear: currentMonthYear,
+            usedSeconds: '0',
+          },
+        ],
+        [currentMonthYear],
+      ),
+      this.queryWithFallback<QuotaRow[]>(
+        `
+          SELECT
+            MonthYear as monthYear,
+            UsedBytes as usedBytes
+          FROM VideoStorageQuotaTracker
+          WHERE MonthYear = ?
+          LIMIT 1
+        `,
+        [
+          {
+            monthYear: currentMonthYear,
+            usedBytes: '0',
+          },
+        ],
+        [currentMonthYear],
       ),
       this.queryWithFallback<RecentTransactionRow[]>(
         `
@@ -414,6 +477,24 @@ export class AdminDashboardService {
     ]);
 
     const salesChart = this.buildSalesChart(salesChartRows);
+    const aiQuotaUsedSeconds = Number(aiQuotaRows[0]?.usedSeconds ?? 0);
+    const aiQuotaUsedMinutes = Math.floor(aiQuotaUsedSeconds / 60);
+    const aiQuotaLimitMinutes = AI_QUOTA_LIMIT_SECONDS / 60;
+    const aiQuotaPercentUsed = Math.min(
+      100,
+      Math.round((aiQuotaUsedSeconds / AI_QUOTA_LIMIT_SECONDS) * 100),
+    );
+    const storageQuotaUsedBytes = Number(storageQuotaRows[0]?.usedBytes ?? 0);
+    const storageQuotaUsedMegabytes = Math.floor(
+      storageQuotaUsedBytes / (1024 * 1024),
+    );
+    const storageQuotaLimitMegabytes = Math.floor(
+      storageQuotaLimitBytes / (1024 * 1024),
+    );
+    const storageQuotaPercentUsed = Math.min(
+      100,
+      Math.round((storageQuotaUsedBytes / storageQuotaLimitBytes) * 100),
+    );
 
     return {
       totalStudents: parseInt(String(studentStats[0]?.total ?? 0), 10),
@@ -448,6 +529,29 @@ export class AdminDashboardService {
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
       ),
+      aiQuota: {
+        monthYear: aiQuotaRows[0]?.monthYear ?? currentMonthYear,
+        usedSeconds: aiQuotaUsedSeconds,
+        usedMinutes: aiQuotaUsedMinutes,
+        limitMinutes: aiQuotaLimitMinutes,
+        remainingMinutes: Math.max(aiQuotaLimitMinutes - aiQuotaUsedMinutes, 0),
+        percentUsed: aiQuotaPercentUsed,
+        isWarning: aiQuotaPercentUsed >= 90,
+        isExceeded: aiQuotaUsedSeconds >= AI_QUOTA_LIMIT_SECONDS,
+      },
+      storageQuota: {
+        monthYear: storageQuotaRows[0]?.monthYear ?? currentMonthYear,
+        usedBytes: storageQuotaUsedBytes,
+        usedMegabytes: storageQuotaUsedMegabytes,
+        limitMegabytes: storageQuotaLimitMegabytes,
+        remainingMegabytes: Math.max(
+          storageQuotaLimitMegabytes - storageQuotaUsedMegabytes,
+          0,
+        ),
+        percentUsed: storageQuotaPercentUsed,
+        isWarning: storageQuotaPercentUsed >= 90,
+        isExceeded: storageQuotaUsedBytes >= storageQuotaLimitBytes,
+      },
       recentOrders: recentOrders.map((row) => ({
         orderId: Number(row.orderId ?? 0),
         customerName: row.customerName ?? '',
@@ -593,9 +697,13 @@ export class AdminDashboardService {
     };
   }
 
-  private async queryWithFallback<T>(sql: string, fallback: T): Promise<T> {
+  private async queryWithFallback<T>(
+    sql: string,
+    fallback: T,
+    params: unknown[] = [],
+  ): Promise<T> {
     try {
-      return await this.dataSource.query(sql);
+      return await this.dataSource.query(sql, params);
     } catch (error) {
       console.error('Admin dashboard query failed:', error);
       return fallback;

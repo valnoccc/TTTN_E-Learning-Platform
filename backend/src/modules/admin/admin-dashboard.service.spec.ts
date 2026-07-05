@@ -42,6 +42,18 @@ describe('AdminDashboardService', () => {
       ])
       .mockResolvedValueOnce([
         {
+          monthYear: '06-2026',
+          usedSeconds: '6000',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          monthYear: '06-2026',
+          usedBytes: '2147483648',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
           orderId: 1,
           customerName: 'Nguyen Van A',
           courseName: 'React Co Ban',
@@ -139,6 +151,26 @@ describe('AdminDashboardService', () => {
       adminRevenue: 250000,
       instructorPayout: 1000000,
       revenueGrowth: 100,
+      aiQuota: {
+        monthYear: '06-2026',
+        usedSeconds: 6000,
+        usedMinutes: 100,
+        limitMinutes: 1000,
+        remainingMinutes: 900,
+        percentUsed: 10,
+        isWarning: false,
+        isExceeded: false,
+      },
+      storageQuota: {
+        monthYear: '06-2026',
+        usedBytes: 2147483648,
+        usedMegabytes: 2048,
+        limitMegabytes: 102400,
+        remainingMegabytes: 100352,
+        percentUsed: 2,
+        isWarning: false,
+        isExceeded: false,
+      },
       recentOrders: [
         {
           orderId: 1,
@@ -312,8 +344,8 @@ describe('AdminDashboardService', () => {
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
     expect(queryCalls[5]?.[0]).toContain('* 0.2');
     expect(queryCalls[5]?.[0]).toContain('* 0.8');
-    expect(queryCalls[8]?.[0]).toContain('* 0.2');
-    expect(queryCalls[8]?.[0]).toContain('* 0.8');
+    expect(queryCalls[9]?.[0]).toContain('* 0.2');
+    expect(queryCalls[9]?.[0]).toContain('* 0.8');
   });
 
   it('returns instructor debt board for a selected month', async () => {
