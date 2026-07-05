@@ -59,6 +59,10 @@ interface QuestionDetail {
   danhSachTraLoi: Answer[];
 }
 
+// Biến toàn cục (module-level) để lưu vết các ID đã xem trong phiên này
+// Đảm bảo 100% không bị ảnh hưởng bởi React Strict Mode mount/unmount
+const viewedQuestionsInSession = new Set<string>();
+
 export default function ForumDetail() {
   const { id } = useParams<{ id: string }>();
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
@@ -83,15 +87,15 @@ export default function ForumDetail() {
 
   const fetchQuestion = async () => {
     try {
-      const viewedQuestions = JSON.parse(localStorage.getItem('viewedQuestions') || '[]');
-      const hasViewed = viewedQuestions.includes(id);
+      // Chỉ tăng view nếu id chưa có trong Set toàn cục (phiên hiện tại)
+      const shouldIncrement = id && !viewedQuestionsInSession.has(id);
       
-      const data: any = await axiosClient.get(`/forum/questions/${id}${!hasViewed ? '?increment=true' : ''}`);
-      setQuestion(data);
-      
-      if (!hasViewed && id) {
-        localStorage.setItem('viewedQuestions', JSON.stringify([...viewedQuestions, id]));
+      if (shouldIncrement) {
+        viewedQuestionsInSession.add(id);
       }
+
+      const data: any = await axiosClient.get(`/forum/questions/${id}${shouldIncrement ? '?increment=true' : ''}`);
+      setQuestion(data);
     } catch (error) {
       console.error('Error fetching question details:', error);
     } finally {

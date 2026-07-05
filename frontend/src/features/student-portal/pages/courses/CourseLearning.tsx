@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2 } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2, Trophy, X, Award } from 'lucide-react';
 import axiosClient from '../../../../api/axios';
 import CourseOverview from './components/CourseOverview';
 import CourseQA from './components/CourseQA';
@@ -56,6 +56,7 @@ const saveCurrentLessonSilently = async (courseId: string, lessonId: number) => 
 
 export default function CourseLearning() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [courseName, setCourseName] = useState<string>(`Không gian học tập (Khóa học: ${id})`);
   const [courseData, setCourseData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -65,6 +66,10 @@ export default function CourseLearning() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<number>(0);
   const [isCourseCompleted, setIsCourseCompleted] = useState<boolean>(false);
+  const [showCertificatePopup, setShowCertificatePopup] = useState<boolean>(false);
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState<boolean>(false);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+  const [showTrophyDropdown, setShowTrophyDropdown] = useState<boolean>(false);
   // Banner "Tiếp tục học" – hiển thị khi có bài học gần nhất
   const [resumeBanner, setResumeBanner] = useState<{ lesson: any; module: any } | null>(null);
   // Ref tránh lưu lần đầu khi vừa restore
@@ -322,14 +327,42 @@ export default function CourseLearning() {
           setProgress(currentCourse.progress || 0);
         }
       }
+
+      // Nếu là bài học cuối → cấp chứng chỉ
+      if (!nextLesson && id) {
+        try {
+          const certRes: any = await axiosClient.post(
+            `/users/me/certificates/${id}/issue`,
+          );
+          const certId =
+            certRes?.certificateId ??
+            certRes?.data?.certificateId ??
+            null;
+          if (certId) setCertificateId(String(certId));
+        } catch (certErr) {
+          console.warn('[CourseLearning] Không thể cấp chứng chỉ (fail-safe):', certErr);
+        }
+      }
     } catch (error) {
       console.error('Error updating lesson progress', error);
     }
 
     if (!nextLesson) {
       setIsCourseCompleted(true);
+      setIsGeneratingCertificate(true);
     }
   };
+
+
+  // ─── Hiện Trophy popup sau 15 giây khi khoá học hoàn thành ────────────────
+  useEffect(() => {
+    if (!isCourseCompleted) return;
+    const timer = setTimeout(() => {
+      setIsGeneratingCertificate(false);
+      setShowCertificatePopup(true);
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [isCourseCompleted]);
 
   if (loading) {
     return (
@@ -358,8 +391,67 @@ export default function CourseLearning() {
           <div className="h-6 w-px bg-slate-700 mx-2 hidden sm:block"></div>
           <h1 className="font-semibold text-white line-clamp-1 hidden md:block">{courseName}</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="text-sm text-slate-400 hidden sm:block">Tiến độ: <span className="text-emerald-400 font-bold">{progress}%</span></div>
+
+          {/* Trophy button – chỉ hiện khi popup sẵn sàng */}
+          {showCertificatePopup && (
+            <div className="relative">
+              <button
+                onClick={() => setShowTrophyDropdown(p => !p)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-full bg-amber-400 hover:bg-amber-300 transition-colors shadow-lg"
+                title="Nhận chứng chỉ"
+                aria-label="Nhận chứng chỉ"
+              >
+                <Trophy size={17} className="text-white" />
+                {/* Pulse ring */}
+                <span className="absolute -inset-0.5 rounded-full border-2 border-amber-400 animate-ping opacity-60" />
+              </button>
+
+              {/* Dropdown */}
+              {showTrophyDropdown && (
+                <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50">
+                  {/* Close */}
+                  <button
+                    onClick={() => setShowTrophyDropdown(false)}
+                    className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={14} />
+                  </button>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <Award size={16} className="text-amber-500" />
+                    </div>
+                    <p className="font-bold text-slate-800 text-sm">Chúc mừng! 🎉</p>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                    Đã hoàn thành{' '}
+                    <span className="font-semibold text-slate-700">
+                      {curriculum.flatMap((m: any) => m.baiHocs ?? []).filter((l: any) => l.completed).length}
+                    </span>
+                    /{curriculum.flatMap((m: any) => m.baiHocs ?? []).length} bài.
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      setShowTrophyDropdown(false);
+                      const dest = certificateId
+                        ? `/certificate/${certificateId}`
+                        : `/certificate/${id}`;
+                      navigate(dest);
+                    }}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Award size={15} />
+                    Nhận giấy chứng nhận
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <button className="flex items-center gap-2 text-sm font-medium border border-slate-700 px-3 py-1.5 hover:bg-slate-800 transition-colors">
             <span className="hidden sm:inline">Chia sẻ</span>
             <Share2 size={14} />
@@ -534,6 +626,40 @@ export default function CourseLearning() {
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+      `}</style>
+      {/* ─── Thông báo tạo chứng chỉ (Fixed Bottom) ─── */}
+      {isGeneratingCertificate && (
+        <div className="fixed bottom-0 left-0 right-0 z-[100] animate-[slideUp_0.5s_ease-out_forwards]">
+          <div className="bg-slate-900 text-white shadow-2xl border-t border-slate-800 p-4">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-3xl">🎉</div>
+                <div>
+                  <h4 className="font-bold text-lg text-emerald-400">Chúc mừng bạn đã hoàn thành khóa học!</h4>
+                  <p className="text-slate-400 text-sm">Hệ thống đang khởi tạo chứng chỉ cho bạn...</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
+                <div className="w-4 h-4 border-2 border-slate-500 border-t-emerald-400 rounded-full animate-spin"></div>
+                <span className="text-sm font-medium text-slate-300">Đang xử lý</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styles for slide up animation */}
+      <style>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
       `}</style>
     </div>
   );

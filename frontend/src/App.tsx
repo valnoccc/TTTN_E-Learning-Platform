@@ -26,6 +26,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ForumHome from './features/forum/pages/ForumHome';
 import ForumDetail from './features/forum/pages/ForumDetail';
 import ForumAsk from './features/forum/pages/ForumAsk';
+import CertificateView from './features/student-portal/pages/courses/CertificateView';
 
 import StudentLayout from './features/student-portal/components/StudentLayout';
 
@@ -61,6 +62,9 @@ function AnimatedRoutes() {
         <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/student/*" element={<StudentRoutes />} />
       </Route>
+
+      {/* Certificate route – standalone (không có header/footer student) */}
+      <Route path="/certificate/:id" element={<CertificateView />} />
 
       {/* Admin Routes */}
       <Route
