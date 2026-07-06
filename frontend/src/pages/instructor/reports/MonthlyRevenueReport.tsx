@@ -222,8 +222,8 @@ function MonthlyRevenueContent() {
                 <tr>
                   <th className="px-6 py-4">Khóa học</th>
                   <th className="px-6 py-4 text-center">Lượt mua</th>
-                  <th className="px-6 py-4 text-right">Doanh thu gộp</th>
-                  <th className="px-6 py-4 text-right">Thực nhận của GV</th>
+                  <th className="px-6 py-4 text-right">Tổng doanh thu</th>
+                  <th className="px-6 py-4 text-right">Thực nhận</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -236,9 +236,6 @@ function MonthlyRevenueContent() {
                       <div>
                         <p className="text-[14px] font-bold text-slate-900">
                           {row.courseName}
-                        </p>
-                        <p className="mt-1 text-[12px] text-slate-500">
-                          Mã khóa học: #{row.courseId}
                         </p>
                       </div>
                     </td>

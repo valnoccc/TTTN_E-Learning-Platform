@@ -157,4 +157,61 @@ describe('InstructorsService', () => {
       },
     ]);
   });
+
+  it('returns public instructor details with aggregated course stats', async () => {
+    userRepo.findOne.mockResolvedValue({
+      maND: 7,
+      hoTen: 'Nguyen Van A',
+      anhDaiDien: 'avatar.png',
+      email: 'teacher@example.com',
+      vaiTro: UserRole.INSTRUCTOR,
+    });
+    hoSoRepo.findOne.mockResolvedValue({
+      MaND: 7,
+      ChuyenMon: 'NestJS',
+      TieuSu: 'Giang vien kinh nghiem',
+      FacebookURL: 'https://facebook.com/teacher',
+    });
+    dataSource.query.mockResolvedValue([
+      {
+        id: 101,
+        courseTitle: 'NestJS Co Ban',
+        price: '250000.00',
+        imgUrl: 'course-1.jpg',
+        courseDesc: 'Khoa hoc ve NestJS',
+        totalDurationSeconds: '5400',
+        lessonCount: '12',
+        averageRating: '4.7',
+        reviewCount: '8',
+        views: '34',
+      },
+    ]);
+
+    const result = await service.getPublicInstructorById(7);
+
+    expect(userRepo.findOne).toHaveBeenCalledWith({
+      where: { maND: 7, vaiTro: UserRole.INSTRUCTOR },
+    });
+    expect(result).toMatchObject({
+      id: 7,
+      personName: 'Nguyen Van A',
+      personImage: 'avatar.png',
+      personTitle: 'NestJS',
+      email: 'teacher@example.com',
+      bio: 'Giang vien kinh nghiem',
+      courses: [
+        {
+          id: 101,
+          courseTitle: 'NestJS Co Ban',
+          price: 250000,
+          imgUrl: 'course-1.jpg',
+          totalDurationSeconds: 5400,
+          lessonCount: 12,
+          averageRating: 4.7,
+          reviewCount: 8,
+          views: 34,
+        },
+      ],
+    });
+  });
 });

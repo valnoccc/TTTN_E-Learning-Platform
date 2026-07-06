@@ -574,14 +574,45 @@ export class InstructorsService {
     const courses = await this.dataSource.query(
       `
         SELECT 
-          MaKH as id,
-          TenKhoaHoc as courseTitle,
-          GiaBan as price,
-          HinhThuNho as imgUrl,
-          MoTa as courseDesc,
-          0 as views
-        FROM KhoaHoc
-        WHERE MaND_GiangVien = ? AND TrangThai = 'PUBLISHED'
+          kh.MaKH as id,
+          kh.TenKhoaHoc as courseTitle,
+          kh.GiaBan as price,
+          kh.HinhThuNho as imgUrl,
+          kh.MoTa as courseDesc,
+          COALESCE(lessonStats.totalDurationSeconds, 0) as totalDurationSeconds,
+          COALESCE(lessonStats.lessonCount, 0) as lessonCount,
+          COALESCE(reviewStats.averageRating, 0) as averageRating,
+          COALESCE(reviewStats.reviewCount, 0) as reviewCount,
+          COALESCE(enrollmentStats.totalStudents, 0) as views
+        FROM KhoaHoc kh
+        LEFT JOIN (
+          SELECT
+            ch.MaKH as maKH,
+            COUNT(bh.MaBH) as lessonCount,
+            COALESCE(SUM(CASE WHEN bh.TrangThai = 'ACTIVE' THEN bh.ThoiLuong ELSE 0 END), 0) as totalDurationSeconds
+          FROM ChuongHoc ch
+          LEFT JOIN BaiHoc bh ON bh.MaChuong = ch.MaChuong
+          GROUP BY ch.MaKH
+        ) lessonStats ON lessonStats.maKH = kh.MaKH
+        LEFT JOIN (
+          SELECT
+            dg.MaKH as maKH,
+            ROUND(AVG(dg.SoSao), 1) as averageRating,
+            COUNT(*) as reviewCount
+          FROM DanhGiaKhoaHoc dg
+          WHERE dg.SoSao > 0 AND dg.MaDanhGiaCha IS NULL
+          GROUP BY dg.MaKH
+        ) reviewStats ON reviewStats.maKH = kh.MaKH
+        LEFT JOIN (
+          SELECT
+            dk.MaKH as maKH,
+            COUNT(DISTINCT dk.MaND) as totalStudents
+          FROM DangKyKhoaHoc dk
+          WHERE dk.TrangThai = 'ACTIVE'
+          GROUP BY dk.MaKH
+        ) enrollmentStats ON enrollmentStats.maKH = kh.MaKH
+        WHERE kh.MaND_GiangVien = ? AND kh.TrangThai = 'PUBLISHED'
+        ORDER BY kh.MaKH DESC
       `,
       [id],
     );
@@ -604,6 +635,12 @@ export class InstructorsService {
         ...c,
         price: Number(c.price),
         imgUrl: c.imgUrl || 'course-1.jpg',
+        totalDurationSeconds: Number(c.totalDurationSeconds ?? 0),
+        lessonCount: Number(c.lessonCount ?? 0),
+        averageRating:
+          c.averageRating == null ? 0 : Number(c.averageRating),
+        reviewCount: Number(c.reviewCount ?? 0),
+        views: Number(c.views ?? 0),
       })),
     };
   }

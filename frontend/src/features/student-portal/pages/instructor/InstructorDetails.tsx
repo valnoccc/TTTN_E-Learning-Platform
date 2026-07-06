@@ -9,6 +9,27 @@ import axiosClient from '../../../../api/axios';
 // Fix for Vite CommonJS interop with react-id-swiper
 const SwiperComponent = (Swiper && typeof Swiper === 'object' && 'default' in Swiper) ? (Swiper as any).default : Swiper;
 
+const formatCourseDuration = (durationSeconds: any) => {
+    const totalSeconds = Number(durationSeconds || 0);
+    if (totalSeconds <= 0) return '0 phút';
+    if (totalSeconds < 3600) return `${Math.round(totalSeconds / 60)} phút`;
+    return `${(totalSeconds / 3600).toFixed(1)} giờ`;
+};
+
+const renderRatingStars = (ratingValue: number) => {
+    const stars: React.ReactNode[] = [];
+    for (let star = 1; star <= 5; star += 1) {
+        if (ratingValue >= star) {
+            stars.push(<li key={star} className="list-inline-item"><i className="las la-star"></i></li>);
+        } else if (ratingValue >= star - 0.5) {
+            stars.push(<li key={star} className="list-inline-item"><i className="las la-star-half-alt"></i></li>);
+        } else {
+            stars.push(<li key={star} className="list-inline-item"><i className="lar la-star"></i></li>);
+        }
+    }
+    return stars;
+};
+
 const settings = {
     slidesPerView: 3,
     loop: true,
@@ -146,7 +167,7 @@ const InstructorDetails = () => {
                                             {instructor.courses.map((course: any, i: number) => {
                                                 const courseImg = course.imgUrl?.startsWith('http') ? course.imgUrl : `/assets/images/${course.imgUrl}`;
                                                 return (
-                                                    <div className="course-item" key={course.id || i}>
+                                            <div className="course-item" key={course.id || i}>
                                                         <Link to={`/course-details/${course.id}`}>
                                                             <div className="course-image" style={{ backgroundImage: `url(${courseImg})` }}>
                                                                 <div className="author-img d-flex">
@@ -168,16 +189,12 @@ const InstructorDetails = () => {
                                                             <p className="desc">{course.courseDesc?.substring(0, 50)}...</p>
                                                             <div className="course-face d-flex justify-content-between">
                                                                 <div className="duration">
-                                                                    <p><i className="las la-clock"></i>120</p>
+                                                                    <p><i className="las la-clock"></i>{formatCourseDuration(course.totalDurationSeconds)}</p>
                                                                 </div>
                                                                 <div className="rating">
                                                                     <ul className="list-unstyled list-inline">
-                                                                        <li className="list-inline-item"><i className="las la-star"></i></li>
-                                                                        <li className="list-inline-item"><i className="las la-star"></i></li>
-                                                                        <li className="list-inline-item"><i className="las la-star"></i></li>
-                                                                        <li className="list-inline-item"><i className="las la-star"></i></li>
-                                                                        <li className="list-inline-item"><i className="las la-star-half-alt"></i></li>
-                                                                        <li className="list-inline-item">(4.5)</li>
+                                                                        {renderRatingStars(Number(course.averageRating || 0))}
+                                                                        <li className="list-inline-item">({Number(course.averageRating || 0).toFixed(1)})</li>
                                                                     </ul>
                                                                 </div>
                                                                 <div className="student">
