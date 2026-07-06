@@ -111,7 +111,7 @@ describe('VideoIntelligenceService', () => {
     });
   });
 
-  it('approves a safe video with a single likely frame and auto-publishes a pending course', async () => {
+  it('marks a video with a single likely frame as needs review', async () => {
     const lessonsState: LessonRecord[] = [
       {
         maBH: 1,
@@ -195,11 +195,11 @@ describe('VideoIntelligenceService', () => {
     expect(lessonRepository.update).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
-        aiStatus: AiStatus.APPROVED,
-        aiRejectReason: null,
+        aiStatus: AiStatus.NEEDS_REVIEW,
+        aiRejectReason: expect.stringContaining('cần admin xem xét'),
       }),
     );
-    expect(result.status).toBe(AiStatus.APPROVED);
+    expect(result.status).toBe(AiStatus.NEEDS_REVIEW);
     expect(courseRepository.update).not.toHaveBeenCalled();
   });
 

@@ -294,6 +294,15 @@ export class CoursesService implements OnModuleInit {
         ngayCapNhat: new Date(),
       });
 
+      if (nextStatus === 'PUBLISHED') {
+        await this.sendAutoApproveNotification({
+          instructorId,
+          courseName: course.tenKhoaHoc,
+          reviewRatio,
+          totalVideoLessons: lessons.length,
+        });
+      }
+
       if (nextStatus === 'DRAFT' && flaggedLessons.length > 0) {
         await this.sendAutoRejectNotification({
           courseId,
@@ -334,11 +343,11 @@ export class CoursesService implements OnModuleInit {
     flaggedLessons: CourseLessonRow[];
   }) {
     const { instructorId, courseName, reviewRatio, flaggedLessons, courseId } = input;
-    const safeCourseName = courseName?.trim() || `Khóa học #${courseId}`;
+    const safeCourseName = courseName?.trim() || `KhÃ³a há»c #${courseId}`;
     const lessonSummary = flaggedLessons
       .slice(0, 5)
       .map((lesson) => {
-        const lessonTitle = lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
+        const lessonTitle = lesson.tenBaiHoc?.trim() || `BÃ i ${lesson.maBH}`;
         const status = lesson.aiStatus || 'UNKNOWN';
         const reason = lesson.aiRejectReason?.trim();
         return `- ${lessonTitle} (${status})${reason ? `: ${reason}` : ''}`;
@@ -350,20 +359,44 @@ export class CoursesService implements OnModuleInit {
         maND: instructorId,
         maNguoiGui: null,
         loaiThongBao: NotificationType.COURSE,
-        tieuDe: 'Khóa học bị từ chối tự động',
+        tieuDe: 'KhÃ³a há»c bá» tá»« chá»i tá»± Äá»ng',
         noiDung: [
-          `${safeCourseName} đã bị từ chối tự động vì tỷ lệ nội dung cần điều chỉnh là ${Math.round(
+          `${safeCourseName} ÄÃ£ bá» tá»« chá»i tá»± Äá»ng vÃ¬ tá»· lá» ná»i dung cáº§n Äiá»u chá»nh lÃ  ${Math.round(
             reviewRatio * 100,
-          )}% và vượt ngưỡng cho phép.`,
-          'Vui lòng điều chỉnh lại nội dung khóa học cho phù hợp trước khi gửi duyệt lại.',
-          lessonSummary ? `Các bài học cần xem lại:\n${lessonSummary}` : null,
+          )}% vÃ  vÆ°á»£t ngÆ°á»¡ng cho phÃ©p.`,
+          'Vui lÃ²ng Äiá»u chá»nh láº¡i ná»i dung khÃ³a há»c cho phÃ¹ há»£p trÆ°á»c khi gá»­i duyá»t láº¡i.',
+          lessonSummary ? `CÃ¡c bÃ i há»c cáº§n xem láº¡i:\n${lessonSummary}` : null,
         ]
           .filter(Boolean)
           .join('\n\n'),
         daDoc: false,
       });
     } catch (error) {
-      console.error('Không thể gửi thông báo tự động từ chối khóa học:', error);
+      console.error('KhÃ´ng thá» gá»­i thÃ´ng bÃ¡o tá»± Äá»ng tá»« chá»i khÃ³a há»c:', error);
+    }
+  }
+
+  private async sendAutoApproveNotification(input: {
+    instructorId: number;
+    courseName?: string | null;
+    reviewRatio: number;
+    totalVideoLessons: number;
+  }) {
+    const { instructorId, courseName, reviewRatio, totalVideoLessons } = input;
+    const safeCourseName = courseName?.trim() || 'Kh???a h???c c???a b???n';
+    const percent = Math.round(reviewRatio * 100);
+
+    try {
+      await this.notificationsService.createNotification({
+        maND: instructorId,
+        maNguoiGui: null,
+        loaiThongBao: NotificationType.COURSE,
+        tieuDe: 'Kh???a h???c ???? ???????c t??? duy???t',
+        noiDung: `${safeCourseName} ???? ???????c t??? duy???t v?? s???n s??ng public. T??? l??? n???i dung c???n ??i???u ch???nh l?? ${percent}% tr??n ${totalVideoLessons} b??i h???c c?? video.`,
+        daDoc: false,
+      });
+    } catch (error) {
+      console.error('Kh??ng th??? g???i th??ng b??o t??? duy???t kh??a h???c:', error);
     }
   }
 

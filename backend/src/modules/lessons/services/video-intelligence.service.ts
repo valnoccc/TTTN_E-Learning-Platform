@@ -474,9 +474,13 @@ export class VideoIntelligenceService implements OnModuleInit {
     );
 
     const hasStrongExplicitSignal =
-      riskyFrames.length >= 3 ||
-      (riskyFrames.length >= 2 && likelyFrames.length >= 6) ||
-      likelyFrames.length >= 10;
+      riskyFrames.length >= 1 ||
+      likelyFrames.length >= 3 ||
+      labels.some((label) =>
+        ['violence', 'adult', 'nude', 'sexual', 'weapon'].includes(
+          label.toLowerCase(),
+        ),
+      );
 
     if (hasStrongExplicitSignal) {
       return {
@@ -491,8 +495,7 @@ export class VideoIntelligenceService implements OnModuleInit {
     }
 
     const needsReview =
-      riskyFrames.length >= 1 ||
-      likelyFrames.length >= 2 ||
+      likelyFrames.length >= 1 ||
       labels.some((label) =>
         ['violence', 'adult', 'nude', 'sexual', 'weapon'].includes(
           label.toLowerCase(),

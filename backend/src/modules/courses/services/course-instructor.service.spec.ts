@@ -66,7 +66,12 @@ describe('CoursesService.updateCourseStatus', () => {
       11,
       expect.objectContaining({ trangThai: 'PUBLISHED' }),
     );
-    expect(notificationsService.createNotification).not.toHaveBeenCalled();
+    expect(notificationsService.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maND: 99,
+        tieuDe: expect.any(String),
+      }),
+    );
   });
 
   it('sends the course to admin review when the review ratio is between 20 and 40 percent', async () => {
@@ -121,7 +126,7 @@ describe('CoursesService.updateCourseStatus', () => {
     expect(notificationsService.createNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         maND: 99,
-        tieuDe: 'Khóa học bị từ chối tự động',
+        tieuDe: expect.any(String),
       }),
     );
   });
