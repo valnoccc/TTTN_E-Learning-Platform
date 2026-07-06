@@ -21,6 +21,7 @@ export interface InstructorMonthlyRevenueCourseRow {
   courseName: string;
   purchases: number;
   grossRevenue: number;
+  instructorRevenue: number;
   averageRevenue: number;
 }
 
@@ -199,6 +200,7 @@ export class InstructorDashboardService {
       const monthEntry = monthMap.get(monthLabel)!;
       const purchases = this.toNumber(row.purchases);
       const grossRevenue = this.toNumber(row.grossRevenue);
+      const instructorRevenue = Number((grossRevenue * INSTRUCTOR_REVENUE_SHARE).toFixed(0));
       monthEntry.totalPurchases += purchases;
       monthEntry.totalGrossRevenue += grossRevenue;
       monthEntry.rows.push({
@@ -206,6 +208,7 @@ export class InstructorDashboardService {
         courseName: row.courseName,
         purchases,
         grossRevenue,
+        instructorRevenue,
         averageRevenue:
           purchases > 0 ? Number((grossRevenue / purchases).toFixed(0)) : 0,
       });
@@ -263,6 +266,11 @@ export class InstructorDashboardService {
       instructorId,
       courseId,
       range,
+    );
+    const reviewAllTimeWhereClause = this.buildReviewReportWhereClause(
+      instructorId,
+      courseId,
+      'all_time',
     );
     const courseOwnershipClause = this.buildCourseOwnershipClause(
       instructorId,
@@ -408,7 +416,7 @@ export class InstructorDashboardService {
               kh.HinhThuNho AS imageUrl
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
             GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.HinhThuNho
             HAVING reviewCount > 0
@@ -466,7 +474,7 @@ export class InstructorDashboardService {
               SUM(CASE WHEN dg.SoSao IN (1, 2) THEN 1 ELSE 0 END) AS lowStarReviews
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
           `,
       ),
@@ -476,7 +484,7 @@ export class InstructorDashboardService {
               COUNT(*) AS unrespondedReviews
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
               AND NOT EXISTS (
                 SELECT 1
@@ -492,7 +500,7 @@ export class InstructorDashboardService {
               COUNT(*) AS count
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
             GROUP BY dg.SoSao
             ORDER BY dg.SoSao DESC
@@ -654,8 +662,8 @@ export class InstructorDashboardService {
         averageRating: reviewCount > 0 ? Number(ratingValue.toFixed(1)) : null,
         averageRatingLabel:
           reviewCount > 0
-            ? `Tu ${reviewCount} luot danh gia that`
-            : 'Chua co du lieu danh gia that',
+            ? `Từ ${reviewCount} lượt đánh giá thật`
+            : 'Chưa có dữ liệu đánh giá thật',
         averageRatingSource: reviewCount > 0 ? 'database' : 'mockdata',
       },
       learning: {
@@ -664,7 +672,7 @@ export class InstructorDashboardService {
         completionRate,
         completionRateLabel:
           completionRate !== null
-            ? `${completedLessonSlots}/${totalLessonSlots} dau muc bai hoc da hoan thanh`
+            ? `${completedLessonSlots}/${totalLessonSlots} bài học`
             : 'Chua co du lieu tien do hoc tap',
         completionRateSource: completionRate !== null ? 'database' : 'mockdata',
       },
@@ -1026,7 +1034,7 @@ export class InstructorDashboardService {
   private assertInstructor(principal: InstructorPrincipal) {
     if (principal.vaiTro !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
-        'Chi giang vien moi co quyen truy cap dashboard nay.',
+        'Chỉ có giảng viên mới được phép truy cập vào bảng điều khiển giảng viên.',
       );
     }
   }
@@ -1034,7 +1042,7 @@ export class InstructorDashboardService {
   private getInstructorId(principal: InstructorPrincipal) {
     const instructorId = principal.maND ?? principal.sub;
     if (!instructorId) {
-      throw new ForbiddenException('Khong xac dinh duoc giang vien.');
+      throw new ForbiddenException('Không xác định được giảng viên.');
     }
 
     return instructorId;

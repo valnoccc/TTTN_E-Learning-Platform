@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   CheckCheck,
@@ -8,71 +8,93 @@ import {
   Info,
   ShieldAlert,
   TriangleAlert,
-} from 'lucide-react';
+} from "lucide-react";
 
 import {
   useInstructorNotifications,
   type Notification,
-} from '../../layouts/InstructorNotificationsContext';
+} from "../../layouts/InstructorNotificationsContext";
 
 function formatNotificationTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return '';
+    return "";
   }
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
 function getNotificationTone(notification: Notification) {
   const title = `${notification.tieuDe} ${notification.noiDung}`.toLowerCase();
 
-  if (title.includes('từ chối') || title.includes('tu choi') || title.includes('ban')) {
+  if (
+    title.includes("từ chối") ||
+    title.includes("tu choi") ||
+    title.includes("ban")
+  ) {
     return {
-      wrapper: 'border-rose-100 bg-rose-50',
-      dot: 'bg-rose-500',
+      wrapper: "border-rose-100 bg-rose-50",
+      dot: "bg-rose-500",
       icon: <TriangleAlert className="text-rose-600" size={16} />,
-      label: 'Từ chối',
+      label: "Từ chối",
     };
   }
 
-  if (title.includes('phê duyệt') || title.includes('phe duyet')) {
+  if (title.includes("phê duyệt") || title.includes("phe duyet")) {
     return {
-      wrapper: 'border-emerald-100 bg-emerald-50',
-      dot: 'bg-emerald-500',
+      wrapper: "border-emerald-100 bg-emerald-50",
+      dot: "bg-emerald-500",
       icon: <CheckCheck className="text-emerald-600" size={16} />,
-      label: 'Phê duyệt',
+      label: "Phê duyệt",
     };
   }
 
-  if (title.includes('cảnh báo') || title.includes('canh bao')) {
+  if (title.includes("cảnh báo") || title.includes("canh bao")) {
     return {
-      wrapper: 'border-amber-100 bg-amber-50',
-      dot: 'bg-amber-500',
+      wrapper: "border-amber-100 bg-amber-50",
+      dot: "bg-amber-500",
       icon: <ShieldAlert className="text-amber-600" size={16} />,
-      label: 'Cảnh báo',
+      label: "Cảnh báo",
     };
   }
 
   return {
-    wrapper: 'border-slate-100 bg-slate-50',
-    dot: 'bg-slate-400',
+    wrapper: "border-slate-100 bg-slate-50",
+    dot: "bg-slate-400",
     icon: <Info className="text-slate-600" size={16} />,
-    label: 'Thông báo',
+    label: "Thông báo",
   };
 }
 
 export default function InstructorTopHeader() {
-  const { notifications, unreadCount, markAsRead } = useInstructorNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    fetchNotifications,
+  } = useInstructorNotifications();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const dropdownItems = useMemo(() => notifications.slice(0, 5), [notifications]);
+  const dropdownItems = useMemo(
+    () => notifications.slice(0, 5),
+    [notifications],
+  );
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+    await fetchNotifications();
+  };
+
+  const handleMarkAsRead = async (notificationId: number) => {
+    await markAsRead(notificationId);
+    await fetchNotifications();
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,11 +104,11 @@ export default function InstructorTopHeader() {
     };
 
     if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [open]);
 
@@ -117,10 +139,21 @@ export default function InstructorTopHeader() {
                 <p className="text-xs text-slate-500">
                   {unreadCount > 0
                     ? `${unreadCount} thông báo chưa đọc`
-                    : 'Không có thông báo mới'}
+                    : "Không có thông báo mới"}
                 </p>
               </div>
-              <Clock3 size={16} className="text-slate-400" />
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllAsRead}
+                    className="rounded-full border px-3 py-1 text-[11px] font-semibold text-gray-500 transition hover:bg-emerald-100"
+                  >
+                    Đánh dấu tất cả là đã đọc
+                  </button>
+                ) : null}
+                <Clock3 size={16} className="text-slate-400" />
+              </div>
             </div>
 
             <div className="max-h-[360px] overflow-y-auto">
@@ -137,14 +170,14 @@ export default function InstructorTopHeader() {
                       type="button"
                       onClick={async () => {
                         if (!notification.daDoc) {
-                          await markAsRead(notification.maTB);
+                          await handleMarkAsRead(notification.maTB);
                         }
                         setOpen(false);
                       }}
                       className={`flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${tone.wrapper}`}
                     >
                       <span
-                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${notification.daDoc ? 'bg-slate-300' : tone.dot}`}
+                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${notification.daDoc ? "bg-slate-300" : tone.dot}`}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">

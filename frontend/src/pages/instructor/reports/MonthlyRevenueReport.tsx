@@ -16,6 +16,7 @@ type MonthlyCourseRow = {
   courseName: string;
   purchases: number;
   grossRevenue: number;
+  instructorRevenue: number;
   averageRevenue: number;
 };
 
@@ -222,7 +223,7 @@ function MonthlyRevenueContent() {
                   <th className="px-6 py-4">Khóa học</th>
                   <th className="px-6 py-4 text-center">Lượt mua</th>
                   <th className="px-6 py-4 text-right">Doanh thu gộp</th>
-                  <th className="px-6 py-4 text-right">Doanh thu/lượt</th>
+                  <th className="px-6 py-4 text-right">Thực nhận của GV</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -248,7 +249,7 @@ function MonthlyRevenueContent() {
                       {formatCurrency(row.grossRevenue)}
                     </td>
                     <td className="px-6 py-4 text-right text-[14px] font-semibold text-slate-700">
-                      {formatCurrency(row.averageRevenue)}
+                      {formatCurrency(row.instructorRevenue)}
                     </td>
                   </tr>
                 ))}

@@ -46,12 +46,26 @@ const USER_ROLES: AdminUserRole[] = [
   UserRole.STUDENT,
 ];
 
+const DB_STATUS_BY_API_STATUS: Record<AdminUserStatus, string[]> = {
+  ACTIVE: ['ACTIVE'],
+  INACTIVE: ['INACTIVE', 'LOCKED'],
+  DELETED: ['DELETED'],
+};
+
+const API_STATUS_BY_DB_STATUS: Record<string, AdminUserStatus> = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  LOCKED: 'INACTIVE',
+  DELETED: 'DELETED',
+};
+
 @Injectable()
 export class UserAdminService {
   constructor(private readonly dataSource: DataSource) {}
 
   async getUsers(query: AdminUsersQuery) {
     const filters = this.normalizeFilters(query);
+    const statusDbStatuses = filters.statusDbStatuses ?? [];
     const [rows, summaryRows] = await Promise.all([
       this.dataSource.query(
         `
@@ -83,7 +97,11 @@ export class UserAdminService {
           WHERE 1 = 1
             ${filters.search ? 'AND (nd.HoTen LIKE ? OR nd.Email LIKE ? OR nd.SoDienThoai LIKE ?)' : ''}
             ${filters.role ? 'AND nd.VaiTro = ?' : ''}
-            ${filters.status ? "AND COALESCE(nd.TrangThai, 'ACTIVE') = ?" : ''}
+            ${
+              filters.status
+                ? `AND COALESCE(nd.TrangThai, 'ACTIVE') IN (${statusDbStatuses.map(() => '?').join(', ')})`
+                : ''
+            }
           ORDER BY nd.NgayTao DESC, nd.MaND DESC
         `,
         filters.params,
@@ -92,7 +110,7 @@ export class UserAdminService {
         SELECT
           COUNT(*) AS totalUsers,
           SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'ACTIVE' THEN 1 ELSE 0 END) AS activeUsers,
-          SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'INACTIVE' THEN 1 ELSE 0 END) AS inactiveUsers,
+          SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') IN ('INACTIVE', 'LOCKED') THEN 1 ELSE 0 END) AS inactiveUsers,
           SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'DELETED' THEN 1 ELSE 0 END) AS deletedUsers,
           SUM(CASE WHEN VaiTro = 'ADMIN' THEN 1 ELSE 0 END) AS admins,
           SUM(CASE WHEN VaiTro = 'INSTRUCTOR' THEN 1 ELSE 0 END) AS instructors,
@@ -117,8 +135,12 @@ export class UserAdminService {
     }
 
     await this.dataSource.query(
-      'UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?',
-      [normalizedStatus, userId],
+      'UPDATE NguoiDung SET TrangThai = ?, AccountStatus = ? WHERE MaND = ?',
+      [
+        this.mapStatusToDb(normalizedStatus),
+        normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
+        userId,
+      ],
     );
 
     return {
@@ -161,8 +183,12 @@ export class UserAdminService {
     }
 
     await this.dataSource.query(
-      `UPDATE NguoiDung SET TrangThai = ? WHERE MaND IN (${normalizedIds.map(() => '?').join(', ')})`,
-      [normalizedStatus, ...normalizedIds],
+      `UPDATE NguoiDung SET TrangThai = ?, AccountStatus = ? WHERE MaND IN (${normalizedIds.map(() => '?').join(', ')})`,
+      [
+        this.mapStatusToDb(normalizedStatus),
+        normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
+        ...normalizedIds,
+      ],
     );
 
     return {
@@ -239,6 +265,10 @@ export class UserAdminService {
       search,
       role: role && role !== 'ALL' ? role : null,
       status: status && status !== 'ALL' ? status : null,
+      statusDbStatuses:
+        status && status !== 'ALL'
+          ? DB_STATUS_BY_API_STATUS[status as AdminUserStatus]
+          : null,
       params,
     };
   }
@@ -276,7 +306,7 @@ export class UserAdminService {
       email: String(row.email ?? ''),
       phone: row.phone ?? null,
       role: this.normalizeRole(String(row.role ?? UserRole.STUDENT)),
-      status: this.normalizeStatus(String(row.status ?? 'ACTIVE')),
+      status: this.mapStatusFromDb(String(row.status ?? 'ACTIVE')),
       avatar: row.avatar ?? null,
       createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : '',
       activeEnrollments: Number(row.activeEnrollments ?? 0),
@@ -295,5 +325,13 @@ export class UserAdminService {
       instructors: Number(row.instructors ?? 0),
       students: Number(row.students ?? 0),
     };
+  }
+
+  private mapStatusFromDb(status: string): AdminUserStatus {
+    return API_STATUS_BY_DB_STATUS[status?.trim().toUpperCase()] ?? 'ACTIVE';
+  }
+
+  private mapStatusToDb(status: AdminUserStatus) {
+    return status === 'INACTIVE' ? 'LOCKED' : status;
   }
 }
