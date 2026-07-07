@@ -76,22 +76,11 @@ function TableRow({ item }: { item: AdminInstructorDebtItem }) {
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
             {item.instructorAvatar ? (
-              <>
-                <img
-                  src={item.instructorAvatar.startsWith('http') || item.instructorAvatar.startsWith('data:') ? item.instructorAvatar : `/assets/images/${item.instructorAvatar}`}
-                  alt={item.instructorName}
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      if (e.currentTarget.nextElementSibling) {
-                          (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                      }
-                  }}
-                />
-                <span className="hidden h-full w-full items-center justify-center text-sm font-bold text-slate-500">
-                  {item.instructorName.charAt(0).toUpperCase()}
-                </span>
-              </>
+              <img
+                src={item.instructorAvatar}
+                alt={item.instructorName}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <span className="text-sm font-bold text-slate-500">
                 {item.instructorName.charAt(0).toUpperCase()}
@@ -119,9 +108,6 @@ function TableRow({ item }: { item: AdminInstructorDebtItem }) {
       <td className="px-4 py-4 text-sm font-bold text-amber-600">
         {formatCurrency(item.debtAmount)}
       </td>
-      <td className="px-4 py-4 text-center">
-        <DebtBadge value="Chờ đối soát" />
-      </td>
     </tr>
   );
 }
@@ -148,10 +134,8 @@ export default function AdminInstructorDebts() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div></div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-end">
+          <div className="ml-auto flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
               <CalendarDays size={16} className="text-slate-400" />
               <select
@@ -274,7 +258,6 @@ export default function AdminInstructorDebts() {
                         <th className="px-4 py-4">Doanh thu gộp</th>
                         <th className="px-4 py-4">Phần admin</th>
                         <th className="px-4 py-4">Phải trả</th>
-                        <th className="px-4 py-4 text-center">Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody>
