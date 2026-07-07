@@ -6,7 +6,7 @@ import {
 import { DataSource } from 'typeorm';
 import { UserRole } from '../entities/user.entity';
 
-export type AdminUserStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
+export type AdminUserStatus = 'ACTIVE' | 'LOCKED' | 'DELETED';
 export type AdminUserRole = UserRole;
 
 export interface AdminUsersQuery {
@@ -32,14 +32,14 @@ export interface AdminUserListItem {
 export interface AdminUserSummary {
   totalUsers: number;
   activeUsers: number;
-  inactiveUsers: number;
+  lockedUsers: number;
   deletedUsers: number;
   admins: number;
   instructors: number;
   students: number;
 }
 
-const USER_STATUSES: AdminUserStatus[] = ['ACTIVE', 'INACTIVE', 'DELETED'];
+const USER_STATUSES: AdminUserStatus[] = ['ACTIVE', 'LOCKED', 'DELETED'];
 const USER_ROLES: AdminUserRole[] = [
   UserRole.ADMIN,
   UserRole.INSTRUCTOR,
@@ -48,14 +48,13 @@ const USER_ROLES: AdminUserRole[] = [
 
 const DB_STATUS_BY_API_STATUS: Record<AdminUserStatus, string[]> = {
   ACTIVE: ['ACTIVE'],
-  INACTIVE: ['INACTIVE', 'LOCKED'],
+  LOCKED: ['LOCKED'],
   DELETED: ['DELETED'],
 };
 
 const API_STATUS_BY_DB_STATUS: Record<string, AdminUserStatus> = {
   ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  LOCKED: 'INACTIVE',
+  LOCKED: 'LOCKED',
   DELETED: 'DELETED',
 };
 
@@ -66,6 +65,7 @@ export class UserAdminService {
   async getUsers(query: AdminUsersQuery) {
     const filters = this.normalizeFilters(query);
     const statusDbStatuses = filters.statusDbStatuses ?? [];
+
     const [rows, summaryRows] = await Promise.all([
       this.dataSource.query(
         `
@@ -106,17 +106,19 @@ export class UserAdminService {
         `,
         filters.params,
       ),
-      this.dataSource.query(`
-        SELECT
-          COUNT(*) AS totalUsers,
-          SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'ACTIVE' THEN 1 ELSE 0 END) AS activeUsers,
-          SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') IN ('INACTIVE', 'LOCKED') THEN 1 ELSE 0 END) AS inactiveUsers,
-          SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'DELETED' THEN 1 ELSE 0 END) AS deletedUsers,
-          SUM(CASE WHEN VaiTro = 'ADMIN' THEN 1 ELSE 0 END) AS admins,
-          SUM(CASE WHEN VaiTro = 'INSTRUCTOR' THEN 1 ELSE 0 END) AS instructors,
-          SUM(CASE WHEN VaiTro = 'STUDENT' THEN 1 ELSE 0 END) AS students
-        FROM NguoiDung
-      `),
+      this.dataSource.query(
+        `
+          SELECT
+            COUNT(*) AS totalUsers,
+            SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'ACTIVE' THEN 1 ELSE 0 END) AS activeUsers,
+            SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'LOCKED' THEN 1 ELSE 0 END) AS lockedUsers,
+            SUM(CASE WHEN COALESCE(TrangThai, 'ACTIVE') = 'DELETED' THEN 1 ELSE 0 END) AS deletedUsers,
+            SUM(CASE WHEN VaiTro = 'ADMIN' THEN 1 ELSE 0 END) AS admins,
+            SUM(CASE WHEN VaiTro = 'INSTRUCTOR' THEN 1 ELSE 0 END) AS instructors,
+            SUM(CASE WHEN VaiTro = 'STUDENT' THEN 1 ELSE 0 END) AS students
+          FROM NguoiDung
+        `,
+      ),
     ]);
 
     return {
@@ -311,7 +313,7 @@ export class UserAdminService {
     return {
       totalUsers: Number(row.totalUsers ?? 0),
       activeUsers: Number(row.activeUsers ?? 0),
-      inactiveUsers: Number(row.inactiveUsers ?? 0),
+      lockedUsers: Number(row.lockedUsers ?? 0),
       deletedUsers: Number(row.deletedUsers ?? 0),
       admins: Number(row.admins ?? 0),
       instructors: Number(row.instructors ?? 0),
