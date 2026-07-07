@@ -67,6 +67,12 @@ Admin (Kiem duyet)
 - `PATCH /lessons/:id` (Instructor - Sua noi dung bai hoc, ho tro `choPhepXemTruoc`)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
+## Forum (Cong dong)
+- `GET /forum/questions` (Public - Danh sach topic)
+- `GET /forum/questions/:id` (Public - Chi tiet topic)
+- `GET /forum/admin/questions` (Admin - Danh sach topic cap 1, ho tro `search`, `page`, `limit`, tra ve `summary`)
+- `DELETE /forum/admin/questions/:id` (Admin - Xoa topic cap 1 va cac tra loi lien quan theo cascade)
+
 ## Enrollments & Progress (Giao dich & Tien do)
 - `POST /enrollments` (Dang ky mua/Thanh toan khoa hoc)
 - `GET /enrollments/me` (Xem danh sach khoa hoc da mua & lich su giao dich)

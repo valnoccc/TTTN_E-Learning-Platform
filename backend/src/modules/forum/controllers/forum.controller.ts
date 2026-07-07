@@ -1,30 +1,36 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Query,
   Param,
   Body,
   Req,
+  ParseIntPipe,
   UseGuards,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ForumService } from './forum.service';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ForumService } from '../services/forum.service';
+import { ForumAdminService } from '../services/forum-admin.service';
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import {
   FilterQuestionDto,
   CreateQuestionDto,
   CreateAnswerDto,
-} from './dto/forum.dto';
+} from '../dto/forum.dto';
 
 @Controller('forum')
 export class ForumController {
   constructor(
     private readonly forumService: ForumService,
+    private readonly forumAdminService: ForumAdminService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -93,6 +99,38 @@ export class ForumController {
     const result = await this.forumService.upvoteAnswer(id, req.user.sub);
     return {
       message: 'Cập nhật bình chọn câu trả lời thành công',
+      data: result,
+    };
+  }
+
+  @Get('admin/questions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async listAdminQuestions(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const result = await this.forumAdminService.listRootQuestions({
+      search,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+    });
+
+    return {
+      message: 'Lấy danh sách bài đăng diễn đàn thành công',
+      ...result,
+    };
+  }
+
+  @Delete('admin/questions/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async deleteAdminQuestion(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.forumAdminService.deleteQuestion(id);
+
+    return {
+      message: 'Xóa bài đăng diễn đàn thành công',
       data: result,
     };
   }

@@ -4,11 +4,12 @@ import { CauHoiDienDan } from './entities/cau-hoi-dien-dan.entity';
 import { TheTuDienDan } from './entities/the-tu-dien-dan.entity';
 import { CauTraLoiDienDan } from './entities/cau-tra-loi-dien-dan.entity';
 import { User } from '../users/entities/user.entity';
-import { ForumService } from './forum.service';
-import { ForumController } from './forum.controller';
+import { ForumService } from './services/forum.service';
+import { ForumController } from './controllers/forum.controller';
 
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ForumAdminService } from './services/forum-admin.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [ForumController],
-  providers: [ForumService],
-  exports: [ForumService],
+  providers: [ForumService, ForumAdminService],
+  exports: [ForumService, ForumAdminService],
 })
 export class ForumModule {}

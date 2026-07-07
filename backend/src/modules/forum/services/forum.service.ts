@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CauHoiDienDan } from './entities/cau-hoi-dien-dan.entity';
-import { TheTuDienDan } from './entities/the-tu-dien-dan.entity';
-import { CauTraLoiDienDan } from './entities/cau-tra-loi-dien-dan.entity';
-import { User } from '../users/entities/user.entity';
+import { CauHoiDienDan } from '../entities/cau-hoi-dien-dan.entity';
+import { TheTuDienDan } from '../entities/the-tu-dien-dan.entity';
+import { CauTraLoiDienDan } from '../entities/cau-tra-loi-dien-dan.entity';
+import { User } from '../../users/entities/user.entity';
 import {
   FilterQuestionDto,
   SapXepCauHoi,
   CreateQuestionDto,
   CreateAnswerDto,
-} from './dto/forum.dto';
-import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '../notifications/entities/notification.entity';
+} from '../dto/forum.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
 export class ForumService {

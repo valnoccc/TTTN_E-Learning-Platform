@@ -5,6 +5,7 @@ import AdminCourseDetail from '../pages/admin/Courses/AdminCourseDetail';
 import AdminCategories from '../pages/admin/Categories/AdminCategories';
 import AdminPosts from '../pages/admin/Posts/AdminPosts';
 import AdminPostForm from '../pages/admin/Posts/AdminPostForm';
+import AdminForumPosts from '../pages/admin/Forum/AdminForumPosts';
 import AdminUsers from '../pages/admin/Users/AdminUsers';
 import AdminCoupons from '../pages/admin/Coupons/AdminCoupons';
 import AdminInstructorDebts from '../pages/admin/Debts/AdminInstructorDebts';
@@ -24,6 +25,7 @@ export default function AdminRoutes() {
             <Route path="posts" element={<AdminPosts />} />
             <Route path="posts/new" element={<AdminPostForm />} />
             <Route path="posts/:id/edit" element={<AdminPostForm />} />
+            <Route path="forum" element={<AdminForumPosts />} />
             <Route path="moderation" element={<ModerationDashboard />} />
         </Routes>
     );
