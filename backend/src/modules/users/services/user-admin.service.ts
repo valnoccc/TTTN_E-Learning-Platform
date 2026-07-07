@@ -135,12 +135,8 @@ export class UserAdminService {
     }
 
     await this.dataSource.query(
-      'UPDATE NguoiDung SET TrangThai = ?, AccountStatus = ? WHERE MaND = ?',
-      [
-        this.mapStatusToDb(normalizedStatus),
-        normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
-        userId,
-      ],
+      'UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?',
+      [this.mapStatusToDb(normalizedStatus), userId],
     );
 
     return {
@@ -183,12 +179,8 @@ export class UserAdminService {
     }
 
     await this.dataSource.query(
-      `UPDATE NguoiDung SET TrangThai = ?, AccountStatus = ? WHERE MaND IN (${normalizedIds.map(() => '?').join(', ')})`,
-      [
-        this.mapStatusToDb(normalizedStatus),
-        normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
-        ...normalizedIds,
-      ],
+      `UPDATE NguoiDung SET TrangThai = ? WHERE MaND IN (${normalizedIds.map(() => '?').join(', ')})`,
+      [this.mapStatusToDb(normalizedStatus), ...normalizedIds],
     );
 
     return {
@@ -332,6 +324,6 @@ export class UserAdminService {
   }
 
   private mapStatusToDb(status: AdminUserStatus) {
-    return status === 'INACTIVE' ? 'LOCKED' : status;
+    return status;
   }
 }

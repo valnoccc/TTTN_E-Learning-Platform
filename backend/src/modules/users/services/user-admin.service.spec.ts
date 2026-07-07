@@ -96,7 +96,7 @@ describe('UserAdminService', () => {
     });
   });
 
-  it('locks users in the auth status column while keeping admin status labels stable', async () => {
+  it('locks users by updating TrangThai only while keeping admin status labels stable', async () => {
     dataSource.query
       .mockResolvedValueOnce([{ MaND: 7 }])
       .mockResolvedValueOnce([]);
@@ -110,8 +110,8 @@ describe('UserAdminService', () => {
 
     expect(dataSource.query).toHaveBeenNthCalledWith(
       2,
-      expect.stringContaining('UPDATE NguoiDung SET TrangThai = ?, AccountStatus = ? WHERE MaND = ?'),
-      ['LOCKED', 'BLOCKED', 7],
+      expect.stringContaining('UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?'),
+      ['INACTIVE', 7],
     );
   });
 

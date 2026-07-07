@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 
-/** Loại lý do báo cáo */
 export type ReportReason =
   | 'SPAM'
   | 'HATE_SPEECH'
@@ -16,18 +15,18 @@ export type ReportReason =
   | 'FALSE_INFO'
   | 'OTHER';
 
-/** Hành động Admin thực hiện khi xử lý báo cáo */
 export type ResolveAction =
   | 'HIDE_COMMENT'
   | 'WARN_USER'
   | 'BLOCK_USER'
   | 'REJECT';
 
+const WARN_THRESHOLD = 3;
+
 @Injectable()
 export class ReportsService {
   constructor(private readonly dataSource: DataSource) {}
 
-  // ─── Gửi báo cáo vi phạm ───────────────────────────────────────────────────
   async createReport(
     reporterId: number,
     discussionId: number | null,
@@ -35,7 +34,6 @@ export class ReportsService {
     reason: ReportReason,
     details?: string,
   ) {
-    // Kiểm tra người bị báo cáo tồn tại
     const userCheck = await this.dataSource.query(
       `SELECT MaND FROM NguoiDung WHERE MaND = ?`,
       [reportedUserId],
@@ -60,14 +58,12 @@ export class ReportsService {
       ],
     );
 
-    // --- Thông báo cho Giảng viên ---
     if (discussionId) {
       try {
-        // Lấy thông tin Giảng viên (MaND_GiangVien), Tên khóa học và Tên người báo cáo
         const query = `
-          SELECT 
-            kh.MaND_GiangVien, 
-            kh.TenKhoaHoc, 
+          SELECT
+            kh.MaND_GiangVien,
+            kh.TenKhoaHoc,
             nd.HoTen AS ReporterName
           FROM ThaoLuanKhoaHoc tl
           JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
@@ -110,7 +106,6 @@ export class ReportsService {
     return { reportId: maBaoCao, message: 'Đã gửi báo cáo thành công' };
   }
 
-  // ─── Lấy danh sách báo cáo (Admin) ────────────────────────────────────────
   async getReports(status: string | undefined, page: number, limit: number) {
     const offset = (page - 1) * limit;
     const whereClause = status ? `WHERE bc.TrangThai = ?` : '';
@@ -134,7 +129,7 @@ export class ReportsService {
         reported.HoTen AS reportedUserName,
         reported.AnhDaiDien AS reportedUserAvatar,
         reported.ViolationCount AS violationCount,
-        reported.AccountStatus AS accountStatus
+        reported.TrangThai AS accountStatus
       FROM BaoCaoViPham bc
       INNER JOIN NguoiDung reporter ON bc.MaNguoiBaoCao = reporter.MaND
       INNER JOIN NguoiDung reported ON bc.MaUserBiBaoCao = reported.MaND
@@ -146,7 +141,6 @@ export class ReportsService {
       params,
     );
 
-    // Đếm tổng số bản ghi để phân trang
     const countParams: any[] = status ? [status] : [];
     const countResult = await this.dataSource.query(
       `SELECT COUNT(*) AS total FROM BaoCaoViPham bc ${whereClause}`,
@@ -163,9 +157,7 @@ export class ReportsService {
     };
   }
 
-  // ─── Xử lý báo cáo (Admin) ────────────────────────────────────────────────
   async resolveReport(reportId: string, action: ResolveAction, notes?: string) {
-    // Lấy thông tin báo cáo
     const reportRows = await this.dataSource.query(
       `SELECT MaBaoCao, MaThaoLuan, MaUserBiBaoCao, TrangThai FROM BaoCaoViPham WHERE MaBaoCao = ?`,
       [reportId],
@@ -181,7 +173,6 @@ export class ReportsService {
       throw new BadRequestException('Báo cáo này đã được xử lý trước đó');
     }
 
-    // Thực thi hành động theo action
     if (action === 'HIDE_COMMENT') {
       if (!report.MaThaoLuan) {
         throw new BadRequestException(
@@ -197,36 +188,37 @@ export class ReportsService {
     if (action === 'WARN_USER' || action === 'BLOCK_USER') {
       const userId = report.MaUserBiBaoCao;
 
+      let nextStatus: 'ACTIVE' | 'LOCKED' = 'ACTIVE';
+      let violationCount = 0;
+
       if (action === 'WARN_USER') {
-        // Tăng ViolationCount và cập nhật AccountStatus
         await this.dataSource.query(
-          `UPDATE NguoiDung SET ViolationCount = ViolationCount + 1, AccountStatus = 'WARNED' WHERE MaND = ?`,
+          `UPDATE NguoiDung SET ViolationCount = ViolationCount + 1 WHERE MaND = ?`,
           [userId],
         );
 
-        // Kiểm tra nếu >= 3 lần vi phạm → tự động BLOCK
         const userRow = await this.dataSource.query(
           `SELECT ViolationCount FROM NguoiDung WHERE MaND = ?`,
           [userId],
         );
 
-        if (userRow[0]?.ViolationCount >= 3) {
+        violationCount = Number(userRow[0]?.ViolationCount ?? 0);
+        if (violationCount >= WARN_THRESHOLD) {
+          nextStatus = 'LOCKED';
           await this.dataSource.query(
-            `UPDATE NguoiDung SET AccountStatus = 'BLOCKED' WHERE MaND = ?`,
+            `UPDATE NguoiDung SET TrangThai = 'LOCKED' WHERE MaND = ?`,
             [userId],
           );
         }
       } else {
-        // BLOCK_USER trực tiếp
+        nextStatus = 'LOCKED';
         await this.dataSource.query(
-          `UPDATE NguoiDung SET AccountStatus = 'BLOCKED' WHERE MaND = ?`,
+          `UPDATE NguoiDung SET TrangThai = 'LOCKED' WHERE MaND = ?`,
           [userId],
         );
       }
 
-      // --- Push Notification bằng Firebase Admin ---
       try {
-        // Lấy fcmToken của người bị báo cáo
         const fcmQuery = await this.dataSource.query(
           `SELECT fcmToken FROM NguoiDung WHERE MaND = ?`,
           [userId],
@@ -235,7 +227,6 @@ export class ReportsService {
         const fcmToken = fcmQuery[0]?.fcmToken;
 
         if (fcmToken) {
-          // Initialize Firebase Admin nếu chưa setup (tùy thuộc vào config hiện tại)
           if (!getApps().length) {
             initializeApp();
           }
@@ -243,13 +234,16 @@ export class ReportsService {
           let title = '';
           let body = '';
 
-          if (action === 'WARN_USER') {
-            title = 'Cảnh cáo vi phạm ⚠️';
+          if (nextStatus === 'LOCKED') {
+            title = 'Tài khoản bị khóa';
             body =
-              'Bình luận của bạn vi phạm tiêu chuẩn cộng đồng. Hệ thống đã ghi nhận 1 lần cảnh cáo.';
-          } else if (action === 'BLOCK_USER') {
-            title = 'Tài khoản bị khóa ⛔';
-            body = 'Tài khoản của bạn đã bị khóa do vi phạm nghiêm trọng.';
+              'Tài khoản của bạn đã bị khóa do vi phạm nghiêm trọng. Vui lòng liên hệ bộ phận hỗ trợ.';
+          } else {
+            title = 'Cảnh cáo vi phạm';
+            body = `Hệ thống đã ghi nhận thêm 1 lần vi phạm. Tổng số lần vi phạm hiện tại: ${Math.max(
+              violationCount,
+              1,
+            )}.`;
           }
 
           await getMessaging().send({
@@ -261,13 +255,11 @@ export class ReportsService {
           });
         }
       } catch (pushError) {
-        // Lỗi gửi thông báo cũng không làm vỡ luồng xử lý báo cáo chính
         console.error('Lỗi khi gửi Push Notification:', pushError);
       }
     }
 
     if (action === 'REJECT') {
-      // Từ chối báo cáo, không làm gì thêm
       await this.dataSource.query(
         `UPDATE BaoCaoViPham SET TrangThai = 'REJECTED', GhiChuAdmin = ? WHERE MaBaoCao = ?`,
         [notes || null, reportId],
@@ -275,7 +267,6 @@ export class ReportsService {
       return { resolved: true, action: 'REJECTED' };
     }
 
-    // Cập nhật trạng thái báo cáo thành RESOLVED
     await this.dataSource.query(
       `UPDATE BaoCaoViPham SET TrangThai = 'RESOLVED', GhiChuAdmin = ? WHERE MaBaoCao = ?`,
       [notes || null, reportId],

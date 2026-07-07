@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './features/student-portal/helper/ScrollToTop';
+import BlockedAccountModal from './components/common/BlockedAccountModal';
 
 import RoleBasedRoute from './components/RoleBasedRoute';
 import AdminRoutes from './routes/AdminRoutes';
@@ -100,6 +101,7 @@ function App() {
         containerStyle={{ top: '80px', zIndex: 999999 }}
         toastOptions={{ duration: 3000, style: { fontSize: '14px', borderRadius: '8px' } }}
       />
+      <BlockedAccountModal />
       <AnimatedRoutes />
     </BrowserRouter>
   );

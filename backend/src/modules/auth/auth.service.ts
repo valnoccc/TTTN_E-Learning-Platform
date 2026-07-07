@@ -1,7 +1,7 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,9 +9,14 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { Repository } from 'typeorm';
+import axios from 'axios';
+
 import { User } from '../users/entities/user.entity';
 import { normalizeRole } from '../../common/utils/role-utils';
-import axios from 'axios';
+
+const BLOCKED_ACCOUNT_MESSAGE =
+  'Tài khoản của bạn đã vi phạm nguyên tắc và đã bị đình chỉ. Vui lòng liên hệ bộ phận hỗ trợ.';
+const BLOCKED_STATUSES = new Set(['BLOCKED', 'LOCKED', 'INACTIVE', 'DELETED']);
 
 @Injectable()
 export class AuthService {
@@ -31,6 +36,8 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(pass, user.matKhau))) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng!');
     }
+
+    await this.assertAccountCanLogin(user.maND);
 
     return this.buildAuthResponse(user);
   }
@@ -59,7 +66,6 @@ export class AuthService {
   }
 
   async googleLogin(token: string) {
-    // Gọi API Google lấy thông tin user từ access_token
     let googleUser: { email: string; name: string; picture: string };
     try {
       const { data } = await axios.get(
@@ -79,13 +85,11 @@ export class AuthService {
       );
     }
 
-    // Kiểm tra email đã tồn tại trong DB chưa
     let user = await this.userRepository.findOne({
       where: { email: googleUser.email },
     });
 
     if (!user) {
-      // Tạo tài khoản mới tự động
       const randomPassword = crypto.randomBytes(16).toString('hex');
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
@@ -97,12 +101,13 @@ export class AuthService {
       });
       await this.userRepository.save(user);
     } else if (googleUser.picture && !user.anhDaiDien) {
-      // Cập nhật ảnh nếu chưa có
       await this.userRepository.update(user.maND, {
         anhDaiDien: googleUser.picture,
       });
       user.anhDaiDien = googleUser.picture;
     }
+
+    await this.assertAccountCanLogin(user.maND);
 
     return this.buildAuthResponse(user);
   }
@@ -133,7 +138,10 @@ export class AuthService {
       .addSelect('user.matKhau')
       .where('user.maND = :userId', { userId })
       .getOne();
-    if (!user) throw new UnauthorizedException('Người dùng không tồn tại!');
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại!');
+    }
 
     if (!(await bcrypt.compare(oldPass, user.matKhau))) {
       throw new UnauthorizedException('Mật khẩu cũ không chính xác!');
@@ -154,7 +162,7 @@ export class AuthService {
     const hashedToken = await bcrypt.hash(resetToken, 10);
 
     const tokenExpires = new Date();
-    tokenExpires.setHours(tokenExpires.getHours() + 1); // 1 hour expiration
+    tokenExpires.setHours(tokenExpires.getHours() + 1);
 
     await this.userRepository.update(user.maND, {
       resetPasswordToken: hashedToken,
@@ -168,7 +176,6 @@ export class AuthService {
       let transporter: nodemailer.Transporter;
 
       if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        // Cấu hình dùng Gmail thật
         transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
@@ -177,7 +184,6 @@ export class AuthService {
           },
         });
       } else {
-        // Fallback dùng mail test
         const testAccount = await nodemailer.createTestAccount();
         transporter = nodemailer.createTransport({
           host: 'smtp.ethereal.email',
@@ -244,5 +250,27 @@ export class AuthService {
     await this.userRepository.save(user);
 
     return { message: 'Mật khẩu đã được đặt lại thành công!' };
+  }
+
+  private async assertAccountCanLogin(userId: number) {
+    const rows = await this.userRepository.query(
+      `
+        SELECT COALESCE(TrangThai, 'ACTIVE') AS trangThai
+        FROM NguoiDung
+        WHERE MaND = ?
+        LIMIT 1
+      `,
+      [userId],
+    );
+
+    if (rows.length === 0) {
+      throw new UnauthorizedException('Tài khoản không tồn tại!');
+    }
+
+    const trangThai = String(rows[0].trangThai ?? '').trim().toUpperCase();
+
+    if (BLOCKED_STATUSES.has(trangThai)) {
+      throw new UnauthorizedException(BLOCKED_ACCOUNT_MESSAGE);
+    }
   }
 }
