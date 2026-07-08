@@ -215,11 +215,11 @@ export const Styles = styled.div`
                     position: relative;
 
                     a.nav-link {
-                        font-size     : 14px;
+                        font-size     : 16px;
                         color         : ${colors.black1};
                         text-transform: uppercase;
-                        font-weight   : 500;
-                        padding       : 15px 18px 15px;
+                        font-weight   : 700;
+                        padding       : 16px 18px 15px;
 
                         i {
                             font-size: 12px;
@@ -236,6 +236,7 @@ export const Styles = styled.div`
                         @media(max-width: 1199px) {
                             padding: 10px 2px 20px;
                             letter-spacing: 0;
+                            font-size: 15px;
                         }
                     }
 
@@ -243,7 +244,9 @@ export const Styles = styled.div`
                         position  : absolute;
                         left      : 0;
                         top       : 100%;
-                        min-width : 190px;
+                        min-width : 220px;
+                        max-height: 360px;
+                        overflow-y: auto;
                         background: #fff;
                         border    : 1px solid ${colors.border1};
                         text-align: left;

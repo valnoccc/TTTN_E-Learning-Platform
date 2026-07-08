@@ -2,7 +2,9 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 interface ChapterRecord {
   maChuong: number;
@@ -28,7 +30,15 @@ export class CourseInstructorCurriculumService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
+
+  private async touchCourse(courseId: number) {
+    await this.khoaHocRepository.update(courseId, {
+      ngayCapNhat: new Date(),
+    });
+  }
 
   async getCourseCurriculum(courseId: number, instructorId: number) {
     const course = await this.khoaHocRepository.findOne({
@@ -63,12 +73,25 @@ export class CourseInstructorCurriculumService {
       [...chapterIds],
     );
 
-    return chapters.map((chapter: any) => ({
-      ...chapter,
-      baiHocs: lessons.filter(
-        (lesson: any) => lesson.maChuong === chapter.maChuong,
-      ),
-    }));
+    return Promise.all(
+      chapters.map(async (chapter: any) => {
+        const baiHocs = await Promise.all(
+          lessons
+            .filter((lesson: any) => lesson.maChuong === chapter.maChuong)
+            .map(async (lesson: any) => ({
+              ...lesson,
+              videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoUrl,
+              ),
+            })),
+        );
+
+        return {
+          ...chapter,
+          baiHocs,
+        };
+      }),
+    );
   }
 
   async addChapter(
@@ -91,6 +114,8 @@ export class CourseInstructorCurriculumService {
       [courseId, payload.tenChuong, payload.thuTu],
     );
 
+    await this.touchCourse(courseId);
+
     return {
       maChuong: result.insertId,
       maKH: courseId,
@@ -109,13 +134,17 @@ export class CourseInstructorCurriculumService {
       [payload.maKH, chapterId, payload.tenBaiHoc, payload.thuTu],
     );
 
+    await this.touchCourse(payload.maKH);
+
+    const videoUrl = await this.lessonVideoStorageService.getPlayableUrl(null);
+
     return {
       maBH: result.insertId,
       maKH: payload.maKH,
       maChuong: chapterId,
       tenBaiHoc: payload.tenBaiHoc,
       thuTu: payload.thuTu,
-      videoUrl: null,
+      videoUrl,
       noiDung: null,
       thoiLuong: 0,
     };
@@ -143,17 +172,44 @@ export class CourseInstructorCurriculumService {
       [chapterId],
     );
 
+    await this.touchCourse(chapter.maKH);
+
+    const baiHocs = await Promise.all(
+      lessons.sort((a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu).map(
+        async (lesson: LessonRecord) => ({
+          ...lesson,
+          videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+            lesson.videoUrl,
+          ),
+        }),
+      ),
+    );
+
     return {
       ...chapter,
       tenChuong: nextTitle || chapter.tenChuong,
-      baiHocs: lessons.sort(
-        (a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu,
-      ),
+      baiHocs,
     };
   }
 
   async deleteChapter(chapterId: number, instructorId: number) {
-    await this.getOwnedChapter(chapterId, instructorId);
+    const chapter = await this.getOwnedChapter(chapterId, instructorId);
+
+    const lessonRows: Array<{ maBH?: number | string; videoUrl?: string | null }> =
+      await this.dataSource.query(
+        `SELECT MaBH AS maBH, VideoURL AS videoUrl
+         FROM BaiHoc
+         WHERE MaChuong = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
+        [chapterId],
+      );
+
+    await Promise.all(
+      lessonRows.map(async (lesson) => {
+        const videoUrl = lesson.videoUrl?.trim();
+        if (!videoUrl) return;
+        await this.deleteStoredVideo(videoUrl);
+      }),
+    );
 
     await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaChuong = ?`, [
       chapterId,
@@ -161,6 +217,24 @@ export class CourseInstructorCurriculumService {
     await this.dataSource.query(`DELETE FROM ChuongHoc WHERE MaChuong = ?`, [
       chapterId,
     ]);
+
+    await this.touchCourse(chapter.maKH);
+  }
+
+  private async deleteStoredVideo(videoUrl: string) {
+    try {
+      if (videoUrl.includes('cloudinary.com')) {
+        const publicId = this.cloudinaryService.extractPublicId(videoUrl);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
+        return;
+      }
+
+      await this.lessonVideoStorageService.deleteVideo(videoUrl);
+    } catch (error) {
+      console.error('Khong the xoa video bai hoc khi xoa chuong:', error);
+    }
   }
 
   private async getOwnedChapter(chapterId: number, instructorId: number) {

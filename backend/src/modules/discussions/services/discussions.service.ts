@@ -25,16 +25,20 @@ export class DiscussionsService {
         tl.NoiDung AS content,
         tl.ThoiGian AS createdAt,
         tl.MaThaoLuanCha AS parentId,
+        tl.IsHidden AS isHidden,
+        tl.IsDeleted AS isDeleted,
         u.MaND AS userId,
         u.HoTen AS userName,
         u.AnhDaiDien AS userAvatar,
         u.VaiTro AS userRole,
         kh.MaKH AS courseId,
-        kh.TenKhoaHoc AS courseTitle
+        kh.TenKhoaHoc AS courseTitle,
+        (SELECT COUNT(*) FROM BaoCaoViPham bc WHERE bc.MaThaoLuan = tl.MaThaoLuan AND bc.TrangThai = 'PENDING') AS reportCount
       FROM ThaoLuanKhoaHoc tl
       INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
       INNER JOIN NguoiDung u ON tl.MaND = u.MaND
       WHERE kh.MaND_GiangVien = ?
+        AND tl.IsDeleted = FALSE
       ORDER BY tl.ThoiGian DESC
       `,
       [instructorId],
@@ -59,13 +63,17 @@ export class DiscussionsService {
         tl.NoiDung AS content,
         tl.ThoiGian AS createdAt,
         tl.MaThaoLuanCha AS parentId,
+        tl.IsHidden AS isHidden,
+        tl.IsDeleted AS isDeleted,
         u.MaND AS userId,
         u.HoTen AS userName,
         u.AnhDaiDien AS userAvatar,
-        u.VaiTro AS userRole
+        u.VaiTro AS userRole,
+        (SELECT COUNT(*) FROM BaoCaoViPham bc WHERE bc.MaThaoLuan = tl.MaThaoLuan AND bc.TrangThai = 'PENDING') AS reportCount
       FROM ThaoLuanKhoaHoc tl
       INNER JOIN NguoiDung u ON tl.MaND = u.MaND
       WHERE tl.MaKH = ?
+        AND tl.IsDeleted = FALSE
       ORDER BY tl.ThoiGian DESC
       `,
       [courseId],
@@ -118,41 +126,113 @@ export class DiscussionsService {
   }
 
   /**
-   * Lấy danh sách thảo luận công khai của khóa học (không yêu cầu quyền INSTRUCTOR)
-   * Dùng cho học viên xem và đặt câu hỏi
+   * Lấy danh sách thảo luận công khai (chỉ hiện bài không ẩn và không xóa)
    */
   async getPublicCourseDiscussions(courseId: number) {
-    return await this.dataSource.query(
+    const rawData = await this.dataSource.query(
       `
       SELECT
         tl.MaThaoLuan AS discussionId,
         tl.NoiDung AS content,
         tl.ThoiGian AS createdAt,
         tl.MaThaoLuanCha AS parentId,
+        tl.IsHidden AS isHidden,
+        tl.IsDeleted AS isDeleted,
         u.MaND AS userId,
         u.HoTen AS userName,
         u.AnhDaiDien AS userAvatar,
-        u.VaiTro AS userRole
+        u.VaiTro AS userRole,
+        (SELECT COUNT(*) FROM ThaoLuan_LuotThich WHERE MaThaoLuan = tl.MaThaoLuan) AS upvotes,
+        (SELECT GROUP_CONCAT(MaND) FROM ThaoLuan_LuotThich WHERE MaThaoLuan = tl.MaThaoLuan) AS likedUserIds
       FROM ThaoLuanKhoaHoc tl
       INNER JOIN NguoiDung u ON tl.MaND = u.MaND
       WHERE tl.MaKH = ?
-        AND tl.MaThaoLuanCha IS NULL
-      ORDER BY tl.ThoiGian DESC
+        AND tl.IsHidden = FALSE
+        AND tl.IsDeleted = FALSE
+      ORDER BY tl.ThoiGian ASC
       `,
       [courseId],
     );
+
+    const processDiscussion = (d: any) => {
+      d.upvotes = parseInt(d.upvotes, 10) || 0;
+      d.likedUserIds = d.likedUserIds
+        ? d.likedUserIds.split(',').map(Number)
+        : [];
+      d.isHidden = Boolean(d.isHidden);
+      d.isDeleted = Boolean(d.isDeleted);
+      return d;
+    };
+
+    const parents = rawData
+      .filter((d: any) => !d.parentId)
+      .map(processDiscussion);
+    const replies = rawData
+      .filter((d: any) => d.parentId)
+      .map(processDiscussion);
+
+    const result = parents.map((p: any) => {
+      const pReplies = replies.filter(
+        (r: any) => r.parentId === p.discussionId,
+      );
+
+      return {
+        ...p,
+        replies: pReplies.sort(
+          (a: any, b: any) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        ),
+      };
+    });
+
+    return result.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }
+
+  async toggleLikeDiscussion(discussionId: number, userId: number) {
+    const existingLike = await this.dataSource.query(
+      `SELECT * FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ? AND MaND = ?`,
+      [discussionId, userId],
+    );
+
+    let isLiked = false;
+    if (existingLike.length > 0) {
+      await this.dataSource.query(
+        `DELETE FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ? AND MaND = ?`,
+        [discussionId, userId],
+      );
+      isLiked = false;
+    } else {
+      await this.dataSource.query(
+        `INSERT INTO ThaoLuan_LuotThich (MaThaoLuan, MaND) VALUES (?, ?)`,
+        [discussionId, userId],
+      );
+      isLiked = true;
+    }
+
+    const countRes = await this.dataSource.query(
+      `SELECT COUNT(*) as count FROM ThaoLuan_LuotThich WHERE MaThaoLuan = ?`,
+      [discussionId],
+    );
+
+    return {
+      discussionId,
+      isLiked,
+      upvotes: parseInt(countRes[0].count, 10),
+    };
   }
 
   /**
-   * Học viên đăng câu hỏi mới (không cần là giảng viên của khóa học)
-   * Yêu cầu: user đã đăng nhập
+   * Học viên đăng câu hỏi mới (không yêu cầu là giảng viên)
    */
   async createStudentDiscussion(
     courseId: number,
     userId: number,
     noiDung: string,
+    parentId?: number,
   ) {
-    // Kiểm tra khóa học tồn tại
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId },
     });
@@ -163,8 +243,8 @@ export class DiscussionsService {
 
     const result = await this.dataSource.query(
       `INSERT INTO ThaoLuanKhoaHoc (MaKH, MaND, NoiDung, ThoiGian, MaThaoLuanCha)
-       VALUES (?, ?, ?, NOW(), NULL)`,
-      [courseId, userId, noiDung],
+       VALUES (?, ?, ?, NOW(), ?)`,
+      [courseId, userId, noiDung, parentId || null],
     );
 
     const user = await this.dataSource.query(
@@ -185,6 +265,112 @@ export class DiscussionsService {
     };
   }
 
+  /**
+   * Ẩn thảo luận theo RBAC:
+   * - ADMIN → toàn quyền
+   * - INSTRUCTOR → chỉ trong khóa học mình dạy
+   * - USER → không có quyền
+   */
+  async hideDiscussion(
+    discussionId: number,
+    requesterId: number,
+    requesterRole: string,
+  ) {
+    if (requesterRole === 'ADMIN') {
+      await this.dataSource.query(
+        `UPDATE ThaoLuanKhoaHoc SET IsHidden = TRUE WHERE MaThaoLuan = ?`,
+        [discussionId],
+      );
+      return { hidden: true };
+    }
+
+    if (requesterRole === 'INSTRUCTOR') {
+      const check = await this.dataSource.query(
+        `
+        SELECT tl.MaThaoLuan
+        FROM ThaoLuanKhoaHoc tl
+        INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+        WHERE tl.MaThaoLuan = ? AND kh.MaND_GiangVien = ?
+        `,
+        [discussionId, requesterId],
+      );
+
+      if (check.length === 0) {
+        throw new ForbiddenException(
+          'Bạn không có quyền ẩn bình luận này (không thuộc khóa học của bạn)',
+        );
+      }
+
+      await this.dataSource.query(
+        `UPDATE ThaoLuanKhoaHoc SET IsHidden = TRUE WHERE MaThaoLuan = ?`,
+        [discussionId],
+      );
+      return { hidden: true };
+    }
+
+    throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+  }
+
+  /**
+   * Xóa mềm thảo luận theo RBAC:
+   * - ADMIN → toàn quyền
+   * - INSTRUCTOR → chỉ trong khóa học mình dạy
+   * - USER → chỉ bài chính mình viết
+   */
+  async deleteDiscussion(
+    discussionId: number,
+    requesterId: number,
+    requesterRole: string,
+  ) {
+    if (requesterRole === 'ADMIN') {
+      await this.dataSource.query(
+        `UPDATE ThaoLuanKhoaHoc SET IsDeleted = TRUE WHERE MaThaoLuan = ?`,
+        [discussionId],
+      );
+      return { deleted: true };
+    }
+
+    if (requesterRole === 'INSTRUCTOR') {
+      const check = await this.dataSource.query(
+        `
+        SELECT tl.MaThaoLuan
+        FROM ThaoLuanKhoaHoc tl
+        INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+        WHERE tl.MaThaoLuan = ? AND kh.MaND_GiangVien = ?
+        `,
+        [discussionId, requesterId],
+      );
+
+      if (check.length === 0) {
+        throw new ForbiddenException(
+          'Bạn không có quyền xóa bình luận này (không thuộc khóa học của bạn)',
+        );
+      }
+
+      await this.dataSource.query(
+        `UPDATE ThaoLuanKhoaHoc SET IsDeleted = TRUE WHERE MaThaoLuan = ?`,
+        [discussionId],
+      );
+      return { deleted: true };
+    }
+
+    // USER: chỉ xóa bài do chính mình viết
+    const own = await this.dataSource.query(
+      `SELECT MaThaoLuan FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ? AND MaND = ?`,
+      [discussionId, requesterId],
+    );
+
+    if (own.length === 0) {
+      throw new ForbiddenException('Bạn không có quyền xóa bình luận này');
+    }
+
+    await this.dataSource.query(
+      `UPDATE ThaoLuanKhoaHoc SET IsDeleted = TRUE WHERE MaThaoLuan = ?`,
+      [discussionId],
+    );
+    return { deleted: true };
+  }
+
   async deleteOwnDiscussion(discussionId: number, instructorId: number) {
     const ownedDiscussion = await this.dataSource.query(
       `
@@ -203,10 +389,36 @@ export class DiscussionsService {
     }
 
     await this.dataSource.query(
-      `DELETE FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ?`,
+      `UPDATE ThaoLuanKhoaHoc SET IsDeleted = TRUE WHERE MaThaoLuan = ?`,
       [discussionId],
     );
 
     return { deleted: true };
+  }
+
+  async rejectDiscussionReports(discussionId: number, instructorId: number) {
+    const ownedDiscussion = await this.dataSource.query(
+      `
+      SELECT tl.MaThaoLuan
+      FROM ThaoLuanKhoaHoc tl
+      INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+      WHERE tl.MaThaoLuan = ?
+        AND kh.MaND_GiangVien = ?
+      `,
+      [discussionId, instructorId],
+    );
+
+    if (ownedDiscussion.length === 0) {
+      throw new ForbiddenException(
+        'Bạn không có quyền xử lý báo cáo của khóa học này',
+      );
+    }
+
+    await this.dataSource.query(
+      `UPDATE BaoCaoViPham SET TrangThai = 'REJECTED' WHERE MaThaoLuan = ? AND TrangThai = 'PENDING'`,
+      [discussionId],
+    );
+
+    return { rejected: true };
   }
 }

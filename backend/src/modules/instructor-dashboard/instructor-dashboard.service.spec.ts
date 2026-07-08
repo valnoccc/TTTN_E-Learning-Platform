@@ -183,4 +183,62 @@ describe('InstructorDashboardService', () => {
     expect(queryCalls[0]?.[0]).toContain('* 0.2');
     expect(queryCalls[0]?.[0]).toContain('* 0.8');
   });
+
+  it('returns monthly revenue grouped by month and course', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      {
+        monthLabel: '07/2026',
+        monthSort: '2026-07',
+        courseId: '11',
+        courseName: 'ReactJS Thực Chiến',
+        purchases: '3',
+        grossRevenue: '1500000',
+      },
+      {
+        monthLabel: '07/2026',
+        monthSort: '2026-07',
+        courseId: '12',
+        courseName: 'AWS Thực Chiến Cho Developer',
+        purchases: '2',
+        grossRevenue: '1000000',
+      },
+      {
+        monthLabel: '06/2026',
+        monthSort: '2026-06',
+        courseId: '13',
+        courseName: 'Playwright Testing Từ Cơ Bản Đến Nâng Cao',
+        purchases: '4',
+        grossRevenue: '2000000',
+      },
+    ]);
+
+    const result = await service.getMyMonthlyRevenue(
+      { maND: 7, vaiTro: UserRole.INSTRUCTOR },
+      2026,
+    );
+
+    expect(result.year).toBe(2026);
+    expect(result.months).toHaveLength(2);
+    expect(result.months[0]).toMatchObject({
+      month: '07/2026',
+      totalPurchases: 5,
+      totalGrossRevenue: 2500000,
+    });
+    expect(result.months[0].rows[0]).toMatchObject({
+      courseId: 11,
+      courseName: 'ReactJS Thực Chiến',
+      purchases: 3,
+      grossRevenue: 1500000,
+      averageRevenue: 500000,
+    });
+    expect(result.months[1]).toMatchObject({
+      month: '06/2026',
+      totalPurchases: 4,
+      totalGrossRevenue: 2000000,
+    });
+
+    const queryCalls = dataSource.query.mock.calls as Array<[string]>;
+    expect(queryCalls[0]?.[0]).toContain("DATE_FORMAT(dk.NgayDangKy, '%m/%Y')");
+    expect(queryCalls[0]?.[0]).toContain('YEAR(dk.NgayDangKy) = ?');
+  });
 });

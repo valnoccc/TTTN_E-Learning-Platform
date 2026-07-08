@@ -16,6 +16,13 @@ const formatPrice = (price: any) => {
     }).format(price || 0).replace('₫', 'đ');
 };
 
+const formatCourseDuration = (durationSeconds: any) => {
+    const totalSeconds = Number(durationSeconds || 0);
+    if (totalSeconds <= 0) return '0 phút';
+    if (totalSeconds < 3600) return `${Math.round(totalSeconds / 60)} phút`;
+    return `${(totalSeconds / 3600).toFixed(1)} giờ`;
+};
+
 const CourseItemList = ({ filters }: { filters?: any }) => {
     const dispatch = useDispatch();
     const [courses, setCourses] = useState<any[]>([]);
@@ -89,6 +96,9 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                     const rawImage = data.hinhThuNho;
                     const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
                     const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+                    const courseDurationText = formatCourseDuration(
+                        data.totalDurationSeconds ?? data.tongThoiLuong ?? data.totalDuration ?? 0,
+                    );
 
                     return (
                         <Col md="12" key={i} className="mb-4">
@@ -137,7 +147,7 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                             </div>
                                             <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
                                                 <i className="las la-clock text-emerald-500"></i>
-                                                <span>120 Phút</span>
+                                                <span>{courseDurationText}</span>
                                             </div>
                                             <div className="hidden items-center space-x-1 text-sm text-gray-500 sm:flex">
                                                 <i className="las la-signal text-emerald-500"></i>
@@ -156,7 +166,7 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                         thumbnail: courseImage,
                                                         instructor: instructorName,
                                                         price: parseFloat(data.giaBan || '0'),
-                                                        duration: '120 Phút',
+                                                        duration: courseDurationText,
                                                         level: 'Mọi cấp độ',
                                                         category: categoryName
                                                     }));

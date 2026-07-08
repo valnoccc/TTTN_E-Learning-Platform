@@ -238,7 +238,7 @@ export default function CheckoutSuccess() {
                   <ActionButton onClick={() => navigate('/student/my-courses')} variant="primary">
                     Vào học ngay
                   </ActionButton>
-                  <ActionButton onClick={() => navigate('/student/profile')}>
+                  <ActionButton onClick={() => navigate('/student/profile?tab=payments')}>
                     Xem lịch sử thanh toán
                   </ActionButton>
                 </div>
@@ -320,7 +320,7 @@ export default function CheckoutSuccess() {
               </div>
             )}
             <div className="mt-8">
-              <ActionButton onClick={() => navigate('/student/profile')}>
+              <ActionButton onClick={() => navigate('/student/profile?tab=payments')}>
                 Xem lịch sử thanh toán
               </ActionButton>
             </div>
@@ -357,7 +357,7 @@ export default function CheckoutSuccess() {
             <ActionButton onClick={() => navigate('/student')}>
               Về trang chủ
             </ActionButton>
-            <ActionButton onClick={() => navigate('/student/profile')}>
+            <ActionButton onClick={() => navigate('/student/profile?tab=payments')}>
               Xem lịch sử thanh toán
             </ActionButton>
           </div>

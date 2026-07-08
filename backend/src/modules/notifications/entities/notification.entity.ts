@@ -10,6 +10,7 @@ export enum NotificationType {
   PAYMENT = 'PAYMENT',
   CERTIFICATE = 'CERTIFICATE',
   SYSTEM = 'SYSTEM',
+  FORUM = 'FORUM',
 }
 
 @Entity('ThongBao')

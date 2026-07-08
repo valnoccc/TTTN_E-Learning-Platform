@@ -1,23 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Styles } from '../styles/courseCategory';
-import axiosClient from '../../../../../api/axios';
+import { useCourseCategories } from '../../../hooks/useCourseCategories';
 
 const CourseCategory = ({ filters, setFilters }: { filters: any, setFilters: any }) => {
-    const [categories, setCategories] = useState<any[]>([]);
-
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const res: any = await axiosClient.get('/categories');
-                if (res) {
-                    setCategories(res);
-                }
-            } catch (error) {
-                console.error('Error fetching categories', error);
-            }
-        };
-        fetchCategories();
-    }, []);
+    const { categories } = useCourseCategories();
 
     const handleCategoryChange = (categoryId: number) => {
         if (filters.categoryId === categoryId) {

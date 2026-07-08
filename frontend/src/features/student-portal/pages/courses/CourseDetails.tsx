@@ -134,6 +134,15 @@ function CourseDetails() {
                         ];
                     }
 
+                    const updatedSource = response.data.ngayCapNhat ?? response.data.updatedAt;
+                    const formattedUpdatedAt = updatedSource
+                        ? new Date(updatedSource).toLocaleDateString('vi-VN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        })
+                        : 'Đang cập nhật';
+
                     setIsEnrolled(!!response.data.isEnrolled);
 
                     setCourse({
@@ -152,7 +161,7 @@ function CourseDetails() {
                         yeuCauKhoaHoc: parsedYeuCau,
                         baiHocs: response.data.baiHocs?.sort((a: any, b: any) => a.thuTu - b.thuTu) || [],
                         totalStudents: response.data.totalStudents || 0,
-                        updatedAt: response.data.updatedAt ? new Date(response.data.updatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Đang cập nhật'
+                        updatedAt: formattedUpdatedAt,
                     });
                 }
             } catch (error) {

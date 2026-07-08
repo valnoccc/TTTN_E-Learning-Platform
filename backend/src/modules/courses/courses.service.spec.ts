@@ -4,6 +4,8 @@ import { DataSource } from 'typeorm';
 import { CoursesService } from './services/course-instructor.service';
 import { KhoaHoc } from './entities/course.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { VideoIntelligenceService } from '../lessons/services/video-intelligence.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('CoursesService', () => {
   let service: CoursesService;
@@ -18,6 +20,12 @@ describe('CoursesService', () => {
     extractPublicId: jest.Mock;
     deleteFile: jest.Mock;
   };
+  let videoIntelligenceService: {
+    moderateLessonVideo: jest.Mock;
+  };
+  let notificationsService: {
+    createNotification: jest.Mock;
+  };
 
   beforeEach(async () => {
     khoaHocRepository = {
@@ -31,6 +39,12 @@ describe('CoursesService', () => {
       extractPublicId: jest.fn(),
       deleteFile: jest.fn(),
     };
+    videoIntelligenceService = {
+      moderateLessonVideo: jest.fn(),
+    };
+    notificationsService = {
+      createNotification: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +52,11 @@ describe('CoursesService', () => {
         { provide: getRepositoryToken(KhoaHoc), useValue: khoaHocRepository },
         { provide: DataSource, useValue: dataSource },
         { provide: CloudinaryService, useValue: cloudinaryService },
+        {
+          provide: VideoIntelligenceService,
+          useValue: videoIntelligenceService,
+        },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 
@@ -77,6 +96,11 @@ describe('CoursesService', () => {
     expect(cloudinaryService.deleteFile).toHaveBeenCalledWith(
       'course_thumbnails/old-thumb',
       'image',
+    );
+    expect(khoaHocRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ngayCapNhat: expect.any(Date),
+      }),
     );
   });
 });

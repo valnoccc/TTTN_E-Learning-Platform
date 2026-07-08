@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText, Ticket } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText, Ticket, Shield, Wallet, MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 // Dùng lại UserDropdown của giảng viên (hoặc bạn có thể tạo một bản copy tên AdminDropdown nếu cần đổi link bên trong)
@@ -9,6 +9,11 @@ type SidebarItem = {
     label: string;
     path: string;
     icon: ReactNode;
+};
+
+type SidebarSection = {
+    title: string;
+    items: SidebarItem[];
 };
 
 type StoredAdminUser = {
@@ -44,14 +49,41 @@ export default function AdminSidebar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // CÁC MENU CHỨC NĂNG CỦA ADMIN
-    const items: SidebarItem[] = [
-        { label: 'Tổng quan', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
-        { label: 'Quản lý người dùng', path: '/admin/users', icon: <Users size={18} /> },
-        { label: 'Mã giảm giá', path: '/admin/coupons', icon: <Ticket size={18} /> },
-        { label: 'Phê duyệt khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
-        { label: 'Quản lý danh mục', path: '/admin/categories', icon: <Layers size={18} /> },
-        { label: 'Quản lý bài viết', path: '/admin/posts', icon: <FileText size={18} /> },
+    const sections: SidebarSection[] = [
+        {
+            title: 'Tổng quan',
+            items: [
+                { label: 'Tổng quan', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
+            ],
+        },
+        {
+            title: 'Quản lý người dùng',
+            items: [
+                { label: 'Quản lý người dùng', path: '/admin/users', icon: <Users size={18} /> },
+            ],
+        },
+        {
+            title: 'Quản lý nội dung',
+            items: [
+                { label: 'Phê duyệt khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
+                { label: 'Quản lý danh mục', path: '/admin/categories', icon: <Layers size={18} /> },
+                { label: 'Quản lý bài viết', path: '/admin/posts', icon: <FileText size={18} /> },
+                { label: 'Diễn đàn', path: '/admin/forum', icon: <MessageSquare size={18} /> },
+            ],
+        },
+        {
+            title: 'Tài chính',
+            items: [
+                { label: 'Mã giảm giá', path: '/admin/coupons', icon: <Ticket size={18} /> },
+                { label: 'Công nợ', path: '/admin/debts', icon: <Wallet size={18} /> },
+            ],
+        },
+        {
+            title: 'Kiểm duyệt',
+            items: [
+                { label: 'Kiểm duyệt vi phạm', path: '/admin/moderation', icon: <Shield size={18} /> },
+            ],
+        },
     ];
 
     const handleLogout = () => {
@@ -69,26 +101,35 @@ export default function AdminSidebar() {
                 </div>
             </div>
 
-            <nav className="min-h-0 flex-1 overflow-y-auto py-3">
-                <ul className="space-y-1">
-                    {items.map((item) => {
-                        const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-                        return (
-                            <li key={item.path}>
-                                <Link
-                                    to={item.path}
-                                    className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${isActive
-                                        ? 'border-l-4 border-l-[#1dbf73] bg-[#1a324b] font-bold text-white'
-                                        : 'border-l-transparent text-[#d0d6e2] hover:bg-[#1a324b] hover:text-white'
-                                        }`}
-                                >
-                                    <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>{item.icon}</span>
-                                    <span>{item.label}</span>
-                                </Link>
-                            </li>
-                        );
-                    })}
-                </ul>
+            <nav className="scrollbar-none min-h-0 flex-1 overflow-y-auto py-3">
+                <div className="space-y-4">
+                    {sections.map((section, sectionIndex) => (
+                        <section key={section.title} className={sectionIndex > 0 ? 'pt-1' : ''}>
+                            <div className="px-5 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6f8198]">
+                                {section.title}
+                            </div>
+                            <ul className="space-y-1">
+                                {section.items.map((item) => {
+                                    const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                                    return (
+                                        <li key={item.path}>
+                                            <Link
+                                                to={item.path}
+                                                className={`flex items-center gap-4 border-l-4 px-5 py-4 text-[14px] transition ${isActive
+                                                    ? 'border-l-4 border-l-[#1dbf73] bg-[#1a324b] font-bold text-white'
+                                                    : 'border-l-transparent text-[#d0d6e2] hover:bg-[#1a324b] hover:text-white'
+                                                    }`}
+                                            >
+                                                <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>{item.icon}</span>
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </section>
+                    ))}
+                </div>
             </nav>
 
             <div className="border-t border-white/10 p-3">

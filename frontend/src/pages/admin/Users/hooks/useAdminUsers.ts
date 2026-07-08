@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import axiosClient from '../../../../api/axios';
 
-export type AdminUserStatus = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'DELETED';
+export type AdminUserStatus = 'ALL' | 'ACTIVE' | 'LOCKED' | 'DELETED';
 export type AdminUserRole = 'ALL' | 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
 
 export interface AdminUserSummary {
   totalUsers: number;
   activeUsers: number;
-  inactiveUsers: number;
+  lockedUsers: number;
   deletedUsers: number;
   admins: number;
   instructors: number;
@@ -38,7 +38,7 @@ interface AdminUsersResponse {
 const defaultSummary: AdminUserSummary = {
   totalUsers: 0,
   activeUsers: 0,
-  inactiveUsers: 0,
+  lockedUsers: 0,
   deletedUsers: 0,
   admins: 0,
   instructors: 0,

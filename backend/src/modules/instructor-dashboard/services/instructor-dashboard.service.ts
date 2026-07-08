@@ -16,6 +16,28 @@ import {
   InstructorTopCourseReport,
 } from '../../instructors/services/instructors.service';
 
+export interface InstructorMonthlyRevenueCourseRow {
+  courseId: number;
+  courseName: string;
+  purchases: number;
+  grossRevenue: number;
+  instructorRevenue: number;
+  averageRevenue: number;
+}
+
+export interface InstructorMonthlyRevenueMonth {
+  month: string;
+  title: string;
+  totalPurchases: number;
+  totalGrossRevenue: number;
+  rows: InstructorMonthlyRevenueCourseRow[];
+}
+
+export interface InstructorMonthlyRevenueBoard {
+  year: number;
+  months: InstructorMonthlyRevenueMonth[];
+}
+
 type RawCourseStatusRow = {
   activeCourses: number | string | null;
   pendingCourses: number | string | null;
@@ -107,9 +129,114 @@ type RawRecentEnrollmentRow = {
   purchasedAt: string;
 };
 
+type RawMonthlyRevenueRow = {
+  monthLabel: string;
+  monthSort: string;
+  courseId: number | string;
+  courseName: string;
+  purchases: number | string | null;
+  grossRevenue: number | string | null;
+};
+
 @Injectable()
 export class InstructorDashboardService {
   constructor(private readonly dataSource: DataSource) {}
+
+  async getMyMonthlyRevenue(
+    principal: InstructorPrincipal,
+    year?: number,
+  ): Promise<InstructorMonthlyRevenueBoard> {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+    const selectedYear = Number.isInteger(year)
+      ? Number(year)
+      : new Date().getFullYear();
+
+    const grossRevenueSql = this.buildLineNetRevenueSql();
+    const paidRevenueJoins = this.buildPaidRevenueJoins();
+
+    const rows = await this.dataSource.query(
+      `
+        SELECT
+          DATE_FORMAT(dk.NgayDangKy, '%m/%Y') AS monthLabel,
+          DATE_FORMAT(dk.NgayDangKy, '%Y-%m') AS monthSort,
+          kh.MaKH AS courseId,
+          kh.TenKhoaHoc AS courseName,
+          COUNT(*) AS purchases,
+          COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue
+        FROM DangKyKhoaHoc dk
+        ${paidRevenueJoins}
+        WHERE kh.MaND_GiangVien = ?
+          AND dk.TrangThai = 'ACTIVE'
+          AND YEAR(dk.NgayDangKy) = ?
+        GROUP BY monthSort, monthLabel, kh.MaKH, kh.TenKhoaHoc
+        ORDER BY monthSort DESC, grossRevenue DESC, kh.MaKH DESC
+      `,
+      [instructorId, selectedYear],
+    );
+
+    const monthMap = new Map<
+      string,
+      InstructorMonthlyRevenueMonth & { monthSort: string }
+    >();
+
+    for (const row of rows as RawMonthlyRevenueRow[]) {
+      const monthLabel = row.monthLabel ?? '';
+      if (!monthLabel) {
+        continue;
+      }
+
+      if (!monthMap.has(monthLabel)) {
+        monthMap.set(monthLabel, {
+          month: monthLabel,
+          title: `Tháng ${monthLabel}`,
+          totalPurchases: 0,
+          totalGrossRevenue: 0,
+          rows: [],
+          monthSort: row.monthSort ?? monthLabel,
+        });
+      }
+
+      const monthEntry = monthMap.get(monthLabel)!;
+      const purchases = this.toNumber(row.purchases);
+      const grossRevenue = this.toNumber(row.grossRevenue);
+      const instructorRevenue = Number((grossRevenue * INSTRUCTOR_REVENUE_SHARE).toFixed(0));
+      monthEntry.totalPurchases += purchases;
+      monthEntry.totalGrossRevenue += grossRevenue;
+      monthEntry.rows.push({
+        courseId: Number(row.courseId),
+        courseName: row.courseName,
+        purchases,
+        grossRevenue,
+        instructorRevenue,
+        averageRevenue:
+          purchases > 0 ? Number((grossRevenue / purchases).toFixed(0)) : 0,
+      });
+    }
+
+    const months = Array.from(monthMap.values())
+      .map((month) => ({
+        month: month.month,
+        title: month.title,
+        totalPurchases: month.totalPurchases,
+        totalGrossRevenue: month.totalGrossRevenue,
+        rows: month.rows,
+        monthSort: month.monthSort,
+      }))
+      .sort((left, right) => right.monthSort.localeCompare(left.monthSort))
+      .map(({ month, title, totalPurchases, totalGrossRevenue, rows }) => ({
+        month,
+        title,
+        totalPurchases,
+        totalGrossRevenue,
+        rows,
+      }));
+
+    return {
+      year: selectedYear,
+      months,
+    };
+  }
 
   async getMyReports(
     principal: InstructorPrincipal,
@@ -139,6 +266,11 @@ export class InstructorDashboardService {
       instructorId,
       courseId,
       range,
+    );
+    const reviewAllTimeWhereClause = this.buildReviewReportWhereClause(
+      instructorId,
+      courseId,
+      'all_time',
     );
     const courseOwnershipClause = this.buildCourseOwnershipClause(
       instructorId,
@@ -284,7 +416,7 @@ export class InstructorDashboardService {
               kh.HinhThuNho AS imageUrl
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
             GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.HinhThuNho
             HAVING reviewCount > 0
@@ -342,7 +474,7 @@ export class InstructorDashboardService {
               SUM(CASE WHEN dg.SoSao IN (1, 2) THEN 1 ELSE 0 END) AS lowStarReviews
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
           `,
       ),
@@ -352,7 +484,7 @@ export class InstructorDashboardService {
               COUNT(*) AS unrespondedReviews
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
               AND NOT EXISTS (
                 SELECT 1
@@ -368,7 +500,7 @@ export class InstructorDashboardService {
               COUNT(*) AS count
             FROM DanhGiaKhoaHoc dg
             INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
-            WHERE ${reviewWhereClause}
+            WHERE ${reviewAllTimeWhereClause}
               AND dg.MaDanhGiaCha IS NULL
             GROUP BY dg.SoSao
             ORDER BY dg.SoSao DESC
@@ -530,8 +662,8 @@ export class InstructorDashboardService {
         averageRating: reviewCount > 0 ? Number(ratingValue.toFixed(1)) : null,
         averageRatingLabel:
           reviewCount > 0
-            ? `Tu ${reviewCount} luot danh gia that`
-            : 'Chua co du lieu danh gia that',
+            ? `Từ ${reviewCount} lượt đánh giá thật`
+            : 'Chưa có dữ liệu đánh giá thật',
         averageRatingSource: reviewCount > 0 ? 'database' : 'mockdata',
       },
       learning: {
@@ -540,7 +672,7 @@ export class InstructorDashboardService {
         completionRate,
         completionRateLabel:
           completionRate !== null
-            ? `${completedLessonSlots}/${totalLessonSlots} dau muc bai hoc da hoan thanh`
+            ? `${completedLessonSlots}/${totalLessonSlots} bài học`
             : 'Chua co du lieu tien do hoc tap',
         completionRateSource: completionRate !== null ? 'database' : 'mockdata',
       },
@@ -902,7 +1034,7 @@ export class InstructorDashboardService {
   private assertInstructor(principal: InstructorPrincipal) {
     if (principal.vaiTro !== UserRole.INSTRUCTOR) {
       throw new ForbiddenException(
-        'Chi giang vien moi co quyen truy cap dashboard nay.',
+        'Chỉ có giảng viên mới được phép truy cập vào bảng điều khiển giảng viên.',
       );
     }
   }
@@ -910,7 +1042,7 @@ export class InstructorDashboardService {
   private getInstructorId(principal: InstructorPrincipal) {
     const instructorId = principal.maND ?? principal.sub;
     if (!instructorId) {
-      throw new ForbiddenException('Khong xac dinh duoc giang vien.');
+      throw new ForbiddenException('Không xác định được giảng viên.');
     }
 
     return instructorId;

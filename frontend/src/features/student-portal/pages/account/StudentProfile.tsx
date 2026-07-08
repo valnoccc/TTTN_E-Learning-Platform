@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LayoutDashboard, User, BookOpen, CreditCard, Save, Camera, Lock } from 'lucide-react';
+import { LayoutDashboard, User, BookOpen, CreditCard, Save, Camera, Lock, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import axiosClient from '../../../../api/axios';
+import StudentCertificates from './StudentCertificates';
 
 import { Modal, Button } from 'react-bootstrap';
 
@@ -27,11 +28,11 @@ export default function StudentProfile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   
-  const initialTab = (tabParam === 'profile' || tabParam === 'courses' || tabParam === 'payments' || tabParam === 'password') 
+  const initialTab = (tabParam === 'profile' || tabParam === 'courses' || tabParam === 'payments' || tabParam === 'password' || tabParam === 'certificates') 
     ? tabParam 
     : 'profile';
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password' | 'certificates'>(initialTab);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', avatarUrl: '' });
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -100,12 +101,12 @@ export default function StudentProfile() {
   }, []);
 
   useEffect(() => {
-    if (tabParam && ['profile', 'courses', 'payments', 'password'].includes(tabParam)) {
+    if (tabParam && ['profile', 'courses', 'payments', 'password', 'certificates'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [tabParam]);
 
-  const handleTabChange = (tab: 'profile' | 'courses' | 'payments' | 'password') => {
+  const handleTabChange = (tab: 'profile' | 'courses' | 'payments' | 'password' | 'certificates') => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -204,9 +205,27 @@ export default function StudentProfile() {
     }
   };
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredCourses = myCourses.filter((course) =>
-    course.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [courseFilter, setCourseFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
+  const [sortOption, setSortOption] = useState<'az' | 'za' | 'progress-desc' | 'progress-asc'>('az');
+  
+  const filteredCourses = myCourses.filter((course) => {
+    const matchSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchSearch) return false;
+    
+    if (courseFilter === 'in-progress') {
+      return course.progress > 0 && course.progress < 100;
+    }
+    if (courseFilter === 'completed') {
+      return course.progress >= 100;
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sortOption === 'az') return (a.title || '').localeCompare(b.title || '');
+    if (sortOption === 'za') return (b.title || '').localeCompare(a.title || '');
+    if (sortOption === 'progress-desc') return b.progress - a.progress;
+    if (sortOption === 'progress-asc') return a.progress - b.progress;
+    return 0;
+  });
   const completedCount = myCourses.filter((c) => c.progress >= 100).length;
   const inProgressCount = myCourses.filter((c) => c.progress > 0 && c.progress < 100).length;
 
@@ -252,6 +271,15 @@ export default function StudentProfile() {
                 >
                   <BookOpen size={20} />
                   {t('My Courses')}
+                </button>
+                <button
+                  onClick={() => handleTabChange('certificates')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    activeTab === 'certificates' ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Award size={20} />
+                  Chứng chỉ của tôi
                 </button>
                 <button
                   onClick={() => handleTabChange('payments')}
@@ -362,47 +390,76 @@ export default function StudentProfile() {
                 <div>
                   <h3 className="text-2xl font-bold text-slate-800 mb-6">{t('My Courses')}</h3>
                   
-                  {/* Stats Cards */}
+                  {/* Stats Cards as Filters */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <BookOpen size={22} className="text-blue-500" />
+                    <div 
+                      onClick={() => setCourseFilter('all')}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'all' ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-blue-100'}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'all' ? 'bg-blue-100' : 'bg-blue-50'}`}>
+                        <BookOpen size={22} className={courseFilter === 'all' ? 'text-blue-600' : 'text-blue-500'} />
                       </div>
                       <div>
-                        <p className="text-sm text-slate-500">Tổng khóa học</p>
+                        <p className={`text-sm ${courseFilter === 'all' ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>Tổng khóa học</p>
                         <p className="text-2xl font-bold text-slate-800">{myCourses.length}</p>
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
-                        <svg className="text-amber-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    
+                    <div 
+                      onClick={() => setCourseFilter('in-progress')}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'in-progress' ? 'bg-amber-50 border-amber-200 ring-1 ring-amber-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-amber-100'}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'in-progress' ? 'bg-amber-100' : 'bg-amber-50'}`}>
+                        <svg className={`${courseFilter === 'in-progress' ? 'text-amber-600' : 'text-amber-500'} w-5 h-5`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-500">Đang học</p>
+                        <p className={`text-sm ${courseFilter === 'in-progress' ? 'text-amber-700 font-medium' : 'text-slate-500'}`}>Đang học</p>
                         <p className="text-2xl font-bold text-slate-800">{inProgressCount}</p>
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
-                        <svg className="text-emerald-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    
+                    <div 
+                      onClick={() => setCourseFilter('completed')}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'completed' ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-emerald-100'}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'completed' ? 'bg-emerald-100' : 'bg-emerald-50'}`}>
+                        <svg className={`${courseFilter === 'completed' ? 'text-emerald-600' : 'text-emerald-500'} w-5 h-5`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-500">Hoàn thành</p>
+                        <p className={`text-sm ${courseFilter === 'completed' ? 'text-emerald-700 font-medium' : 'text-slate-500'}`}>Hoàn thành</p>
                         <p className="text-2xl font-bold text-slate-800">{completedCount}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Search Bar */}
-                  <div className="relative mb-8">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm trong khóa học của bạn..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
-                    />
+                  {/* Search and Sort Bar */}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    <div className="relative flex-1">
+                      <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm khóa học..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
+                      />
+                    </div>
+                    
+                    <div className="w-full sm:w-56 relative">
+                      <select
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value as any)}
+                        className="w-full pl-4 pr-10 py-3.5 appearance-none rounded-xl border border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm text-slate-700 cursor-pointer"
+                      >
+                        <option value="az">Tên khóa học: A-Z</option>
+                        <option value="za">Tên khóa học: Z-A</option>
+                        <option value="progress-desc">Tiến độ: Cao đến thấp</option>
+                        <option value="progress-asc">Tiến độ: Thấp đến cao</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
                   </div>
 
                   {filteredCourses.length === 0 ? (
@@ -508,6 +565,11 @@ export default function StudentProfile() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Certificates Tab */}
+              {activeTab === 'certificates' && (
+                <StudentCertificates />
               )}
 
               {/* Payment History Tab */}

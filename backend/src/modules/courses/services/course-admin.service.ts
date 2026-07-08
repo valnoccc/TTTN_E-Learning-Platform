@@ -12,6 +12,7 @@ import {
 } from '../entities/course-moderation-history.entity';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 type AdminCourseRow = {
   id?: string | number;
@@ -20,6 +21,7 @@ type AdminCourseRow = {
   trangThai?: string;
   hinhThuNho?: string | null;
   moTa?: string | null;
+  ngayCapNhat?: string | Date | null;
   instructorId?: string | number;
   instructorName?: string;
   instructorEmail?: string;
@@ -77,6 +79,7 @@ export class CourseAdminService {
     private readonly moderationHistoryRepository: Repository<CourseModerationHistory>,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   async getCourses(filters: AdminCourseFilters) {
@@ -90,6 +93,10 @@ export class CourseAdminService {
       trangThai: row.trangThai ?? 'DRAFT',
       hinhThuNho: row.hinhThuNho ?? null,
       moTa: row.moTa ?? '',
+      ngayCapNhat:
+        row.ngayCapNhat instanceof Date
+          ? row.ngayCapNhat.toISOString()
+          : (row.ngayCapNhat ?? null),
       instructorId: Number(row.instructorId ?? 0),
       instructorName: row.instructorName ?? '',
       instructorEmail: row.instructorEmail ?? '',
@@ -180,6 +187,10 @@ export class CourseAdminService {
       giaBan: Number(course.giaBan ?? 0),
       trangThai: course.trangThai,
       hinhThuNho: course.hinhThuNho ?? null,
+      ngayCapNhat:
+        course.ngayCapNhat instanceof Date
+          ? course.ngayCapNhat.toISOString()
+          : (course.ngayCapNhat ?? null),
       maDM: course.maDM,
       instructorId: course.maND_GiangVien,
       mucTieu: mucTieuRows
@@ -188,7 +199,7 @@ export class CourseAdminService {
       yeuCau: yeuCauRows
         .map((item) => item.NoiDung?.trim() ?? '')
         .filter(Boolean),
-      curriculum: this.mapCurriculum(curriculumRows),
+      curriculum: await this.mapCurriculum(curriculumRows),
       reviews: reviewRows.map((row) => ({
         reviewId: Number(row.reviewId ?? 0),
         rating: row.rating == null ? null : Number(row.rating),
@@ -345,6 +356,7 @@ export class CourseAdminService {
         kh.TrangThai as trangThai,
         kh.HinhThuNho as hinhThuNho,
         kh.MoTa as moTa,
+        kh.NgayCapNhat as ngayCapNhat,
         nd.MaND as instructorId,
         nd.HoTen as instructorName,
         nd.Email as instructorEmail,
@@ -380,6 +392,7 @@ export class CourseAdminService {
         kh.TrangThai,
         kh.HinhThuNho,
         kh.MoTa,
+        kh.NgayCapNhat,
         nd.MaND,
         nd.HoTen,
         nd.Email,
@@ -455,7 +468,7 @@ export class CourseAdminService {
     };
   }
 
-  private mapCurriculum(rows: CurriculumRow[]) {
+  private async mapCurriculum(rows: CurriculumRow[]) {
     const chapters = new Map<
       number,
       {
@@ -491,12 +504,16 @@ export class CourseAdminService {
         continue;
       }
 
+      const playableUrl = await this.lessonVideoStorageService.getPlayableUrl(
+        row.videoURL,
+      );
+
       chapters.get(maChuong)?.baiHocs.push({
         maBH: Number(row.maBH),
         tenBaiHoc: row.tenBaiHoc ?? '',
         thuTu: Number(row.thuTuBaiHoc ?? 0),
         noiDung: row.noiDungBaiHoc ?? '',
-        videoURL: row.videoURL ?? null,
+        videoURL: playableUrl,
         trangThai: row.trangThaiBaiHoc ?? 'ACTIVE',
         aiStatus: row.aiStatus ?? null,
         aiLabels:

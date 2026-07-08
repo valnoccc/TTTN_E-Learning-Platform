@@ -228,10 +228,19 @@ export default function InstructorCourseReviewsPage() {
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-[12px] font-medium text-slate-400">
-                                                                Khóa học:{' '}
-                                                                <span className="text-slate-600">{review.courseTitle}</span>
-                                                            </span>
+                                                            <div className="flex flex-col items-start md:items-end">
+                                                                <span className="text-[12px] font-medium text-slate-400">
+                                                                    Khóa học:{' '}
+                                                                    <span className="text-slate-600">{review.courseTitle}</span>
+                                                                </span>
+                                                                
+                                                                {review.isReported && (
+                                                                    <div className="mt-2 flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-600 border border-red-100">
+                                                                        <span>🚩 Bị báo cáo</span>
+                                                                        {review.reportReason && <span className="font-normal border-l border-red-200 pl-1.5 ml-0.5">{review.reportReason}</span>}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
 
                                                         <p className="mt-3 text-[14px] leading-relaxed text-slate-700">

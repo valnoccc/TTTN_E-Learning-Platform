@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { LessonVideoStorageModule } from '../lesson-video-storage/lesson-video-storage.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { KhoaHoc } from '../courses/entities/course.entity';
 import { Lesson } from './entities/lesson.entity';
 import { AiQuotaTracker } from './entities/ai-quota-tracker.entity';
 import { LessonsController } from './controllers/lesson-instructor.controller';
@@ -10,8 +13,10 @@ import { VideoIntelligenceService } from './services/video-intelligence.service'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lesson, AiQuotaTracker]),
+    TypeOrmModule.forFeature([Lesson, AiQuotaTracker, KhoaHoc]),
     CloudinaryModule,
+    LessonVideoStorageModule,
+    NotificationsModule,
   ],
   controllers: [LessonsController, AiModerationController],
   providers: [LessonsService, VideoIntelligenceService],

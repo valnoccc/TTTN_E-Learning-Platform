@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 export interface PublicCourseFilters {
   search?: string;
@@ -13,6 +14,7 @@ export interface PublicCourseFilters {
 type PublishedCourseRow = {
   averageRating?: string | number | null;
   totalLessons?: string | number | null;
+  totalDurationSeconds?: string | number | null;
 };
 
 @Injectable()
@@ -21,6 +23,7 @@ export class CourseStudentService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {}
 
   async getAllPublishedCourses(filters: PublicCourseFilters = {}) {
@@ -40,12 +43,13 @@ export class CourseStudentService {
         'ratings.maKH = khoaHoc.maKH',
       )
       .leftJoin(
-        (qb) =>
+      (qb) =>
           qb
             .from('BaiHoc', 'bh')
             .innerJoin('ChuongHoc', 'ch', 'bh.MaChuong = ch.MaChuong')
             .select('ch.MaKH', 'maKH')
             .addSelect('COUNT(*)', 'lessonCount')
+            .addSelect('COALESCE(SUM(bh.ThoiLuong), 0)', 'totalDurationSeconds')
             .where(`bh.TrangThai = 'ACTIVE'`)
             .groupBy('ch.MaKH'),
         'lessonStats',
@@ -53,6 +57,7 @@ export class CourseStudentService {
       )
       .addSelect('ratings.avgRating', 'averageRating')
       .addSelect('lessonStats.lessonCount', 'totalLessons')
+      .addSelect('lessonStats.totalDurationSeconds', 'totalDurationSeconds')
       .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
     if (filters.search?.trim()) {
@@ -88,6 +93,9 @@ export class CourseStudentService {
           ? Number(stats.averageRating).toFixed(1)
           : '0.0',
         totalLessons: stats?.totalLessons ? Number(stats.totalLessons) : 0,
+        totalDurationSeconds: stats?.totalDurationSeconds
+          ? Number(stats.totalDurationSeconds)
+          : 0,
       };
     });
   }
@@ -156,6 +164,16 @@ export class CourseStudentService {
       totalStudents: Number(stats.courseTotalStudents ?? 0),
       muc_tieu: mucTieuRows.map((item: any) => item.NoiDung).filter(Boolean),
       yeu_cau: yeuCauRows.map((item: any) => item.NoiDung).filter(Boolean),
+      baiHocs: Array.isArray(course.baiHocs)
+        ? await Promise.all(
+            course.baiHocs.map(async (lesson: any) => ({
+              ...lesson,
+              videoURL: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoURL ?? null,
+              ),
+            })),
+          )
+        : [],
     };
   }
 
@@ -166,8 +184,7 @@ export class CourseStudentService {
     if (userId) {
       const parsedUserId = Number.parseInt(userId, 10);
       if (!Number.isNaN(parsedUserId)) {
-        excludeCondition +=
-          ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
         params.push(parsedUserId);
       }
     }
@@ -208,7 +225,9 @@ export class CourseStudentService {
       recommendations: recommendations.map((r: any) => ({
         ...r,
         giaBan: Number(r.giaBan),
-        averageRating: r.averageRating ? Number(r.averageRating).toFixed(1) : '0.0',
+        averageRating: r.averageRating
+          ? Number(r.averageRating).toFixed(1)
+          : '0.0',
       })),
       crossSellVoucher,
     };
@@ -248,11 +267,26 @@ export class CourseStudentService {
       [...chapterIds],
     );
 
-    return chapters.map((chapter: any) => ({
-      ...chapter,
-      baiHocs: lessons.filter(
-        (lesson: any) => lesson.maChuong === chapter.maChuong,
-      ),
-    }));
+    const lessonsByChapter = await Promise.all(
+      chapters.map(async (chapter: any) => {
+        const baiHocs = await Promise.all(
+          lessons
+            .filter((lesson: any) => lesson.maChuong === chapter.maChuong)
+            .map(async (lesson: any) => ({
+              ...lesson,
+              videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
+                lesson.videoUrl,
+              ),
+            })),
+        );
+
+        return {
+          ...chapter,
+          baiHocs,
+        };
+      }),
+    );
+
+    return lessonsByChapter;
   }
 }

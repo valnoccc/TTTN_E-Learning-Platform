@@ -24,9 +24,7 @@ import { AdminCouponsService } from '../services/admin-coupons.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminCouponsController {
-  constructor(
-    private readonly adminCouponsService: AdminCouponsService,
-  ) {}
+  constructor(private readonly adminCouponsService: AdminCouponsService) {}
 
   private getAdminId(request: Request & { user: { sub: number } }) {
     return request.user.sub;

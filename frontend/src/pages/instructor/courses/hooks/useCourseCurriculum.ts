@@ -56,7 +56,12 @@ export function useCourseCurriculum() {
                 setChapters(sortedData);
 
                 if (sortedData.length > 0) {
-                    setExpandedChapterId(sortedData[0].maChuong);
+                    const savedChapterId = sessionStorage.getItem('expandedChapterId');
+                    if (savedChapterId && sortedData.some(c => c.maChuong.toString() === savedChapterId)) {
+                        setExpandedChapterId(Number(savedChapterId));
+                    } else {
+                        setExpandedChapterId(sortedData[0].maChuong);
+                    }
                 }
             } catch (error) {
                 console.error('Loi tai chuong trinh hoc:', error);
@@ -70,7 +75,15 @@ export function useCourseCurriculum() {
     }, [id, isNewCourse]);
 
     const toggleChapter = (chapterId: number) => {
-        setExpandedChapterId((prev) => (prev === chapterId ? null : chapterId));
+        setExpandedChapterId((prev) => {
+            const next = prev === chapterId ? null : chapterId;
+            if (next) {
+                sessionStorage.setItem('expandedChapterId', next.toString());
+            } else {
+                sessionStorage.removeItem('expandedChapterId');
+            }
+            return next;
+        });
     };
 
     const handleAddChapter = async () => {
@@ -91,6 +104,7 @@ export function useCourseCurriculum() {
             setNewChapterTitle('');
             setShowAddChapterForm(false);
             setExpandedChapterId(createdChapter.maChuong);
+            sessionStorage.setItem('expandedChapterId', createdChapter.maChuong.toString());
             toast.success('Da them chuong hoc moi thanh cong!');
         } catch {
             toast.error('Loi khi them chuong hoc moi.');
@@ -126,6 +140,7 @@ export function useCourseCurriculum() {
             setNewLessonTitle('');
             setActiveAddLessonChapterId(null);
             setExpandedChapterId(chapterId);
+            sessionStorage.setItem('expandedChapterId', chapterId.toString());
             toast.success('Da them bai hoc moi!');
         } catch {
             toast.error('Loi khi tao bai hoc.');

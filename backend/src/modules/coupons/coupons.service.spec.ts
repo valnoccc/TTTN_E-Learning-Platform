@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -10,12 +6,10 @@ import { DataSource } from 'typeorm';
 import { KhoaHoc } from '../courses/entities/course.entity';
 import { Coupon } from './entities/coupon.entity';
 import { AdminCouponsService } from './services/admin-coupons.service';
-import { InstructorCouponsService } from './services/instructor-coupons.service';
 import { StudentCouponsService } from './services/student-coupons.service';
 
 describe('Coupons services', () => {
   let adminService: AdminCouponsService;
-  let instructorService: InstructorCouponsService;
   let studentService: StudentCouponsService;
   let dataSource: { query: jest.Mock; createQueryRunner: jest.Mock };
   let queryRunner: {
@@ -65,7 +59,6 @@ describe('Coupons services', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminCouponsService,
-        InstructorCouponsService,
         StudentCouponsService,
         { provide: DataSource, useValue: dataSource },
         { provide: getRepositoryToken(Coupon), useValue: couponRepository },
@@ -74,7 +67,6 @@ describe('Coupons services', () => {
     }).compile();
 
     adminService = module.get(AdminCouponsService);
-    instructorService = module.get(InstructorCouponsService);
     studentService = module.get(StudentCouponsService);
   });
 
@@ -88,7 +80,9 @@ describe('Coupons services', () => {
       expect.stringContaining('CREATE TABLE IF NOT EXISTS `MaGiamGiaDieuKien`'),
     );
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`'),
+      expect.stringContaining(
+        'CREATE TABLE IF NOT EXISTS `LichSuSuDungMaGiamGia`',
+      ),
     );
   });
 
@@ -119,7 +113,9 @@ describe('Coupons services', () => {
         },
       ]);
 
-    const result = await adminService.getAdminCoupons({ search: 'admin' } as any);
+    const result = await adminService.getAdminCoupons({
+      search: 'admin',
+    } as any);
 
     expect(result.summary).toEqual({
       totalCouponCount: 1,
@@ -127,40 +123,6 @@ describe('Coupons services', () => {
       totalUsageCount: 3,
     });
     expect(result.items[0].maCode).toBe('ADMIN11');
-  });
-
-  it('lists instructor coupons with summary data', async () => {
-    dataSource.query
-      .mockResolvedValueOnce([
-        {
-          maCoupon: 22,
-          maCode: 'INS22',
-          giaTriGiam: 20,
-          loaiGiam: 'PERCENT',
-          trangThai: 'ACTIVE',
-          ngayBatDau: null,
-          ngayKetThuc: null,
-          maKH: 10,
-          tenKhoaHoc: 'React',
-          soLuongGioiHan: null,
-          soLuongDaDung: 1,
-          ghiChu: null,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          totalCouponCount: 1,
-          activeCount: 1,
-          totalUsageCount: 1,
-        },
-      ]);
-
-    const result = await instructorService.getInstructorCoupons(7, {
-      search: 'ins',
-    } as any);
-
-    expect(result.summary.totalCouponCount).toBe(1);
-    expect(result.items[0].maCode).toBe('INS22');
   });
 
   it('stores admin coupon scope and conditions in dedicated tables', async () => {
@@ -283,31 +245,6 @@ describe('Coupons services', () => {
     expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
   });
 
-  it('rejects percent coupons above 99', async () => {
-    await expect(
-      instructorService.createCoupon(10, {
-        maCode: 'BIG100',
-        giaTriGiam: 100,
-        loaiGiam: 'PERCENT',
-        maKH: 5,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects coupon creation for a course the instructor does not own', async () => {
-    couponRepository.findOne.mockResolvedValue(null);
-    courseRepository.findOne.mockResolvedValue(null);
-
-    await expect(
-      instructorService.createCoupon(99, {
-        maCode: 'PRIVATE50',
-        giaTriGiam: 50,
-        loaiGiam: 'PERCENT',
-        maKH: 8,
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
   it('rejects inactive coupons during checkout validation', async () => {
     dataSource.query.mockResolvedValueOnce([
       {
@@ -387,6 +324,7 @@ describe('Coupons services', () => {
         loaiKM: 'STANDARD',
       },
     ]);
+    dataSource.query.mockResolvedValueOnce([]);
     dataSource.query.mockResolvedValueOnce([
       {
         maPV: 1,
@@ -408,6 +346,31 @@ describe('Coupons services', () => {
 
     await expect(
       studentService.validateCoupon({ maCode: 'SALE8', courseIds: [10] }, 1),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects a coupon that the same user already redeemed', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      {
+        maCoupon: 9,
+        maCode: 'ONCEONLY',
+        giaTriGiam: 50,
+        loaiGiam: 'PERCENT',
+        trangThai: 'ACTIVE',
+        ngayBatDau: null,
+        ngayKetThuc: null,
+        maKH: null,
+        soLuongGioiHan: null,
+        soLuongDaDung: 0,
+        tenKhoaHoc: '',
+        giaBan: 300000,
+        loaiKM: 'STANDARD',
+      },
+    ]);
+    dataSource.query.mockResolvedValueOnce([{ MaCoupon: 9 }]);
+
+    await expect(
+      studentService.validateCoupon({ maCode: 'ONCEONLY', courseIds: [10] }, 7),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -461,6 +424,8 @@ describe('Coupons services', () => {
     const historyRunner = {
       query: jest
         .fn()
+        .mockResolvedValueOnce([{ lockResult: 1 }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce({ affectedRows: 1 })
         .mockResolvedValueOnce({ affectedRows: 1 }),
     };
@@ -478,13 +443,55 @@ describe('Coupons services', () => {
 
     expect(historyRunner.query).toHaveBeenNthCalledWith(
       1,
+      expect.stringContaining('SELECT GET_LOCK'),
+      ['coupon-redemption:7:88'],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('SELECT 1 FROM LichSuSuDungMaGiamGia'),
+      [7, 88],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      3,
       expect.stringContaining('UPDATE MaGiamGia'),
       [7],
     );
     expect(historyRunner.query).toHaveBeenNthCalledWith(
-      2,
+      4,
       expect.stringContaining('INSERT INTO LichSuSuDungMaGiamGia'),
       [7, 88, 123, 300000, 45000],
+    );
+    expect(historyRunner.query).toHaveBeenNthCalledWith(
+      5,
+      expect.stringContaining('SELECT RELEASE_LOCK'),
+      ['coupon-redemption:7:88'],
+    );
+  });
+
+  it('rejects duplicate coupon redemption for the same user', async () => {
+    const historyRunner = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce([{ lockResult: 1 }])
+        .mockResolvedValueOnce([{ MaCoupon: 7 }]),
+    };
+
+    await expect(
+      studentService.recordCouponRedemption(
+        {
+          couponId: 7,
+          userId: 88,
+          invoiceId: 123,
+          discountAmount: 45000,
+          orderValue: 300000,
+        },
+        historyRunner,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(historyRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT GET_LOCK'),
+      ['coupon-redemption:7:88'],
     );
   });
 });

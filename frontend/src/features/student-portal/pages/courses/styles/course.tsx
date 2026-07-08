@@ -6,6 +6,36 @@ export const Styles = styled.div`
     /* Course Grid */
     .course-grid-area {
         padding: 70px 0;
+
+        .container {
+            width     : 80%;
+            max-width : 80%;
+            margin    : 0 auto;
+        }
+
+        @media(max-width: 1399px) {
+            .container {
+                width     : 88%;
+                max-width : 88%;
+            }
+        }
+
+        @media(max-width: 991px) {
+            .container {
+                width     : 92%;
+                max-width : 92%;
+            }
+        }
+
+        @media(max-width: 767px) {
+            .container {
+                width        : 100%;
+                max-width    : 100%;
+                padding-left : 15px;
+                padding-right: 15px;
+            }
+        }
+
         .course-items {
             .course-item {
                 border: 1px solid ${colors.border1};
@@ -151,6 +181,36 @@ export const Styles = styled.div`
     /* Course List */
     .course-list-area {
         padding: 70px 0;
+
+        .container {
+            width     : 80%;
+            max-width : 80%;
+            margin    : 0 auto;
+        }
+
+        @media(max-width: 1399px) {
+            .container {
+                width     : 88%;
+                max-width : 88%;
+            }
+        }
+
+        @media(max-width: 991px) {
+            .container {
+                width     : 92%;
+                max-width : 92%;
+            }
+        }
+
+        @media(max-width: 767px) {
+            .container {
+                width        : 100%;
+                max-width    : 100%;
+                padding-left : 15px;
+                padding-right: 15px;
+            }
+        }
+
         .course-items2 {
             .course-item {
                 border-radius : 5px;
@@ -318,6 +378,36 @@ export const Styles = styled.div`
     /* Course Details */
     .course-details-area {
         padding : 70px 0 78px;
+
+        .container {
+            width     : 80%;
+            max-width : 80%;
+            margin    : 0 auto;
+        }
+
+        @media(max-width: 1399px) {
+            .container {
+                width     : 88%;
+                max-width : 88%;
+            }
+        }
+
+        @media(max-width: 991px) {
+            .container {
+                width     : 92%;
+                max-width : 92%;
+            }
+        }
+
+        @media(max-width: 767px) {
+            .container {
+                width        : 100%;
+                max-width    : 100%;
+                padding-left : 15px;
+                padding-right: 15px;
+            }
+        }
+
         .course-details-top {
             .heading {
                 h4 {

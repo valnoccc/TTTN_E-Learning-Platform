@@ -72,7 +72,8 @@ describe('CheckoutService', () => {
       orderType: 'momo_wallet',
       transId: '123456',
       resultCode,
-      message: resultCode === '0' || resultCode === 0 ? 'Successful.' : 'Card failed.',
+      message:
+        resultCode === '0' || resultCode === 0 ? 'Successful.' : 'Card failed.',
       payType: 'atm',
       responseTime: '1700000000000',
       extraData: Buffer.from(JSON.stringify(extra)).toString('base64'),
@@ -194,6 +195,98 @@ describe('CheckoutService', () => {
     expect(queryRunner.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO DangKyKhoaHoc'),
       [7, 101, 99, 'ACTIVE'],
+    );
+  });
+
+  it('records coupon redemption history for successful MoMo payments', async () => {
+    queryRunner.query
+      .mockResolvedValueOnce([
+        {
+          MaHD: 99,
+          TrangThaiThanhToan: 'PENDING',
+        },
+      ])
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce([{ TongTien: 250000 }])
+      .mockResolvedValueOnce([{ totalOrderValue: 300000 }]);
+    dataSource.query.mockResolvedValueOnce([{ TenKhoaHoc: 'React Co Ban' }]);
+
+    await service.handleMomoIPN(
+      createMomoBody('0', {
+        invoiceId: 99,
+        userId: 7,
+        courseIds: [101],
+        appliedCouponId: 12,
+      }),
+    );
+
+    expect(couponsService.recordCouponRedemption).toHaveBeenCalledWith(
+      {
+        couponId: 12,
+        userId: 7,
+        invoiceId: 99,
+        discountAmount: 50000,
+        orderValue: 300000,
+      },
+      queryRunner,
+    );
+  });
+
+  it('returns only coupons that are valid for the current account', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      {
+        MaCoupon: 1,
+        MaCode: 'VALID10',
+        GiaTriGiam: 10,
+        LoaiGiam: 'PERCENT',
+        MaKH: null,
+        SoLuongGioiHan: null,
+        SoLuongDaDung: 0,
+        TrangThai: 'ACTIVE',
+        NgayBatDau: null,
+        NgayKetThuc: null,
+        GhiChu: null,
+        LoaiKM: 'STANDARD',
+      },
+      {
+        MaCoupon: 2,
+        MaCode: 'NEWBIE306',
+        GiaTriGiam: 25,
+        LoaiGiam: 'PERCENT',
+        MaKH: null,
+        SoLuongGioiHan: null,
+        SoLuongDaDung: 0,
+        TrangThai: 'ACTIVE',
+        NgayBatDau: null,
+        NgayKetThuc: null,
+        GhiChu: 'Mã giảm giá cho tài khoản mới tạo trong 24h đầu tiên',
+        LoaiKM: 'STANDARD',
+      },
+    ]);
+    couponsService.validateCoupon
+      .mockResolvedValueOnce({
+        discountAmount: 10000,
+        targetCourseIds: [101],
+      })
+      .mockRejectedValueOnce(
+        new Error('Mã chỉ áp dụng cho tài khoản mới trong 24 giờ đầu'),
+      );
+
+    const result = await service.getAvailableCoupons('101', 7);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].code).toBe('VALID10');
+    expect(couponsService.validateCoupon).toHaveBeenNthCalledWith(
+      1,
+      { maCode: 'VALID10', courseIds: [101] },
+      7,
+    );
+    expect(couponsService.validateCoupon).toHaveBeenNthCalledWith(
+      2,
+      { maCode: 'NEWBIE306', courseIds: [101] },
+      7,
     );
   });
 

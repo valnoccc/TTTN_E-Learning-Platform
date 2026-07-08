@@ -1,5 +1,10 @@
+jest.mock('../../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
+
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CourseAdminService } from './course-admin.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 describe('CourseAdminService', () => {
   const resolveValue = <T>(value: T) => Promise.resolve(value);
@@ -17,6 +22,10 @@ describe('CourseAdminService', () => {
     createNotification: jest.fn(),
   };
 
+  const lessonVideoStorageService = {
+    getPlayableUrl: jest.fn(async (url) => url),
+  };
+
   const moderationHistoryRepository = {
     create: jest.fn(),
     save: jest.fn(),
@@ -27,6 +36,7 @@ describe('CourseAdminService', () => {
     moderationHistoryRepository as never,
     notificationsService as never,
     dataSource as never,
+    lessonVideoStorageService as never,
   );
 
   beforeEach(() => {
@@ -47,6 +57,7 @@ describe('CourseAdminService', () => {
         trangThai: 'PENDING',
         hinhThuNho: 'https://example.com/course.png',
         moTa: 'Mo ta',
+        ngayCapNhat: '2026-06-10T09:00:00.000Z',
         instructorId: 7,
         instructorName: 'Tran Van B',
         instructorEmail: 'b@example.com',
@@ -67,6 +78,7 @@ describe('CourseAdminService', () => {
         trangThai: 'PENDING',
         hinhThuNho: 'https://example.com/course.png',
         moTa: 'Mo ta',
+        ngayCapNhat: '2026-06-10T09:00:00.000Z',
         instructorId: 7,
         instructorName: 'Tran Van B',
         instructorEmail: 'b@example.com',
@@ -86,6 +98,7 @@ describe('CourseAdminService', () => {
       giaBan: 399000,
       trangThai: 'PENDING',
       hinhThuNho: 'https://example.com/course.png',
+      ngayCapNhat: '2026-06-10T09:00:00.000Z',
       maDM: 4,
       maND_GiangVien: 7,
     });
@@ -135,6 +148,7 @@ describe('CourseAdminService', () => {
       giaBan: 399000,
       trangThai: 'PENDING',
       hinhThuNho: 'https://example.com/course.png',
+      ngayCapNhat: '2026-06-10T09:00:00.000Z',
       maDM: 4,
       instructorId: 7,
       mucTieu: ['Nham vung React co ban'],
@@ -179,6 +193,10 @@ describe('CourseAdminService', () => {
         },
       ],
     });
+
+    expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledWith(
+      'https://example.com/video.mp4',
+    );
   });
 
   it('approves pending courses and writes moderation history', async () => {

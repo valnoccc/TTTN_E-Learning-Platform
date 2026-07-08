@@ -1,13 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, CheckCircle, Video, FileText, BookOpen } from 'lucide-react';
-import ReactPlayer from 'react-player';
-const Player: any = ReactPlayer;
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2, Trophy, X, Award } from 'lucide-react';
 import axiosClient from '../../../../api/axios';
 import CourseOverview from './components/CourseOverview';
 import CourseQA from './components/CourseQA';
 import CourseReviews from './components/CourseReviews';
+import CourseLearningTools from './components/CourseLearningTools';
+import CustomVideoPlayer, { VideoPlaceholder } from './components/CustomVideoPlayer';
 import FooterTwo from '../../components/FooterTwo';
+
+const CourseCompletedScreen = () => {
+  return (
+    <div className="w-full h-full min-h-[500px] bg-white flex flex-col items-center justify-center absolute inset-0 z-10">
+      <h2 className="font-bold text-gray-800 text-2xl md:text-3xl mb-6">🙌 Chúc mừng bạn đã hoàn thành khóa học!</h2>
+      <Link 
+        to="/course-grid" 
+        className="bg-transparent border border-purple-600 text-purple-600 rounded-md px-6 py-2 hover:bg-purple-50 transition-colors font-semibold"
+      >
+        Tìm thêm khóa học
+      </Link>
+    </div>
+  );
+};
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return '';
@@ -42,14 +56,20 @@ const saveCurrentLessonSilently = async (courseId: string, lessonId: number) => 
 
 export default function CourseLearning() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [courseName, setCourseName] = useState<string>(`Không gian học tập (Khóa học: ${id})`);
   const [courseData, setCourseData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState('overview');
   const [curriculum, setCurriculum] = useState<any[]>([]);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [expandedModules, setExpandedModules] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<number>(0);
+  const [isCourseCompleted, setIsCourseCompleted] = useState<boolean>(false);
+  const [showCertificatePopup, setShowCertificatePopup] = useState<boolean>(false);
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState<boolean>(false);
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+  const [showTrophyDropdown, setShowTrophyDropdown] = useState<boolean>(false);
   // Banner "Tiếp tục học" – hiển thị khi có bài học gần nhất
   const [resumeBanner, setResumeBanner] = useState<{ lesson: any; module: any } | null>(null);
   // Ref tránh lưu lần đầu khi vừa restore
@@ -240,16 +260,31 @@ export default function CourseLearning() {
     );
   };
 
+  // ─── Flatten all lessons for prev/next navigation ──────────────────────────
+  const allLessons = curriculum.flatMap((m: any) => m.baiHocs ?? []);
+  const activeLessonIndex = allLessons.findIndex((l: any) => l.maBH === activeLesson?.maBH);
+  const nextLesson = activeLessonIndex >= 0 && activeLessonIndex < allLessons.length - 1
+    ? allLessons[activeLessonIndex + 1]
+    : null;
+  const prevLesson = activeLessonIndex > 0 ? allLessons[activeLessonIndex - 1] : null;
+
   // ─── Khi học viên click chuyển bài ────────────────────────────────────────
   const handleLessonClick = (lesson: any) => {
     setActiveLesson(lesson);
-    // Ẩn banner khi đã tự chọn bài
+    setIsCourseCompleted(false);
+    // Auto-expand module containing this lesson
+    const parentModule = curriculum.find((m: any) =>
+      m.baiHocs?.some((l: any) => l.maBH === lesson.maBH)
+    );
+    if (parentModule) setExpandedModules([parentModule.maChuong]);
     setResumeBanner(null);
-    // Lưu vết lên server (fail-safe, bất đồng bộ)
     if (id && lesson.maBH) {
       saveCurrentLessonSilently(id, lesson.maBH);
     }
   };
+
+  const handleNextLesson = () => { if (nextLesson) handleLessonClick(nextLesson); };
+  const handlePrevLesson = () => { if (prevLesson) handleLessonClick(prevLesson); };
 
   const handleVideoEnded = async () => {
     if (!activeLesson) return;
@@ -292,10 +327,42 @@ export default function CourseLearning() {
           setProgress(currentCourse.progress || 0);
         }
       }
+
+      // Nếu là bài học cuối → cấp chứng chỉ
+      if (!nextLesson && id) {
+        try {
+          const certRes: any = await axiosClient.post(
+            `/users/me/certificates/${id}/issue`,
+          );
+          const certId =
+            certRes?.certificateId ??
+            certRes?.data?.certificateId ??
+            null;
+          if (certId) setCertificateId(String(certId));
+        } catch (certErr) {
+          console.warn('[CourseLearning] Không thể cấp chứng chỉ (fail-safe):', certErr);
+        }
+      }
     } catch (error) {
       console.error('Error updating lesson progress', error);
     }
+
+    if (!nextLesson) {
+      setIsCourseCompleted(true);
+      setIsGeneratingCertificate(true);
+    }
   };
+
+
+  // ─── Hiện Trophy popup sau 15 giây khi khoá học hoàn thành ────────────────
+  useEffect(() => {
+    if (!isCourseCompleted) return;
+    const timer = setTimeout(() => {
+      setIsGeneratingCertificate(false);
+      setShowCertificatePopup(true);
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [isCourseCompleted]);
 
   if (loading) {
     return (
@@ -306,69 +373,127 @@ export default function CourseLearning() {
   }
 
   const tabs = [
-    { id: 'content', label: 'Nội dung khóa học' },
     { id: 'overview', label: 'Tổng quan' },
     { id: 'qa', label: 'Hỏi đáp' },
     { id: 'reviews', label: 'Đánh giá' },
+    { id: 'learning-tools', label: 'Công cụ học tập' },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-slate-200" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Top Navbar */}
-      <div className="h-16 bg-slate-950 border-b border-slate-800 flex items-center px-4 shrink-0 justify-between">
+      <div className="h-16 bg-slate-950 border-b border-slate-800 flex items-center px-4 shrink-0 justify-between z-20 sticky top-0">
         <div className="flex items-center gap-4">
           <Link to="/student/profile" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ChevronLeft size={20} />
-            <span className="font-medium hidden sm:inline">Trở về bảng điều khiển</span>
+            <span className="font-medium hidden sm:inline">Trở về</span>
           </Link>
           <div className="h-6 w-px bg-slate-700 mx-2 hidden sm:block"></div>
-          <h1 className="font-semibold text-white line-clamp-1">{courseName}</h1>
+          <h1 className="font-semibold text-white line-clamp-1 hidden md:block">{courseName}</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-slate-400">Tiến độ: <span className="text-emerald-400 font-bold">{progress}%</span></div>
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-slate-400 hidden sm:block">Tiến độ: <span className="text-emerald-400 font-bold">{progress}%</span></div>
+
+          {/* Trophy button – chỉ hiện khi popup sẵn sàng */}
+          {showCertificatePopup && (
+            <div className="relative">
+              <button
+                onClick={() => setShowTrophyDropdown(p => !p)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-full bg-amber-400 hover:bg-amber-300 transition-colors shadow-lg"
+                title="Nhận chứng chỉ"
+                aria-label="Nhận chứng chỉ"
+              >
+                <Trophy size={17} className="text-white" />
+                {/* Pulse ring */}
+                <span className="absolute -inset-0.5 rounded-full border-2 border-amber-400 animate-ping opacity-60" />
+              </button>
+
+              {/* Dropdown */}
+              {showTrophyDropdown && (
+                <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50">
+                  {/* Close */}
+                  <button
+                    onClick={() => setShowTrophyDropdown(false)}
+                    className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={14} />
+                  </button>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <Award size={16} className="text-amber-500" />
+                    </div>
+                    <p className="font-bold text-slate-800 text-sm">Chúc mừng! 🎉</p>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                    Đã hoàn thành{' '}
+                    <span className="font-semibold text-slate-700">
+                      {curriculum.flatMap((m: any) => m.baiHocs ?? []).filter((l: any) => l.completed).length}
+                    </span>
+                    /{curriculum.flatMap((m: any) => m.baiHocs ?? []).length} bài.
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      setShowTrophyDropdown(false);
+                      const dest = certificateId
+                        ? `/certificate/${certificateId}`
+                        : `/certificate/${id}`;
+                      navigate(dest);
+                    }}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Award size={15} />
+                    Nhận giấy chứng nhận
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button className="flex items-center gap-2 text-sm font-medium border border-slate-700 px-3 py-1.5 hover:bg-slate-800 transition-colors">
+            <span className="hidden sm:inline">Chia sẻ</span>
+            <Share2 size={14} />
+          </button>
         </div>
       </div>
 
-      <div className="flex-grow flex flex-col bg-white" style={{ flexGrow: 1 }}>
-        {/* Video Player */}
-        <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative flex items-center justify-center shrink-0">
-          {activeLesson?.videoUrl ? (
-            activeLesson.videoUrl.toLowerCase().endsWith('.mp4') ? (
-              <video
+      <div className="flex-grow flex flex-col lg:flex-row bg-white" style={{ flexGrow: 1, alignItems: 'stretch' }}>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* ── Custom Video Player ─────────────────────────────────────── */}
+          <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative shrink-0 overflow-hidden">
+            {isCourseCompleted ? (
+              <CourseCompletedScreen />
+            ) : activeLesson?.videoUrl && !activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be') ? (
+              <CustomVideoPlayer
+                key={activeLesson.maBH}
                 src={activeLesson.videoUrl}
-                controls
-                className="w-full h-full absolute inset-0"
+                nextLessonName={nextLesson?.tenBaiHoc}
                 onEnded={handleVideoEnded}
-                controlsList="nodownload"
+                onNextLesson={handleNextLesson}
+                onPrevLesson={handlePrevLesson}
+                hasPrev={!!prevLesson}
+                hasNext={!!nextLesson}
               />
-            ) : getYouTubeEmbedUrl(activeLesson.videoUrl) ? (
-              <div className="absolute inset-0">
-                <Player
-                  url={activeLesson.videoUrl}
-                  width="100%"
-                  height="100%"
-                  controls={true}
-                  onEnded={handleVideoEnded}
-                />
-              </div>
+            ) : activeLesson?.videoUrl ? (
+              // YouTube fallback (iframe)
+              <iframe
+                src={`https://www.youtube.com/embed/${activeLesson.videoUrl.includes('youtu.be/')
+                  ? activeLesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
+                  : new URLSearchParams(new URL(activeLesson.videoUrl).search).get('v') ?? ''
+                }?rel=0`}
+                className="w-full h-full absolute inset-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={activeLesson?.tenBaiHoc ?? 'Video bài học'}
+              />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800 absolute inset-0">
-                <FileText size={64} className="mb-4 text-slate-600" />
-                <h3 className="text-xl font-medium text-slate-300">Định dạng không được hỗ trợ</h3>
-              </div>
-            )
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
-              <FileText size={64} className="mb-4 text-slate-600" />
-              <h3 className="text-xl font-medium text-slate-300">
-                {activeLesson?.videoUrl ? 'Video không hợp lệ' : 'Tài liệu học tập'}
-              </h3>
-              <p>
-                {activeLesson?.videoUrl ? 'Đường dẫn video bị lỗi hoặc chưa được hỗ trợ.' : 'Vui lòng xem tài liệu bên dưới'}
-              </p>
-            </div>
-          )}
-        </div>
+              <VideoPlaceholder
+                message={activeLesson ? 'Tài liệu học tập' : 'Chọn bài học để bắt đầu'}
+              />
+            )}
+          </div>
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-200 bg-white sticky top-0 z-10 px-4 sm:px-6 md:px-10 shrink-0 shadow-sm">
@@ -377,7 +502,7 @@ export default function CourseLearning() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 font-semibold whitespace-nowrap border-b-2 transition-all duration-300 ${
+                className={`py-4 font-semibold whitespace-nowrap border-b-2 transition-all duration-300 outline-none focus:outline-none ${
                   activeTab === tab.id
                     ? 'border-emerald-500 text-emerald-600'
                     : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -391,105 +516,104 @@ export default function CourseLearning() {
 
         {/* Tab Content */}
         <div className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto w-full flex-1 pb-24">
-          {activeTab === 'content' && (
-            <div className="animate-fade-in space-y-8">
 
-              {/* ─── Banner "Tiếp tục học" ─────────────────────────────────── */}
-              {resumeBanner && (
-                <div className="flex items-center gap-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <BookOpen size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-emerald-800">Tiếp tục từ lần học trước</p>
-                    <p className="text-sm text-emerald-600 truncate">
-                      {resumeBanner.module.tenChuong} · {resumeBanner.lesson.tenBaiHoc}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setResumeBanner(null)}
-                    className="flex-shrink-0 text-emerald-400 hover:text-emerald-600 text-xl leading-none"
-                    aria-label="Đóng banner"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
 
-              {/* ─── Tên & nội dung bài học hiện tại ─────────────────────── */}
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-4">{activeLesson?.tenBaiHoc}</h2>
-                {activeLesson?.noiDung ? (
-                  <div className="text-slate-700 leading-relaxed prose max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.noiDung }}></div>
-                ) : (
-                  <p className="text-slate-500 italic">Bài học này cung cấp những kiến thức cần thiết để bạn nắm vững phần nội dung hiện tại. Hãy chú ý ghi chép và thực hành lại nhé.</p>
-                )}
-              </div>
-
-              {/* ─── Danh sách bài học ────────────────────────────────────── */}
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Danh sách bài học</h3>
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                  {curriculum && curriculum.length > 0 ? (
-                    curriculum.map(module => (
-                      <div key={module.maChuong} className="border-b border-slate-200 last:border-0">
-                        <button
-                          onClick={() => toggleModule(module.maChuong)}
-                          className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-left"
-                        >
-                          <span className="font-semibold text-slate-800">{module.tenChuong}</span>
-                          <span className="text-sm text-slate-500 font-medium">0/{module.baiHocs?.length || 0}</span>
-                        </button>
-                        {expandedModules.includes(module.maChuong) && module.baiHocs && (
-                          <div className="bg-slate-50 p-2 space-y-1 border-t border-slate-100">
-                            {module.baiHocs.map((lesson: any) => (
-                              <button
-                                key={lesson.maBH}
-                                onClick={() => handleLessonClick(lesson)}
-                                className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
-                                  activeLesson?.maBH === lesson.maBH
-                                    ? 'bg-emerald-50 border border-emerald-200'
-                                    : 'hover:bg-white border border-transparent'
-                                }`}
-                              >
-                                <div className="mt-0.5 shrink-0">
-                                  {lesson.completed ? (
-                                    <CheckCircle size={16} className="text-emerald-500" />
-                                  ) : lesson.videoUrl ? (
-                                    <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
-                                  ) : (
-                                    <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-600 font-bold' : 'text-slate-700 font-medium'}`}>
-                                    {lesson.tenBaiHoc}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
-                                    <span className="text-xs text-slate-400">•</span>
-                                    <span className="text-xs text-slate-500">{lesson.thoiLuong ? `${Math.round(lesson.thoiLuong / 60)} phút` : ''}</span>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center p-3 text-muted">Đang tải danh sách bài học hoặc dữ liệu trống...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'overview' && <CourseOverview courseData={courseData} />}
-          {activeTab === 'qa' && <CourseQA courseId={id || ''} />}
+          {activeTab === 'overview' && <CourseOverview courseData={courseData} curriculum={curriculum} />}
+          {activeTab === 'qa' && <CourseQA courseId={id || ''} currentLesson={activeLesson} />}
           {activeTab === 'reviews' && <CourseReviews courseId={id || ''} />}
+          {activeTab === 'learning-tools' && <CourseLearningTools courseId={id || ''} courseName={courseName || ''} />}
 
           <div className="w-full h-40 clear-both" style={{ height: '160px' }}></div>
+        </div>
+        </div>
+
+        {/* Right Side (Curriculum Sidebar) */}
+        <div className="w-full lg:w-96 lg:min-w-[24rem] flex-shrink-0 border-l border-slate-200 bg-white flex flex-col lg:max-h-[calc(100vh-64px)] lg:sticky lg:top-16">
+          <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between shadow-sm">
+            <h3 className="font-bold text-lg text-slate-800">Nội dung khóa học</h3>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
+            {/* ─── Banner "Tiếp tục học" ─────────────────────────────────── */}
+            {resumeBanner && (
+              <div className="m-4 flex items-center gap-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <BookOpen size={20} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-800">Tiếp tục học</p>
+                  <p className="text-xs text-emerald-600 truncate">
+                    {resumeBanner.lesson.tenBaiHoc}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setResumeBanner(null)}
+                  className="flex-shrink-0 text-emerald-400 hover:text-emerald-600 text-xl leading-none"
+                  aria-label="Đóng banner"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* ─── Danh sách bài học ────────────────────────────────────── */}
+            <div className="bg-slate-50">
+              {curriculum && curriculum.length > 0 ? (
+                curriculum.map(module => (
+                  <div key={module.maChuong} className="border-b border-slate-200 last:border-0">
+                    <button
+                      onClick={() => toggleModule(module.maChuong)}
+                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <span className="font-semibold text-slate-800 text-sm">{module.tenChuong}</span>
+                      <span className="text-xs text-slate-500 font-medium whitespace-nowrap ml-2">0/{module.baiHocs?.length || 0}</span>
+                    </button>
+                    {expandedModules.includes(module.maChuong) && module.baiHocs && (
+                      <div className="bg-slate-50 p-2 space-y-1 border-t border-slate-100">
+                        {module.baiHocs.map((lesson: any) => (
+                          <button
+                            key={lesson.maBH}
+                            onClick={() => handleLessonClick(lesson)}
+                            className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left ${
+                              activeLesson?.maBH === lesson.maBH
+                                ? 'bg-emerald-50 border border-emerald-200'
+                                : 'hover:bg-white border border-transparent'
+                            }`}
+                          >
+                            <div className="mt-0.5 shrink-0">
+                              {lesson.completed ? (
+                                <CheckCircle size={16} className="text-emerald-500" />
+                              ) : lesson.videoUrl ? (
+                                <PlayCircle size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                              ) : (
+                                <FileText size={16} className={activeLesson?.maBH === lesson.maBH ? 'text-emerald-500' : 'text-slate-400'} />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm ${activeLesson?.maBH === lesson.maBH ? 'text-emerald-600 font-bold' : 'text-slate-700 font-medium'}`}>
+                                {lesson.tenBaiHoc}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-slate-500">{lesson.videoUrl ? 'Video' : 'Tài liệu'}</span>
+                                {lesson.thoiLuong && (
+                                  <>
+                                    <span className="text-xs text-slate-400">•</span>
+                                    <span className="text-xs text-slate-500">{Math.round(lesson.thoiLuong / 60)} phút</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-center p-3 text-sm text-slate-500">Đang tải danh sách bài học hoặc dữ liệu trống...</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -502,6 +626,40 @@ export default function CourseLearning() {
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+      `}</style>
+      {/* ─── Thông báo tạo chứng chỉ (Fixed Bottom) ─── */}
+      {isGeneratingCertificate && (
+        <div className="fixed bottom-0 left-0 right-0 z-[100] animate-[slideUp_0.5s_ease-out_forwards]">
+          <div className="bg-slate-900 text-white shadow-2xl border-t border-slate-800 p-4">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-3xl">🎉</div>
+                <div>
+                  <h4 className="font-bold text-lg text-emerald-400">Chúc mừng bạn đã hoàn thành khóa học!</h4>
+                  <p className="text-slate-400 text-sm">Hệ thống đang khởi tạo chứng chỉ cho bạn...</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
+                <div className="w-4 h-4 border-2 border-slate-500 border-t-emerald-400 rounded-full animate-spin"></div>
+                <span className="text-sm font-medium text-slate-300">Đang xử lý</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styles for slide up animation */}
+      <style>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
       `}</style>
     </div>
   );

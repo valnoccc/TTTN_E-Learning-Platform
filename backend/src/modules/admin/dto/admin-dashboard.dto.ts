@@ -14,6 +14,26 @@ export class DashboardStatsDto {
   adminRevenue!: number;
   instructorPayout!: number;
   revenueGrowth!: number;
+  aiQuota!: {
+    monthYear: string;
+    usedSeconds: number;
+    usedMinutes: number;
+    limitMinutes: number;
+    remainingMinutes: number;
+    percentUsed: number;
+    isWarning: boolean;
+    isExceeded: boolean;
+  };
+  storageQuota!: {
+    monthYear: string;
+    usedBytes: number;
+    usedMegabytes: number;
+    limitMegabytes: number;
+    remainingMegabytes: number;
+    percentUsed: number;
+    isWarning: boolean;
+    isExceeded: boolean;
+  };
   recentOrders!: {
     orderId: number;
     customerName: string;
@@ -74,4 +94,35 @@ export class DashboardStatsDto {
     adminRevenue: number;
     instructorPayout: number;
   }[];
+}
+
+export class AdminInstructorDebtItemDto {
+  instructorId!: number;
+  instructorName!: string;
+  instructorAvatar!: string | null;
+  specialty!: string | null;
+  courseCount!: number;
+  orderCount!: number;
+  grossRevenue!: number;
+  adminRevenue!: number;
+  instructorPayout!: number;
+  debtAmount!: number;
+}
+
+export class AdminInstructorDebtSummaryDto {
+  totalInstructors!: number;
+  totalCourses!: number;
+  totalOrders!: number;
+  grossRevenue!: number;
+  adminRevenue!: number;
+  instructorPayout!: number;
+  topDebtAmount!: number;
+}
+
+export class AdminInstructorDebtBoardDto {
+  month!: number;
+  year!: number;
+  monthLabel!: string;
+  summary!: AdminInstructorDebtSummaryDto;
+  items!: AdminInstructorDebtItemDto[];
 }

@@ -115,7 +115,9 @@ export class CheckoutService {
 
   private decodeMomoExtraData(extraData?: string) {
     try {
-      return JSON.parse(Buffer.from(extraData || '', 'base64').toString('utf8'));
+      return JSON.parse(
+        Buffer.from(extraData || '', 'base64').toString('utf8'),
+      );
     } catch (e) {
       console.error('[MoMo] Lỗi decode extraData:', e);
       throw new BadRequestException('extraData không hợp lệ');
@@ -136,6 +138,24 @@ export class CheckoutService {
     }
 
     return Number(result?.affectedRows ?? 0);
+  }
+
+  private async getUserCouponContext(userId: number) {
+    const [userRows, invoiceRows] = await Promise.all([
+      this.dataSource.query(
+        `SELECT NgayTao FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+        [userId],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+        [userId],
+      ),
+    ]);
+
+    return {
+      ngayTao: userRows[0]?.NgayTao ? new Date(userRows[0].NgayTao) : null,
+      paidInvoiceCount: Number(invoiceRows[0]?.count ?? 0),
+    };
   }
 
   // ────────────────────────────────────────────────────────────────────────────────
@@ -272,9 +292,9 @@ export class CheckoutService {
         JSON.stringify({ invoiceId, userId, courseIds, appliedCouponId }),
       ).toString('base64');
 
-      // TẠM THỜI ĐỂ payWithATM ĐỂ BẠN TEST LỖI SANDBOX. 
+      // TẠM THỜI ĐỂ payWithATM ĐỂ BẠN TEST LỖI SANDBOX.
       // Khi lên Production hoặc muốn dùng cổng chung thì đổi thành 'payWithMethod'
-      const requestType = 'payWithATM'; 
+      const requestType = 'payWithATM';
 
       // Chuỗi rawSignature dùng biến requestType
       const rawSignature =
@@ -334,7 +354,7 @@ export class CheckoutService {
       if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
       }
-      
+
       console.error(
         '[MoMo] Lỗi tạo thanh toán:',
         error.message,
@@ -356,9 +376,7 @@ export class CheckoutService {
     }
   }
 
-  
   async handleMomoIPN(body: any) {
-
     const {
       partnerCode,
       orderId,
@@ -525,16 +543,42 @@ export class CheckoutService {
               [userId, courseId, invoiceId, 'ACTIVE'],
             );
           } catch (insertError: any) {
-             console.warn(`[MoMo IPN] Cảnh báo bỏ qua lỗi insert khoá học (Có thể do lỗi schema DB ER_DUP_ENTRY):`, insertError.message);
+            console.warn(
+              `[MoMo IPN] Cảnh báo bỏ qua lỗi insert khoá học (Có thể do lỗi schema DB ER_DUP_ENTRY):`,
+              insertError.message,
+            );
           }
         }
       }
 
-      // 4d. Cập nhật số lượt dùng coupon
+      // 4d. Ghi nhận coupon đã được tài khoản này sử dụng
       if (appliedCouponId) {
-        await queryRunner.query(
-          `UPDATE MaGiamGia SET SoLuongDaDung = SoLuongDaDung + 1 WHERE MaCoupon = ?`,
-          [appliedCouponId],
+        const [invoiceRows, detailRows] = await Promise.all([
+          queryRunner.query(
+            `SELECT TongTien FROM HoaDon WHERE MaHD = ? LIMIT 1`,
+            [invoiceId],
+          ),
+          queryRunner.query(
+            `SELECT COALESCE(SUM(GiaGhiNhan), 0) AS totalOrderValue
+             FROM ChiTietHoaDon
+             WHERE MaHD = ?`,
+            [invoiceId],
+          ),
+        ]);
+
+        const orderValue = Number(detailRows?.[0]?.totalOrderValue ?? 0);
+        const paidAmount = Number(invoiceRows?.[0]?.TongTien ?? 0);
+        const discountAmount = Math.max(0, orderValue - paidAmount);
+
+        await this.couponsService.recordCouponRedemption(
+          {
+            couponId: appliedCouponId,
+            userId,
+            invoiceId,
+            discountAmount,
+            orderValue,
+          },
+          queryRunner,
         );
       }
 
@@ -574,7 +618,7 @@ export class CheckoutService {
     } catch (error: any) {
       // ĐÃ SỬA: Chỉ rollback nếu transaction chưa bị commit
       if (queryRunner.isTransactionActive) {
-         await queryRunner.rollbackTransaction();
+        await queryRunner.rollbackTransaction();
       }
       console.error('>>> [IPN CRASH] Lỗi xử lý DB Transaction:', error);
       throw new InternalServerErrorException(`Lỗi xử lý IPN: ${error.message}`);
@@ -802,13 +846,6 @@ export class CheckoutService {
       .filter((id) => !isNaN(id));
     if (courseIds.length === 0) return [];
 
-    // Kiểm tra xem user đã từng mua khóa học nào thành công chưa
-    const paidInvoices = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
-      [userId],
-    );
-    const hasPurchased = Number(paidInvoices[0]?.count || 0) > 0;
-
     const coupons = await this.dataSource.query(
       `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu, LoaiKM 
        FROM MaGiamGia 
@@ -818,127 +855,304 @@ export class CheckoutService {
          AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
     );
 
-    const lastInvoices = await this.dataSource.query(
-      `SELECT MaHD FROM HoaDon 
-       WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
-       ORDER BY NgayThanhToan DESC LIMIT 1`,
-      [userId],
+    const validatedCoupons = await Promise.all(
+      coupons.map(async (coupon: any) => {
+        try {
+          const validated = await this.couponsService.validateCoupon(
+            { maCode: coupon.MaCode, courseIds },
+            userId,
+          );
+
+          return {
+            id: coupon.MaCoupon,
+            code: coupon.MaCode,
+            discountValue: Number(coupon.GiaTriGiam),
+            discountType: coupon.LoaiGiam,
+            courseId: coupon.MaKH,
+            startDate: coupon.NgayBatDau,
+            endDate: coupon.NgayKetThuc,
+            usageLimit: coupon.SoLuongGioiHan,
+            usageCount: coupon.SoLuongDaDung,
+            description: coupon.GhiChu,
+            isAvailable: true,
+            reason: undefined,
+            calculatedDiscount: validated.discountAmount,
+          };
+        } catch (error) {
+          return null;
+        }
+      }),
     );
 
-    let validCrossSellCourseIds: number[] = [];
-    if (lastInvoices.length > 0) {
-      const invoiceId = lastInvoices[0].MaHD;
-      const details = await this.dataSource.query(
-        `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
-        [invoiceId],
+    return validatedCoupons.filter(
+      (coupon): coupon is NonNullable<typeof coupon> =>
+        Boolean(coupon?.isAvailable),
+    );
+    if (false) {
+      // Kiểm tra xem user đã từng mua khóa học nào thành công chưa
+      const paidInvoices = await this.dataSource.query(
+        `SELECT COUNT(*) as count FROM HoaDon WHERE MaND = ? AND TrangThaiThanhToan = 'PAID'`,
+        [userId],
       );
-      if (details.length > 0) {
-        const oldCourseId = details[0].MaKH;
-        const maDM = details[0].MaDM || 0;
-        let excludeCondition = `k.MaKH != ?`;
-        const params: any[] = [oldCourseId];
-        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-        params.push(userId);
-        const recommendations = await this.dataSource.query(
-          `SELECT k.MaKH as maKH
+      const hasPurchased = Number(paidInvoices[0]?.count || 0) > 0;
+
+      const coupons = await this.dataSource.query(
+        `SELECT MaCoupon, MaCode, GiaTriGiam, LoaiGiam, MaKH, SoLuongGioiHan, SoLuongDaDung, TrangThai, NgayBatDau, NgayKetThuc, GhiChu, LoaiKM 
+       FROM MaGiamGia 
+       WHERE TrangThai = 'ACTIVE' 
+         AND (NgayBatDau IS NULL OR NgayBatDau <= NOW())
+         AND (NgayKetThuc IS NULL OR NgayKetThuc >= NOW())
+         AND (SoLuongGioiHan IS NULL OR SoLuongDaDung < SoLuongGioiHan)`,
+      );
+
+      const userContext = await this.getUserCouponContext(userId);
+
+      const redeemedCouponIds = new Set<number>();
+      if (userId) {
+        const redemptionRows = await this.dataSource.query(
+          `SELECT MaCoupon FROM LichSuSuDungMaGiamGia WHERE MaND = ?`,
+          [userId],
+        );
+        redemptionRows.forEach((row: any) =>
+          redeemedCouponIds.add(Number(row.MaCoupon)),
+        );
+      }
+
+      const lastInvoices = await this.dataSource.query(
+        `SELECT MaHD FROM HoaDon 
+       WHERE MaND = ? AND TrangThaiThanhToan = 'PAID' AND COALESCE(NgayThanhToan, NgayLap) >= NOW() - INTERVAL 30 MINUTE
+       ORDER BY NgayThanhToan DESC LIMIT 1`,
+        [userId],
+      );
+
+      let validCrossSellCourseIds: number[] = [];
+      if (lastInvoices.length > 0) {
+        const invoiceId = lastInvoices[0].MaHD;
+        const details = await this.dataSource.query(
+          `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
+          [invoiceId],
+        );
+        if (details.length > 0) {
+          const oldCourseId = details[0].MaKH;
+          const maDM = details[0].MaDM || 0;
+          let excludeCondition = `k.MaKH != ?`;
+          const params: any[] = [oldCourseId];
+          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+          params.push(userId);
+          const recommendations = await this.dataSource.query(
+            `SELECT k.MaKH as maKH
            FROM KhoaHoc k
            WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
            ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
-          [...params, maDM],
-        );
-        validCrossSellCourseIds = recommendations.map((r: any) =>
-          Number(r.maKH),
+            [...params, maDM],
+          );
+          validCrossSellCourseIds = recommendations.map((r: any) =>
+            Number(r.maKH),
+          );
+        }
+      }
+
+      // Lấy giá các khóa học trong giỏ để tính discountAmount chính xác
+      let coursePrices: any[] = [];
+      if (courseIds.length > 0) {
+        const placeholders = courseIds.map(() => '?').join(',');
+        coursePrices = await this.dataSource.query(
+          `SELECT MaKH, GiaBan FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+          courseIds,
         );
       }
-    }
 
-    // Lấy giá các khóa học trong giỏ để tính discountAmount chính xác
-    let coursePrices: any[] = [];
-    if (courseIds.length > 0) {
-      const placeholders = courseIds.map(() => '?').join(',');
-      coursePrices = await this.dataSource.query(
-        `SELECT MaKH, GiaBan FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-        courseIds,
+      const priceMap = new Map<number, number>();
+      coursePrices.forEach((c) =>
+        priceMap.set(Number(c.MaKH), Number(c.GiaBan)),
       );
-    }
 
-    const priceMap = new Map<number, number>();
-    coursePrices.forEach((c) => priceMap.set(Number(c.MaKH), Number(c.GiaBan)));
+      let totalCartPrice = 0;
+      courseIds.forEach((id) => (totalCartPrice += priceMap.get(id) || 0));
 
-    let totalCartPrice = 0;
-    courseIds.forEach((id) => (totalCartPrice += priceMap.get(id) || 0));
+      let totalCrossSellPrice = 0;
+      const validCartCourseIds = courseIds.filter((id) =>
+        validCrossSellCourseIds.includes(Number(id)),
+      );
+      validCartCourseIds.forEach(
+        (id) => (totalCrossSellPrice += priceMap.get(id) || 0),
+      );
 
-    let totalCrossSellPrice = 0;
-    const validCartCourseIds = courseIds.filter((id) =>
-      validCrossSellCourseIds.includes(Number(id)),
-    );
-    validCartCourseIds.forEach(
-      (id) => (totalCrossSellPrice += priceMap.get(id) || 0),
-    );
+      return coupons
+        .map(async (coupon: any) => {
+          if (redeemedCouponIds.has(Number(coupon.MaCoupon))) {
+            return null;
+          }
 
-    return coupons
-      .map((coupon: any) => {
-        let isAvailable = true;
-        let reason: string | undefined = undefined;
-        let applicablePrice = 0;
+          let isAvailable = true;
+          let reason: string | undefined = undefined;
+          let applicablePrice = 0;
+          const ruleRows = await this.dataSource.query(
+            `SELECT MaDK, LoaiDieuKien, GiaTriDieuKien
+           FROM MaGiamGiaDieuKien
+           WHERE MaCoupon = ?
+           ORDER BY MaDK ASC`,
+            [coupon.MaCoupon],
+          );
 
-        if (coupon.LoaiKM === 'CROSS_SELL') {
-          if (validCartCourseIds.length === 0) {
+          if (coupon.LoaiKM === 'CROSS_SELL') {
+            if (validCartCourseIds.length === 0) {
+              isAvailable = false;
+              reason =
+                'Mã ưu đãi đã hết hạn (quá 30 phút) hoặc không áp dụng cho khóa học trong giỏ';
+              applicablePrice = totalCartPrice; // Just fallback
+            } else {
+              isAvailable = true;
+              applicablePrice = totalCrossSellPrice;
+            }
+          } else {
+            isAvailable =
+              coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
+            reason = isAvailable
+              ? undefined
+              : 'Mã không áp dụng cho khóa học trong giỏ hàng';
+            applicablePrice =
+              coupon.MaKH === null
+                ? totalCartPrice
+                : priceMap.get(Number(coupon.MaKH)) || 0;
+          }
+
+          if (isAvailable && coupon.LoaiKM === 'FIRST_TIME' && hasPurchased) {
             isAvailable = false;
-            reason =
-              'Mã ưu đãi đã hết hạn (quá 30 phút) hoặc không áp dụng cho khóa học trong giỏ';
-            applicablePrice = totalCartPrice; // Just fallback
-          } else {
-            isAvailable = true;
-            applicablePrice = totalCrossSellPrice;
+            reason = 'Mã chỉ áp dụng cho lần đầu mua khóa học';
           }
-        } else {
-          isAvailable =
-            coupon.MaKH === null || courseIds.includes(Number(coupon.MaKH));
-          reason = isAvailable
-            ? undefined
-            : 'Mã không áp dụng cho khóa học trong giỏ hàng';
-          applicablePrice =
-            coupon.MaKH === null
-              ? totalCartPrice
-              : priceMap.get(Number(coupon.MaKH)) || 0;
-        }
 
-        if (isAvailable && coupon.LoaiKM === 'FIRST_TIME' && hasPurchased) {
-          isAvailable = false;
-          reason = 'Mã chỉ áp dụng cho lần đầu mua khóa học';
-        }
+          if (isAvailable && ruleRows.length > 0) {
+            for (const rule of ruleRows) {
+              const ruleType = String(rule.LoaiDieuKien || '').toUpperCase();
+              const ruleValue =
+                rule.GiaTriDieuKien === null
+                  ? null
+                  : Number(rule.GiaTriDieuKien);
+              const accountAgeHours = userContext.ngayTao
+                ? (Date.now() - userContext.ngayTao.getTime()) /
+                  (1000 * 60 * 60)
+                : null;
 
-        let calculatedDiscount = 0;
-        if (isAvailable) {
-          if (coupon.LoaiGiam === 'PERCENT') {
-            calculatedDiscount =
-              (applicablePrice * Number(coupon.GiaTriGiam)) / 100;
-          } else {
-            calculatedDiscount = Math.min(
-              Number(coupon.GiaTriGiam),
-              applicablePrice,
-            );
+              if (
+                ['FIRST_PURCHASE', 'NEW_USER_ONLY'].includes(ruleType) &&
+                userContext.paidInvoiceCount > 0
+              ) {
+                isAvailable = false;
+                reason =
+                  'MÃ£ chá»‰ Ã¡p dá»¥ng cho khÃ¡ch hÃ ng mua láº§n Ä‘áº§u';
+                break;
+              }
+
+              if (
+                ruleType === 'REPEAT_PURCHASE' &&
+                userContext.paidInvoiceCount === 0
+              ) {
+                isAvailable = false;
+                reason =
+                  'MÃ£ chá»‰ Ã¡p dá»¥ng cho khÃ¡ch hÃ ng Ä‘Ã£ mua trÆ°á»›c Ä‘Ã³';
+                break;
+              }
+
+              if (
+                ruleType === 'NEW_USER_24H' &&
+                accountAgeHours !== null &&
+                accountAgeHours > 24
+              ) {
+                isAvailable = false;
+                reason =
+                  'MÃ£ chá»‰ Ã¡p dá»¥ng cho tÃ i khoáº£n má»›i trong 24 giá» Ä‘áº§u';
+                break;
+              }
+
+              if (
+                ruleType === 'ACCOUNT_AGE_HOURS' &&
+                accountAgeHours !== null &&
+                accountAgeHours >
+                  (Number.isFinite(ruleValue) && ruleValue !== null
+                    ? ruleValue
+                    : 24)
+              ) {
+                isAvailable = false;
+                reason =
+                  'TÃ i khoáº£n khÃ´ng thá»a Ä‘iá»u kiá»‡n thá»i gian táº¡o';
+                break;
+              }
+
+              if (
+                ruleType === 'COMBO_ONLY' &&
+                courseIds.length <
+                  (Number.isFinite(ruleValue) && ruleValue !== null
+                    ? ruleValue
+                    : 2)
+              ) {
+                isAvailable = false;
+                reason =
+                  'MÃ£ giáº£m giÃ¡ nÃ y chá»‰ Ã¡p dá»¥ng khi mua combo Ä‘á»§ sá»‘ lÆ°á»£ng khÃ³a há»c yÃªu cáº§u';
+                break;
+              }
+
+              if (
+                ruleType === 'MIN_ORDER_VALUE' &&
+                applicablePrice <
+                  (Number.isFinite(ruleValue) && ruleValue !== null
+                    ? ruleValue
+                    : 0)
+              ) {
+                isAvailable = false;
+                reason =
+                  'GiÃ¡ trá»‹ Ä‘Æ¡n hÃ ng chÆ°a Ä‘áº¡t má»©c tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡';
+                break;
+              }
+
+              if (
+                ruleType === 'MIN_COURSE_COUNT' &&
+                courseIds.length <
+                  (Number.isFinite(ruleValue) && ruleValue !== null
+                    ? ruleValue
+                    : 1)
+              ) {
+                isAvailable = false;
+                reason =
+                  'Sá»‘ lÆ°á»£ng khÃ³a há»c trong giá» chÆ°a Ä‘áº¡t má»©c tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡';
+                break;
+              }
+            }
           }
-        }
 
-        return {
-          id: coupon.MaCoupon,
-          code: coupon.MaCode,
-          discountValue: Number(coupon.GiaTriGiam),
-          discountType: coupon.LoaiGiam,
-          courseId: coupon.MaKH,
-          startDate: coupon.NgayBatDau,
-          endDate: coupon.NgayKetThuc,
-          usageLimit: coupon.SoLuongGioiHan,
-          usageCount: coupon.SoLuongDaDung,
-          description: coupon.GhiChu,
-          isAvailable,
-          reason,
-          calculatedDiscount,
-        };
-      })
-      .filter(Boolean);
+          let calculatedDiscount = 0;
+          if (isAvailable) {
+            if (coupon.LoaiGiam === 'PERCENT') {
+              calculatedDiscount =
+                (applicablePrice * Number(coupon.GiaTriGiam)) / 100;
+            } else {
+              calculatedDiscount = Math.min(
+                Number(coupon.GiaTriGiam),
+                applicablePrice,
+              );
+            }
+          }
+
+          return {
+            id: coupon.MaCoupon,
+            code: coupon.MaCode,
+            discountValue: Number(coupon.GiaTriGiam),
+            discountType: coupon.LoaiGiam,
+            courseId: coupon.MaKH,
+            startDate: coupon.NgayBatDau,
+            endDate: coupon.NgayKetThuc,
+            usageLimit: coupon.SoLuongGioiHan,
+            usageCount: coupon.SoLuongDaDung,
+            description: coupon.GhiChu,
+            isAvailable,
+            reason,
+            calculatedDiscount,
+          };
+        })
+        .filter((coupon): coupon is NonNullable<typeof coupon> => {
+          return Boolean(coupon?.isAvailable);
+        });
+    }
   }
 
   // ────────────────────────────────────────────────────────────────────────────────

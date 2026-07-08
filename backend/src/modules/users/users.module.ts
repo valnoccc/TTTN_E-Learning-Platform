@@ -9,6 +9,7 @@ import { UserAdminService } from './services/user-admin.service';
 import { StudentProfileService } from './services/student-profile.service';
 import { StudentProgressService } from './services/student-progress.service';
 import { StudentPaymentHistoryService } from './services/student-payment-history.service';
+import { StudentCertificateService } from './services/student-certificate.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
@@ -19,6 +20,7 @@ import { StudentPaymentHistoryService } from './services/student-payment-history
     StudentProfileService,
     StudentProgressService,
     StudentPaymentHistoryService,
+    StudentCertificateService,
   ],
   exports: [UsersService],
 })

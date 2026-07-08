@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './features/student-portal/helper/ScrollToTop';
+import BlockedAccountModal from './components/common/BlockedAccountModal';
 
 import RoleBasedRoute from './components/RoleBasedRoute';
 import AdminRoutes from './routes/AdminRoutes';
@@ -23,6 +24,10 @@ import BlogGrid from './features/student-portal/pages/blog/BlogGrid';
 import BlogDetails from './features/student-portal/pages/blog/BlogDetails';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ForumHome from './features/forum/pages/ForumHome';
+import ForumDetail from './features/forum/pages/ForumDetail';
+import ForumAsk from './features/forum/pages/ForumAsk';
+import CertificateView from './features/student-portal/pages/courses/CertificateView';
 
 import StudentLayout from './features/student-portal/components/StudentLayout';
 
@@ -41,6 +46,9 @@ function AnimatedRoutes() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/instructors" element={<Instructors />} />
         <Route path="/instructor-details/:id" element={<InstructorDetails />} />
+        <Route path="/forum" element={<ForumHome />} />
+        <Route path="/forum/ask" element={<ForumAsk />} />
+        <Route path="/forum/question/:id" element={<ForumDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         {/* ⚠️ QUAN TRỌNG: /checkout/success phải ĐẶT TRƯỚC /checkout/:courseId */}
         {/* Nếu đặt sau, React Router sẽ match "success" vào tham số :courseId => NaN */}
@@ -55,6 +63,9 @@ function AnimatedRoutes() {
         <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/student/*" element={<StudentRoutes />} />
       </Route>
+
+      {/* Certificate route – standalone (không có header/footer student) */}
+      <Route path="/certificate/:id" element={<CertificateView />} />
 
       {/* Admin Routes */}
       <Route
@@ -90,6 +101,7 @@ function App() {
         containerStyle={{ top: '80px', zIndex: 999999 }}
         toastOptions={{ duration: 3000, style: { fontSize: '14px', borderRadius: '8px' } }}
       />
+      <BlockedAccountModal />
       <AnimatedRoutes />
     </BrowserRouter>
   );

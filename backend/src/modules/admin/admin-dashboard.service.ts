@@ -4,7 +4,10 @@ import {
   ADMIN_REVENUE_SHARE,
   INSTRUCTOR_REVENUE_SHARE,
 } from '../../common/constants/revenue-share';
-import { DashboardStatsDto } from './dto/admin-dashboard.dto';
+import {
+  AdminInstructorDebtBoardDto,
+  DashboardStatsDto,
+} from './dto/admin-dashboard.dto';
 
 type CountGrowthRow = {
   total?: string | number;
@@ -81,6 +84,25 @@ type CategoryRevenueRow = {
   adminRevenue?: string | number;
   instructorPayout?: string | number;
 };
+type QuotaRow = {
+  monthYear?: string;
+  usedSeconds?: string | number;
+  usedBytes?: string | number;
+};
+type InstructorDebtRow = {
+  instructorId?: string | number;
+  instructorName?: string;
+  instructorAvatar?: string | null;
+  specialty?: string | null;
+  courseCount?: string | number;
+  orderCount?: string | number;
+  grossRevenue?: string | number;
+  adminRevenue?: string | number;
+  instructorPayout?: string | number;
+};
+
+const AI_QUOTA_LIMIT_SECONDS = 60_000;
+const DEFAULT_STORAGE_QUOTA_LIMIT_GB = 100;
 
 @Injectable()
 export class AdminDashboardService {
@@ -115,8 +137,47 @@ export class AdminDashboardService {
     return Number((((current - last) / last) * 100).toFixed(1));
   }
 
+  private normalizeMonth(value?: number) {
+    if (!Number.isInteger(value) || !value || value < 1 || value > 12) {
+      return new Date().getMonth() + 1;
+    }
+
+    return value;
+  }
+
+  private normalizeYear(value?: number) {
+    if (!Number.isInteger(value) || !value || value < 2000 || value > 3000) {
+      return new Date().getFullYear();
+    }
+
+    return value;
+  }
+
+  private buildMonthLabel(month: number, year: number) {
+    return `Tháng ${String(month).padStart(2, '0')}/${year}`;
+  }
+
+  private getCurrentMonthYear(): string {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+  }
+
+  private getStorageQuotaLimitBytes(): number {
+    const configuredLimit = Number(
+      process.env.VIDEO_STORAGE_MONTHLY_LIMIT_GB ?? DEFAULT_STORAGE_QUOTA_LIMIT_GB,
+    );
+    const limitGb =
+      Number.isFinite(configuredLimit) && configuredLimit > 0
+        ? configuredLimit
+        : DEFAULT_STORAGE_QUOTA_LIMIT_GB;
+
+    return limitGb * 1024 * 1024 * 1024;
+  }
+
   async getOverviewStats(): Promise<DashboardStatsDto> {
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
+    const currentMonthYear = this.getCurrentMonthYear();
+    const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
 
     const [
       studentStats,
@@ -125,6 +186,8 @@ export class AdminDashboardService {
       pendingCourseStats,
       enrollmentStats,
       revenueStats,
+      aiQuotaRows,
+      storageQuotaRows,
       recentOrders,
       chartData,
       ordersOverview,
@@ -204,6 +267,40 @@ export class AdminDashboardService {
             instructorPayout: '0',
           },
         ],
+      ),
+      this.queryWithFallback<QuotaRow[]>(
+        `
+          SELECT
+            MonthYear as monthYear,
+            UsedSeconds as usedSeconds
+          FROM AiQuotaTracker
+          WHERE MonthYear = ?
+          LIMIT 1
+        `,
+        [
+          {
+            monthYear: currentMonthYear,
+            usedSeconds: '0',
+          },
+        ],
+        [currentMonthYear],
+      ),
+      this.queryWithFallback<QuotaRow[]>(
+        `
+          SELECT
+            MonthYear as monthYear,
+            UsedBytes as usedBytes
+          FROM VideoStorageQuotaTracker
+          WHERE MonthYear = ?
+          LIMIT 1
+        `,
+        [
+          {
+            monthYear: currentMonthYear,
+            usedBytes: '0',
+          },
+        ],
+        [currentMonthYear],
       ),
       this.queryWithFallback<RecentTransactionRow[]>(
         `
@@ -380,6 +477,24 @@ export class AdminDashboardService {
     ]);
 
     const salesChart = this.buildSalesChart(salesChartRows);
+    const aiQuotaUsedSeconds = Number(aiQuotaRows[0]?.usedSeconds ?? 0);
+    const aiQuotaUsedMinutes = Math.floor(aiQuotaUsedSeconds / 60);
+    const aiQuotaLimitMinutes = AI_QUOTA_LIMIT_SECONDS / 60;
+    const aiQuotaPercentUsed = Math.min(
+      100,
+      Math.round((aiQuotaUsedSeconds / AI_QUOTA_LIMIT_SECONDS) * 100),
+    );
+    const storageQuotaUsedBytes = Number(storageQuotaRows[0]?.usedBytes ?? 0);
+    const storageQuotaUsedMegabytes = Math.floor(
+      storageQuotaUsedBytes / (1024 * 1024),
+    );
+    const storageQuotaLimitMegabytes = Math.floor(
+      storageQuotaLimitBytes / (1024 * 1024),
+    );
+    const storageQuotaPercentUsed = Math.min(
+      100,
+      Math.round((storageQuotaUsedBytes / storageQuotaLimitBytes) * 100),
+    );
 
     return {
       totalStudents: parseInt(String(studentStats[0]?.total ?? 0), 10),
@@ -414,6 +529,29 @@ export class AdminDashboardService {
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
       ),
+      aiQuota: {
+        monthYear: aiQuotaRows[0]?.monthYear ?? currentMonthYear,
+        usedSeconds: aiQuotaUsedSeconds,
+        usedMinutes: aiQuotaUsedMinutes,
+        limitMinutes: aiQuotaLimitMinutes,
+        remainingMinutes: Math.max(aiQuotaLimitMinutes - aiQuotaUsedMinutes, 0),
+        percentUsed: aiQuotaPercentUsed,
+        isWarning: aiQuotaPercentUsed >= 90,
+        isExceeded: aiQuotaUsedSeconds >= AI_QUOTA_LIMIT_SECONDS,
+      },
+      storageQuota: {
+        monthYear: storageQuotaRows[0]?.monthYear ?? currentMonthYear,
+        usedBytes: storageQuotaUsedBytes,
+        usedMegabytes: storageQuotaUsedMegabytes,
+        limitMegabytes: storageQuotaLimitMegabytes,
+        remainingMegabytes: Math.max(
+          storageQuotaLimitMegabytes - storageQuotaUsedMegabytes,
+          0,
+        ),
+        percentUsed: storageQuotaPercentUsed,
+        isWarning: storageQuotaPercentUsed >= 90,
+        isExceeded: storageQuotaUsedBytes >= storageQuotaLimitBytes,
+      },
       recentOrders: recentOrders.map((row) => ({
         orderId: Number(row.orderId ?? 0),
         customerName: row.customerName ?? '',
@@ -475,9 +613,97 @@ export class AdminDashboardService {
     };
   }
 
-  private async queryWithFallback<T>(sql: string, fallback: T): Promise<T> {
+  async getInstructorDebtBoard(
+    month?: number,
+    year?: number,
+  ): Promise<AdminInstructorDebtBoardDto> {
+    const selectedMonth = this.normalizeMonth(month);
+    const selectedYear = this.normalizeYear(year);
+    const monthLabel = this.buildMonthLabel(selectedMonth, selectedYear);
+    const lineNetRevenueSql = this.buildLineNetRevenueSql();
+
+    const rows = await this.dataSource.query(
+      `
+        SELECT
+          nd.MaND AS instructorId,
+          nd.HoTen AS instructorName,
+          nd.AnhDaiDien AS instructorAvatar,
+          COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') AS specialty,
+          COUNT(DISTINCT CASE WHEN hd.MaHD IS NOT NULL THEN kh.MaKH END) AS courseCount,
+          COUNT(DISTINCT hd.MaHD) AS orderCount,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${lineNetRevenueSql} ELSE 0 END), 0) AS grossRevenue,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE} ELSE 0 END), 0) AS adminRevenue,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE} ELSE 0 END), 0) AS instructorPayout
+        FROM NguoiDung nd
+        LEFT JOIN KhoaHoc kh ON kh.MaND_GiangVien = nd.MaND
+        LEFT JOIN HoSoGiangVien hsgv ON hsgv.MaND = nd.MaND
+        LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
+        LEFT JOIN ChiTietHoaDon cthd ON cthd.MaKH = kh.MaKH
+        LEFT JOIN HoaDon hd ON cthd.MaHD = hd.MaHD 
+          AND hd.TrangThaiThanhToan = 'PAID'
+          AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+          AND MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?
+        LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+        LEFT JOIN (
+          SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+          FROM ChiTietHoaDon
+          GROUP BY MaHD
+        ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+        WHERE nd.VaiTro = 'INSTRUCTOR'
+        GROUP BY nd.MaND, nd.HoTen, nd.AnhDaiDien
+        ORDER BY instructorPayout DESC, grossRevenue DESC, nd.MaND DESC
+      `,
+      [selectedYear, selectedMonth],
+    );
+
+    const items = rows.map((row) => {
+      const grossRevenue = Number(row.grossRevenue ?? 0);
+      const adminRevenue = Number(row.adminRevenue ?? 0);
+      const instructorPayout = Number(row.instructorPayout ?? 0);
+
+      return {
+        instructorId: Number(row.instructorId ?? 0),
+        instructorName: row.instructorName ?? '',
+        instructorAvatar: row.instructorAvatar ?? null,
+        specialty: row.specialty ?? null,
+        courseCount: Number(row.courseCount ?? 0),
+        orderCount: Number(row.orderCount ?? 0),
+        grossRevenue,
+        adminRevenue,
+        instructorPayout,
+        debtAmount: instructorPayout,
+      };
+    });
+
+    const summary = {
+      totalInstructors: items.filter(item => item.grossRevenue > 0).length,
+      totalCourses: items.reduce((sum, item) => sum + item.courseCount, 0),
+      totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
+      grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),
+      adminRevenue: items.reduce((sum, item) => sum + item.adminRevenue, 0),
+      instructorPayout: items.reduce(
+        (sum, item) => sum + item.instructorPayout,
+        0,
+      ),
+      topDebtAmount: items[0]?.debtAmount ?? 0,
+    };
+
+    return {
+      month: selectedMonth,
+      year: selectedYear,
+      monthLabel,
+      summary,
+      items,
+    };
+  }
+
+  private async queryWithFallback<T>(
+    sql: string,
+    fallback: T,
+    params: unknown[] = [],
+  ): Promise<T> {
     try {
-      return await this.dataSource.query(sql);
+      return await this.dataSource.query(sql, params);
     } catch (error) {
       console.error('Admin dashboard query failed:', error);
       return fallback;

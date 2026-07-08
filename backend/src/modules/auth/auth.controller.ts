@@ -41,4 +41,9 @@ export class AuthController {
       body.newPassword,
     );
   }
+
+  @Post('google-login')
+  googleLogin(@Body() body: { token: string }) {
+    return this.authService.googleLogin(body.token);
+  }
 }

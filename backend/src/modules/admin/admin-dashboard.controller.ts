@@ -1,6 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AdminDashboardService } from './admin-dashboard.service';
-import { DashboardStatsDto } from './dto/admin-dashboard.dto';
+import {
+  AdminInstructorDebtBoardDto,
+  DashboardStatsDto,
+} from './dto/admin-dashboard.dto';
 
 // Import đầy đủ các file Guard và Decorator
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -18,5 +21,17 @@ export class AdminDashboardController {
   @Roles('ADMIN')
   async getStats(): Promise<DashboardStatsDto> {
     return this.adminService.getOverviewStats();
+  }
+
+  @Get('debts')
+  @Roles('ADMIN')
+  async getInstructorDebts(
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ): Promise<AdminInstructorDebtBoardDto> {
+    return this.adminService.getInstructorDebtBoard(
+      month ? Number(month) : undefined,
+      year ? Number(year) : undefined,
+    );
   }
 }

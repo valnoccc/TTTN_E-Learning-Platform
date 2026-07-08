@@ -23,6 +23,9 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { CheckoutModule } from './modules/checkout/checkout.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PostsModule } from './modules/posts/posts.module';
+import { ForumModule } from './modules/forum/forum.module';
+import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -59,6 +62,9 @@ import { PostsModule } from './modules/posts/posts.module';
     CheckoutModule,
     NotificationsModule,
     PostsModule,
+    ForumModule,
+    LearningToolsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

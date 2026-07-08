@@ -2,21 +2,63 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { KhoaHoc } from '../entities/course.entity';
 
+type CourseLessonRow = {
+  maBH?: number | string;
+  tenBaiHoc?: string | null;
+  videoURL?: string | null;
+  thuTu?: number | string | null;
+  aiStatus?: string | null;
+  aiRejectReason?: string | null;
+};
+
+const COURSE_REVIEW_THRESHOLD = 0.2;
+const COURSE_AUTO_REJECT_THRESHOLD = 0.4;
+
 @Injectable()
-export class CoursesService {
+export class CoursesService implements OnModuleInit {
+  private courseSchemaReady: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  async onModuleInit() {
+    await this.ensureCourseSchema();
+  }
+
+  private ensureCourseSchema() {
+    if (!this.courseSchemaReady) {
+      this.courseSchemaReady = (async () => {
+        await this.dataSource.query(
+          `ALTER TABLE \`KhoaHoc\`
+           ADD COLUMN IF NOT EXISTS \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`YeuCauKhoaHoc\``,
+        );
+
+        await this.dataSource.query(
+          `ALTER TABLE \`KhoaHoc\`
+           MODIFY COLUMN \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
+        );
+      })();
+    }
+
+    return this.courseSchemaReady;
+  }
 
   async getCoursesByInstructor(instructorId: number) {
     return await this.khoaHocRepository.find({
@@ -26,7 +68,10 @@ export class CoursesService {
   }
 
   async createCourse(payload: any, mucTieu: string[], yeuCau: string[]) {
-    const newCourse = this.khoaHocRepository.create(payload);
+    const newCourse = this.khoaHocRepository.create({
+      ...payload,
+      ngayCapNhat: new Date(),
+    });
     const savedCourse = await this.khoaHocRepository.save(newCourse);
     const courseId = (savedCourse as any).maKH;
 
@@ -61,7 +106,7 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Bạn không có quyền xóa khóa học này');
+      throw new ForbiddenException('B?n kh?ng c? quy?n x?a kh?a h?c n?y');
     }
 
     const hasBuyers = await this.dataSource.query(
@@ -70,15 +115,20 @@ export class CoursesService {
     );
 
     if (hasBuyers[0].count > 0) {
-      await this.khoaHocRepository.update(courseId, { trangThai: 'DRAFT' });
+      await this.khoaHocRepository.update(courseId, {
+        trangThai: 'DRAFT',
+        ngayCapNhat: new Date(),
+      });
       return {
         message:
-          'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẩn.',
+          'Kh?a h?c ?? c? h?c vi?n mua, h? th?ng ?? chuy?n sang tr?ng th?i ?n.',
       };
     }
 
-    // Xóa các bảng phụ thuộc trước để tránh lỗi Foreign Key Constraint
-    // 1. Mục tiêu và Yêu cầu
+    await this.deleteStoredCourseAssets(courseId, course.hinhThuNho ?? null);
+
+    // Delete dependent tables before deleting the course to avoid FK errors
+    // 1. Objectives and requirements
     await this.dataSource.query(`DELETE FROM MucTieuKhoaHoc WHERE MaKH = ?`, [
       courseId,
     ]);
@@ -86,7 +136,7 @@ export class CoursesService {
       courseId,
     ]);
 
-    // 2. Thảo luận (xóa con trước rồi xóa cha)
+    // 2. Discussions (delete children before parents)
     await this.dataSource.query(
       `DELETE FROM ThaoLuanKhoaHoc WHERE MaThaoLuanCha IN (
          SELECT MaThaoLuan FROM (SELECT MaThaoLuan FROM ThaoLuanKhoaHoc WHERE MaKH = ?) AS temp
@@ -97,7 +147,7 @@ export class CoursesService {
       courseId,
     ]);
 
-    // 3. Đánh giá
+    // 3. Reviews
     await this.dataSource.query(
       `DELETE FROM DanhGiaKhoaHoc WHERE MaDanhGiaCha IN (
          SELECT MaDanhGia FROM (SELECT MaDanhGia FROM DanhGiaKhoaHoc WHERE MaKH = ?) AS temp
@@ -108,7 +158,7 @@ export class CoursesService {
       courseId,
     ]);
 
-    // 4. Đăng ký & Tiến độ
+    // 4. Enrollments & progress
     await this.dataSource.query(`DELETE FROM DangKyKhoaHoc WHERE MaKH = ?`, [
       courseId,
     ]);
@@ -117,7 +167,7 @@ export class CoursesService {
       [courseId],
     );
 
-    // 5. Bài học và Chương học
+    // 5. Lessons and chapters
     await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaKH = ?`, [
       courseId,
     ]);
@@ -125,9 +175,57 @@ export class CoursesService {
       courseId,
     ]);
 
-    // Cuối cùng mới xóa khóa học
+    // Delete the course last
     await this.khoaHocRepository.delete(courseId);
-    return { message: 'Đã xóa khóa học thành công.' };
+    return { message: '?? x?a kh?a h?c th?nh c?ng.' };
+  }
+
+  private async deleteStoredCourseAssets(
+    courseId: number,
+    thumbnailUrl: string | null,
+  ) {
+    const lessonRows: Array<{ maBH?: number | string; videoURL?: string | null }> =
+      await this.dataSource.query(
+        `SELECT MaBH AS maBH, VideoURL AS videoURL
+         FROM BaiHoc
+         WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
+        [courseId],
+      );
+
+    await Promise.all(
+      lessonRows.map(async (lesson) => {
+        const videoUrl = lesson.videoURL?.trim();
+        if (!videoUrl) return;
+        await this.deleteStoredVideo(videoUrl);
+      }),
+    );
+
+    if (thumbnailUrl?.trim() && thumbnailUrl.includes('cloudinary.com')) {
+      const publicId = this.cloudinaryService.extractPublicId(thumbnailUrl);
+      if (publicId) {
+        try {
+          await this.cloudinaryService.deleteFile(publicId, 'image');
+        } catch (error) {
+          console.error('Khong the xoa thumbnail khoa hoc:', error);
+        }
+      }
+    }
+  }
+
+  private async deleteStoredVideo(videoUrl: string) {
+    try {
+      if (videoUrl.includes('cloudinary.com')) {
+        const publicId = this.cloudinaryService.extractPublicId(videoUrl);
+        if (publicId) {
+          await this.cloudinaryService.deleteFile(publicId, 'video');
+        }
+        return;
+      }
+
+      await this.lessonVideoStorageService.deleteVideo(videoUrl);
+    } catch (error) {
+      console.error('Khong the xoa video bai hoc khi xoa khoa hoc:', error);
+    }
   }
 
   async updateCourseStatus(
@@ -140,24 +238,166 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+      throw new ForbiddenException('B?n kh?ng c? quy?n s?a kh?a h?c n?y');
     }
 
     if (trangThai === 'PENDING') {
-      const lessonCount = await this.dataSource.query(
-        `SELECT COUNT(*) as count FROM BaiHoc WHERE MaKH = ?`,
+      const lessons: CourseLessonRow[] = await this.dataSource.query(
+        `SELECT MaBH AS maBH, TenBaiHoc AS tenBaiHoc, VideoURL AS videoURL, ThuTu AS thuTu, AiStatus AS aiStatus, AiRejectReason AS aiRejectReason
+         FROM BaiHoc
+         WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''
+         ORDER BY ThuTu ASC, MaBH ASC`,
         [courseId],
       );
 
-      if (Number(lessonCount[0].count) === 0) {
+      if (lessons.length === 0) {
         throw new BadRequestException(
-          'Khóa học chưa hoàn thiện. Cần ít nhất 1 bài học để gửi duyệt!',
+          'Kh?a h?c ch?a c? video ?? g?i duy?t. Vui l?ng th?m ?t nh?t 1 b?i h?c c? video.',
         );
       }
+
+      const normalizeStatus = (value: string | null | undefined) =>
+        String(value ?? '').trim().toUpperCase();
+
+      const pendingLessons = lessons.filter((lesson) =>
+        ['PENDING', 'PROCESSING'].includes(normalizeStatus(lesson.aiStatus)),
+      );
+      if (pendingLessons.length > 0) {
+        const details = pendingLessons
+          .map((lesson) => {
+            const lessonTitle = lesson.tenBaiHoc?.trim() || `B?i ${lesson.maBH}`;
+            const status = lesson.aiStatus || 'CHUA KIEM DUYET';
+            return `- ${lessonTitle}: ${status}`;
+          })
+          .join('\n');
+
+        throw new BadRequestException(
+          `Kh?a h?c c?n video ?ang ch? AI x? l?. Vui l?ng ??i ho?n t?t tr??c khi g?i duy?t.\n${details}`,
+        );
+      }
+
+      const flaggedLessons = lessons.filter((lesson) => {
+        const status = normalizeStatus(lesson.aiStatus);
+        return status === 'NEEDS_REVIEW' || status === 'REJECTED';
+      });
+      const reviewRatio = flaggedLessons.length / lessons.length;
+
+      const nextStatus =
+        reviewRatio <= COURSE_REVIEW_THRESHOLD
+          ? 'PUBLISHED'
+          : reviewRatio <= COURSE_AUTO_REJECT_THRESHOLD
+            ? 'PENDING'
+            : 'DRAFT';
+
+      await this.khoaHocRepository.update(courseId, {
+        trangThai: nextStatus,
+        ngayCapNhat: new Date(),
+      });
+
+      if (nextStatus === 'PUBLISHED') {
+        await this.sendAutoApproveNotification({
+          instructorId,
+          courseName: course.tenKhoaHoc,
+          reviewRatio,
+          totalVideoLessons: lessons.length,
+        });
+      }
+
+      if (nextStatus === 'DRAFT' && flaggedLessons.length > 0) {
+        await this.sendAutoRejectNotification({
+          courseId,
+          instructorId,
+          courseName: course.tenKhoaHoc,
+          reviewRatio,
+          flaggedLessons,
+        });
+      }
+
+      return {
+        id: courseId,
+        trangThai: nextStatus,
+        reviewRatio,
+        reviewCount: flaggedLessons.length,
+        totalVideoLessons: lessons.length,
+      };
     }
 
-    await this.khoaHocRepository.update(courseId, { trangThai });
-    return { message: 'Cập nhật trạng thái thành công' };
+    await this.khoaHocRepository.update(courseId, {
+      trangThai,
+      ngayCapNhat: new Date(),
+    });
+    return {
+      id: courseId,
+      trangThai,
+      reviewRatio: null,
+      reviewCount: 0,
+      totalVideoLessons: 0,
+    };
+  }
+
+  private async sendAutoRejectNotification(input: {
+    courseId: number;
+    instructorId: number;
+    courseName?: string | null;
+    reviewRatio: number;
+    flaggedLessons: CourseLessonRow[];
+  }) {
+    const { instructorId, courseName, reviewRatio, flaggedLessons, courseId } = input;
+    const safeCourseName = courseName?.trim() || `KhÃ³a há»c #${courseId}`;
+    const lessonSummary = flaggedLessons
+      .slice(0, 5)
+      .map((lesson) => {
+        const lessonTitle = lesson.tenBaiHoc?.trim() || `BÃ i ${lesson.maBH}`;
+        const status = lesson.aiStatus || 'UNKNOWN';
+        const reason = lesson.aiRejectReason?.trim();
+        return `- ${lessonTitle} (${status})${reason ? `: ${reason}` : ''}`;
+      })
+      .join('\n');
+
+    try {
+      await this.notificationsService.createNotification({
+        maND: instructorId,
+        maNguoiGui: null,
+        loaiThongBao: NotificationType.COURSE,
+        tieuDe: 'KhÃ³a há»c bá» tá»« chá»i tá»± Äá»ng',
+        noiDung: [
+          `${safeCourseName} ÄÃ£ bá» tá»« chá»i tá»± Äá»ng vÃ¬ tá»· lá» ná»i dung cáº§n Äiá»u chá»nh lÃ  ${Math.round(
+            reviewRatio * 100,
+          )}% vÃ  vÆ°á»£t ngÆ°á»¡ng cho phÃ©p.`,
+          'Vui lÃ²ng Äiá»u chá»nh láº¡i ná»i dung khÃ³a há»c cho phÃ¹ há»£p trÆ°á»c khi gá»­i duyá»t láº¡i.',
+          lessonSummary ? `CÃ¡c bÃ i há»c cáº§n xem láº¡i:\n${lessonSummary}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+        daDoc: false,
+      });
+    } catch (error) {
+      console.error('KhÃ´ng thá» gá»­i thÃ´ng bÃ¡o tá»± Äá»ng tá»« chá»i khÃ³a há»c:', error);
+    }
+  }
+
+  private async sendAutoApproveNotification(input: {
+    instructorId: number;
+    courseName?: string | null;
+    reviewRatio: number;
+    totalVideoLessons: number;
+  }) {
+    const { instructorId, courseName, reviewRatio, totalVideoLessons } = input;
+    const safeCourseName = courseName?.trim() || 'Kh???a h???c c???a b???n';
+    const percent = Math.round(reviewRatio * 100);
+
+    try {
+      await this.notificationsService.createNotification({
+        maND: instructorId,
+        maNguoiGui: null,
+        loaiThongBao: NotificationType.COURSE,
+        tieuDe: 'Kh???a h???c ???? ???????c t??? duy???t',
+        noiDung: `${safeCourseName} ???? ???????c t??? duy???t v?? s???n s??ng public. T??? l??? n???i dung c???n ??i???u ch???nh l?? ${percent}% tr??n ${totalVideoLessons} b??i h???c c?? video.`,
+        daDoc: false,
+      });
+    } catch (error) {
+      console.error('Kh??ng th??? g???i th??ng b??o t??? duy???t kh??a h???c:', error);
+    }
   }
 
   async getCourseById(courseId: number, instructorId: number) {
@@ -167,7 +407,7 @@ export class CoursesService {
 
     if (!course) {
       throw new ForbiddenException(
-        'Không tìm thấy khóa học hoặc bạn không có quyền truy cập',
+        'Kh?ng t?m th?y kh?a h?c ho?c b?n kh?ng c? quy?n truy c?p',
       );
     }
 
@@ -199,13 +439,13 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+      throw new ForbiddenException('B?n kh?ng c? quy?n s?a kh?a h?c n?y');
     }
 
     const previousThumbnail = course.hinhThuNho;
     const nextThumbnail = payload.hinhThuNho;
 
-    Object.assign(course, payload);
+    Object.assign(course, payload, { ngayCapNhat: new Date() });
     const updatedCourse = await this.khoaHocRepository.save(course);
 
     if (mucTieu !== undefined) {
@@ -252,13 +492,13 @@ export class CoursesService {
   }
 
   /**
-   * Tính toán tổng số lượng khóa học và tổng số học viên của một giảng viên
-   * Xử lý trường hợp dữ liệu rỗng và đảm bảo tính thống nhất của logic đếm.
+   * T?nh t?ng s? l??ng kh?a h?c v? t?ng s? h?c vi?n c?a m?t gi?ng vi?n
+   * X? l? tr??ng h?p d? li?u r?ng v? ??m b?o t?nh th?ng nh?t c?a logic ??m.
    */
   async getInstructorStats(
     instructorId: number,
   ): Promise<{ totalCourses: number; totalStudents: number }> {
-    // Tính tổng số khóa học (bao gồm cả đang chờ duyệt và đã duyệt)
+    // T?nh t?ng s? kh?a h?c (bao g?m c? ?ang ch? duy?t v? ?? duy?t)
     const totalCoursesResult = await this.dataSource.query(
       `SELECT COUNT(*) as total FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING')`,
       [instructorId],
@@ -268,8 +508,8 @@ export class CoursesService {
         ? Number(totalCoursesResult[0].total || 0)
         : 0;
 
-    // Tính tổng số học viên (unique) đăng ký tất cả khóa học của giảng viên
-    // Đảm bảo chỉ đếm các giao dịch ACTIVE
+    // T?nh t?ng s? h?c vi?n (unique) ??ng k? t?t c? kh?a h?c c?a gi?ng vi?n
+    // ??m b?o ch? ??m c?c giao d?ch ACTIVE
     const totalStudentsResult = await this.dataSource.query(
       `SELECT COUNT(DISTINCT dk.MaND) as total 
        FROM DangKyKhoaHoc dk 
@@ -286,7 +526,7 @@ export class CoursesService {
   }
 
   /**
-   * Tính toán tổng số lượng học viên đã đăng ký thành công một khóa học cụ thể
+   * T?nh t?ng s? l??ng h?c vi?n ?? ??ng k? th?nh c?ng m?t kh?a h?c c? th?
    */
   async getCourseTotalStudents(courseId: number): Promise<number> {
     const courseStudentsResult = await this.dataSource.query(
@@ -300,3 +540,4 @@ export class CoursesService {
       : 0;
   }
 }
+

@@ -73,8 +73,8 @@ function getStatusLabel(status: AdminUserStatus) {
   switch (status) {
     case 'ACTIVE':
       return 'Hoạt động';
-    case 'INACTIVE':
-      return 'Tạm khóa';
+    case 'LOCKED':
+      return 'Đã khóa';
     default:
       return 'Đã xóa';
   }
@@ -84,7 +84,7 @@ function getStatusClass(status: AdminUserStatus) {
   switch (status) {
     case 'ACTIVE':
       return 'border-emerald-500 bg-emerald-500 text-white shadow-sm';
-    case 'INACTIVE':
+    case 'LOCKED':
       return 'border-amber-500 bg-amber-500 text-white shadow-sm';
     default:
       return 'border-rose-500 bg-rose-500 text-white shadow-sm';
@@ -330,7 +330,7 @@ export default function AdminUsers() {
               >
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="ACTIVE">Hoạt động</option>
-                <option value="INACTIVE">Tạm khóa</option>
+                <option value="LOCKED">Đã khóa</option>
                 <option value="DELETED">Đã xóa</option>
               </select>
             </label>
@@ -489,7 +489,7 @@ export default function AdminUsers() {
       onClick={() =>
         void updateUserStatus(
           user.id,
-          user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+          user.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE',
         )
       }
       className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-[12px] font-semibold shadow-sm transition ${
@@ -654,7 +654,7 @@ export default function AdminUsers() {
                       className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
                     >
                       <option value="ACTIVE">Hoạt động</option>
-                      <option value="INACTIVE">Tạm khóa</option>
+                      <option value="LOCKED">Đã khóa</option>
                       <option value="DELETED">Đã xóa</option>
                     </select>
                   </label>

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Category } from '../../categories/entities/category.entity';
@@ -52,6 +53,12 @@ export class KhoaHoc {
 
   @Column({ name: 'YeuCauKhoaHoc', type: 'text', nullable: true })
   yeuCauKhoaHoc?: string;
+
+  @UpdateDateColumn({
+    name: 'NgayCapNhat',
+    type: 'datetime',
+  })
+  ngayCapNhat!: Date;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'MaND_GiangVien' })

@@ -13,6 +13,8 @@ import {
   processPayment,
   validateCoupon,
   createMomoPayment,
+  getAvailableCoupons,
+  AvailableCoupon,
 } from '../../../../api/checkout';
 import { removeFromCart } from '../../../cart/cartSlice';
 import { CouponModal } from '../../components/checkout/CouponModal';
@@ -104,7 +106,7 @@ export default function Checkout() {
     try {
       const availableCoupons = await getAvailableCoupons(courseIds);
       if (availableCoupons && availableCoupons.length > 0) {
-        availableCoupons.sort((a, b) => {
+        availableCoupons.sort((a: AvailableCoupon, b: AvailableCoupon) => {
           if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
           return (b.calculatedDiscount || 0) - (a.calculatedDiscount || 0);
         });

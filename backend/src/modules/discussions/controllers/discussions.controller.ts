@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -82,6 +83,22 @@ export class DiscussionsController {
 
     return {
       message: 'Xóa bình luận hỏi đáp thành công',
+      data: result,
+    };
+  }
+
+  @Patch('discussions/:discussionId/reject-reports')
+  async rejectDiscussionReports(
+    @Param('discussionId') discussionId: string,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.discussionsService.rejectDiscussionReports(
+      Number(discussionId),
+      req.user.sub,
+    );
+
+    return {
+      message: 'Bỏ qua báo cáo thành công',
       data: result,
     };
   }

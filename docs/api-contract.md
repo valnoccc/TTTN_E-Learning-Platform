@@ -14,6 +14,7 @@ Source of truth:
 
 ## Users (Admin - Quan ly nguoi dung)
 - `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; bao gom `grossRevenue`, `adminRevenue = 20%`, `instructorPayout = 80%`, `newEnrollments`, `pendingCourses`, `revenueChart`, `salesChart`, `categoryRevenue`, `topCourses`, `topInstructors`, `recentOrders` va cac KPI tang truong)
+- `GET /admin/dashboard/debts?month=MM&year=YYYY` (Admin - Lay cong no giang vien theo thang; tra ve `monthLabel`, `summary` va `items` cho tung giang vien, trong do `debtAmount = instructorPayout = 80% doanh thu hop le trong thang`)
 - `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
 - `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
 - `PATCH /admin/users/:id/role` (Admin - Cap vai tro he thong, body: `{ role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)
@@ -65,6 +66,12 @@ Admin (Kiem duyet)
 - `POST /courses/:courseId/lessons` (Instructor - Them bai hoc moi, ho tro `choPhepXemTruoc`)
 - `PATCH /lessons/:id` (Instructor - Sua noi dung bai hoc, ho tro `choPhepXemTruoc`)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
+
+## Forum (Cong dong)
+- `GET /forum/questions` (Public - Danh sach topic)
+- `GET /forum/questions/:id` (Public - Chi tiet topic)
+- `GET /forum/admin/questions` (Admin - Danh sach topic cap 1, ho tro `search`, `page`, `limit`, tra ve `summary`)
+- `DELETE /forum/admin/questions/:id` (Admin - Xoa topic cap 1 va cac tra loi lien quan theo cascade)
 
 ## Enrollments & Progress (Giao dich & Tien do)
 - `POST /enrollments` (Dang ky mua/Thanh toan khoa hoc)

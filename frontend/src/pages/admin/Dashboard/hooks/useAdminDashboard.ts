@@ -85,6 +85,26 @@ export interface DashboardStats {
     adminRevenue: number;
     instructorPayout: number;
     revenueGrowth: number;
+    aiQuota: {
+        monthYear: string;
+        usedSeconds: number;
+        usedMinutes: number;
+        limitMinutes: number;
+        remainingMinutes: number;
+        percentUsed: number;
+        isWarning: boolean;
+        isExceeded: boolean;
+    };
+    storageQuota: {
+        monthYear: string;
+        usedBytes: number;
+        usedMegabytes: number;
+        limitMegabytes: number;
+        remainingMegabytes: number;
+        percentUsed: number;
+        isWarning: boolean;
+        isExceeded: boolean;
+    };
     recentOrders: RecentOrder[];
     revenueChart: RevenueChartData[];
     salesOverview: SalesOverview;

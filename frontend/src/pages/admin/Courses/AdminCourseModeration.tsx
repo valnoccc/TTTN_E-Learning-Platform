@@ -183,15 +183,14 @@ export default function AdminCourseModeration() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full table-fixed text-left"> {/* Thêm table-fixed vào đây */}
+                            <table className="w-full min-w-[900px] table-fixed text-left">
                                 <thead className="bg-slate-50/50">
                                     <tr>
-                                        {/* Thiết lập width cụ thể cho từng cột để cân đối không gian */}
                                         <th className="w-[35%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Khóa học</th>
                                         <th className="w-[25%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Giảng viên</th>
-                                        <th className="w-[15%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Chi tiết</th>
-                                        <th className="w-[10%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Chi tiết</th>
-                                        <th className="w-[15%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Trạng thái</th>
+                                        <th className="w-[15%] px-6 py-4 text-[12px] font-bold uppercase tracking-wider text-slate-500">Phân loại</th>
+                                        <th className="w-[12%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Trạng thái</th>
+                                        <th className="w-[13%] px-6 py-4 text-center text-[12px] font-bold uppercase tracking-wider text-slate-500">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -228,10 +227,10 @@ export default function AdminCourseModeration() {
                                                     </div>
                                                     {/* min-w-0 giúp text truncate hoạt động đúng trong flexbox */}
                                                     <div className="min-w-0 flex-1">
-                                                        <h3 className="truncate text-[14px] font-semibold text-slate-800">
+                                                        <h3 className="truncate text-[14px] font-semibold text-slate-800" title={course.tenKhoaHoc}>
                                                             {course.tenKhoaHoc}
                                                         </h3>
-                                                        <p className="mt-1 truncate text-[13px] text-slate-500">
+                                                        <p className="mt-1 line-clamp-2 text-[13px] text-slate-500" title={course.moTa || 'Chưa có mô tả khóa học.'}>
                                                             {course.moTa || 'Chưa có mô tả khóa học.'}
                                                         </p>
                                                         <p className="mt-1.5 text-[12px] font-medium text-slate-400">
@@ -289,16 +288,6 @@ export default function AdminCourseModeration() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5 align-middle text-center">
-                                                <button
-                                                    onClick={() => navigate(`/admin/courses/${course.id}`)}
-                                                    // Thêm whitespace-nowrap để chữ không bị rớt dòng, giảm padding (px-3 py-1.5) và text-[12px]
-                                                    className="whitespace-nowrap rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-blue-700 active:bg-blue-800"
-                                                >
-                                                    Xem chi tiết
-                                                </button>
-                                            </td>
-                                            {/* Thêm px-6, py-5 và align-middle để đồng bộ chiều cao và căn giữa dọc với các cột khác */}
-                                            <td className="px-6 py-5 align-middle text-center">
                                                 {(() => {
                                                     const statusDisplay = getStatusDisplay(course.trangThai);
                                                     return (
@@ -309,6 +298,14 @@ export default function AdminCourseModeration() {
                                                         </span>
                                                     );
                                                 })()}
+                                            </td>
+                                            <td className="px-6 py-5 align-middle text-center">
+                                                <button
+                                                    onClick={() => navigate(`/admin/courses/${course.id}`)}
+                                                    className="whitespace-nowrap rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-blue-700 active:bg-blue-800"
+                                                >
+                                                    Xem chi tiết
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

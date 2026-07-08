@@ -1,8 +1,13 @@
+jest.mock('../../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { KhoaHoc } from '../entities/course.entity';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 import { CourseStudentService } from './course-student.service';
 
 describe('CourseStudentService', () => {
@@ -14,6 +19,9 @@ describe('CourseStudentService', () => {
   let dataSource: {
     query: jest.Mock;
   };
+  let lessonVideoStorageService: {
+    getPlayableUrl: jest.Mock;
+  };
 
   beforeEach(async () => {
     khoaHocRepository = {
@@ -23,12 +31,19 @@ describe('CourseStudentService', () => {
     dataSource = {
       query: jest.fn(),
     };
+    lessonVideoStorageService = {
+      getPlayableUrl: jest.fn(async (url) => url),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CourseStudentService,
         { provide: getRepositoryToken(KhoaHoc), useValue: khoaHocRepository },
         { provide: DataSource, useValue: dataSource },
+        {
+          provide: LessonVideoStorageService,
+          useValue: lessonVideoStorageService,
+        },
       ],
     }).compile();
 
@@ -55,6 +70,7 @@ describe('CourseStudentService', () => {
           {
             averageRating: '4.6',
             totalLessons: '12',
+            totalDurationSeconds: '7200',
           },
         ],
       }),
@@ -74,6 +90,7 @@ describe('CourseStudentService', () => {
         giaBan: 0,
         averageRating: '4.6',
         totalLessons: 12,
+        totalDurationSeconds: 7200,
       },
     ]);
 
@@ -102,6 +119,12 @@ describe('CourseStudentService', () => {
         hoTen: 'Tran Van B',
         anhDaiDien: 'https://example.com/avatar.png',
       },
+      baiHocs: [
+        {
+          maBH: 10,
+          videoURL: 'https://example.com/video.mp4',
+        },
+      ],
     });
     dataSource.query
       .mockResolvedValueOnce([{ NoiDung: 'Nham vung React co ban' }])
@@ -130,7 +153,17 @@ describe('CourseStudentService', () => {
         totalStudents: 30,
         muc_tieu: ['Nham vung React co ban'],
         yeu_cau: ['Biet JavaScript co ban'],
+        baiHocs: [
+          expect.objectContaining({
+            maBH: 10,
+            videoURL: 'https://example.com/video.mp4',
+          }),
+        ],
       }),
+    );
+
+    expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledWith(
+      'https://example.com/video.mp4',
     );
   });
 
@@ -221,5 +254,9 @@ describe('CourseStudentService', () => {
         ],
       },
     ]);
+
+    expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledWith(
+      'https://example.com/video.mp4',
+    );
   });
 });

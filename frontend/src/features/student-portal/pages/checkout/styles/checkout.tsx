@@ -6,6 +6,39 @@ export const Styles = styled.div`
         padding: 60px 0;
         background-color: #f8f9fa;
 
+        .checkout-area .container,
+        & > .container {
+            width     : 80%;
+            max-width : 80%;
+            margin    : 0 auto;
+        }
+
+        @media(max-width: 1399px) {
+            .checkout-area .container,
+            & > .container {
+                width     : 88%;
+                max-width : 88%;
+            }
+        }
+
+        @media(max-width: 991px) {
+            .checkout-area .container,
+            & > .container {
+                width     : 92%;
+                max-width : 92%;
+            }
+        }
+
+        @media(max-width: 767px) {
+            .checkout-area .container,
+            & > .container {
+                width        : 100%;
+                max-width    : 100%;
+                padding-left : 15px;
+                padding-right: 15px;
+            }
+        }
+
         .card-box {
             background: #fff;
             padding: 30px;

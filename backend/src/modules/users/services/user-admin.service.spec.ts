@@ -33,7 +33,7 @@ describe('UserAdminService', () => {
         {
           totalUsers: '20',
           activeUsers: '18',
-          inactiveUsers: '1',
+          lockedUsers: '1',
           deletedUsers: '1',
           admins: '2',
           instructors: '5',
@@ -67,7 +67,7 @@ describe('UserAdminService', () => {
       summary: {
         totalUsers: 20,
         activeUsers: 18,
-        inactiveUsers: 1,
+        lockedUsers: 1,
         deletedUsers: 1,
         admins: 2,
         instructors: 5,
@@ -82,18 +82,37 @@ describe('UserAdminService', () => {
     );
   });
 
-  it('updates user status and returns the next state', async () => {
+  it('updates user status to LOCKED and returns the next state', async () => {
     dataSource.query
       .mockResolvedValueOnce([{ MaND: 7 }])
       .mockResolvedValueOnce([]);
 
-    await expect(service.updateUserStatus(7, 'inactive')).resolves.toEqual({
+    await expect(service.updateUserStatus(7, 'locked')).resolves.toEqual({
       message: 'Cập nhật trạng thái người dùng thành công.',
       data: {
         id: 7,
-        status: 'INACTIVE',
+        status: 'LOCKED',
       },
     });
+  });
+
+  it('persists LOCKED in TrangThai only', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ MaND: 7 }])
+      .mockResolvedValueOnce([]);
+
+    await expect(service.updateUserStatus(7, 'locked')).resolves.toMatchObject({
+      data: {
+        id: 7,
+        status: 'LOCKED',
+      },
+    });
+
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?'),
+      ['LOCKED', 7],
+    );
   });
 
   it('updates user role and rejects invalid ids for bulk updates', async () => {
@@ -117,8 +136,8 @@ describe('UserAdminService', () => {
   it('throws when target user does not exist', async () => {
     dataSource.query.mockResolvedValueOnce([]);
 
-    await expect(
-      service.updateUserStatus(999, 'ACTIVE'),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.updateUserStatus(999, 'ACTIVE')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

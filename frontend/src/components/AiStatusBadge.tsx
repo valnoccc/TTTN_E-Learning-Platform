@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock, XCircle, Tag } from 'lucide-react';
 import axiosClient from '../api/axios';
 
-type AiStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+type AiStatus = 'PENDING' | 'PROCESSING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' | null;
 
 interface AiStatusBadgeProps {
   lessonId: number;
@@ -64,11 +64,13 @@ export function AiStatusBadge({
   // Nếu chưa có video (null) thì không hiển thị gì
   if (status === null) return null;
 
-  if (status === 'PENDING') {
+  if (status === 'PENDING' || status === 'PROCESSING') {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
         <Clock size={14} className="animate-pulse text-amber-500" />
-        <span className="text-[12px] font-semibold text-amber-700">⏳ AI đang kiểm duyệt...</span>
+        <span className="text-[12px] font-semibold text-amber-700">
+          ⏳ AI đang kiểm duyệt...
+        </span>
         {import.meta.env.DEV && (
           <button
             onClick={async () => {
@@ -122,6 +124,24 @@ export function AiStatusBadge({
         </div>
         {rejectReason && (
           <p className="mt-1 pl-5 text-[11px] leading-relaxed text-rose-600">
+            {rejectReason}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (status === 'NEEDS_REVIEW') {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Clock size={14} className="text-amber-600" />
+          <span className="text-[12px] font-semibold text-amber-700">
+            ⚠️ Video cần admin duyệt
+          </span>
+        </div>
+        {rejectReason && (
+          <p className="mt-1 pl-5 text-[11px] leading-relaxed text-amber-700">
             {rejectReason}
           </p>
         )}
