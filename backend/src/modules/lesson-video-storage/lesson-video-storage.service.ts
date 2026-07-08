@@ -7,7 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Storage } from '@google-cloud/storage';
 import { DataSource } from 'typeorm';
-import { extname } from 'path';
+import { readFileSync } from 'fs';
+import { extname, isAbsolute, resolve } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface LessonVideoUploadFile {
@@ -39,9 +40,10 @@ export class LessonVideoStorageService implements OnModuleInit {
     const privateKeyJson = this.configService
       .get<string>('GCS_PRIVATE_KEY_JSON')
       ?.trim();
-    const credentials = privateKeyJson
-      ? this.parseCredentials(privateKeyJson)
-      : undefined;
+    const keyFilename = this.configService
+      .get<string>('GOOGLE_APPLICATION_CREDENTIALS')
+      ?.trim();
+    const credentials = this.resolveCredentials(privateKeyJson, keyFilename);
 
     this.storage = new Storage({
       ...(projectId ? { projectId } : {}),
@@ -285,11 +287,35 @@ export class LessonVideoStorageService implements OnModuleInit {
     return value;
   }
 
-  private parseCredentials(rawJson: string) {
-    try {
-      return JSON.parse(rawJson) as Record<string, string>;
-    } catch {
-      throw new Error('Missing or invalid configuration: GCS_PRIVATE_KEY_JSON');
+  private resolveCredentials(
+    rawJson?: string,
+    keyFilename?: string,
+  ): Record<string, string> | undefined {
+    if (rawJson) {
+      try {
+        return JSON.parse(rawJson) as Record<string, string>;
+      } catch {
+        this.logger.warn(
+          'GCS_PRIVATE_KEY_JSON khong hop le, thu fallback GOOGLE_APPLICATION_CREDENTIALS.',
+        );
+      }
     }
+
+    if (keyFilename) {
+      try {
+        const filePath = keyFilename.replace(/^['"]|['"]$/g, '');
+        const fileContent = readFileSync(
+          isAbsolute(filePath) ? filePath : resolve(process.cwd(), filePath),
+          'utf8',
+        ).trim();
+        return JSON.parse(fileContent) as Record<string, string>;
+      } catch {
+        throw new Error(
+          'Missing or invalid configuration: GOOGLE_APPLICATION_CREDENTIALS',
+        );
+      }
+    }
+
+    throw new Error('Missing or invalid configuration: GCS_PRIVATE_KEY_JSON');
   }
 }

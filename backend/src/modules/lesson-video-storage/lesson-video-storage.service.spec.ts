@@ -21,6 +21,8 @@ jest.mock('uuid', () => ({
 }));
 
 import { ConfigService } from '@nestjs/config';
+import { unlinkSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { LessonVideoStorageService } from './lesson-video-storage.service';
 
 describe('LessonVideoStorageService', () => {
@@ -31,12 +33,18 @@ describe('LessonVideoStorageService', () => {
   let dataSource: {
     query: jest.Mock;
   };
+  const tempKeyFilePath = join(process.cwd(), 'tmp-gcs-key.json');
 
   beforeEach(() => {
     saveMock.mockReset();
     makePublicMock.mockReset();
     deleteMock.mockReset();
     bucketMock.file.mockClear();
+    try {
+      unlinkSync(tempKeyFilePath);
+    } catch {
+      // ignore
+    }
     dataSource = {
       query: jest.fn().mockResolvedValue(undefined),
     };
@@ -53,6 +61,9 @@ describe('LessonVideoStorageService', () => {
             client_email: 'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
             private_key: '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
           });
+        }
+        if (key === 'GOOGLE_APPLICATION_CREDENTIALS') {
+          return undefined;
         }
         return undefined;
       }),
@@ -106,5 +117,37 @@ describe('LessonVideoStorageService', () => {
       expect.stringContaining('INSERT INTO VideoStorageQuotaTracker'),
       expect.arrayContaining([expect.any(String), 2_097_152, 2_097_152]),
     );
+  });
+
+  it('falls back to GOOGLE_APPLICATION_CREDENTIALS when JSON config is invalid', async () => {
+    writeFileSync(
+      tempKeyFilePath,
+      JSON.stringify({
+        client_email: 'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
+        private_key: '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
+      }),
+    );
+
+    configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'GCS_BUCKET_NAME') {
+          return 'video-storage-lvtn';
+        }
+        if (key === 'GCP_PROJECT_ID') {
+          return 'video-intelligence-app-500806';
+        }
+        if (key === 'GCS_PRIVATE_KEY_JSON') {
+          return '{';
+        }
+        if (key === 'GOOGLE_APPLICATION_CREDENTIALS') {
+          return tempKeyFilePath;
+        }
+        return undefined;
+      }),
+    };
+
+    expect(
+      new LessonVideoStorageService(configService as ConfigService, dataSource as never),
+    ).toBeInstanceOf(LessonVideoStorageService);
   });
 });
