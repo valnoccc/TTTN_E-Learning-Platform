@@ -36,14 +36,17 @@ export class LessonVideoStorageService implements OnModuleInit {
   ) {
     this.bucketName = this.getRequiredConfig('GCS_BUCKET_NAME');
     const projectId = this.configService.get<string>('GCP_PROJECT_ID')?.trim();
+    const privateKeyJson = this.configService
+      .get<string>('GCS_PRIVATE_KEY_JSON')
+      ?.trim();
+    const credentials = privateKeyJson
+      ? this.parseCredentials(privateKeyJson)
+      : undefined;
 
-    this.storage = new Storage(
-      projectId
-        ? {
-            projectId,
-          }
-      : undefined,
-    );
+    this.storage = new Storage({
+      ...(projectId ? { projectId } : {}),
+      ...(credentials ? { credentials } : {}),
+    });
   }
 
   async onModuleInit() {
@@ -280,5 +283,13 @@ export class LessonVideoStorageService implements OnModuleInit {
       throw new Error(`Missing required configuration: ${key}`);
     }
     return value;
+  }
+
+  private parseCredentials(rawJson: string) {
+    try {
+      return JSON.parse(rawJson) as Record<string, string>;
+    } catch {
+      throw new Error('Missing or invalid configuration: GCS_PRIVATE_KEY_JSON');
+    }
   }
 }

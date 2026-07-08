@@ -48,6 +48,12 @@ describe('LessonVideoStorageService', () => {
         if (key === 'GCP_PROJECT_ID') {
           return 'video-intelligence-app-500806';
         }
+        if (key === 'GCS_PRIVATE_KEY_JSON') {
+          return JSON.stringify({
+            client_email: 'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
+            private_key: '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
+          });
+        }
         return undefined;
       }),
     };
