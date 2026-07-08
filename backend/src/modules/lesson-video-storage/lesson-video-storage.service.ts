@@ -129,7 +129,9 @@ export class LessonVideoStorageService implements OnModuleInit {
     }
   }
 
-  async getPlayableUrl(videoUrl: string | null | undefined): Promise<string | null> {
+  async getPlayableUrl(
+    videoUrl: string | null | undefined,
+  ): Promise<string | null> {
     const objectName = this.extractObjectName(videoUrl);
     if (!objectName) {
       return videoUrl ?? null;

@@ -1,10 +1,74 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { CourseDetailsData } from '../../api/checkout';
+import {
+  fetchCart,
+  addToCartAPI,
+  removeFromCartAPI,
+  clearCartAPI,
+  syncCartToServer,
+} from '../../api/cartWishlist';
 
 interface CartState {
   items: CourseDetailsData[];
   totalAmount: number;
+  loading: boolean;
+  synced: boolean; // true khi đã fetch từ backend ít nhất 1 lần
 }
+
+// ─── Helper: tổng tiền ────────────────────────────────────────────────────
+const calcTotal = (items: CourseDetailsData[]): number =>
+  items.reduce((sum, item) => sum + (item.price ?? 0), 0);
+
+// ─── Thunk: load giỏ hàng từ backend và merge localStorage cũ ─────────────
+export const loadCartFromServer = createAsyncThunk(
+  'cart/loadFromServer',
+  async (_, { getState }) => {
+    const state = getState() as { cart: CartState };
+
+    // 1. Lấy data backend
+    const serverItems = await fetchCart();
+
+    // 2. Nếu có dữ liệu cũ trong localStorage (chưa sync) → sync lên server
+    if (!state.cart.synced && state.cart.items.length > 0) {
+      const localIds = state.cart.items.map((i) => i.id);
+      const serverIds = serverItems.map((i) => i.id);
+      const newIds = localIds.filter((id) => !serverIds.includes(id));
+      if (newIds.length > 0) {
+        await syncCartToServer(newIds);
+        // Fetch lại sau khi sync
+        const merged = await fetchCart();
+        return merged;
+      }
+    }
+
+    return serverItems;
+  },
+);
+
+// ─── Thunk: thêm khóa học vào giỏ (optimistic) ─────────────────────────────
+export const addToCartThunk = createAsyncThunk(
+  'cart/add',
+  async (item: CourseDetailsData) => {
+    await addToCartAPI(item.id);
+    return item;
+  },
+);
+
+// ─── Thunk: xóa khóa học khỏi giỏ (optimistic) ─────────────────────────────
+export const removeFromCartThunk = createAsyncThunk(
+  'cart/remove',
+  async (courseId: number) => {
+    await removeFromCartAPI(courseId);
+    return courseId;
+  },
+);
+
+// ─── Thunk: xóa toàn bộ giỏ hàng ──────────────────────────────────────────
+export const clearCartThunk = createAsyncThunk('cart/clear', async () => {
+  await clearCartAPI();
+});
+
+// ─── Slice ──────────────────────────────────────────────────────────────────
 
 const getUserIdentifier = () => {
   try {
@@ -19,62 +83,97 @@ const getUserIdentifier = () => {
 
 const getCartKey = () => `cart_${getUserIdentifier()}`;
 
-// Lấy giỏ hàng từ LocalStorage
-const loadCartFromStorage = (): CartState => {
+const loadLocalCart = (): CartState => {
   try {
-    const savedCart = localStorage.getItem(getCartKey());
-    if (savedCart) {
-      return JSON.parse(savedCart);
+    const saved = localStorage.getItem(getCartKey());
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        items: parsed.items ?? [],
+        totalAmount: parsed.totalAmount ?? 0,
+        loading: false,
+        synced: false,
+      };
     }
-  } catch (error) {
-    console.error('Failed to parse cart from storage', error);
-  }
-  return { items: [], totalAmount: 0 };
+  } catch {}
+  return { items: [], totalAmount: 0, loading: false, synced: false };
 };
 
-const initialState: CartState = loadCartFromStorage();
-
-// Hàm hỗ trợ lưu vào LocalStorage
-const saveCartToStorage = (state: CartState) => {
-  try {
-    localStorage.setItem(getCartKey(), JSON.stringify(state));
-  } catch (error) {
-    console.error('Failed to save cart to storage', error);
-  }
-};
+const initialState: CartState = loadLocalCart();
 
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
+    // Vẫn giữ action đồng bộ để dùng tạm khi user chưa login
     addToCart(state, action: PayloadAction<CourseDetailsData>) {
-      const exists = state.items.find((item) => item.id === action.payload.id);
-      if (!exists) {
+      if (!state.items.find((i) => i.id === action.payload.id)) {
         state.items.push(action.payload);
-        state.totalAmount += action.payload.price;
-        saveCartToStorage(state);
+        state.totalAmount = calcTotal(state.items);
+        localStorage.setItem(
+          getCartKey(),
+          JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
+        );
       }
     },
     removeFromCart(state, action: PayloadAction<number>) {
-      const index = state.items.findIndex((item) => item.id === action.payload);
-      if (index !== -1) {
-        state.totalAmount -= state.items[index].price;
-        state.items.splice(index, 1);
-        saveCartToStorage(state);
-      }
+      state.items = state.items.filter((i) => i.id !== action.payload);
+      state.totalAmount = calcTotal(state.items);
+      localStorage.setItem(
+        getCartKey(),
+        JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
+      );
     },
     clearCart(state) {
       state.items = [];
       state.totalAmount = 0;
-      saveCartToStorage(state);
+      localStorage.removeItem(getCartKey());
     },
     loadUserCart(state) {
-      const newState = loadCartFromStorage();
+      const newState = loadLocalCart();
       state.items = newState.items;
       state.totalAmount = newState.totalAmount;
-    }
+    },
+  },
+  extraReducers: (builder) => {
+    // loadCartFromServer
+    builder.addCase(loadCartFromServer.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(loadCartFromServer.fulfilled, (state, action) => {
+      state.items = action.payload;
+      state.totalAmount = calcTotal(action.payload);
+      state.loading = false;
+      state.synced = true;
+      // Xóa localStorage cũ sau khi đã sync thành công
+      localStorage.removeItem(getCartKey());
+    });
+    builder.addCase(loadCartFromServer.rejected, (state) => {
+      state.loading = false;
+    });
+
+    // addToCartThunk (optimistic: đã add trước trong UI, thunk chỉ báo lỗi)
+    builder.addCase(addToCartThunk.fulfilled, (state, action) => {
+      if (!state.items.find((i) => i.id === action.payload.id)) {
+        state.items.push(action.payload);
+        state.totalAmount = calcTotal(state.items);
+      }
+    });
+
+    // removeFromCartThunk
+    builder.addCase(removeFromCartThunk.fulfilled, (state, action) => {
+      state.items = state.items.filter((i) => i.id !== action.payload);
+      state.totalAmount = calcTotal(state.items);
+    });
+
+    // clearCartThunk
+    builder.addCase(clearCartThunk.fulfilled, (state) => {
+      state.items = [];
+      state.totalAmount = 0;
+    });
   },
 });
 
-export const { addToCart, removeFromCart, clearCart, loadUserCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, clearCart, loadUserCart } =
+  cartSlice.actions;
 export default cartSlice.reducer;

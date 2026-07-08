@@ -1,9 +1,6 @@
-jest.mock(
-  '../lesson-video-storage/lesson-video-storage.service',
-  () => ({
-    LessonVideoStorageService: class LessonVideoStorageService {},
-  }),
-);
+jest.mock('../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
