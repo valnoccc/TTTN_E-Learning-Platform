@@ -80,9 +80,16 @@ export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
               {cartItems.map((item) => (
                 <div key={item.id} className="d-flex gap-3 mb-3 pb-3 border-bottom position-relative">
                   <img
-                    src={item.thumbnail}
+                    src={
+                      item.thumbnail
+                        ? item.thumbnail.startsWith('http')
+                          ? item.thumbnail
+                          : `/assets/images/${item.thumbnail}`
+                        : '/assets/images/course-1.jpg'
+                    }
                     alt={item.courseName}
                     style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
+                    onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
                   />
                   <div className="flex-grow-1">
                     <h6 className="mb-1" style={{ fontSize: '14px', lineHeight: '1.4' }}>

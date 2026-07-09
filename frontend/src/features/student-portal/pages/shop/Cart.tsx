@@ -146,9 +146,16 @@ export default function Cart() {
                           <td className="p-4">
                             <div className="flex items-center gap-4">
                               <img
-                                src={item.thumbnail}
+                                src={
+                                  item.thumbnail
+                                    ? item.thumbnail.startsWith('http')
+                                      ? item.thumbnail
+                                      : `/assets/images/${item.thumbnail}`
+                                    : '/assets/images/course-1.jpg'
+                                }
                                 alt={item.courseName}
                                 className="w-20 h-14 object-cover rounded-lg shadow-sm"
+                                onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
                               />
                               <div>
                                 <Link
