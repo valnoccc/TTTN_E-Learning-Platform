@@ -47,9 +47,14 @@ axiosClient.interceptors.response.use(
     const status = error.response?.status;
     const message = getErrorMessage(error);
 
-    if (status === 401 && isBlockedAccountMessage(message)) {
-      clearAuthSession();
-      dispatchBlockedAccountEvent(message);
+    if (status === 401) {
+      if (isBlockedAccountMessage(message)) {
+        clearAuthSession();
+        dispatchBlockedAccountEvent(message);
+      } else if (!error.config?.url?.includes('/auth/login')) {
+        // Token expired or invalid
+        clearAuthSession();
+      }
     }
 
     return Promise.reject(error);
