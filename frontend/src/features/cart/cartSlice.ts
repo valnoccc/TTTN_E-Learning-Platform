@@ -110,19 +110,25 @@ const cartSlice = createSlice({
       if (!state.items.find((i) => i.id === action.payload.id)) {
         state.items.push(action.payload);
         state.totalAmount = calcTotal(state.items);
-        localStorage.setItem(
-          getCartKey(),
-          JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
-        );
+        const isLoggedIn = !!localStorage.getItem('access_token');
+        if (!isLoggedIn) {
+          localStorage.setItem(
+            getCartKey(),
+            JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
+          );
+        }
       }
     },
     removeFromCart(state, action: PayloadAction<number>) {
       state.items = state.items.filter((i) => i.id !== action.payload);
       state.totalAmount = calcTotal(state.items);
-      localStorage.setItem(
-        getCartKey(),
-        JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
-      );
+      const isLoggedIn = !!localStorage.getItem('access_token');
+      if (!isLoggedIn) {
+        localStorage.setItem(
+          getCartKey(),
+          JSON.stringify({ items: state.items, totalAmount: state.totalAmount }),
+        );
+      }
     },
     clearCart(state) {
       state.items = [];

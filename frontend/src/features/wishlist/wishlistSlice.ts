@@ -89,11 +89,17 @@ const wishlistSlice = createSlice({
       } else {
         state.items.push(action.payload);
       }
-      localStorage.setItem('wishlist', JSON.stringify({ items: state.items }));
+      const isLoggedIn = !!localStorage.getItem('access_token');
+      if (!isLoggedIn) {
+        localStorage.setItem('wishlist', JSON.stringify({ items: state.items }));
+      }
     },
     removeFromWishlist(state, action: PayloadAction<number>) {
       state.items = state.items.filter((i) => i.id !== action.payload);
-      localStorage.setItem('wishlist', JSON.stringify({ items: state.items }));
+      const isLoggedIn = !!localStorage.getItem('access_token');
+      if (!isLoggedIn) {
+        localStorage.setItem('wishlist', JSON.stringify({ items: state.items }));
+      }
     },
     clearWishlist(state) {
       state.items = [];
