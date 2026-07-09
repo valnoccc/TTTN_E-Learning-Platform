@@ -37,6 +37,11 @@ export default function Cart() {
     }
   }, [dispatch, isLoggedIn, isSynced]);
 
+  // Auto-select all items khi cartItems thay đổi
+  useEffect(() => {
+    setSelectedIds(cartItems.map((item) => item.id));
+  }, [cartItems]);
+
   const handleRemove = (id: number, name: string) => {
     // Optimistic UI: xóa Redux trước
     dispatch(removeFromCart(id));

@@ -45,12 +45,19 @@ export const loadCartFromServer = createAsyncThunk(
   },
 );
 
-// ─── Thunk: thêm khóa học vào giỏ (optimistic) ─────────────────────────────
+// ─── Thunk: thêm khóa học vào giỏ (optimistic) ─────────────────────────────────────────────
 export const addToCartThunk = createAsyncThunk(
   'cart/add',
-  async (item: CourseDetailsData) => {
-    await addToCartAPI(item.id);
-    return item;
+  async (item: CourseDetailsData, { rejectWithValue }) => {
+    try {
+      console.log('[Cart] Calling addToCartAPI with courseId:', item.id);
+      await addToCartAPI(item.id);
+      console.log('[Cart] addToCartAPI success for courseId:', item.id);
+      return item;
+    } catch (error) {
+      console.error('[Cart] addToCartAPI failed for courseId:', item.id, error);
+      return rejectWithValue(error);
+    }
   },
 );
 
@@ -164,6 +171,13 @@ const cartSlice = createSlice({
         state.items.push(action.payload);
         state.totalAmount = calcTotal(state.items);
       }
+    });
+    // Nếu API thất bại → rollback item khỏi cart
+    builder.addCase(addToCartThunk.rejected, (state, action) => {
+      const item = action.meta.arg;
+      state.items = state.items.filter((i) => i.id !== item.id);
+      state.totalAmount = calcTotal(state.items);
+      console.error('[Cart] addToCartThunk rejected - rolled back item', item.id);
     });
 
     // removeFromCartThunk
