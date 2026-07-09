@@ -145,45 +145,45 @@ export default function AuthControls() {
         <ChevronDown size={14} className="text-slate-500" />
       </Dropdown.Toggle>
 
-      <Dropdown.Menu className="mt-3 min-w-[190px] rounded-[14px] border border-slate-100 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+      <Dropdown.Menu className="mt-3 min-w-[220px] rounded-2xl border border-slate-100 bg-white p-3 shadow-xl transform origin-top-right transition-all">
         <Dropdown.Item
           as={Link}
           to={getDashboardPath(user.vaiTro)}
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
+          className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center transition-colors"
         >
-          <User size={14} className="me-2" />
+          <User size={16} className="me-3 text-indigo-500" />
           Bảng điều khiển
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}
           to="/student/profile?tab=courses"
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
+          className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center transition-colors mt-1"
         >
-          <BookOpen size={14} className="me-2 text-emerald-500" />
+          <BookOpen size={16} className="me-3 text-emerald-500" />
           Khóa học của tôi
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}
           to="/student/wishlist"
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+          className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-between transition-colors mt-1"
         >
           <div className="flex items-center">
-            <Heart size={14} className="me-2 text-rose-500" />
+            <Heart size={16} className="me-3 text-rose-500" />
             Yêu thích
           </div>
           {wishlistItems.length > 0 && (
-            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white shadow-sm">
               {wishlistItems.length}
             </span>
           )}
         </Dropdown.Item>
-        <Dropdown.Divider className="my-1" />
+        <Dropdown.Divider className="my-2 border-slate-100" />
         <Dropdown.Item
           as="button"
           onClick={handleLogout}
-          className="rounded-xl px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 flex items-center"
+          className="rounded-xl px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center transition-colors"
         >
-          <LogOut size={14} className="me-2" />
+          <LogOut size={16} className="me-3 text-red-500" />
           Đăng xuất
         </Dropdown.Item>
       </Dropdown.Menu>
