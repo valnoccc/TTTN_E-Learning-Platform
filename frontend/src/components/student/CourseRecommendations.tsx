@@ -137,7 +137,7 @@ export default function CourseRecommendations({ purchasedCourseId, currentUserId
                 {courses.map((course) => (
                     <div
                         key={course.maKH}
-                        onClick={() => navigate(`/courses/${course.maKH}`)}
+                        onClick={() => navigate(`/course-details/${course.maKH}`)}
                         className="group relative rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100 cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1"
                         id={`rec-course-${course.maKH}`}
                     >

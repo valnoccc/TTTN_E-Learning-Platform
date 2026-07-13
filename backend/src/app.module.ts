@@ -26,6 +26,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { ForumModule } from './modules/forum/forum.module';
 import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { CartWishlistModule } from './modules/cart-wishlist/cart-wishlist.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     ForumModule,
     LearningToolsModule,
     ReportsModule,
+    CartWishlistModule,
   ],
 })
 export class AppModule {}

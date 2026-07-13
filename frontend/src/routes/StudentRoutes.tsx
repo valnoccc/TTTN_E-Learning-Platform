@@ -22,6 +22,7 @@ export default function StudentRoutes() {
       <Route path="course-grid" element={<CourseGrid />} />
       <Route path="course-list" element={<CourseList />} />
       <Route path="course-details/:id" element={<CourseDetails />} />
+      <Route path="courses/:id" element={<CourseDetails />} />
       <Route path="my-courses" element={<MyCourses />} />
       <Route path="learn/:id" element={<CourseLearning />} />
       <Route path="faq" element={<Faq />} />

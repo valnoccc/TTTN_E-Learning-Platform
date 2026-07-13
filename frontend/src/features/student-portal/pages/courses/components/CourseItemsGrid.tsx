@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { Col, Spinner } from 'react-bootstrap';
 import Pagination from './../../../components/Pagination';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../../../cart/cartSlice';
-import { toggleWishlist } from '../../../../wishlist/wishlistSlice';
+import { addToCart, addToCartThunk } from '../../../../cart/cartSlice';
+import { toggleWishlist, toggleWishlistThunk } from '../../../../wishlist/wishlistSlice';
 import { RootState } from '../../../../../store/store';
 import toast from 'react-hot-toast';
 import axiosClient from '../../../../../api/axios';
@@ -171,6 +171,19 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                                 level: 'Mọi cấp độ',
                                                                 category: categoryName
                                                             }));
+                                                            const addToken = localStorage.getItem('access_token');
+                                                            if (addToken) {
+                                                              dispatch(addToCartThunk({
+                                                                id: data.maKH,
+                                                                courseName: data.tenKhoaHoc,
+                                                                thumbnail: courseImage,
+                                                                instructor: instructorName,
+                                                                price: parseFloat(data.giaBan || '0'),
+                                                                duration: courseDurationText,
+                                                                level: 'Mọi cấp độ',
+                                                                category: categoryName
+                                                              }) as any);
+                                                            }
                                                             toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                         }}
                                                     >
@@ -183,7 +196,8 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     const isWishlisted = wishlistItems.some(item => item.id === data.maKH);
-                                                    dispatch(toggleWishlist({
+                                                    const token = localStorage.getItem('access_token');
+                                                    const coursePayload = {
                                                         id: data.maKH,
                                                         courseName: data.tenKhoaHoc,
                                                         thumbnail: courseImage,
@@ -192,22 +206,11 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                                         duration: courseDurationText,
                                                         level: 'Mọi cấp độ',
                                                         category: categoryName
-                                                    }));
-                                                    // Gửi thông báo lên Backend
-                                                    const token = localStorage.getItem('access_token');
+                                                    };
                                                     if (token) {
-                                                        axiosClient.post('/notifications', {
-                                                            loaiThongBao: 'COURSE',
-                                                            tieuDe: isWishlisted
-                                                                ? `Đã gỡ khỏi yêu thích`
-                                                                : `Đã thêm vào yêu thích`,
-                                                            noiDung: (isWishlisted
-                                                                ? `Bạn đã gỡ khóa học "${data.tenKhoaHoc}" khỏi danh sách yêu thích.`
-                                                                : `Bạn đã thêm khóa học "${data.tenKhoaHoc}" vào danh sách yêu thích. ❤️`) + `|||/course-details/${data.maKH}`,
-                                                        }).then(() => {
-                                                            // Refresh thông báo tức thì
-                                                            window.dispatchEvent(new Event('notification-refresh'));
-                                                        }).catch(() => {});
+                                                        dispatch(toggleWishlistThunk(coursePayload) as any);
+                                                    } else {
+                                                        dispatch(toggleWishlist(coursePayload));
                                                     }
                                                     if (isWishlisted) {
                                                         toast.success('Đã gỡ khỏi danh sách yêu thích!');

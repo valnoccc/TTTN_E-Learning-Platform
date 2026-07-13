@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { useGoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
@@ -16,6 +16,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getRedirectPath = (role: string) => {
+    const stateFrom = (location.state as { from?: string } | null)?.from;
+    const safeFrom =
+      typeof stateFrom === 'string' &&
+      stateFrom.startsWith('/') &&
+      !stateFrom.startsWith('//')
+        ? stateFrom
+        : '';
+
+    if (role === 'ADMIN') return '/admin';
+    if (role === 'INSTRUCTOR') return '/instructor';
+    return safeFrom || '/';
+  };
 
   const handleLoginSuccess = (payload: any) => {
     const rawUser = payload.user || payload;
@@ -29,9 +44,7 @@ export default function LoginPage() {
 
     toast.success('Đăng nhập thành công!');
 
-    if (vaiTro === 'ADMIN') navigate('/admin');
-    else if (vaiTro === 'INSTRUCTOR') navigate('/instructor');
-    else navigate('/');
+    navigate(getRedirectPath(vaiTro), { replace: true });
   };
 
   const handleLogin = async (e: React.FormEvent) => {

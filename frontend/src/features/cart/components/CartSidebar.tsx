@@ -2,9 +2,15 @@ import React from 'react';
 import { Offcanvas, Button } from 'react-bootstrap';
 import { ShoppingCart, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../store/store';
-import { removeFromCart, clearCart } from '../cartSlice';
+import { AppDispatch, RootState } from '../../../store/store';
+import {
+  removeFromCart,
+  clearCart,
+  removeFromCartThunk,
+  clearCartThunk,
+} from '../cartSlice';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface CartSidebarProps {
   show: boolean;
@@ -12,33 +18,42 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const totalAmount = useSelector((state: RootState) => state.cart.totalAmount);
+  const isSynced = useSelector((state: RootState) => state.cart.synced);
 
-  const handleRemove = (id: number) => {
-    dispatch(removeFromCart(id));
+  const isLoggedIn = !!localStorage.getItem('access_token');
+
+  const handleRemove = (id: number, name: string) => {
+    if (isLoggedIn && isSynced) {
+      // Optimistic: xóa Redux ngay, gọi API ngầm
+      dispatch(removeFromCart(id));
+      dispatch(removeFromCartThunk(id))
+        .unwrap()
+        .catch(() => {
+          toast.error('Không thể xóa khỏi giỏ hàng. Vui lòng thử lại.');
+        });
+    } else {
+      dispatch(removeFromCart(id));
+    }
+    toast.success(`Đã xóa "${name}" khỏi giỏ hàng`);
   };
 
   const handleCheckout = () => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      alert('Vui lòng đăng nhập để tiếp tục thanh toán.');
+    if (!isLoggedIn) {
+      toast.error('Vui lòng đăng nhập để tiếp tục thanh toán.');
       handleClose();
       navigate('/login');
       return;
     }
-    
+
     handleClose();
-    // Navigate to a special bulk checkout or handle individual checkout logic
-    // For now, if there's only 1 item, navigate to that item's checkout.
     if (cartItems.length === 1) {
       navigate(`/checkout/${cartItems[0].id}`);
-    } else {
-      // If multiple, maybe we route to a dedicated cart checkout page, but we haven't built one yet.
-      // So we just log or alert for now.
-      alert('Chức năng thanh toán nhiều sản phẩm đang được xây dựng. Vui lòng thanh toán từng sản phẩm.');
+    } else if (cartItems.length > 1) {
+      navigate('/student/cart');
     }
   };
 
@@ -65,37 +80,59 @@ export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
               {cartItems.map((item) => (
                 <div key={item.id} className="d-flex gap-3 mb-3 pb-3 border-bottom position-relative">
                   <img
-                    src={item.thumbnail}
+                    src={
+                      item.thumbnail
+                        ? item.thumbnail.startsWith('http')
+                          ? item.thumbnail
+                          : `/assets/images/${item.thumbnail}`
+                        : '/assets/images/course-1.jpg'
+                    }
                     alt={item.courseName}
                     style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
+                    onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
                   />
                   <div className="flex-grow-1">
                     <h6 className="mb-1" style={{ fontSize: '14px', lineHeight: '1.4' }}>
                       {item.courseName}
                     </h6>
-                    <p className="mb-0 text-success fw-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</p>
+                    <p className="mb-0 text-success fw-bold">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
+                    </p>
                   </div>
                   <button
                     className="btn btn-link text-danger p-0 position-absolute"
                     style={{ top: 0, right: 0 }}
-                    onClick={() => handleRemove(item.id)}
+                    onClick={() => handleRemove(item.id, item.courseName)}
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               ))}
             </div>
-            
+
             <div className="border-top pt-3 mt-3">
               <div className="d-flex justify-content-between mb-3">
                 <span className="fw-bold">Tổng cộng:</span>
-                <span className="fw-bold text-success fs-5">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount)}</span>
+                <span className="fw-bold text-success fs-5">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount)}
+                </span>
               </div>
               <div className="d-grid gap-2">
                 <Button variant="success" size="lg" onClick={handleCheckout}>
                   Thanh toán
                 </Button>
-                <Button variant="outline-danger" onClick={() => dispatch(clearCart())}>
+                <Button
+                  variant="outline-danger"
+                  onClick={() => {
+                    if (isLoggedIn && isSynced) {
+                      dispatch(clearCart());
+                      dispatch(clearCartThunk());
+                    } else {
+                      dispatch(clearCart());
+                    }
+                    toast.success('Đã xóa toàn bộ giỏ hàng!');
+                  }}
+                >
                   Xóa giỏ hàng
                 </Button>
               </div>
@@ -106,4 +143,3 @@ export default function CartSidebar({ show, handleClose }: CartSidebarProps) {
     </Offcanvas>
   );
 }
-

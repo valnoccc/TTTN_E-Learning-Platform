@@ -42,14 +42,16 @@ export class AdminCouponsService
   private ensureAdminCouponSchema() {
     if (!this.adminCouponSchemaReady) {
       this.adminCouponSchemaReady = (async () => {
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGia\`
-           ADD COLUMN IF NOT EXISTS \`MaKM\` varchar(100) DEFAULT NULL AFTER \`GhiChu\``,
+        await this.addColumnIfMissing(
+          'MaGiamGia',
+          'MaKM',
+          'varchar(100) DEFAULT NULL AFTER `GhiChu`',
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGia\`
-           ADD COLUMN IF NOT EXISTS \`LoaiKM\` enum('FIRST_TIME','CROSS_SELL','HOLIDAY','STANDARD') DEFAULT 'STANDARD' AFTER \`MaKM\``,
+        await this.addColumnIfMissing(
+          'MaGiamGia',
+          'LoaiKM',
+          "enum('FIRST_TIME','CROSS_SELL','HOLIDAY','STANDARD') DEFAULT 'STANDARD' AFTER `MaKM`",
         );
 
         await this.dataSource.query(
@@ -86,19 +88,22 @@ export class AdminCouponsService
            ) NOT NULL`,
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaDieuKien\`
-           ADD COLUMN IF NOT EXISTS \`GiaTriDieuKien\` decimal(12,2) DEFAULT NULL AFTER \`LoaiDieuKien\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaDieuKien',
+          'GiaTriDieuKien',
+          'decimal(12,2) DEFAULT NULL AFTER `LoaiDieuKien`',
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaDieuKien\`
-           ADD COLUMN IF NOT EXISTS \`MoTa\` varchar(255) DEFAULT NULL AFTER \`GiaTriDieuKien\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaDieuKien',
+          'MoTa',
+          'varchar(255) DEFAULT NULL AFTER `GiaTriDieuKien`',
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaDieuKien\`
-           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MoTa\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaDieuKien',
+          'NgayTao',
+          'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `MoTa`',
         );
 
         await this.dataSource.query(
@@ -115,19 +120,22 @@ export class AdminCouponsService
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaPhamVi\`
-           ADD COLUMN IF NOT EXISTS \`LoaiPhamVi\` enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL AFTER \`MaCoupon\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaPhamVi',
+          'LoaiPhamVi',
+          "enum('ALL','COURSE','CATEGORY','INSTRUCTOR') NOT NULL AFTER `MaCoupon`",
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaPhamVi\`
-           ADD COLUMN IF NOT EXISTS \`MaDoiTuong\` int DEFAULT NULL AFTER \`LoaiPhamVi\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaPhamVi',
+          'MaDoiTuong',
+          'int DEFAULT NULL AFTER `LoaiPhamVi`',
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`MaGiamGiaPhamVi\`
-           ADD COLUMN IF NOT EXISTS \`NgayTao\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`MaDoiTuong\``,
+        await this.addColumnIfMissing(
+          'MaGiamGiaPhamVi',
+          'NgayTao',
+          'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `MaDoiTuong`',
         );
 
         await this.dataSource.query(
@@ -146,24 +154,57 @@ export class AdminCouponsService
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
-           ADD COLUMN IF NOT EXISTS \`GiaTriDonHang\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`MaHD\``,
+        await this.addColumnIfMissing(
+          'LichSuSuDungMaGiamGia',
+          'GiaTriDonHang',
+          "decimal(12,2) NOT NULL DEFAULT '0.00' AFTER `MaHD`",
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
-           ADD COLUMN IF NOT EXISTS \`SoTienGiam\` decimal(12,2) NOT NULL DEFAULT '0.00' AFTER \`GiaTriDonHang\``,
+        await this.addColumnIfMissing(
+          'LichSuSuDungMaGiamGia',
+          'SoTienGiam',
+          "decimal(12,2) NOT NULL DEFAULT '0.00' AFTER `GiaTriDonHang`",
         );
 
-        await this.dataSource.query(
-          `ALTER TABLE \`LichSuSuDungMaGiamGia\`
-           ADD COLUMN IF NOT EXISTS \`ThoiGianSuDung\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`SoTienGiam\``,
+        await this.addColumnIfMissing(
+          'LichSuSuDungMaGiamGia',
+          'ThoiGianSuDung',
+          'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `SoTienGiam`',
         );
       })();
     }
 
     return this.adminCouponSchemaReady;
+  }
+
+  private async addColumnIfMissing(
+    tableName: string,
+    columnName: string,
+    definition: string,
+  ) {
+    if (await this.columnExists(tableName, columnName)) {
+      return;
+    }
+
+    await this.dataSource.query(
+      `ALTER TABLE \`${tableName}\` ADD COLUMN \`${columnName}\` ${definition}`,
+    );
+  }
+
+  private async columnExists(tableName: string, columnName: string) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT 1
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+      `,
+      [tableName, columnName],
+    );
+
+    return Array.isArray(rows) && rows.length > 0;
   }
 
   async getAdminCoupons(query: QueryCouponsDto) {

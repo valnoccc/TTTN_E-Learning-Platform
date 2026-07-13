@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Col, Spinner } from 'react-bootstrap';
 import Pagination from './../../../components/Pagination';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '../../../../cart/cartSlice';
+import { addToCart, addToCartThunk } from '../../../../cart/cartSlice';
 import axiosClient from '../../../../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -170,6 +170,19 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                         level: 'Mọi cấp độ',
                                                         category: categoryName
                                                     }));
+                                                    const addToken = localStorage.getItem('access_token');
+                                                    if (addToken) {
+                                                      dispatch(addToCartThunk({
+                                                        id: data.maKH,
+                                                        courseName: data.tenKhoaHoc,
+                                                        thumbnail: courseImage,
+                                                        instructor: instructorName,
+                                                        price: parseFloat(data.giaBan || '0'),
+                                                        duration: courseDurationText,
+                                                        level: 'Mọi cấp độ',
+                                                        category: categoryName
+                                                      }) as any);
+                                                    }
                                                     toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                 }}
                                             >

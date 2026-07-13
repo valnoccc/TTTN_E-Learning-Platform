@@ -5,7 +5,8 @@ import { ChevronDown, LogOut, User, Heart, BookOpen } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../../store/store';
-import { loadUserCart } from '../../../cart/cartSlice';
+import { loadUserCart, loadCartFromServer } from '../../../cart/cartSlice';
+import { loadWishlistFromServer } from '../../../wishlist/wishlistSlice';
 
 type StoredUser = {
   fullName?: string;
@@ -58,7 +59,12 @@ export default function AuthControls() {
         setUser(null);
       }
       // Nạp lại giỏ hàng tương ứng với user hiện tại hoặc guest
-      dispatch(loadUserCart());
+      if (userString) {
+        dispatch(loadCartFromServer() as any);
+        dispatch(loadWishlistFromServer() as any);
+      } else {
+        dispatch(loadUserCart());
+      }
     };
 
     // Chạy mỗi khi chuyển trang (ví dụ từ /login sang /)
@@ -146,7 +152,7 @@ export default function AuthControls() {
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
         >
           <User size={14} className="me-2" />
-          Bảng điều khiển
+          Hồ sơ cá nhân
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}

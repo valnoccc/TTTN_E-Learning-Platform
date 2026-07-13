@@ -238,7 +238,10 @@ export class VideoIntelligenceService implements OnModuleInit {
       return;
     }
 
-    if (currentLesson.aiStatus !== 'PROCESSING' && currentLesson.aiStatus !== 'PENDING') {
+    if (
+      currentLesson.aiStatus !== 'PROCESSING' &&
+      currentLesson.aiStatus !== 'PENDING'
+    ) {
       return;
     }
 
@@ -337,7 +340,9 @@ export class VideoIntelligenceService implements OnModuleInit {
     lessonId: number,
     videoUrl: string,
   ): Promise<VideoModerationResult> {
-    this.logger.log(`[Lesson ${lessonId}] Bắt đầu phân tích video: ${videoUrl}`);
+    this.logger.log(
+      `[Lesson ${lessonId}] Bắt đầu phân tích video: ${videoUrl}`,
+    );
 
     await this.lessonRepository.update(lessonId, {
       aiStatus: AiStatus.PROCESSING,
@@ -430,8 +435,7 @@ export class VideoIntelligenceService implements OnModuleInit {
   }
 
   private evaluateAnnotation(annotation: any): VideoModerationDecision {
-    const segmentDuration =
-      annotation.segment?.endTimeOffset?.seconds ?? 0;
+    const segmentDuration = annotation.segment?.endTimeOffset?.seconds ?? 0;
     const durationSeconds = Number(segmentDuration) || 0;
 
     const sensitiveFrames = annotation.explicitAnnotation?.frames ?? [];
@@ -465,7 +469,10 @@ export class VideoIntelligenceService implements OnModuleInit {
     ];
 
     const labels: string[] = allLabels
-      .map((label: { entity?: { description?: string } }) => label.entity?.description ?? '')
+      .map(
+        (label: { entity?: { description?: string } }) =>
+          label.entity?.description ?? '',
+      )
       .filter(Boolean)
       .slice(0, 5);
 

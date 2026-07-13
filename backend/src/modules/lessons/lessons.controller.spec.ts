@@ -1,9 +1,6 @@
-jest.mock(
-  '../lesson-video-storage/lesson-video-storage.service',
-  () => ({
-    LessonVideoStorageService: class LessonVideoStorageService {},
-  }),
-);
+jest.mock('../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { LessonsController } from './controllers/lesson-instructor.controller';
@@ -50,7 +47,10 @@ describe('LessonsController', () => {
           provide: LessonVideoStorageService,
           useValue: lessonVideoStorageService,
         },
-        { provide: VideoIntelligenceService, useValue: videoIntelligenceService },
+        {
+          provide: VideoIntelligenceService,
+          useValue: videoIntelligenceService,
+        },
       ],
     }).compile();
 
@@ -119,7 +119,8 @@ describe('LessonsController', () => {
       bucketName: 'video-storage-lvtn',
       objectName: 'lessons-videos/course-10/lesson-1/test.mp4',
       url: 'https://storage.googleapis.com/video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
-      gcsUri: 'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
+      gcsUri:
+        'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
     });
     lessonsService.create.mockResolvedValue({
       maBH: 123,
@@ -143,7 +144,9 @@ describe('LessonsController', () => {
     );
 
     expect(videoIntelligenceService.checkQuota).toHaveBeenCalledWith(120);
-    expect(videoIntelligenceService.analyzeVideoBackground).toHaveBeenCalledWith(
+    expect(
+      videoIntelligenceService.analyzeVideoBackground,
+    ).toHaveBeenCalledWith(
       123,
       'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
     );

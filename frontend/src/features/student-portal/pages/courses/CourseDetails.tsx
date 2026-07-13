@@ -7,8 +7,8 @@ import CourseTag from './components/CourseTag';
 import { Styles } from './styles/course';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../../cart/cartSlice';
-import { toggleWishlist } from '../../../wishlist/wishlistSlice';
+import { addToCart, addToCartThunk } from '../../../cart/cartSlice';
+import { toggleWishlist, toggleWishlistThunk } from '../../../wishlist/wishlistSlice';
 import { RootState } from '../../../../store/store';
 import axiosClient from '../../../../api/axios';
 import toast from 'react-hot-toast';
@@ -884,7 +884,12 @@ function CourseDetails() {
                                                                     className="flex-grow-1 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
                                                                     style={{ height: '48px', borderRadius: '8px' }}
                                                                     onClick={() => {
+                                                                        const token = localStorage.getItem('access_token');
+                                                                        const cartSynced = (window as any).__cartSynced;
                                                                         dispatch(addToCart(course));
+                                                                        if (token) {
+                                                                          dispatch(addToCartThunk(course));
+                                                                        }
                                                                         toast.success('Đã thêm vào giỏ hàng!');
                                                                     }}
                                                                 >
@@ -897,7 +902,12 @@ function CourseDetails() {
                                                                     onClick={(e) => {
                                                                         e.currentTarget.blur();
                                                                         const isWishlisted = wishlistItems.some(item => item.id === course?.id);
-                                                                        dispatch(toggleWishlist(course));
+                                                                        const token = localStorage.getItem('access_token');
+                                                                        if (token) {
+                                                                          dispatch(toggleWishlistThunk(course));
+                                                                        } else {
+                                                                          dispatch(toggleWishlist(course));
+                                                                        }
                                                                         if (isWishlisted) {
                                                                             toast.success('Đã gỡ khỏi danh sách yêu thích!');
                                                                         } else {

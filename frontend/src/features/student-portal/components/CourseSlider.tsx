@@ -6,8 +6,8 @@ import Swiper from 'react-id-swiper';
 import { Styles } from "./styles/courseSlider";
 import axiosClient from '../../../api/axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../cart/cartSlice';
-import { toggleWishlist } from '../../wishlist/wishlistSlice';
+import { addToCart, addToCartThunk } from '../../cart/cartSlice';
+import { toggleWishlist, toggleWishlistThunk } from '../../wishlist/wishlistSlice';
 import { RootState } from '../../../store/store';
 import toast from 'react-hot-toast';
 
@@ -145,6 +145,19 @@ const CourseSlider = () => {
                                                                                     level: 'Mọi cấp độ',
                                                                                     category: categoryName
                                                                                 }));
+                                                                                const token = localStorage.getItem('access_token');
+                                                                                if (token) {
+                                                                                  dispatch(addToCartThunk({
+                                                                                    id: data.maKH,
+                                                                                    courseName: data.tenKhoaHoc,
+                                                                                    thumbnail: courseImage,
+                                                                                    instructor: instructorName,
+                                                                                    price: parseFloat(data.giaBan || '0'),
+                                                                                    duration: '120 Phút',
+                                                                                    level: 'Mọi cấp độ',
+                                                                                    category: categoryName
+                                                                                  }) as any);
+                                                                                }
                                                                                 toast.success('Đã thêm vào giỏ hàng!');
                                                                             }}
                                                                         >
@@ -156,7 +169,8 @@ const CourseSlider = () => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
                                                                                 const isWishlisted = wishlistItems.some(item => item.id === data.maKH);
-                                                                                dispatch(toggleWishlist({
+                                                                                const token = localStorage.getItem('access_token');
+                                                                                const coursePayload = {
                                                                                     id: data.maKH,
                                                                                     courseName: data.tenKhoaHoc,
                                                                                     thumbnail: courseImage,
@@ -165,7 +179,12 @@ const CourseSlider = () => {
                                                                                     duration: '120 Phút',
                                                                                     level: 'Mọi cấp độ',
                                                                                     category: categoryName
-                                                                                }));
+                                                                                };
+                                                                                if (token) {
+                                                                                  dispatch(toggleWishlistThunk(coursePayload) as any);
+                                                                                } else {
+                                                                                  dispatch(toggleWishlist(coursePayload));
+                                                                                }
                                                                                 if (isWishlisted) {
                                                                                     toast.success('Đã gỡ khỏi danh sách yêu thích!');
                                                                                 } else {
