@@ -215,13 +215,15 @@ export class CoursesService implements OnModuleInit {
     courseId: number,
     thumbnailUrl: string | null,
   ) {
-    const lessonRows: Array<{ maBH?: number | string; videoURL?: string | null }> =
-      await this.dataSource.query(
-        `SELECT MaBH AS maBH, VideoURL AS videoURL
+    const lessonRows: Array<{
+      maBH?: number | string;
+      videoURL?: string | null;
+    }> = await this.dataSource.query(
+      `SELECT MaBH AS maBH, VideoURL AS videoURL
          FROM BaiHoc
          WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
-        [courseId],
-      );
+      [courseId],
+    );
 
     await Promise.all(
       lessonRows.map(async (lesson) => {
@@ -296,9 +298,12 @@ export class CoursesService implements OnModuleInit {
       if (pendingLessons.length > 0) {
         const details = pendingLessons
           .map((lesson) => {
-            const lessonTitle = lesson.tenBaiHoc?.trim() || `B?i ${lesson.maBH}`;
-            const status = lesson.aiStatus || 'CHUA KIEM DUYET';
-            return `- ${lessonTitle}: ${status}`;
+            const lessonTitle =
+              lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
+            const status = lesson.aiStatus || 'CHƯA KIỂM DUYỆT';
+            const reason =
+              lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
+            return `- ${lessonTitle}: ${status} - ${reason}`;
           })
           .join('\n');
 

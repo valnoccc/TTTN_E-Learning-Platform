@@ -43,7 +43,7 @@ export class CourseStudentService {
         'ratings.maKH = khoaHoc.maKH',
       )
       .leftJoin(
-      (qb) =>
+        (qb) =>
           qb
             .from('BaiHoc', 'bh')
             .innerJoin('ChuongHoc', 'ch', 'bh.MaChuong = ch.MaChuong')

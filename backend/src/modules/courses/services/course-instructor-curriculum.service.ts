@@ -175,14 +175,14 @@ export class CourseInstructorCurriculumService {
     await this.touchCourse(chapter.maKH);
 
     const baiHocs = await Promise.all(
-      lessons.sort((a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu).map(
-        async (lesson: LessonRecord) => ({
+      lessons
+        .sort((a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu)
+        .map(async (lesson: LessonRecord) => ({
           ...lesson,
           videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
             lesson.videoUrl,
           ),
-        }),
-      ),
+        })),
     );
 
     return {
@@ -195,13 +195,15 @@ export class CourseInstructorCurriculumService {
   async deleteChapter(chapterId: number, instructorId: number) {
     const chapter = await this.getOwnedChapter(chapterId, instructorId);
 
-    const lessonRows: Array<{ maBH?: number | string; videoUrl?: string | null }> =
-      await this.dataSource.query(
-        `SELECT MaBH AS maBH, VideoURL AS videoUrl
+    const lessonRows: Array<{
+      maBH?: number | string;
+      videoUrl?: string | null;
+    }> = await this.dataSource.query(
+      `SELECT MaBH AS maBH, VideoURL AS videoUrl
          FROM BaiHoc
          WHERE MaChuong = ? AND VideoURL IS NOT NULL AND VideoURL <> ''`,
-        [chapterId],
-      );
+      [chapterId],
+    );
 
     await Promise.all(
       lessonRows.map(async (lesson) => {

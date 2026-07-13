@@ -1,25 +1,63 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Trash2, Heart, ShoppingCart } from 'lucide-react';
-import { RootState } from '../../../../store/store';
-import { toggleWishlist } from '../../../wishlist/wishlistSlice';
-import { addToCart } from '../../../cart/cartSlice';
+import { Trash2, Heart, ShoppingCart, Loader2 } from 'lucide-react';
+import { AppDispatch, RootState } from '../../../../store/store';
+import {
+  toggleWishlist,
+  removeFromWishlist,
+  loadWishlistFromServer,
+  toggleWishlistThunk,
+  removeFromWishlistThunk,
+} from '../../../wishlist/wishlistSlice';
+import { addToCart, addToCartThunk } from '../../../cart/cartSlice';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 
 export default function Wishlist() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  const loading = useSelector((state: RootState) => state.wishlist.loading);
+  const isSynced = useSelector((state: RootState) => state.wishlist.synced);
+  const cartSynced = useSelector((state: RootState) => state.cart.synced);
+
+  const isLoggedIn = !!localStorage.getItem('access_token');
+
+  // Khi mount: fetch wishlist từ backend nếu đã đăng nhập
+  useEffect(() => {
+    if (isLoggedIn && !isSynced) {
+      dispatch(loadWishlistFromServer());
+    }
+  }, [dispatch, isLoggedIn, isSynced]);
 
   const handleRemove = (item: any) => {
-    dispatch(toggleWishlist(item));
-    toast.success(`Đã gỡ ${item.courseName} khỏi danh sách yêu thích!`);
+    // Optimistic UI
+    dispatch(removeFromWishlist(item.id));
+
+    if (isLoggedIn && isSynced) {
+      dispatch(removeFromWishlistThunk(item.id))
+        .unwrap()
+        .catch(() => {
+          toast.error('Không thể gỡ khỏi danh sách yêu thích. Vui lòng thử lại.');
+        });
+    } else {
+      dispatch(toggleWishlist(item));
+    }
+    toast.success(`Đã gỡ "${item.courseName}" khỏi danh sách yêu thích!`);
   };
 
   const handleAddToCart = (item: any) => {
+    // Optimistic: thêm vào cart Redux
     dispatch(addToCart(item));
-    toast.success(`Đã thêm ${item.courseName} vào giỏ hàng!`);
+
+    if (isLoggedIn && cartSynced) {
+      dispatch(addToCartThunk(item))
+        .unwrap()
+        .catch(() => {
+          toast.error('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+        });
+    }
+    toast.success(`Đã thêm "${item.courseName}" vào giỏ hàng!`);
   };
 
   return (
@@ -28,10 +66,15 @@ export default function Wishlist() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         <div className="flex flex-col gap-8">
-          
+
           <div className="w-full">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              {wishlistItems.length > 0 ? (
+              {loading ? (
+                <div className="p-12 text-center flex flex-col items-center justify-center">
+                  <Loader2 size={40} className="animate-spin text-emerald-500 mb-3" />
+                  <p className="text-slate-500">Đang tải danh sách yêu thích...</p>
+                </div>
+              ) : wishlistItems.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -46,13 +89,16 @@ export default function Wishlist() {
                         <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="p-4">
                             <div className="flex items-center gap-4">
-                              <img 
-                                src={item.thumbnail} 
-                                alt={item.courseName} 
+                              <img
+                                src={item.thumbnail}
+                                alt={item.courseName}
                                 className="w-20 h-14 object-cover rounded-lg shadow-sm"
                               />
                               <div>
-                                <Link to={`/course-details/${item.id}`} className="font-semibold text-slate-800 hover:text-emerald-600 transition-colors line-clamp-2">
+                                <Link
+                                  to={`/course-details/${item.id}`}
+                                  className="font-semibold text-slate-800 hover:text-emerald-600 transition-colors line-clamp-2"
+                                >
                                   {item.courseName}
                                 </Link>
                                 <p className="text-sm text-slate-500 mt-1">{item.instructor}</p>
@@ -92,7 +138,10 @@ export default function Wishlist() {
                   </div>
                   <h3 className="text-xl font-semibold text-slate-700 mb-2">Danh sách yêu thích trống</h3>
                   <p className="text-slate-500 mb-6">Bạn chưa lưu khóa học nào vào danh sách yêu thích.</p>
-                  <Link to="/course-grid" className="px-6 py-2.5 bg-emerald-600 text-white font-medium rounded-xl shadow-sm hover:bg-emerald-700 hover:-translate-y-0.5 transition-all">
+                  <Link
+                    to="/course-grid"
+                    className="px-6 py-2.5 bg-emerald-600 text-white font-medium rounded-xl shadow-sm hover:bg-emerald-700 hover:-translate-y-0.5 transition-all"
+                  >
                     Khám phá khóa học
                   </Link>
                 </div>

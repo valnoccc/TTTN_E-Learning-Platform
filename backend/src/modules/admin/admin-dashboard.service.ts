@@ -164,7 +164,8 @@ export class AdminDashboardService {
 
   private getStorageQuotaLimitBytes(): number {
     const configuredLimit = Number(
-      process.env.VIDEO_STORAGE_MONTHLY_LIMIT_GB ?? DEFAULT_STORAGE_QUOTA_LIMIT_GB,
+      process.env.VIDEO_STORAGE_MONTHLY_LIMIT_GB ??
+        DEFAULT_STORAGE_QUOTA_LIMIT_GB,
     );
     const limitGb =
       Number.isFinite(configuredLimit) && configuredLimit > 0
@@ -676,7 +677,7 @@ export class AdminDashboardService {
     });
 
     const summary = {
-      totalInstructors: items.filter(item => item.grossRevenue > 0).length,
+      totalInstructors: items.filter((item) => item.grossRevenue > 0).length,
       totalCourses: items.reduce((sum, item) => sum + item.courseCount, 0),
       totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
       grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),
