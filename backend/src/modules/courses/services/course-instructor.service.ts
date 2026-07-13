@@ -45,9 +45,10 @@ export class CoursesService implements OnModuleInit {
   private ensureCourseSchema() {
     if (!this.courseSchemaReady) {
       this.courseSchemaReady = (async () => {
-        await this.dataSource.query(
-          `ALTER TABLE \`KhoaHoc\`
-           ADD COLUMN IF NOT EXISTS \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER \`YeuCauKhoaHoc\``,
+        await this.addColumnIfMissing(
+          'KhoaHoc',
+          'NgayCapNhat',
+          'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `YeuCauKhoaHoc`',
         );
 
         await this.dataSource.query(
@@ -58,6 +59,36 @@ export class CoursesService implements OnModuleInit {
     }
 
     return this.courseSchemaReady;
+  }
+
+  private async addColumnIfMissing(
+    tableName: string,
+    columnName: string,
+    definition: string,
+  ) {
+    if (await this.columnExists(tableName, columnName)) {
+      return;
+    }
+
+    await this.dataSource.query(
+      `ALTER TABLE \`${tableName}\` ADD COLUMN \`${columnName}\` ${definition}`,
+    );
+  }
+
+  private async columnExists(tableName: string, columnName: string) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT 1
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+      `,
+      [tableName, columnName],
+    );
+
+    return Array.isArray(rows) && rows.length > 0;
   }
 
   async getCoursesByInstructor(instructorId: number) {
@@ -252,7 +283,7 @@ export class CoursesService implements OnModuleInit {
 
       if (lessons.length === 0) {
         throw new BadRequestException(
-          'Kh?a h?c ch?a c? video ?? g?i duy?t. Vui l?ng th?m ?t nh?t 1 b?i h?c c? video.',
+          'Khóa học chưa có video bài học. Vui lòng thêm ít nhất một bài học có video trước khi gửi duyệt.',
         );
       }
 
