@@ -1088,7 +1088,7 @@ export class CheckoutService {
               ) {
                 isAvailable = false;
                 reason =
-                  'MÃ£ giáº£m giÃ¡ nÃ y chá»‰ Ã¡p dá»¥ng khi mua combo Ä‘á»§ sá»‘ lÆ°á»£ng khÃ³a há»c yÃªu cáº§u';
+                  'Mã giảm giá này chỉ áp dụng khi mua combo đủ số lượng khóa học yêu cầu';
                 break;
               }
 
@@ -1101,7 +1101,7 @@ export class CheckoutService {
               ) {
                 isAvailable = false;
                 reason =
-                  'GiÃ¡ trá»‹ Ä‘Æ¡n hÃ ng chÆ°a Ä‘áº¡t má»©c tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡';
+                  'Giá trị đơn hàng chưa đạt mức tối thiểu để áp dụng mã giảm giá';
                 break;
               }
 

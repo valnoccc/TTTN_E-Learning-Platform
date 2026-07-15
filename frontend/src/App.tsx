@@ -42,6 +42,7 @@ function AnimatedRoutes() {
         <Route path="/course-grid" element={<CourseGrid />} />
         <Route path="/course-list" element={<CourseList />} />
         <Route path="/course-details/:id" element={<CourseDetails />} />
+        <Route path="/courses/:id" element={<CourseDetails />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/instructors" element={<Instructors />} />
