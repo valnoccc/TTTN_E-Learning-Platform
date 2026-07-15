@@ -318,26 +318,14 @@ export class CoursesService implements OnModuleInit {
       });
       const reviewRatio = flaggedLessons.length / lessons.length;
 
-      const nextStatus =
-        reviewRatio <= COURSE_REVIEW_THRESHOLD
-          ? 'PUBLISHED'
-          : reviewRatio <= COURSE_AUTO_REJECT_THRESHOLD
-            ? 'PENDING'
-            : 'DRAFT';
+      // Sửa lỗi: Luôn đặt trạng thái là PENDING để Admin phê duyệt thủ công.
+      // Không tự động PUBLISHED kể cả khi AI đánh giá tốt.
+      const nextStatus = reviewRatio <= COURSE_AUTO_REJECT_THRESHOLD ? 'PENDING' : 'DRAFT';
 
       await this.khoaHocRepository.update(courseId, {
         trangThai: nextStatus,
         ngayCapNhat: new Date(),
       });
-
-      if (nextStatus === 'PUBLISHED') {
-        await this.sendAutoApproveNotification({
-          instructorId,
-          courseName: course.tenKhoaHoc,
-          reviewRatio,
-          totalVideoLessons: lessons.length,
-        });
-      }
 
       if (nextStatus === 'DRAFT' && flaggedLessons.length > 0) {
         await this.sendAutoRejectNotification({
