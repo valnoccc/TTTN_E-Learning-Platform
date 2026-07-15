@@ -14,6 +14,7 @@ import {
   type AdminCouponScopeType,
 } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
+import { UpdateAdminCouponDto } from '../dto/update-admin-coupon.dto';
 import { Coupon } from '../entities/coupon.entity';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CouponsService } from './coupons.service';
@@ -379,6 +380,221 @@ export class AdminCouponsService
       await queryRunner.rollbackTransaction();
       if (error.code === 'ER_DUP_ENTRY') {
         throw new BadRequestException('Mã giảm giá đã tồn tại');
+      }
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateAdminCoupon(
+    _adminId: number,
+    couponId: number,
+    dto: UpdateAdminCouponDto,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // ── 1. Kiểm tra tồn tại ──────────────────────────────────────────────
+      const rows = await queryRunner.query(
+        `SELECT MaCoupon, SoLuongDaDung FROM MaGiamGia WHERE MaCoupon = ? LIMIT 1`,
+        [couponId],
+      );
+      if (!rows.length) {
+        throw new NotFoundException('Mã giảm giá không tồn tại');
+      }
+      const existing = rows[0] as { MaCoupon: number; SoLuongDaDung: number };
+      const soLuongDaDung = Number(existing.SoLuongDaDung ?? 0);
+      const isLocked = soLuongDaDung > 0;
+
+      // ── 2. Validate Nhóm 1: soLuongGioiHan ≥ soLuongDaDung ───────────────
+      if (dto.soLuongGioiHan !== undefined && dto.soLuongGioiHan !== null) {
+        const newLimit = Number(dto.soLuongGioiHan);
+        if (!Number.isInteger(newLimit) || newLimit <= 0) {
+          throw new BadRequestException(
+            'Giới hạn lượt dùng phải là số nguyên dương',
+          );
+        }
+        if (newLimit < soLuongDaDung) {
+          throw new BadRequestException(
+            `Giới hạn lượt dùng mới (${newLimit}) không được nhỏ hơn số lượt đã dùng (${soLuongDaDung})`,
+          );
+        }
+      }
+
+      if (dto.ngayKetThuc) {
+        const endDate = new Date(dto.ngayKetThuc);
+        if (isNaN(endDate.getTime()) || endDate <= new Date()) {
+          throw new BadRequestException(
+            'Ngày kết thúc phải lớn hơn thời điểm hiện tại',
+          );
+        }
+      }
+
+      // ── 3. Cập nhật Nhóm 1 (luôn cho phép) ─────────────────────────────
+      const group1Updates: string[] = [];
+      const group1Params: Array<string | number | null | Date> = [];
+
+      if (dto.ghiChu !== undefined) {
+        group1Updates.push('GhiChu = ?');
+        group1Params.push(dto.ghiChu ?? null);
+      }
+      if (dto.ngayKetThuc !== undefined) {
+        group1Updates.push('NgayKetThuc = ?');
+        group1Params.push(
+          dto.ngayKetThuc ? new Date(dto.ngayKetThuc) : null,
+        );
+      }
+      if (dto.soLuongGioiHan !== undefined) {
+        group1Updates.push('SoLuongGioiHan = ?');
+        group1Params.push(dto.soLuongGioiHan ?? null);
+      }
+      if (dto.trangThai) {
+        if (!['ACTIVE', 'INACTIVE'].includes(dto.trangThai)) {
+          throw new BadRequestException('Trạng thái không hợp lệ');
+        }
+        group1Updates.push('TrangThai = ?');
+        group1Params.push(dto.trangThai);
+      }
+
+      // ── 4. Cập nhật Nhóm 2 (chỉ khi soLuongDaDung === 0) ────────────────
+      const group2Updates: string[] = [];
+      const group2Params: Array<string | number | null> = [];
+
+      if (!isLocked) {
+        if (dto.maCode !== undefined) {
+          const normalizedCode = dto.maCode.trim().toUpperCase();
+          if (!normalizedCode) {
+            throw new BadRequestException('Mã code không được để trống');
+          }
+          group2Updates.push('MaCode = ?');
+          group2Params.push(normalizedCode);
+        }
+        if (dto.loaiGiam !== undefined) {
+          if (!['PERCENT', 'AMOUNT'].includes(dto.loaiGiam)) {
+            throw new BadRequestException('Loại giảm giá không hợp lệ');
+          }
+          group2Updates.push('LoaiGiam = ?');
+          group2Params.push(dto.loaiGiam);
+        }
+        if (dto.giaTriGiam !== undefined) {
+          const val = Number(dto.giaTriGiam);
+          if (!Number.isFinite(val) || val <= 0) {
+            throw new BadRequestException('Giá trị giảm phải lớn hơn 0');
+          }
+          // Validate percent range using the current or new loaiGiam
+          const targetLoaiGiam = dto.loaiGiam ?? undefined;
+          if (targetLoaiGiam === 'PERCENT' && (val < 1 || val > 99)) {
+            throw new BadRequestException(
+              'Mã phần trăm chỉ được phép từ 1 đến 99',
+            );
+          }
+          group2Updates.push('GiaTriGiam = ?');
+          group2Params.push(val);
+        }
+      }
+
+      const allUpdates = [...group1Updates, ...group2Updates];
+      const allParams = [...group1Params, ...group2Params];
+
+      if (allUpdates.length > 0) {
+        await queryRunner.query(
+          `UPDATE MaGiamGia SET ${allUpdates.join(', ')} WHERE MaCoupon = ?`,
+          [...allParams, couponId],
+        );
+      }
+
+      // ── 5. Cập nhật phạm vi (scope) nếu được phép ────────────────────────
+      if (!isLocked && dto.scopeType !== undefined) {
+        const normalizedScopeType: AdminCouponScopeType =
+          dto.scopeType ?? 'ALL';
+        const scopeTargetIds = Array.isArray(dto.scopeTargetIds)
+          ? [
+              ...new Set(
+                dto.scopeTargetIds
+                  .map((id) => Number(id))
+                  .filter((id) => Number.isInteger(id) && id > 0),
+              ),
+            ]
+          : [];
+
+        if (normalizedScopeType !== 'ALL' && scopeTargetIds.length === 0) {
+          throw new BadRequestException(
+            'Vui lòng chọn ít nhất một đối tượng áp dụng cho phạm vi này',
+          );
+        }
+
+        // Xoá scope cũ, ghi scope mới
+        await queryRunner.query(
+          `DELETE FROM MaGiamGiaPhamVi WHERE MaCoupon = ?`,
+          [couponId],
+        );
+
+        const scopeRows =
+          normalizedScopeType === 'ALL'
+            ? [{ loaiPhamVi: 'ALL' as const, maDoiTuong: null }]
+            : scopeTargetIds.map((targetId) => ({
+                loaiPhamVi: normalizedScopeType,
+                maDoiTuong: targetId,
+              }));
+
+        for (const scopeRow of scopeRows) {
+          await queryRunner.query(
+            `INSERT INTO MaGiamGiaPhamVi (MaCoupon, LoaiPhamVi, MaDoiTuong) VALUES (?, ?, ?)`,
+            [couponId, scopeRow.loaiPhamVi, scopeRow.maDoiTuong],
+          );
+        }
+
+        // Cập nhật MaKH cho COURSE scope 1 mục
+        const maKH =
+          normalizedScopeType === 'COURSE' && scopeTargetIds.length === 1
+            ? scopeTargetIds[0]
+            : null;
+        await queryRunner.query(
+          `UPDATE MaGiamGia SET MaKH = ? WHERE MaCoupon = ?`,
+          [maKH, couponId],
+        );
+      }
+
+      // ── 6. Cập nhật điều kiện (rules) nếu được phép ──────────────────────
+      if (!isLocked && dto.rules !== undefined) {
+        await queryRunner.query(
+          `DELETE FROM MaGiamGiaDieuKien WHERE MaCoupon = ?`,
+          [couponId],
+        );
+
+        const normalizedRules: Array<{
+          loaiDieuKien: AdminCouponRuleType;
+          giaTriDieuKien: number | null;
+          moTa: string | null;
+        }> = Array.isArray(dto.rules)
+          ? dto.rules.map((rule: AdminCouponRuleInput) => ({
+              loaiDieuKien: rule.loaiDieuKien,
+              giaTriDieuKien:
+                rule.giaTriDieuKien === null ||
+                rule.giaTriDieuKien === undefined
+                  ? null
+                  : Number(rule.giaTriDieuKien),
+              moTa: rule.moTa?.trim() || null,
+            }))
+          : [];
+
+        for (const rule of normalizedRules) {
+          await queryRunner.query(
+            `INSERT INTO MaGiamGiaDieuKien (MaCoupon, LoaiDieuKien, GiaTriDieuKien, MoTa) VALUES (?, ?, ?, ?)`,
+            [couponId, rule.loaiDieuKien, rule.giaTriDieuKien, rule.moTa],
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return { couponId, updated: true, isLocked };
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new BadRequestException('Mã code này đã tồn tại, vui lòng dùng mã khác');
       }
       throw error;
     } finally {

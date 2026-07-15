@@ -1,14 +1,18 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   Calendar,
   Check,
+  CheckCircle2,
   Loader2,
+  Pencil,
   Percent,
   Plus,
   Search,
   ToggleLeft,
   ToggleRight,
   Trash2,
+  X,
 } from 'lucide-react';
 
 import axiosClient from '../../../api/axios';
@@ -18,6 +22,7 @@ import {
   type AdminCouponItem,
   type AdminCouponRuleType,
   type CreateAdminCouponPayload,
+  type UpdateAdminCouponPayload,
   type LoaiKM,
   type AdminCouponScopeType,
   type QueryCouponsFilter,
@@ -328,6 +333,7 @@ export default function AdminCoupons() {
     filter,
     setFilter,
     createCoupon,
+    editCoupon,
     deleteCoupon,
     toggleStatus,
   } = useAdminCoupons();
@@ -340,6 +346,14 @@ export default function AdminCoupons() {
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  // ── Edit state ────────────────────────────────────────────────────────────
+  const [editTarget, setEditTarget] = useState<AdminCouponItem | null>(null);
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editForm, setEditForm] = useState<CouponForm>(emptyForm);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
+  // ── Toast state ───────────────────────────────────────────────────────────
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [courseSuggestions, setCourseSuggestions] = useState<ScopeTargetOption[]>([]);
   const [selectedScopeOptions, setSelectedScopeOptions] = useState<Record<AdminCouponScopeType, ScopeTargetOption[]>>({
     ALL: [],
@@ -361,6 +375,13 @@ export default function AdminCoupons() {
   );
 
   useEffect(() => setCurrentPage(1), [filter]);
+
+  // Auto-dismiss toast after 3s
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -511,10 +532,120 @@ export default function AdminCoupons() {
     setFormOpen(true);
   };
 
+  const openEditForm = (coupon: AdminCouponItem) => {
+    // Pre-fill form from existing coupon data
+    const preFilledForm: CouponForm = {
+      maCode: coupon.maCode,
+      giaTriGiam: Number(coupon.giaTriGiam),
+      loaiGiam: coupon.loaiGiam,
+      soLuongGioiHan: coupon.soLuongGioiHan ? String(coupon.soLuongGioiHan) : '',
+      ngayBatDau: coupon.ngayBatDau
+        ? new Date(coupon.ngayBatDau).toISOString().split('T')[0]
+        : '',
+      ngayKetThuc: coupon.ngayKetThuc
+        ? new Date(coupon.ngayKetThuc).toISOString().split('T')[0]
+        : '',
+      ghiChu: coupon.ghiChu ?? '',
+      trangThai: coupon.trangThai,
+      scopeType: coupon.maKH ? 'COURSE' : 'ALL',
+      scopeTargetIds: coupon.maKH ? String(coupon.maKH) : '',
+      rules: [],
+    };
+    setEditForm(preFilledForm);
+    setEditTarget(coupon);
+    setEditFormError(null);
+    setScopeSearch('');
+    setCourseSuggestions([]);
+    setSelectedScopeOptions({
+      ALL: [],
+      COURSE: coupon.maKH && coupon.tenKhoaHoc
+        ? [{ id: coupon.maKH, title: coupon.tenKhoaHoc, subtitle: '' }]
+        : [],
+      CATEGORY: [],
+      INSTRUCTOR: [],
+    });
+    setEditFormOpen(true);
+  };
+
+  const closeEditForm = () => {
+    setEditFormOpen(false);
+    setEditFormError(null);
+    setEditTarget(null);
+    setScopeSearch('');
+  };
+
   const closeForm = () => {
     setFormOpen(false);
     setFormError(null);
     setScopeSearch('');
+  };
+
+  const handleEditSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+
+    const isLocked = editTarget.soLuongDaDung > 0;
+
+    // ── Validate Nhóm 1 ──────────────────────────────────────────────────────
+    if (editForm.ngayKetThuc) {
+      const endDate = new Date(editForm.ngayKetThuc);
+      if (endDate <= new Date()) {
+        setEditFormError('Ngày kết thúc phải lớn hơn thời điểm hiện tại');
+        return;
+      }
+    }
+    if (editForm.soLuongGioiHan) {
+      const newLimit = Number(editForm.soLuongGioiHan);
+      if (newLimit < editTarget.soLuongDaDung) {
+        setEditFormError(
+          `Giới hạn lượt dùng mới (${newLimit}) không được nhỏ hơn số lượt đã dùng (${editTarget.soLuongDaDung})`,
+        );
+        return;
+      }
+    }
+
+    // ── Validate Nhóm 2 (chỉ khi không bị khóa) ──────────────────────────────
+    if (!isLocked) {
+      if (!editForm.maCode.trim()) {
+        setEditFormError('Mã giảm giá không được để trống');
+        return;
+      }
+      const scopeTargetIds = editForm.scopeType === 'ALL' ? null : selectedScopeTargetIds;
+      if (editForm.scopeType !== 'ALL' && (!scopeTargetIds || scopeTargetIds.length === 0)) {
+        setEditFormError('Vui lòng chọn ít nhất một mục cho phạm vi đã chọn');
+        return;
+      }
+    }
+
+    setEditSubmitting(true);
+    setEditFormError(null);
+    try {
+      const isLocked = editTarget.soLuongDaDung > 0;
+      const payload: UpdateAdminCouponPayload = {
+        // Nhóm 1: luôn gửi
+        ghiChu: editForm.ghiChu.trim() || null,
+        ngayKetThuc: editForm.ngayKetThuc || null,
+        soLuongGioiHan: editForm.soLuongGioiHan ? Number(editForm.soLuongGioiHan) : null,
+        trangThai: editForm.trangThai,
+        // Nhóm 2: chỉ gửi khi không bị khóa
+        ...(!isLocked && {
+          maCode: editForm.maCode.trim().toUpperCase(),
+          loaiGiam: editForm.loaiGiam,
+          giaTriGiam: editForm.giaTriGiam,
+          scopeType: editForm.scopeType,
+          scopeTargetIds:
+            editForm.scopeType === 'ALL' ? null : selectedScopeTargetIds,
+          rules: [],
+        }),
+      };
+      await editCoupon(editTarget.maCoupon, payload);
+      closeEditForm();
+      setToast({ message: `Cập nhật mã "${editTarget.maCode}" thành công!`, type: 'success' });
+    } catch (err: any) {
+      setEditFormError(err?.response?.data?.message ?? 'Lỗi cập nhật mã khuyến mãi');
+    } finally {
+      setEditSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -838,15 +969,26 @@ export default function AdminCoupons() {
                             </button>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(coupon)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                              title="Xóa mã"
-                              id={`delete-coupon-${coupon.maCoupon}`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openEditForm(coupon)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                title="Sửa mã"
+                                id={`edit-coupon-${coupon.maCoupon}`}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget(coupon)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                title="Xóa mã"
+                                id={`delete-coupon-${coupon.maCoupon}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1310,6 +1452,404 @@ export default function AdminCoupons() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ══════════════ EDIT COUPON MODAL ══════════════ */}
+        {editFormOpen && editTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm"
+              onClick={() => !editSubmitting && closeEditForm()}
+            />
+
+            <div className="relative w-full max-w-5xl overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-2xl">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+                    Chỉnh sửa mã giảm giá
+                  </p>
+                  <h3 className="mt-1.5 text-[22px] font-black tracking-tight text-slate-900">
+                    <span className="font-mono">{editTarget.maCode}</span>
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditForm}
+                  disabled={editSubmitting}
+                  className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                  aria-label="Đóng"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Warning banner when coupon has been used */}
+              {editTarget.soLuongDaDung > 0 && (
+                <div className="flex items-start gap-3 border-b border-amber-100 bg-amber-50/80 px-6 py-4">
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-500" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-amber-800">
+                      Mã này đã được sử dụng {editTarget.soLuongDaDung} lần
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-5 text-amber-700">
+                      Bạn không thể thay đổi <strong>Mã code</strong>, <strong>Kiểu giảm</strong>,{' '}
+                      <strong>Giá trị giảm</strong> và <strong>Phạm vi áp dụng</strong> để đảm bảo lịch sử đối soát.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={(e) => void handleEditSubmit(e)} className="max-h-[calc(90vh-120px)] overflow-y-auto">
+                <div className="grid gap-0 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+                  {/* ── Cột trái: Cấu hình chính ── */}
+                  <div className="space-y-5 border-b border-slate-100 bg-slate-50/60 p-5 lg:border-b-0 lg:border-r">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Cấu hình chính
+                      </p>
+                      <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                        {editTarget.soLuongDaDung > 0
+                          ? 'Mã code, kiểu và giá trị giảm bị khóa do đã có lượt dùng.'
+                          : 'Mã, loại giảm và thời gian chạy của coupon.'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Mã giảm giá */}
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Mã giảm giá{' '}
+                          {editTarget.soLuongDaDung === 0 && <span className="text-red-500">*</span>}
+                          {editTarget.soLuongDaDung > 0 && (
+                            <span className="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                              KHÓA
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          value={editForm.maCode}
+                          readOnly={editTarget.soLuongDaDung > 0}
+                          onChange={(e) =>
+                            editTarget.soLuongDaDung === 0 &&
+                            setEditForm((f) => ({ ...f, maCode: e.target.value.toUpperCase() }))
+                          }
+                          className={`w-full rounded-2xl border px-4 py-2.5 font-mono text-[14px] font-bold uppercase text-slate-800 outline-none transition ${
+                            editTarget.soLuongDaDung > 0
+                              ? 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                              : 'border-slate-200 bg-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                          }`}
+                          id="edit-input-macode"
+                        />
+                      </div>
+
+                      {/* Kiểu giảm */}
+                      <div>
+                        <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Kiểu giảm{' '}
+                          {editTarget.soLuongDaDung > 0 && (
+                            <span className="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                              KHÓA
+                            </span>
+                          )}
+                        </label>
+                        <select
+                          value={editForm.loaiGiam}
+                          disabled={editTarget.soLuongDaDung > 0}
+                          onChange={(e) =>
+                            setEditForm((f) => ({
+                              ...f,
+                              loaiGiam: e.target.value as 'PERCENT' | 'AMOUNT',
+                            }))
+                          }
+                          className={`w-full rounded-2xl border px-4 py-2.5 text-[14px] text-slate-700 outline-none transition ${
+                            editTarget.soLuongDaDung > 0
+                              ? 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                              : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                          }`}
+                        >
+                          <option value="PERCENT">Giảm theo %</option>
+                          <option value="AMOUNT">Giảm tiền trực tiếp</option>
+                        </select>
+
+                        {/* Giá trị giảm */}
+                        <div className="mt-3">
+                          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            {editForm.loaiGiam === 'PERCENT' ? 'Mức giảm (%)' : 'Số tiền giảm (đ)'}
+                            {editTarget.soLuongDaDung > 0 && (
+                              <span className="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                                KHÓA
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={editForm.giaTriGiam}
+                            disabled={editTarget.soLuongDaDung > 0}
+                            onChange={(e) =>
+                              setEditForm((f) => ({ ...f, giaTriGiam: Number(e.target.value || 0) }))
+                            }
+                            className={`w-full rounded-2xl border px-4 py-2.5 text-[14px] text-slate-700 outline-none transition ${
+                              editTarget.soLuongDaDung > 0
+                                ? 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                                : 'border-slate-200 bg-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Ngày bắt đầu + Kết thúc */}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Ngày bắt đầu
+                          </label>
+                          <input
+                            type="date"
+                            value={editForm.ngayBatDau}
+                            readOnly
+                            className="w-full cursor-not-allowed rounded-2xl border border-slate-100 bg-slate-100 px-4 py-2.5 text-[14px] text-slate-400 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Ngày kết thúc
+                          </label>
+                          <input
+                            type="date"
+                            value={editForm.ngayKetThuc}
+                            onChange={(e) => setEditForm((f) => ({ ...f, ngayKetThuc: e.target.value }))}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Giới hạn lượt dùng */}
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Giới hạn lượt dùng
+                          {editTarget.soLuongDaDung > 0 && (
+                            <span className="ml-1.5 text-slate-400">
+                              (min: {editTarget.soLuongDaDung})
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          type="number"
+                          min={editTarget.soLuongDaDung > 0 ? editTarget.soLuongDaDung : 1}
+                          value={editForm.soLuongGioiHan}
+                          onChange={(e) => setEditForm((f) => ({ ...f, soLuongGioiHan: e.target.value }))}
+                          placeholder="Vô hạn nếu để trống"
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Trạng thái */}
+                      <div>
+                        <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Trạng thái
+                        </label>
+                        <div className="flex gap-3">
+                          {(['ACTIVE', 'INACTIVE'] as const).map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => setEditForm((f) => ({ ...f, trangThai: status }))}
+                              className={`flex-1 rounded-2xl border py-2.5 text-[13px] font-semibold transition ${
+                                editForm.trangThai === status
+                                  ? status === 'ACTIVE'
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                    : 'border-slate-300 bg-slate-100 text-slate-600'
+                                  : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'
+                              }`}
+                            >
+                              {status === 'ACTIVE' ? 'Kích hoạt' : 'Vô hiệu'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Cột phải: Phạm vi + Ghi chú ── */}
+                  <div className="space-y-5 p-5">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Phạm vi và mô tả
+                      </p>
+                      <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                        {editTarget.soLuongDaDung > 0
+                          ? 'Phạm vi áp dụng bị khóa do đã có lượt dùng.'
+                          : 'Chọn nơi áp dụng mã giảm giá.'}
+                      </p>
+                    </div>
+
+                    {/* Phạm vi áp dụng */}
+                    <div className={`rounded-2xl border p-4 ${editTarget.soLuongDaDung > 0 ? 'border-slate-100 bg-slate-50/50' : 'border-slate-100 bg-slate-50'}`}>
+                      <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+                        <div>
+                          <label className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Loại phạm vi
+                            {editTarget.soLuongDaDung > 0 && (
+                              <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                                KHÓA
+                              </span>
+                            )}
+                          </label>
+                          <select
+                            value={editForm.scopeType}
+                            disabled={editTarget.soLuongDaDung > 0}
+                            onChange={(e) =>
+                              setEditForm((f) => {
+                                const nextScopeType = e.target.value as AdminCouponScopeType;
+                                setSelectedScopeOptions({
+                                  ALL: [],
+                                  COURSE: [],
+                                  CATEGORY: [],
+                                  INSTRUCTOR: [],
+                                });
+                                setCourseSuggestions([]);
+                                setScopeSearch('');
+                                return {
+                                  ...f,
+                                  scopeType: nextScopeType,
+                                  scopeTargetIds: '',
+                                };
+                              })
+                            }
+                            className={`w-full rounded-2xl border px-4 py-2.5 text-[14px] text-slate-700 outline-none transition ${
+                              editTarget.soLuongDaDung > 0
+                                ? 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                                : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                            }`}
+                          >
+                            {SCOPE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          {editTarget.soLuongDaDung > 0 ? (
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-100/60 px-4 py-8 text-center text-[13px] text-slate-400">
+                              Phạm vi bị khóa
+                            </div>
+                          ) : editForm.scopeType === 'ALL' ? (
+                            <div />
+                          ) : (
+                            <ScopeTargetPicker
+                              scopeType={editForm.scopeType}
+                              loading={scopeOptionsLoading}
+                              search={scopeSearch}
+                              onSearchChange={setScopeSearch}
+                              visibleOptions={visibleScopeOptions}
+                              selectedOptions={selectedScopeOptionsForCurrentType}
+                              selectedIds={selectedScopeTargetIds}
+                              onToggleTarget={toggleScopeTarget}
+                              emptyHint={
+                                editForm.scopeType === 'COURSE'
+                                  ? 'Nhập tên khóa học'
+                                  : 'Nhập từ khóa tìm kiếm'
+                              }
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ghi chú */}
+                    <div>
+                      <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Ghi chú / mô tả
+                      </label>
+                      <textarea
+                        value={editForm.ghiChu}
+                        onChange={(e) => setEditForm((f) => ({ ...f, ghiChu: e.target.value }))}
+                        rows={4}
+                        placeholder="Mô tả ngắn về điều kiện sử dụng mã..."
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Info về lượt dùng hiện tại */}
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3">
+                      <div className="flex items-center justify-between text-[13px]">
+                        <span className="font-medium text-slate-500">Lượt đã dùng</span>
+                        <span className="font-bold text-slate-800">
+                          {editTarget.soLuongDaDung}
+                          {editTarget.soLuongGioiHan ? ` / ${editTarget.soLuongGioiHan}` : ' / ∞'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error */}
+                {editFormError && (
+                  <div className="border-t border-red-100 bg-red-50/70 px-6 py-3 text-[14px] text-red-600">
+                    {editFormError}
+                  </div>
+                )}
+
+                {/* Footer actions */}
+                <div className="border-t border-slate-100 px-6 py-4">
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={closeEditForm}
+                      disabled={editSubmitting}
+                      className="rounded-2xl px-5 py-2.5 text-[14px] font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-60"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={editSubmitting}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-60"
+                      id="submit-edit-coupon"
+                    >
+                      {editSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Đang lưu...
+                        </>
+                      ) : (
+                        'Lưu thay đổi'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════ TOAST NOTIFICATION ══════════════ */}
+        {toast && (
+          <div
+            className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-2xl border px-5 py-4 shadow-xl transition-all duration-300 ${
+              toast.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle2 size={20} className="shrink-0 text-emerald-500" />
+            ) : (
+              <AlertTriangle size={20} className="shrink-0 text-red-500" />
+            )}
+            <p className="text-[14px] font-semibold">{toast.message}</p>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="ml-2 shrink-0 rounded-full p-1 opacity-60 transition hover:opacity-100"
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
       </div>

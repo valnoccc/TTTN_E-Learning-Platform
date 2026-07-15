@@ -2,7 +2,9 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  ChevronDown,
   CircleDollarSign,
+  Download,
   GraduationCap,
   Layers3,
   ShoppingCart,
@@ -11,6 +13,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   Bar,
@@ -29,6 +32,7 @@ import {
 } from "recharts";
 import AdminLayout from "../../../layouts/AdminLayout";
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
+import * as XLSX from "xlsx";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -318,8 +322,200 @@ function QuotaStackCard({
   );
 }
 
+import { type DashboardFilter } from "./hooks/useAdminDashboard";
+
+const DAY_OPTIONS: { label: string; filter: DashboardFilter }[] = [
+  { label: "7 ngày gần nhất",  filter: { type: 'days', days: 7   } },
+  { label: "30 ngày gần nhất", filter: { type: 'days', days: 30  } },
+  { label: "90 ngày gần nhất", filter: { type: 'days', days: 90  } },
+  { label: "1 năm gần nhất",   filter: { type: 'days', days: 365 } },
+];
+
+function buildMonthOptions(): { label: string; filter: DashboardFilter }[] {
+  const opts: { label: string; filter: DashboardFilter }[] = [];
+  const now = new Date();
+  for (let i = 1; i <= 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const month = d.getMonth() + 1;
+    const year  = d.getFullYear();
+    opts.push({
+      label: `Tháng ${String(month).padStart(2,'0')}/${year}`,
+      filter: { type: 'month', month, year },
+    });
+  }
+  return opts;
+}
+
+const MONTH_OPTIONS = buildMonthOptions();
+
+function filterLabel(f: DashboardFilter) {
+  if (f.type === 'month') return `Tháng ${String(f.month).padStart(2,'0')}/${f.year}`;
+  return DAY_OPTIONS.find((o) => o.filter.type === 'days' && (o.filter as any).days === f.days)?.label ?? 'Chọn kỳ';
+}
+
+function filterKey(f: DashboardFilter) {
+  return f.type === 'month' ? `month-${f.month}-${f.year}` : `days-${f.days}`;
+}
+
+function exportDashboardXLSX(
+  stats: NonNullable<ReturnType<typeof useAdminDashboard>["stats"]>,
+  filter: DashboardFilter
+) {
+  const wb = XLSX.utils.book_new();
+  const dateTxt = new Date().toLocaleString("vi-VN");
+  const periodTxt = filterLabel(filter);
+
+  // ── Helper: create a sheet from header + rows ──────────────────────────────
+  function makeSheet(
+    headers: string[],
+    rows: (string | number)[][],
+    title?: string
+  ): XLSX.WorkSheet {
+    const aoa: (string | number)[][] = [];
+    if (title) {
+      aoa.push([title]);
+      aoa.push([`Kỳ: ${periodTxt}  |  Xuất lúc: ${dateTxt}`]);
+      aoa.push([]);
+    }
+    aoa.push(headers);
+    for (const r of rows) aoa.push(r);
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Auto column width
+    const colWidths = headers.map((h, ci) => {
+      const maxLen = Math.max(h.length, ...rows.map((r) => String(r[ci] ?? "").length));
+      return { wch: Math.min(maxLen + 4, 50) };
+    });
+    ws["!cols"] = colWidths;
+
+    // Style header row
+    const headerRowIndex = title ? 3 : 0;
+    const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cellRef = XLSX.utils.encode_cell({ r: headerRowIndex, c: C });
+      if (!ws[cellRef]) continue;
+      ws[cellRef].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "1E293B" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "94A3B8" } },
+          bottom: { style: "thin", color: { rgb: "94A3B8" } },
+          left: { style: "thin", color: { rgb: "94A3B8" } },
+          right: { style: "thin", color: { rgb: "94A3B8" } },
+        },
+      };
+    }
+
+    // Style data rows (zebra)
+    for (let R = headerRowIndex + 1; R <= range.e.r; R++) {
+      const isEven = (R - headerRowIndex) % 2 === 0;
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellRef]) ws[cellRef] = { t: "z" };
+        ws[cellRef].s = {
+          fill: { fgColor: { rgb: isEven ? "F1F5F9" : "FFFFFF" } },
+          border: {
+            top: { style: "thin", color: { rgb: "E2E8F0" } },
+            bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+            left: { style: "thin", color: { rgb: "E2E8F0" } },
+            right: { style: "thin", color: { rgb: "E2E8F0" } },
+          },
+          alignment: { vertical: "center" },
+        };
+      }
+    }
+
+    ws["!freeze"] = { xSplit: 0, ySplit: headerRowIndex + 1 };
+    return ws;
+  }
+
+  // ── Sheet 1: KPI ──────────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeSheet(
+    ["Chỉ tiêu", "Giá trị (VNĐ)"],
+    [
+      ["Dòng tiền hệ thống", stats.grossRevenue],
+      ["Lợi nhuận Admin",       stats.adminRevenue],
+      ["Công nợ giảng viên",  stats.instructorPayout],
+      ["Lượt ghi danh mới",   stats.newEnrollments],
+      ["Hàng chờ kiểm duyệt", stats.pendingCourses],
+    ],
+    `📊 Tóm tắt KPI — ${periodTxt}`
+  ), "Tổng quan");
+
+  // ── Sheet 2: Recent orders ────────────────────────────────────────────────
+  if (stats.recentOrders?.length) {
+    XLSX.utils.book_append_sheet(wb, makeSheet(
+      ["Mã đơn", "Khách hàng", "Khóa học", "Số tiền (VNĐ)", "Ngày giao dịch", "Phương thức", "Trạng thái"],
+      stats.recentOrders.map((o) => [
+        o.orderId, o.customerName, o.courseName, o.totalAmount,
+        o.paidAt ? new Date(o.paidAt).toLocaleString("vi-VN") : "",
+        o.paymentMethod, o.paymentStatus,
+      ]),
+      `🧾 Giao dịch — ${periodTxt}`
+    ), "Giao dịch");
+  }
+
+  // ── Sheet 3: Revenue trend ────────────────────────────────────────────────
+  if (stats.salesChart?.length) {
+    XLSX.utils.book_append_sheet(wb, makeSheet(
+      ["Tháng", "Lượt ghi danh", "Tổng doanh thu (VNĐ)", "Admin (VNĐ)", "Giảng viên (VNĐ)"],
+      stats.salesChart.map((s) => [s.label, s.orders, s.grossRevenue, s.adminRevenue, s.instructorPayout]),
+      "📈 Xu hướng doanh thu 12 tháng"
+    ), "Doanh thu tháng");
+  }
+
+  // ── Sheet 4: Category revenue ─────────────────────────────────────────────
+  if (stats.categoryRevenue?.length) {
+    XLSX.utils.book_append_sheet(wb, makeSheet(
+      ["Danh mục", "Doanh thu (VNĐ)", "Admin (VNĐ)", "Giảng viên (VNĐ)"],
+      stats.categoryRevenue.map((c) => [c.name, c.revenue, c.adminRevenue, c.instructorPayout]),
+      `🗂️ Doanh thu danh mục — ${periodTxt}`
+    ), "Danh mục");
+  }
+
+  // ── Sheet 5: Top courses ──────────────────────────────────────────────────
+  if (stats.topCourses?.length) {
+    XLSX.utils.book_append_sheet(wb, makeSheet(
+      ["Tên khóa học", "Lượt mua", "Doanh thu (VNĐ)", "Admin (VNĐ)", "GV (VNĐ)"],
+      stats.topCourses.map((c) => [c.name, c.orders, c.revenue, c.adminRevenue, c.instructorRevenue]),
+      `🏆 Top khóa học — ${periodTxt}`
+    ), "Top khóa học");
+  }
+
+  // ── Sheet 6: Top instructors ──────────────────────────────────────────────
+  if (stats.topInstructors?.length) {
+    XLSX.utils.book_append_sheet(wb, makeSheet(
+      ["Giảng viên", "Danh mục", "Học viên", "Doanh thu (VNĐ)", "Tỉ lệ (%)"],
+      stats.topInstructors.map((i) => [i.name, i.category, i.students, i.revenue, i.percentage]),
+      `👨‍🏫 Top giảng viên — ${periodTxt}`
+    ), "Top giảng viên");
+  }
+
+  // File name
+  const slug = filter.type === 'month'
+    ? `thang${String(filter.month).padStart(2,'0')}-${filter.year}`
+    : `${(filter as any).days}ngay`;
+  XLSX.writeFile(wb, `bao-cao-${slug}-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
 export default function AdminDashboard() {
-  const { stats, loading } = useAdminDashboard();
+  const [filter, setFilter] = useState<DashboardFilter>({ type: 'days', days: 30 });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { stats, loading } = useAdminDashboard(filter);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const chartPalette = {
     gross: "#2563eb",
@@ -369,12 +565,74 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
-              <CalendarDays size={16} />
-              30 ngày gần nhất
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-              <BarChart3 size={16} />
+            {/* Time range + month dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                id="btn-time-range"
+                onClick={() => setDropdownOpen((o) => !o)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                <CalendarDays size={16} />
+                {filterLabel(filter)}
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_40px_-16px_rgba(15,23,42,0.35)]">
+                  {/* Rolling windows */}
+                  <div className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Khoảng thời gian
+                  </div>
+                  {DAY_OPTIONS.map((opt) => {
+                    const active = filterKey(filter) === filterKey(opt.filter);
+                    return (
+                      <button
+                        key={filterKey(opt.filter)}
+                        onClick={() => { setFilter(opt.filter); setDropdownOpen(false); }}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50 ${
+                          active ? "bg-slate-900 text-white hover:bg-slate-800" : "text-slate-700"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+
+                  {/* Month picker */}
+                  <div className="mx-3 my-1.5 h-px bg-slate-100" />
+                  <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Theo tháng
+                  </div>
+                  {MONTH_OPTIONS.map((opt) => {
+                    const active = filterKey(filter) === filterKey(opt.filter);
+                    return (
+                      <button
+                        key={filterKey(opt.filter)}
+                        onClick={() => { setFilter(opt.filter); setDropdownOpen(false); }}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50 ${
+                          active ? "bg-slate-900 text-white hover:bg-slate-800" : "text-slate-700"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                  <div className="pb-1" />
+                </div>
+              )}
+            </div>
+
+            {/* Export Excel */}
+            <button
+              id="btn-export-report"
+              disabled={!stats}
+              onClick={() => stats && exportDashboardXLSX(stats, filter)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download size={16} />
               Xuất báo cáo
             </button>
           </div>

@@ -40,7 +40,8 @@
     "react-router-dom": "^7.14.1",
     "recharts": "^2.15.4",
     "styled-components": "^5.3.11",
-    "swiper": "^5.4.5"
+    "swiper": "^5.4.5",
+    "xlsx": "^0.18.5"
   },
   "overrides": {
     "react-bootstrap": {

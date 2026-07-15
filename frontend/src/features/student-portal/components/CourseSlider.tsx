@@ -135,16 +135,6 @@ const CourseSlider = () => {
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
-                                                                                dispatch(addToCart({
-                                                                                    id: data.maKH,
-                                                                                    courseName: data.tenKhoaHoc,
-                                                                                    thumbnail: courseImage,
-                                                                                    instructor: instructorName,
-                                                                                    price: parseFloat(data.giaBan || '0'),
-                                                                                    duration: '120 Phút',
-                                                                                    level: 'Mọi cấp độ',
-                                                                                    category: categoryName
-                                                                                }));
                                                                                 const token = localStorage.getItem('access_token');
                                                                                 if (token) {
                                                                                   dispatch(addToCartThunk({
@@ -156,9 +146,22 @@ const CourseSlider = () => {
                                                                                     duration: '120 Phút',
                                                                                     level: 'Mọi cấp độ',
                                                                                     category: categoryName
-                                                                                  }) as any);
+                                                                                  }) as any).unwrap()
+                                                                                    .then(() => toast.success('Đã thêm vào giỏ hàng!'))
+                                                                                    .catch((err: any) => toast.error(err.response?.data?.message || err.message || 'Lỗi'));
+                                                                                } else {
+                                                                                  dispatch(addToCart({
+                                                                                      id: data.maKH,
+                                                                                      courseName: data.tenKhoaHoc,
+                                                                                      thumbnail: courseImage,
+                                                                                      instructor: instructorName,
+                                                                                      price: parseFloat(data.giaBan || '0'),
+                                                                                      duration: '120 Phút',
+                                                                                      level: 'Mọi cấp độ',
+                                                                                      category: categoryName
+                                                                                  }));
+                                                                                  toast.success('Đã thêm vào giỏ hàng!');
                                                                                 }
-                                                                                toast.success('Đã thêm vào giỏ hàng!');
                                                                             }}
                                                                         >
                                                                             <i className="las la-shopping-cart text-xl"></i>

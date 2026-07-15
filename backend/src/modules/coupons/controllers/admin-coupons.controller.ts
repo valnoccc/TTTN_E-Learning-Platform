@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateAdminCouponDto } from '../dto/create-admin-coupon.dto';
 import { QueryCouponsDto } from '../dto/query-coupons.dto';
+import { UpdateAdminCouponDto } from '../dto/update-admin-coupon.dto';
 import { UpdateCouponStatusDto } from '../dto/update-coupon-status.dto';
 import { AdminCouponsService } from '../services/admin-coupons.service';
 
@@ -52,6 +53,24 @@ export class AdminCouponsController {
 
     return {
       message: 'Tạo mã giảm giá admin thành công',
+      data,
+    };
+  }
+
+  @Patch(':id')
+  async updateCoupon(
+    @Req() req: Request & { user: { sub: number } },
+    @Param('id') id: string,
+    @Body() body: UpdateAdminCouponDto,
+  ) {
+    const data = await this.adminCouponsService.updateAdminCoupon(
+      this.getAdminId(req),
+      Number(id),
+      body,
+    );
+
+    return {
+      message: 'Cập nhật mã giảm giá thành công',
       data,
     };
   }

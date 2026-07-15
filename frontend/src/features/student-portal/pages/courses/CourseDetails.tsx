@@ -9,7 +9,7 @@ import { Styles } from './styles/course';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, addToCartThunk } from '../../../cart/cartSlice';
 import { toggleWishlist, toggleWishlistThunk } from '../../../wishlist/wishlistSlice';
-import { RootState } from '../../../../store/store';
+import { RootState, AppDispatch } from '../../../../store/store';
 import axiosClient from '../../../../api/axios';
 import toast from 'react-hot-toast';
 import { Star, Check } from 'lucide-react';
@@ -56,7 +56,7 @@ function useDarkMode() {
 function CourseDetails() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
     const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
     
     const [course, setCourse] = useState<any>(null);
@@ -885,12 +885,14 @@ function CourseDetails() {
                                                                     style={{ height: '48px', borderRadius: '8px' }}
                                                                     onClick={() => {
                                                                         const token = localStorage.getItem('access_token');
-                                                                        const cartSynced = (window as any).__cartSynced;
-                                                                        dispatch(addToCart(course));
                                                                         if (token) {
-                                                                          dispatch(addToCartThunk(course));
+                                                                          dispatch(addToCartThunk(course) as any).unwrap()
+                                                                            .then(() => toast.success('Đã thêm vào giỏ hàng!'))
+                                                                            .catch((err: any) => toast.error(err.response?.data?.message || err.message || 'Lỗi'));
+                                                                        } else {
+                                                                          dispatch(addToCart(course));
+                                                                          toast.success('Đã thêm vào giỏ hàng!');
                                                                         }
-                                                                        toast.success('Đã thêm vào giỏ hàng!');
                                                                     }}
                                                                 >
                                                                     Thêm vào giỏ hàng

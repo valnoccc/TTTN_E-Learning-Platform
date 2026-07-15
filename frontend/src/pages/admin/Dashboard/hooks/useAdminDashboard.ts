@@ -114,7 +114,11 @@ export interface DashboardStats {
     categoryRevenue: RevenueCategory[];
 }
 
-export function useAdminDashboard() {
+export type DashboardFilter =
+    | { type: 'days'; days: number }
+    | { type: 'month'; month: number; year: number };
+
+export function useAdminDashboard(filter: DashboardFilter = { type: 'days', days: 30 }) {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -122,7 +126,11 @@ export function useAdminDashboard() {
         const fetchStats = async () => {
             setLoading(true);
             try {
-                const response = await axiosClient.get<DashboardStats>('/admin/dashboard/stats');
+                const params =
+                    filter.type === 'month'
+                        ? { month: filter.month, year: filter.year }
+                        : { days: filter.days };
+                const response = await axiosClient.get<DashboardStats>('/admin/dashboard/stats', { params });
                 setStats((response as any)?.data ?? response);
             } catch (error) {
                 toast.error('Lỗi khi tải dữ liệu!');
@@ -132,7 +140,8 @@ export function useAdminDashboard() {
         };
 
         void fetchStats();
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filter.type === 'days' ? filter.days : `${(filter as any).month}-${(filter as any).year}`]);
 
     return { stats, loading };
 }
