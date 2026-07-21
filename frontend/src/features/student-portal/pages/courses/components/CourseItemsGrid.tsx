@@ -134,8 +134,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
           } else if (rawAvatar.includes("/")) {
             instructorAvatar = rawAvatar;
           } else {
-            instructorAvatar =
-              `/assets/images/${rawAvatar}`;
+            instructorAvatar = `/assets/images/${rawAvatar}`;
           }
         }
         const categoryName = data.danhMuc?.tenDM || "General";
