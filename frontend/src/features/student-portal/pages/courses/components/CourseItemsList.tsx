@@ -87,15 +87,15 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                         if (rawAvatar.startsWith('http')) {
                             instructorAvatar = rawAvatar;
                         } else if (rawAvatar.includes('/')) {
-                            instructorAvatar = process.env.PUBLIC_URL + rawAvatar;
+                            instructorAvatar = rawAvatar;
                         } else {
-                            instructorAvatar = process.env.PUBLIC_URL + `/assets/images/${rawAvatar}`;
+                            instructorAvatar = `/assets/images/${rawAvatar}`;
                         }
                     }
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const rawImage = data.hinhThuNho;
-                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
-                    const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                    const courseUrl = `/course-details/${data.maKH}`;
                     const courseDurationText = formatCourseDuration(
                         data.totalDurationSeconds ?? data.tongThoiLuong ?? data.totalDuration ?? 0,
                     );

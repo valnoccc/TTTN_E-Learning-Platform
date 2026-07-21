@@ -345,7 +345,7 @@ function CourseDetails() {
         }).format(price).replace('₫', 'đ');
     };
 
-    const courseImage = course.thumbnail.startsWith('http') ? course.thumbnail : process.env.PUBLIC_URL + course.thumbnail;
+    const courseImage = course.thumbnail.startsWith('http') ? course.thumbnail : course.thumbnail;
 
     const reviewsPerPage = 5;
     const indexOfLastReview = currentPage * reviewsPerPage;
@@ -359,7 +359,7 @@ function CourseDetails() {
             {/* Hero Banner */}
             <section className="relative w-full bg-slate-900 pt-24 pb-32 xl:pt-28 xl:pb-40">
                 {/* Background overlay image (optional) */}
-                <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/assets/images/breadcrumb-bg.jpg)` }}></div>
+                <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: 'url(/assets/images/breadcrumb-bg.jpg)' }}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
                 
                 <Container className="relative z-10">
@@ -367,7 +367,7 @@ function CourseDetails() {
                         <Col lg="12">
                             <h1 className="text-white text-4xl md:text-5xl font-bold mb-4">Chi tiết khóa học</h1>
                             <div className="flex items-center text-gray-300 text-sm md:text-base font-medium">
-                                <Link to={process.env.PUBLIC_URL + "/"} className="text-gray-300 hover:text-white transition-colors text-decoration-none hover:no-underline">Trang chủ</Link>
+                                <Link to="/" className="text-gray-300 hover:text-white transition-colors text-decoration-none hover:no-underline">Trang chủ</Link>
                                 <i className="las la-angle-right mx-2 text-gray-500"></i>
                                 <span className="text-gray-300">{course.category}</span>
                                 <i className="las la-angle-right mx-2 text-gray-500"></i>
@@ -407,8 +407,8 @@ function CourseDetails() {
                                                         ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
                                                             ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
                                                             : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
-                                                                ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
-                                                                : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
+                                                                ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                : `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
                                                         : `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'Giảng viên')}&background=random`
                                                 } 
                                                 alt={course.instructor} 
@@ -566,8 +566,8 @@ function CourseDetails() {
                                                             ? ((course.giangVien.anhDaiDien || course.giangVien.avatar).startsWith('http') 
                                                                 ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
                                                                 : ((course.giangVien.anhDaiDien || course.giangVien.avatar).includes('/') 
-                                                                    ? process.env.PUBLIC_URL + (course.giangVien.anhDaiDien || course.giangVien.avatar) 
-                                                                    : process.env.PUBLIC_URL + `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
+                                                                    ? (course.giangVien.anhDaiDien || course.giangVien.avatar) 
+                                                                    : `/assets/images/${(course.giangVien.anhDaiDien || course.giangVien.avatar)}`))
                                                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.giangVien?.tenGiangVien || course?.instructor || 'Giảng viên')}&background=random`
                                                     } 
                                                     alt={course?.giangVien?.tenGiangVien || course?.instructor} 
@@ -650,7 +650,7 @@ function CourseDetails() {
                                                                 <div className="flex-shrink-0">
                                                                     {review.studentAvatar ? (
                                                                         <img 
-                                                                            src={review.studentAvatar.startsWith('http') ? review.studentAvatar : process.env.PUBLIC_URL + review.studentAvatar} 
+                                                                            src={review.studentAvatar.startsWith('http') ? review.studentAvatar : review.studentAvatar} 
                                                                             alt={review.studentName} 
                                                                             className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover" 
                                                                         />

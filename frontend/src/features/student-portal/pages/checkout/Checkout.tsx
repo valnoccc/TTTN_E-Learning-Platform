@@ -427,7 +427,7 @@ export default function Checkout() {
                             onClick={() => setSelectedBank(bank.id)}
                           >
                             <img 
-                              src={process.env.PUBLIC_URL + bank.logo} 
+                              src={bank.logo} 
                               alt={bank.name} 
                               style={{ width: '100%', height: '40px', objectFit: 'contain' }} 
                               onError={(e) => {
@@ -554,7 +554,7 @@ export default function Checkout() {
                       style={{ display: 'flex', alignItems: 'center' }}
                     >
                       <img
-                        src={process.env.PUBLIC_URL + course.thumbnail}
+                        src={course.thumbnail}
                         alt={course.courseName}
                         style={{
                           width: '80px',
