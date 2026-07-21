@@ -13,6 +13,7 @@ import {
   UserRound,
   UserRoundCog,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 
 import AdminLayout from '../../../layouts/AdminLayout';
@@ -135,6 +136,7 @@ export default function AdminUsers() {
   } = useAdminUsers();
 
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
+  const [confirmLockUser, setConfirmLockUser] = useState<AdminUserRecord | null>(null);
   const [drawerRole, setDrawerRole] = useState<Exclude<AdminUserRole, 'ALL'>>('STUDENT');
   const [drawerStatus, setDrawerStatus] = useState<Exclude<AdminUserStatus, 'ALL'>>('ACTIVE');
   const [currentPage, setCurrentPage] = useState(1);
@@ -486,12 +488,7 @@ export default function AdminUsers() {
     
     {/* Nút Khóa / Mở */}
     <button
-      onClick={() =>
-        void updateUserStatus(
-          user.id,
-          user.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE',
-        )
-      }
+      onClick={() => setConfirmLockUser(user)}
       className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-[12px] font-semibold shadow-sm transition ${
         user.status === 'ACTIVE'
           ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
@@ -683,6 +680,59 @@ export default function AdminUsers() {
           </aside>
         </div>
       ) : null}
+
+      {/* MODAL XÁC NHẬN KHÓA/MỞ KHÓA TÀI KHOẢN */}
+      {confirmLockUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setConfirmLockUser(null)}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-[24px] bg-white p-6 shadow-[0_20px_40px_-16px_rgba(15,23,42,0.2)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                confirmLockUser.status === 'ACTIVE' 
+                  ? 'bg-rose-100 text-rose-600' 
+                  : 'bg-emerald-100 text-emerald-600'
+              }`}>
+                <AlertTriangle size={28} strokeWidth={2.5} />
+              </div>
+              <h3 className="mb-2 text-xl font-bold text-slate-900">
+                Xác nhận {confirmLockUser.status === 'ACTIVE' ? 'khóa' : 'mở khóa'} tài khoản
+              </h3>
+              <p className="mb-6 text-sm text-slate-500 leading-relaxed">
+                Bạn có chắc chắn muốn {confirmLockUser.status === 'ACTIVE' ? 'khóa' : 'mở khóa'} tài khoản của người dùng <strong className="text-slate-900">{confirmLockUser.fullName}</strong> ({confirmLockUser.email}) không?
+                {confirmLockUser.status === 'ACTIVE' && ' Tài khoản bị khóa sẽ không thể đăng nhập vào hệ thống.'}
+              </p>
+              
+              <div className="flex w-full items-center gap-3">
+                <button
+                  onClick={() => setConfirmLockUser(null)}
+                  className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    void updateUserStatus(
+                      confirmLockUser.id,
+                      confirmLockUser.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE',
+                    );
+                    setConfirmLockUser(null);
+                  }}
+                  className={`flex-1 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition ${
+                    confirmLockUser.status === 'ACTIVE'
+                      ? 'bg-rose-600 hover:bg-rose-700 hover:shadow-rose-600/20 shadow-rose-600/10'
+                      : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/20 shadow-emerald-600/10'
+                  }`}
+                >
+                  Đồng ý {confirmLockUser.status === 'ACTIVE' ? 'khóa' : 'mở'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

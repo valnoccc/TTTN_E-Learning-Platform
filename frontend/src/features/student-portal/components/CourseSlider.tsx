@@ -95,15 +95,15 @@ const CourseSlider = () => {
                                                     if (rawAvatar.startsWith('http')) {
                                                         instructorAvatar = rawAvatar;
                                                     } else if (rawAvatar.includes('/')) {
-                                                        instructorAvatar = process.env.PUBLIC_URL + rawAvatar;
+                                                        instructorAvatar = rawAvatar;
                                                     } else {
-                                                        instructorAvatar = process.env.PUBLIC_URL + `/assets/images/${rawAvatar}`;
+                                                        instructorAvatar = `/assets/images/${rawAvatar}`;
                                                     }
                                                 }
                                                 const categoryName = data.danhMuc?.tenDM || 'General';
                                                 const rawImage = data.hinhThuNho;
-                                                const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
-                                                const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+                                                const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                                                const courseUrl = `/course-details/${data.maKH}`;
 
                                                 return (
                                                     <div className="course-item px-2 py-4" key={i}>
@@ -135,16 +135,6 @@ const CourseSlider = () => {
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
-                                                                                dispatch(addToCart({
-                                                                                    id: data.maKH,
-                                                                                    courseName: data.tenKhoaHoc,
-                                                                                    thumbnail: courseImage,
-                                                                                    instructor: instructorName,
-                                                                                    price: parseFloat(data.giaBan || '0'),
-                                                                                    duration: '120 Phút',
-                                                                                    level: 'Mọi cấp độ',
-                                                                                    category: categoryName
-                                                                                }));
                                                                                 const token = localStorage.getItem('access_token');
                                                                                 if (token) {
                                                                                   dispatch(addToCartThunk({
@@ -156,9 +146,22 @@ const CourseSlider = () => {
                                                                                     duration: '120 Phút',
                                                                                     level: 'Mọi cấp độ',
                                                                                     category: categoryName
-                                                                                  }) as any);
+                                                                                  }) as any).unwrap()
+                                                                                    .then(() => toast.success('Đã thêm vào giỏ hàng!'))
+                                                                                    .catch((err: any) => toast.error(err.response?.data?.message || err.message || 'Lỗi'));
+                                                                                } else {
+                                                                                  dispatch(addToCart({
+                                                                                      id: data.maKH,
+                                                                                      courseName: data.tenKhoaHoc,
+                                                                                      thumbnail: courseImage,
+                                                                                      instructor: instructorName,
+                                                                                      price: parseFloat(data.giaBan || '0'),
+                                                                                      duration: '120 Phút',
+                                                                                      level: 'Mọi cấp độ',
+                                                                                      category: categoryName
+                                                                                  }));
+                                                                                  toast.success('Đã thêm vào giỏ hàng!');
                                                                                 }
-                                                                                toast.success('Đã thêm vào giỏ hàng!');
                                                                             }}
                                                                         >
                                                                             <i className="las la-shopping-cart text-xl"></i>

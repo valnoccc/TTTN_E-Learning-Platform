@@ -491,12 +491,12 @@ export default function StudentProfile() {
                                 src={
                                   course.image.startsWith('http')
                                     ? course.image
-                                    : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?\/?/, '')}`
+                                    : `/assets/images/${course.image.replace(/^\/?\/?/, '')}`
                                 }
                                 alt={course.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 onError={(e: any) => {
-                                  e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`;
+                                  e.target.src = '/assets/images/course-1.jpg';
                                 }}
                               />
                             ) : (
@@ -746,7 +746,7 @@ export default function StudentProfile() {
                     <div className="w-20 h-14 bg-slate-200 rounded-lg overflow-hidden shrink-0">
                       {item.HinhAnhDaiDien ? (
                         <img 
-                          src={item.HinhAnhDaiDien.startsWith('http') ? item.HinhAnhDaiDien : `${process.env.PUBLIC_URL || ''}/assets/images/${item.HinhAnhDaiDien.startsWith('/') ? item.HinhAnhDaiDien.substring(1) : item.HinhAnhDaiDien}`}
+                          src={item.HinhAnhDaiDien.startsWith('http') ? item.HinhAnhDaiDien : `/assets/images/${item.HinhAnhDaiDien.startsWith('/') ? item.HinhAnhDaiDien.substring(1) : item.HinhAnhDaiDien}`}
                           alt={item.TenKhoaHoc}
                           className="w-full h-full object-cover"
                           onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}

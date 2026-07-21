@@ -97,7 +97,7 @@ export default function InstructorSidebar() {
       title: 'Quản lý khóa học',
       items: [
         {
-          label: 'Khóa học của tôi',
+          label: 'Quản lý thông tin khóa học',
           path: '/instructor/courses',
           icon: <BookOpen size={18} />,
           match: 'prefix',

@@ -87,15 +87,15 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                         if (rawAvatar.startsWith('http')) {
                             instructorAvatar = rawAvatar;
                         } else if (rawAvatar.includes('/')) {
-                            instructorAvatar = process.env.PUBLIC_URL + rawAvatar;
+                            instructorAvatar = rawAvatar;
                         } else {
-                            instructorAvatar = process.env.PUBLIC_URL + `/assets/images/${rawAvatar}`;
+                            instructorAvatar = `/assets/images/${rawAvatar}`;
                         }
                     }
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const rawImage = data.hinhThuNho;
-                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
-                    const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                    const courseUrl = `/course-details/${data.maKH}`;
                     const courseDurationText = formatCourseDuration(
                         data.totalDurationSeconds ?? data.tongThoiLuong ?? data.totalDuration ?? 0,
                     );
@@ -160,30 +160,33 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
-                                                    dispatch(addToCart({
-                                                        id: data.maKH,
-                                                        courseName: data.tenKhoaHoc,
-                                                        thumbnail: courseImage,
-                                                        instructor: instructorName,
-                                                        price: parseFloat(data.giaBan || '0'),
-                                                        duration: courseDurationText,
-                                                        level: 'Mọi cấp độ',
-                                                        category: categoryName
-                                                    }));
                                                     const addToken = localStorage.getItem('access_token');
                                                     if (addToken) {
-                                                      dispatch(addToCartThunk({
-                                                        id: data.maKH,
-                                                        courseName: data.tenKhoaHoc,
-                                                        thumbnail: courseImage,
-                                                        instructor: instructorName,
-                                                        price: parseFloat(data.giaBan || '0'),
-                                                        duration: courseDurationText,
-                                                        level: 'Mọi cấp độ',
-                                                        category: categoryName
-                                                      }) as any);
+                                                        dispatch(addToCartThunk({
+                                                            id: data.maKH,
+                                                            courseName: data.tenKhoaHoc,
+                                                            thumbnail: courseImage,
+                                                            instructor: instructorName,
+                                                            price: parseFloat(data.giaBan || '0'),
+                                                            duration: courseDurationText,
+                                                            level: 'Mọi cấp độ',
+                                                            category: categoryName
+                                                        }) as any).unwrap()
+                                                            .then(() => toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!'))
+                                                            .catch((err: any) => toast.error(err.response?.data?.message || err.message || 'Lỗi'));
+                                                    } else {
+                                                        dispatch(addToCart({
+                                                            id: data.maKH,
+                                                            courseName: data.tenKhoaHoc,
+                                                            thumbnail: courseImage,
+                                                            instructor: instructorName,
+                                                            price: parseFloat(data.giaBan || '0'),
+                                                            duration: courseDurationText,
+                                                            level: 'Mọi cấp độ',
+                                                            category: categoryName
+                                                        }));
+                                                        toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                     }
-                                                    toast.success('🎉 Đã thêm khóa học vào giỏ hàng thành công!');
                                                 }}
                                             >
                                                 <i className="las la-shopping-cart mr-1 text-lg"></i> Thêm vào giỏ

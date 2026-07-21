@@ -20,8 +20,8 @@ export default function InstructorCourses() {
             <div className="space-y-6">
                 <div className="mb-5 flex items-center justify-between">
                    <div>
-            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
-              Khóa học của tôi
+           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
+              Quản lý thông tin khóa học
             </h1>
           </div>
                     <Link

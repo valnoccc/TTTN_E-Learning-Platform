@@ -58,6 +58,17 @@ export class CartService {
 
   /** Thêm một khóa học vào giỏ (bỏ qua nếu đã tồn tại) */
   async addToCart(userId: number, courseId: number) {
+    // Kiểm tra xem đã sở hữu chưa
+    const existingEnrollments = await this.dataSource.query(
+      `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'`,
+      [userId, courseId],
+    );
+
+    if (existingEnrollments.length > 0) {
+      const { BadRequestException } = require('@nestjs/common');
+      throw new BadRequestException('Đã đăng ký khóa học');
+    }
+
     const cartId = await this.getOrCreateCart(userId);
     await this.dataSource.query(
       `INSERT IGNORE INTO ChiTietGioHang (MaGioHang, MaKH) VALUES (?, ?)`,

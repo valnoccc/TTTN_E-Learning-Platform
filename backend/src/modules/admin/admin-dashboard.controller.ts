@@ -19,8 +19,18 @@ export class AdminDashboardController {
   @Get('stats')
   // BẮT BUỘC TÀI KHOẢN PHẢI CÓ VaiTro LÀ 'ADMIN'
   @Roles('ADMIN')
-  async getStats(): Promise<DashboardStatsDto> {
-    return this.adminService.getOverviewStats();
+  async getStats(
+    @Query('days')  days?:  string,
+    @Query('month') month?: string,
+    @Query('year')  year?:  string,
+  ): Promise<DashboardStatsDto> {
+    if (month && year) {
+      const m = Math.max(1, Math.min(Number(month) || 1, 12));
+      const y = Math.max(2000, Math.min(Number(year) || new Date().getFullYear(), 3000));
+      return this.adminService.getOverviewStats(30, { month: m, year: y });
+    }
+    const daysNum = days ? Math.max(1, Math.min(Number(days) || 30, 3650)) : 30;
+    return this.adminService.getOverviewStats(daysNum);
   }
 
   @Get('debts')

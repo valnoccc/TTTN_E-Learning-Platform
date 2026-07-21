@@ -191,7 +191,7 @@ export class CheckoutService {
       );
 
       if (existingEnrollments.length > 0) {
-        throw new BadRequestException('Bạn đã sở hữu khóa học này!');
+        throw new BadRequestException('Đã đăng ký khóa học');
       }
 
       // 3. Tính tổng tiền & xử lý coupon
@@ -702,7 +702,7 @@ export class CheckoutService {
       );
 
       if (existingEnrollments.length > 0) {
-        throw new BadRequestException('Bạn đã sở hữu khóa học này!');
+        throw new BadRequestException('Đã đăng ký khóa học');
       }
 
       let discountAmount = 0;

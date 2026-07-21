@@ -63,6 +63,22 @@ export interface CreateAdminCouponPayload {
     rules?: AdminCouponRuleInput[] | null;
 }
 
+/** Payload cho API cập nhật mã giảm giá (PATCH /admin/coupons/:id) */
+export interface UpdateAdminCouponPayload {
+    // Nhóm 1: luôn được sửa
+    ghiChu?: string | null;
+    ngayKetThuc?: string | null;
+    soLuongGioiHan?: number | null;
+    trangThai?: 'ACTIVE' | 'INACTIVE';
+    // Nhóm 2: chỉ được sửa khi soLuongDaDung === 0
+    maCode?: string;
+    loaiGiam?: 'PERCENT' | 'AMOUNT';
+    giaTriGiam?: number;
+    scopeType?: AdminCouponScopeType;
+    scopeTargetIds?: number[] | null;
+    rules?: AdminCouponRuleInput[] | null;
+}
+
 export interface QueryCouponsFilter {
     search?: string;
     loaiKM?: LoaiKM | '';
@@ -143,6 +159,13 @@ export function useAdminCoupons() {
         await fetchCoupons(filter);
     }, [fetchCoupons, filter]);
 
+    const editCoupon = useCallback(async (id: number, payload: UpdateAdminCouponPayload) => {
+        const response: any = await axiosClient.patch(`/admin/coupons/${id}`, payload);
+        const updated = response?.data ?? response;
+        await fetchCoupons(filter);
+        return updated;
+    }, [fetchCoupons, filter]);
+
     const toggleStatus = useCallback(async (coupon: AdminCouponItem) => {
         const newStatus: 'ACTIVE' | 'INACTIVE' =
             coupon.trangThai === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -179,6 +202,7 @@ export function useAdminCoupons() {
         filter,
         setFilter,
         createCoupon,
+        editCoupon,
         updateCoupon,
         deleteCoupon,
         toggleStatus,

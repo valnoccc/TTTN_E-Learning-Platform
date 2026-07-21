@@ -175,10 +175,57 @@ export class AdminDashboardService {
     return limitGb * 1024 * 1024 * 1024;
   }
 
-  async getOverviewStats(): Promise<DashboardStatsDto> {
+  async getOverviewStats(
+    days: number = 30,
+    monthFilter?: { month: number; year: number },
+  ): Promise<DashboardStatsDto> {
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
     const currentMonthYear = this.getCurrentMonthYear();
     const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
+    const prevDays = days * 2;
+    console.log(`[AdminDashboard] getOverviewStats called with days=${days}, monthFilter=${JSON.stringify(monthFilter)}`);
+
+    // ── Date-filter helpers ───────────────────────────────────────────────────
+    const isMonthMode = !!monthFilter;
+
+    // HoaDon date WHERE clause + params
+    const hdDateWhere = isMonthMode
+      ? `MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ? AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?`
+      : `COALESCE(hd.NgayThanhToan, hd.NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const hdDateParams = isMonthMode
+      ? [monthFilter!.month, monthFilter!.year] as unknown[]
+      : [days] as unknown[];
+
+    // Flat HoaDon date WHERE (no alias)
+    const hdFlatDateWhere = isMonthMode
+      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
+      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const hdFlatDateParams = hdDateParams;
+
+    // Enrollment WHERE + params (current / prev period)
+    const prevMonth = isMonthMode ? (monthFilter!.month === 1 ? 12 : monthFilter!.month - 1) : 0;
+    const prevYear  = isMonthMode ? (monthFilter!.month === 1 ? monthFilter!.year - 1 : monthFilter!.year) : 0;
+
+    const enrollCurWhere  = isMonthMode
+      ? `MONTH(NgayDangKy) = ? AND YEAR(NgayDangKy) = ?`
+      : `NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const enrollCurParams = isMonthMode ? [monthFilter!.month, monthFilter!.year] as unknown[] : [days] as unknown[];
+
+    const enrollPrevWhere  = isMonthMode
+      ? `MONTH(NgayDangKy) = ? AND YEAR(NgayDangKy) = ?`
+      : `NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND NgayDangKy < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const enrollPrevParams = isMonthMode ? [prevMonth, prevYear] as unknown[] : [prevDays, days] as unknown[];
+
+    // Revenue WHERE + params
+    const revCurWhere  = isMonthMode
+      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
+      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const revCurParams = isMonthMode ? [monthFilter!.month, monthFilter!.year] as unknown[] : [days] as unknown[];
+
+    const revPrevWhere  = isMonthMode
+      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
+      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND COALESCE(NgayThanhToan, NgayLap) < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+    const revPrevParams = isMonthMode ? [prevMonth, prevYear] as unknown[] : [prevDays, days] as unknown[];
 
     const [
       studentStats,
@@ -239,22 +286,23 @@ export class AdminDashboardService {
         `
           SELECT
             COUNT(*) as total,
-            SUM(CASE WHEN NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as currentMonth,
-            SUM(CASE WHEN NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY) AND NgayDangKy < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as lastMonth
+            SUM(CASE WHEN ${enrollCurWhere} THEN 1 ELSE 0 END) as currentMonth,
+            SUM(CASE WHEN ${enrollPrevWhere} THEN 1 ELSE 0 END) as lastMonth
           FROM DangKyKhoaHoc
           WHERE TrangThai = 'ACTIVE'
         `,
         [{ total: '0', currentMonth: '0', lastMonth: '0' }],
+        [...enrollCurParams, ...enrollPrevParams],
       ),
       this.queryWithFallback<RevenueGrowthRow[]>(
         `
             SELECT 
-              IFNULL(SUM(TongTien), 0) as grossRevenue,
-              IFNULL(SUM(TongTien) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
-              IFNULL(SUM(TongTien) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
-              IFNULL(SUM(TongTien) * ${ADMIN_REVENUE_SHARE}, 0) as total,
-              IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m') THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as currentMonth,
-              IFNULL(SUM(CASE WHEN DATE_FORMAT(NgayThanhToan, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m') THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as lastMonth
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END), 0) as grossRevenue,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as total,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as currentMonth,
+              IFNULL(SUM(CASE WHEN ${revPrevWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as lastMonth
             FROM HoaDon
             WHERE TrangThaiThanhToan = 'PAID'
           `,
@@ -268,6 +316,7 @@ export class AdminDashboardService {
             instructorPayout: '0',
           },
         ],
+        [...revCurParams, ...revCurParams, ...revCurParams, ...revCurParams, ...revCurParams, ...revPrevParams],
       ),
       this.queryWithFallback<QuotaRow[]>(
         `
@@ -318,11 +367,13 @@ export class AdminDashboardService {
           LEFT JOIN ChiTietHoaDon cthd ON cthd.MaHD = hd.MaHD
           LEFT JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
           WHERE hd.TrangThaiThanhToan IN ('PAID', 'PENDING', 'FAILED')
+            AND ${hdDateWhere}
           GROUP BY hd.MaHD, nd.HoTen, hd.TongTien, hd.NgayThanhToan, hd.NgayLap, hd.PhuongThucThanhToan, hd.TrangThaiThanhToan
           ORDER BY COALESCE(hd.NgayThanhToan, hd.NgayLap) DESC
-          LIMIT 7
+          LIMIT 10
         `,
         [],
+        hdDateParams,
       ),
       this.queryWithFallback<any[]>(
         `
@@ -351,6 +402,7 @@ export class AdminDashboardService {
             IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as totalEarnings,
             0 as totalRefunds
           FROM HoaDon
+          WHERE ${hdFlatDateWhere}
         `,
         [
           {
@@ -362,6 +414,7 @@ export class AdminDashboardService {
             totalRefunds: '0',
           },
         ],
+        hdFlatDateParams,
       ),
       this.queryWithFallback<SalesChartRow[]>(
         `
@@ -403,11 +456,13 @@ export class AdminDashboardService {
             GROUP BY MaHD
           ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
           WHERE hd.TrangThaiThanhToan = 'PAID'
+            AND ${hdDateWhere}
           GROUP BY kh.MaKH, kh.TenKhoaHoc, kh.GiaBan, kh.HinhThuNho
           ORDER BY revenue DESC, orders DESC
           LIMIT 5
         `,
         [],
+        hdDateParams,
       ),
       this.queryWithFallback<TopInstructorRow[]>(
         `
@@ -426,6 +481,7 @@ export class AdminDashboardService {
                   SELECT IFNULL(SUM(hd2.TongTien) * ${INSTRUCTOR_REVENUE_SHARE}, 0)
                   FROM HoaDon hd2
                   WHERE hd2.TrangThaiThanhToan = 'PAID'
+                    AND ${hdDateWhere.replace(/hd\./g, 'hd2.')}
                 ), 0)
               ) * 100,
               1
@@ -444,11 +500,13 @@ export class AdminDashboardService {
           LEFT JOIN HoSoGiangVien hsgv ON nd.MaND = hsgv.MaND
           LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
           WHERE hd.TrangThaiThanhToan = 'PAID'
+            AND ${hdDateWhere}
           GROUP BY nd.MaND, nd.HoTen, nd.AnhDaiDien
           ORDER BY revenue DESC, students DESC
           LIMIT 5
         `,
         [],
+        [...hdDateParams, ...hdDateParams],
       ),
       this.queryWithFallback<CategoryRevenueRow[]>(
         `
@@ -469,11 +527,13 @@ export class AdminDashboardService {
             GROUP BY MaHD
           ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
           WHERE hd.TrangThaiThanhToan = 'PAID'
+            AND ${hdDateWhere}
           GROUP BY dm.MaDM, dm.TenDM
           ORDER BY revenue DESC
           LIMIT 6
         `,
         [],
+        hdDateParams,
       ),
     ]);
 
@@ -496,6 +556,8 @@ export class AdminDashboardService {
       100,
       Math.round((storageQuotaUsedBytes / storageQuotaLimitBytes) * 100),
     );
+
+    console.log(`[AdminDashboard] days=${days} → grossRevenue=${revenueStats[0]?.grossRevenue}, orders=${ordersOverview[0]?.totalOrders}`);
 
     return {
       totalStudents: parseInt(String(studentStats[0]?.total ?? 0), 10),
