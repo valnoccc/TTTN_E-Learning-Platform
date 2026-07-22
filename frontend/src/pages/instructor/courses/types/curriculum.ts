@@ -6,6 +6,7 @@ export interface LessonData {
     noiDung: string | null;
     thuTu: number;
     thoiLuong: number;
+    choPhepXemTruoc?: boolean;
 }
 
 export interface ChapterData {

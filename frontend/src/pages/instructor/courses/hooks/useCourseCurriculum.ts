@@ -114,7 +114,7 @@ export function useCourseCurriculum() {
     const handleAddLesson = async (chapterId: number) => {
         if (!newLessonTitle.trim()) {
             toast.error('Ten bai hoc khong duoc de trong!');
-            return;
+            return null;
         }
 
         try {
@@ -142,8 +142,52 @@ export function useCourseCurriculum() {
             setExpandedChapterId(chapterId);
             sessionStorage.setItem('expandedChapterId', chapterId.toString());
             toast.success('Da them bai hoc moi!');
+            return createdLesson;
         } catch {
             toast.error('Loi khi tao bai hoc.');
+            return null;
+        }
+    };
+
+    const handleUpdateLesson = async (
+        lessonId: number,
+        payload: {
+            tieu_de: string;
+            noi_dung: string;
+            thu_tu: number | string;
+            choPhepXemTruoc: boolean;
+            video_file?: File | null;
+        },
+    ) => {
+        const data = new FormData();
+        data.append('tieu_de', payload.tieu_de);
+        data.append('noi_dung', payload.noi_dung);
+        data.append('thu_tu', String(payload.thu_tu));
+        data.append('choPhepXemTruoc', String(payload.choPhepXemTruoc));
+        if (payload.video_file) {
+            data.append('video', payload.video_file);
+        }
+
+        try {
+            await axiosClient.put(`/lessons/${lessonId}`, data);
+            setChapters((prev) => prev.map((chapter) => ({
+                ...chapter,
+                baiHocs: chapter.baiHocs.map((lesson) => lesson.maBH === lessonId
+                    ? {
+                        ...lesson,
+                        tenBaiHoc: payload.tieu_de,
+                        noiDung: payload.noi_dung,
+                        thuTu: Number(payload.thu_tu),
+                        choPhepXemTruoc: payload.choPhepXemTruoc,
+                        videoUrl: payload.video_file ? URL.createObjectURL(payload.video_file) : lesson.videoUrl,
+                    }
+                    : lesson),
+            })));
+            toast.success('Da cap nhat bai hoc thanh cong!');
+            return true;
+        } catch {
+            toast.error('Loi khi cap nhat bai hoc.');
+            return false;
         }
     };
 
@@ -253,6 +297,7 @@ export function useCourseCurriculum() {
         toggleChapter,
         handleAddChapter,
         handleAddLesson,
+        handleUpdateLesson,
         handleStartEditChapter,
         handleCancelEditChapter,
         handleSaveChapter,

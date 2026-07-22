@@ -48,7 +48,7 @@ export default function InstructorCourseOverview() {
                 >
                     <div className="space-y-5">
                         <div>
-                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <label className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-[#59708f]">
                                 Tên khóa học <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -58,15 +58,15 @@ export default function InstructorCourseOverview() {
                                 maxLength={60}
                                 disabled={isLocked}
                                 placeholder="Nhập tên khóa học"
-                                className={`w-full rounded-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
+                                className={`w-full rounded-sm border border-slate-300 bg-white px-4 py-4 text-base text-slate-800 outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]/20 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                     }`}
                             />
                             {isNewCourse ? (
-                                <p className="mt-2 text-xs text-slate-400">
+                                <p className="mt-2 text-xs text-[#8a9ab0]">
                                     Còn lại {60 - Math.min(formData.title?.length || 0, 60)} ký tự.
                                 </p>
                             ) : (
-                                <p className="mt-2 text-xs text-slate-400">Tối đa 60 ký tự.</p>
+                                <p className="mt-2 text-xs text-[#8a9ab0]">Tối đa 60 ký tự.</p>
                             )}
                             {errorText ? (
                                 <p className="mt-2 text-sm text-red-500">{errorText}</p>
@@ -74,14 +74,14 @@ export default function InstructorCourseOverview() {
                         </div>
 
                         <div>
-                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <label className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-[#59708f]">
                                 Mô tả khóa học
                             </label>
                             <div
-                                className={`overflow-hidden rounded-sm border border-slate-200 ${isLocked ? 'opacity-70' : ''
+                                className={`overflow-hidden rounded-sm border border-slate-300 ${isLocked ? 'opacity-70' : ''
                                     }`}
                             >
-                                <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 text-slate-400">
+                                <div className="flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-50 px-4 py-3 text-[#59708f]">
                                     <ToolbarIcon icon="B" />
                                     <ToolbarIcon icon={<Italic size={15} />} />
                                     <ToolbarIcon icon={<List size={15} />} />
@@ -95,7 +95,7 @@ export default function InstructorCourseOverview() {
                                     disabled={isLocked}
                                     rows={8}
                                     placeholder="Viết mô tả chi tiết cho khóa học của bạn..."
-                                    className={`w-full resize-none bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
+                                    className={`w-full resize-none bg-white px-4 py-4 text-base leading-7 text-slate-800 outline-none ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                         }`}
                                 />
                             </div>
@@ -118,7 +118,7 @@ export default function InstructorCourseOverview() {
                                         maxLength={160}
                                         disabled={isLocked}
                                         placeholder="Ví dụ: Xác định vai trò và trách nhiệm của người quản lý dự án"
-                                        className={`w-full rounded-sm border border-slate-200 bg-white py-3 pl-4 pr-12 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50' : ''}`}
+                                        className={`w-full rounded-sm border border-slate-300 bg-white py-3.5 pl-4 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]/20 ${isLocked ? 'cursor-not-allowed bg-slate-50' : ''}`}
                                     />
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                                         {160 - obj.length}
@@ -138,7 +138,7 @@ export default function InstructorCourseOverview() {
                             type="button"
                             onClick={addObjective}
                             disabled={isLocked}
-                            className="flex items-center gap-2 pt-2 text-sm font-semibold text-violet-700 transition hover:text-violet-800"
+                            className="flex items-center gap-2 pt-2 text-sm font-bold text-[#169b5c] transition hover:text-[#0f7b48]"
                         >
                             <Plus size={16} /> Thêm nội dung vào phản hồi của bạn
                         </button>
@@ -160,7 +160,7 @@ export default function InstructorCourseOverview() {
                                         maxLength={160}
                                         disabled={isLocked}
                                         placeholder="Ví dụ: Không cần kinh nghiệm lập trình. Bạn sẽ học mọi thứ mà bạn cần biết"
-                                        className={`w-full rounded-sm border border-slate-200 bg-white py-3 pl-4 pr-12 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50' : ''}`}
+                                        className={`w-full rounded-sm border border-slate-300 bg-white py-3.5 pl-4 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]/20 ${isLocked ? 'cursor-not-allowed bg-slate-50' : ''}`}
                                     />
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                                         {160 - req.length}
@@ -180,7 +180,7 @@ export default function InstructorCourseOverview() {
                             type="button"
                             onClick={addRequirement}
                             disabled={isLocked}
-                            className="flex items-center gap-2 pt-2 text-sm font-semibold text-violet-700 transition hover:text-violet-800"
+                            className="flex items-center gap-2 pt-2 text-sm font-bold text-[#169b5c] transition hover:text-[#0f7b48]"
                         >
                             <Plus size={16} /> Thêm nội dung vào phản hồi của bạn
                         </button>
@@ -194,12 +194,12 @@ export default function InstructorCourseOverview() {
                     <div className="space-y-5">
                         {/* Giá */}
                         <div>
-                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <label className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-[#59708f]">
                                 Giá khóa học
                             </label>
                             <div className="relative">
                                 <DollarSign
-                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600"
+                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1dbf73]"
                                     size={16}
                                 />
                                 <input
@@ -208,7 +208,7 @@ export default function InstructorCourseOverview() {
                                     value={formData.price}
                                     onChange={handleChange}
                                     disabled={isLocked}
-                                    className={`w-full rounded-sm border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
+                                    className={`w-full rounded-sm border border-slate-300 bg-white py-4 pl-10 pr-4 text-base font-medium text-slate-800 outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]/20 ${isLocked ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                         }`}
                                 />
                             </div>
@@ -216,7 +216,7 @@ export default function InstructorCourseOverview() {
 
                         {/* Danh mục */}
                         <div>
-                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <label className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-[#59708f]">
                                 Danh mục
                             </label>
                             <div className="relative">
@@ -225,7 +225,7 @@ export default function InstructorCourseOverview() {
                                     value={formData.category}
                                     onChange={handleChange}
                                     disabled={isLocked || isLoading}
-                                    className={`w-full appearance-none rounded-sm border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 ${isLocked || isLoading ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
+                                    className={`w-full appearance-none rounded-sm border border-slate-300 bg-white px-4 py-4 text-base text-slate-800 outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]/20 ${isLocked || isLoading ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''
                                         }`}
                                 >
                                     {isLoading ? (
@@ -250,7 +250,7 @@ export default function InstructorCourseOverview() {
 
                         {/* Ảnh bìa khóa học */}
                         <div className="pt-2">
-                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <label className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-[#59708f]">
                                 Ảnh bìa khóa học
                             </label>
                             <input
@@ -263,7 +263,7 @@ export default function InstructorCourseOverview() {
 
                             <div
                                 onClick={!isLocked ? handleImagePickerOpen : undefined}
-                                className={`group relative aspect-[16/9] w-full overflow-hidden rounded-sm border border-slate-200 bg-slate-50 transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-emerald-500'
+                                className={`group relative aspect-[16/9] w-full overflow-hidden rounded-sm border border-slate-300 bg-slate-50 transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-[#1dbf73]'
                                     }`}
                             >
                                 {imagePreview || formData.hinh_anh ? (

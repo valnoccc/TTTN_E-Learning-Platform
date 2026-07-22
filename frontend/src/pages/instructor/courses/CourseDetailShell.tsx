@@ -303,23 +303,31 @@ export default function InstructorCourseDetail({
             {!isNewCourse ? (
               <>
                 <div className="border-b border-slate-200 bg-white px-6 sm:px-8">
-                  <div className="-mb-px flex flex-wrap gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2">
                     {detailTabs.map((tab) => (
                       <NavLink
                         key={tab.key}
                         to={tab.to}
                         className={({ isActive }) =>
-                          `flex items-center gap-2.5 border-b-[3px] px-1 py-4 text-[15px] font-bold transition-all duration-200 ${
+                          `flex min-h-[84px] items-center gap-3 border-b-[3px] px-4 py-4 text-left transition-all duration-200 sm:px-6 ${
                             isActive
-                              ? "border-[#1dbf73] text-[#1dbf73]"
-                              : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
+                              ? "border-[#1dbf73] bg-white text-[#169b5c]"
+                              : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                           }`
                         }
                       >
-                        <span className="[&>svg]:h-5 [&>svg]:w-5">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-slate-50 text-slate-500 [&>svg]:h-6 [&>svg]:w-6">
                           {tab.icon}
                         </span>
-                        {tab.label}
+                        <span>
+                          <span className="block text-sm font-extrabold tracking-wide sm:text-base">
+                            {tab.key === "overview" ? "01. " : "02. "}
+                            {tab.label}
+                          </span>
+                          <span className="mt-1 block text-xs font-medium text-slate-400">
+                            {tab.key === "overview" ? "Thông tin cơ bản" : "Chương và nội dung"}
+                          </span>
+                        </span>
                       </NavLink>
                     ))}
                   </div>
@@ -412,20 +420,20 @@ export function CourseSectionCard({
   children: ReactNode;
   action?: ReactNode;
 }) {
-  return (
-    <section className="rounded-sm border border-slate-200 bg-white">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    return (
+    <section className="border border-slate-300 bg-white">
+      <div className="flex flex-col gap-3 border-b border-slate-300 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
           {description ? (
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-[#59708f]">
               {description}
             </p>
           ) : null}
         </div>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-6">{children}</div>
     </section>
   );
 }
@@ -438,11 +446,11 @@ export function CourseSidebarCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-sm border border-slate-200 bg-slate-50/60">
-      <div className="border-b border-slate-200 px-4 py-3">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+    <section className="border border-slate-300 bg-white">
+      <div className="border-b border-slate-300 px-5 py-4">
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
       </div>
-      <div className="space-y-4 p-4">{children}</div>
+      <div className="space-y-5 bg-slate-50/40 p-5">{children}</div>
     </section>
   );
 }
