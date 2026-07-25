@@ -4,7 +4,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { VideoIntelligenceService } from '../services/video-intelligence.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Lesson, AiStatus } from '../entities/lesson.entity';
 
 @Controller('ai')
@@ -14,6 +14,7 @@ export class AiModerationController {
     private readonly videoIntelligenceService: VideoIntelligenceService,
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -62,5 +63,57 @@ export class AiModerationController {
       },
     );
     return { message: 'Đã duyệt tất cả video đang chờ!' };
+  }
+
+  /**
+   * GET /ai/dev-migrate-video-fields
+   * [DEV ONLY] Chạy migration thêm cột VideoSourceType và Resolution vào bảng BaiHoc.
+   * Tự động bỏ qua nếu cột đã tồn tại.
+   */
+  @Get('dev-migrate-video-fields')
+  async devMigrateVideoFields() {
+    const results: string[] = [];
+
+    const migrations = [
+      {
+        name: 'Modify VideoURL → varchar(1024)',
+        sql: 'ALTER TABLE BaiHoc MODIFY COLUMN VideoURL varchar(1024) NULL',
+      },
+      {
+        name: 'Modify AiRejectReason → varchar(1000)',
+        sql: 'ALTER TABLE BaiHoc MODIFY COLUMN AiRejectReason varchar(1000) NULL',
+      },
+      {
+        name: "Add VideoSourceType ENUM('UPLOAD','YOUTUBE')",
+        sql: "ALTER TABLE BaiHoc ADD COLUMN VideoSourceType ENUM('UPLOAD','YOUTUBE') NULL DEFAULT 'UPLOAD'",
+      },
+      {
+        name: 'Add Resolution INT',
+        sql: 'ALTER TABLE BaiHoc ADD COLUMN Resolution INT NULL',
+      },
+    ];
+
+    for (const m of migrations) {
+      try {
+        await this.dataSource.query(m.sql);
+        results.push(`✅ ${m.name}`);
+      } catch (err: any) {
+        const msg: string = err?.message ?? '';
+        if (
+          msg.toLowerCase().includes('duplicate column') ||
+          msg.toLowerCase().includes('already exists') ||
+          err?.code === 'ER_DUP_FIELDNAME'
+        ) {
+          results.push(`⚠️  ${m.name} — already exists, skipped`);
+        } else {
+          results.push(`❌ ${m.name} — ${msg}`);
+        }
+      }
+    }
+
+    return {
+      message: 'Migration video fields complete',
+      results,
+    };
   }
 }

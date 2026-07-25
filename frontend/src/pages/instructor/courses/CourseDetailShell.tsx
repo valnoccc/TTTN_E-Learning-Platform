@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   AlertTriangle,
@@ -63,6 +63,8 @@ export default function InstructorCourseDetail({
     isSaving,
     isStatusChanging,
   } = course as any;
+
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   const videoLessons = (lessons ?? []).filter((lesson: any) =>
     Boolean(lesson.video_url || lesson.videoUrl),
@@ -281,7 +283,7 @@ export default function InstructorCourseDetail({
                             );
                             return;
                           }
-                          void handleStatusChange("PENDING");
+                          setIsPublishModalOpen(true);
                         }}
                         disabled={disablePublish}
                         title={publishBtnTitle}
@@ -382,6 +384,43 @@ export default function InstructorCourseDetail({
                 className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
               >
                 Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isPublishModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
+                <BadgeInfo size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Xác nhận gửi duyệt
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Bạn có chắc chắn muốn gửi yêu cầu duyệt khóa học này không? Khóa học sẽ được kiểm tra nội dung để đảm bảo chất lượng trước khi được xuất bản.
+                </p>
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={() => setIsPublishModalOpen(false)}
+                className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  setIsPublishModalOpen(false);
+                  void handleStatusChange("PENDING");
+                }}
+                className="rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md"
+              >
+                Xác nhận gửi
               </button>
             </div>
           </div>

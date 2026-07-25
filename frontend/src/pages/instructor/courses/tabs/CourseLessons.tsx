@@ -1,8 +1,46 @@
-import { ChevronDown, ChevronUp, Plus, GripVertical, PlayCircle, FileText, Trash2, Edit3, FolderX } from 'lucide-react';
+import {
+    AlertTriangle,
+    ChevronDown,
+    ChevronUp,
+    Edit3,
+    FileText,
+    FolderX,
+    GripVertical,
+    Link2,
+    PlayCircle,
+    Plus,
+    Trash2,
+} from 'lucide-react';
 
 import { useCourseCurriculum } from '../hooks/useCourseCurriculum';
 import { CourseSectionCard, useInstructorCourseContext } from '../CourseDetailShell';
+import type { LessonData } from '../types/curriculum';
 
+// ─── Tooltip wrapper ─────────────────────────────────────────────────────────
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+    return (
+        <span className="group relative inline-flex">
+            {children}
+            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 w-max max-w-[200px] -translate-x-1/2 rounded-md bg-slate-800 px-2.5 py-1.5 text-center text-[11px] font-medium leading-tight text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                {text}
+                <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+            </span>
+        </span>
+    );
+}
+
+// ─── Lesson item icon helper ──────────────────────────────────────────────────
+function LessonIcon({ lesson }: { lesson: LessonData }) {
+    if (lesson.videoSourceType === 'YOUTUBE') {
+        return <Link2 size={18} className="shrink-0 text-rose-400" />;
+    }
+    if (lesson.videoUrl) {
+        return <PlayCircle size={18} className="shrink-0 text-emerald-500" />;
+    }
+    return <FileText size={18} className="shrink-0 text-slate-400" />;
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function InstructorCourseLessons() {
     const { navigate, isLocked } = useInstructorCourseContext();
     const {
@@ -76,14 +114,14 @@ export default function InstructorCourseLessons() {
                 ) : null}
 
                 {loading ? (
-                    <div className="space-y-4 animate-pulse">
+                    <div className="animate-pulse space-y-4">
                         {[1, 2, 3].map((item) => (
                             <div key={item} className="h-14 rounded-sm bg-slate-100" />
                         ))}
                     </div>
                 ) : chapters.length === 0 ? (
-                    <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-md bg-slate-50/50">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm text-slate-300 mb-3">
+                    <div className="rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm">
                             <FolderX size={24} />
                         </div>
                         <h3 className="text-sm font-bold text-slate-700">Chưa có chương trình học</h3>
@@ -96,14 +134,18 @@ export default function InstructorCourseLessons() {
                             return (
                                 <div
                                     key={chapter.maChuong}
-                                    className={`overflow-hidden rounded-sm border bg-white transition-all duration-200 ${isExpanded
-                                        ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20'
-                                        : 'border-slate-200 shadow-sm'
-                                        }`}
+                                    className={`overflow-hidden rounded-sm border bg-white transition-all duration-200 ${
+                                        isExpanded
+                                            ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20'
+                                            : 'border-slate-200 shadow-sm'
+                                    }`}
                                 >
                                     <div
-                                        className={`flex cursor-pointer select-none items-center justify-between px-4 py-3 transition-colors ${isExpanded ? 'bg-emerald-50/30' : 'bg-slate-50/80 hover:bg-slate-50'
-                                            }`}
+                                        className={`flex cursor-pointer select-none items-center justify-between px-4 py-3 transition-colors ${
+                                            isExpanded
+                                                ? 'bg-emerald-50/30'
+                                                : 'bg-slate-50/80 hover:bg-slate-50'
+                                        }`}
                                         onClick={() => toggleChapter(chapter.maChuong)}
                                     >
                                         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -114,15 +156,23 @@ export default function InstructorCourseLessons() {
                                                 <GripVertical size={18} />
                                             </div>
                                             <button
-                                                className={`shrink-0 transition-colors ${isExpanded ? 'text-emerald-600' : 'text-slate-500'
-                                                    }`}
+                                                className={`shrink-0 transition-colors ${
+                                                    isExpanded ? 'text-emerald-600' : 'text-slate-500'
+                                                }`}
                                             >
-                                                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                                {isExpanded ? (
+                                                    <ChevronUp size={18} />
+                                                ) : (
+                                                    <ChevronDown size={18} />
+                                                )}
                                             </button>
                                             <div className="min-w-0">
                                                 <h3
-                                                    className={`truncate text-sm font-bold ${isExpanded ? 'text-emerald-800' : 'text-slate-800'
-                                                        }`}
+                                                    className={`truncate text-sm font-bold ${
+                                                        isExpanded
+                                                            ? 'text-emerald-800'
+                                                            : 'text-slate-800'
+                                                    }`}
                                                 >
                                                     {chapter.tenChuong}
                                                 </h3>
@@ -133,14 +183,19 @@ export default function InstructorCourseLessons() {
                                         </div>
 
                                         {!isLocked ? (
-                                            <div className="ml-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <div
+                                                className="ml-4 flex items-center gap-2"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 <button
                                                     onClick={() => {
                                                         if (expandedChapterId !== chapter.maChuong) {
                                                             toggleChapter(chapter.maChuong);
                                                         }
                                                         setActiveAddLessonChapterId(
-                                                            activeAddLessonChapterId === chapter.maChuong ? null : chapter.maChuong,
+                                                            activeAddLessonChapterId === chapter.maChuong
+                                                                ? null
+                                                                : chapter.maChuong,
                                                         );
                                                         setNewLessonTitle('');
                                                     }}
@@ -149,13 +204,20 @@ export default function InstructorCourseLessons() {
                                                     <Plus size={16} /> Thêm bài
                                                 </button>
                                                 <button
-                                                    onClick={() => handleStartEditChapter(chapter.maChuong, chapter.tenChuong)}
+                                                    onClick={() =>
+                                                        handleStartEditChapter(
+                                                            chapter.maChuong,
+                                                            chapter.tenChuong,
+                                                        )
+                                                    }
                                                     className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                                 >
                                                     <Edit3 size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => void handleDeleteChapter(chapter.maChuong)}
+                                                    onClick={() =>
+                                                        void handleDeleteChapter(chapter.maChuong)
+                                                    }
                                                     className="rounded-sm p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
                                                 >
                                                     <Trash2 size={16} />
@@ -166,13 +228,17 @@ export default function InstructorCourseLessons() {
 
                                     {editingChapterId === chapter.maChuong ? (
                                         <div className="animate-in slide-in-from-top-2 border-y border-emerald-200 bg-emerald-50/40 p-4 fade-in duration-200">
-                                            <h4 className="mb-3 text-sm font-bold text-slate-800">Sửa tên chương</h4>
+                                            <h4 className="mb-3 text-sm font-bold text-slate-800">
+                                                Sửa tên chương
+                                            </h4>
                                             <div className="flex flex-col gap-3 sm:flex-row">
                                                 <input
                                                     type="text"
                                                     value={editingChapterTitle}
-                                                    onChange={(e) => setEditingChapterTitle(e.target.value)}
-                                                    placeholder="Ví dụ: Chương 1: Kiến thức nền tảng và thiết lập môi trường"
+                                                    onChange={(e) =>
+                                                        setEditingChapterTitle(e.target.value)
+                                                    }
+                                                    placeholder="Ví dụ: Chương 1: Kiến thức nền tảng"
                                                     className="flex-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                                                 />
                                                 <div className="flex justify-end gap-2">
@@ -194,8 +260,11 @@ export default function InstructorCourseLessons() {
                                     ) : null}
 
                                     <div
-                                        className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                                            }`}
+                                        className={`grid transition-all duration-300 ease-in-out ${
+                                            isExpanded
+                                                ? 'grid-rows-[1fr] opacity-100'
+                                                : 'grid-rows-[0fr] opacity-0'
+                                        }`}
                                     >
                                         <div className="overflow-hidden">
                                             {activeAddLessonChapterId === chapter.maChuong ? (
@@ -203,19 +272,25 @@ export default function InstructorCourseLessons() {
                                                     <input
                                                         type="text"
                                                         value={newLessonTitle}
-                                                        onChange={(e) => setNewLessonTitle(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setNewLessonTitle(e.target.value)
+                                                        }
                                                         placeholder="Nhập tên bài học mới..."
                                                         className="flex-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                                                         autoFocus
                                                     />
                                                     <button
-                                                        onClick={() => setActiveAddLessonChapterId(null)}
+                                                        onClick={() =>
+                                                            setActiveAddLessonChapterId(null)
+                                                        }
                                                         className="rounded-sm px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100"
                                                     >
                                                         Hủy
                                                     </button>
                                                     <button
-                                                        onClick={() => void handleAddLesson(chapter.maChuong)}
+                                                        onClick={() =>
+                                                            void handleAddLesson(chapter.maChuong)
+                                                        }
                                                         className="rounded-sm bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
                                                     >
                                                         Lưu bài
@@ -229,56 +304,92 @@ export default function InstructorCourseLessons() {
                                                         Hiện tại chưa có bài học nào!
                                                     </p>
                                                 ) : (
-                                                    chapter.baiHocs.map((lesson) => (
-                                                        <div
-                                                            key={lesson.maBH}
-                                                            className="group flex items-center justify-between py-3 pl-12 pr-4 transition-colors hover:bg-slate-50/70"
-                                                        >
-                                                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                                                                <div className="cursor-grab text-slate-300 transition-colors group-hover:text-slate-400">
-                                                                    <GripVertical size={16} />
-                                                                </div>
-                                                                {lesson.videoUrl ? (
-                                                                    <PlayCircle size={18} className="shrink-0 text-emerald-500" />
-                                                                ) : (
-                                                                    <FileText size={18} className="shrink-0 text-slate-400" />
-                                                                )}
-                                                                <span className="truncate text-sm font-medium text-slate-700">
-                                                                    {lesson.tenBaiHoc}
-                                                                </span>
-                                                                {lesson.thoiLuong > 0 ? (
-                                                                    <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                                                                        {Math.round(lesson.thoiLuong / 60)} phut
+                                                    chapter.baiHocs.map((lesson) => {
+                                                        const isRejected =
+                                                            lesson.aiStatus === 'REJECTED';
+
+                                                        return (
+                                                            <div
+                                                                key={lesson.maBH}
+                                                                className={`group flex items-center justify-between py-3 pl-12 pr-4 transition-colors ${
+                                                                    isRejected
+                                                                        ? 'bg-rose-50/40 hover:bg-rose-50/70'
+                                                                        : 'hover:bg-slate-50/70'
+                                                                }`}
+                                                            >
+                                                                <div className="flex min-w-0 flex-1 items-center gap-3">
+                                                                    <div className="cursor-grab text-slate-300 transition-colors group-hover:text-slate-400">
+                                                                        <GripVertical size={16} />
+                                                                    </div>
+
+                                                                    <LessonIcon lesson={lesson} />
+
+                                                                    {/* Tên bài học — đổi màu đỏ nếu REJECTED */}
+                                                                    <span
+                                                                        className={`truncate text-sm font-medium ${
+                                                                            isRejected
+                                                                                ? 'text-rose-500'
+                                                                                : 'text-slate-700'
+                                                                        }`}
+                                                                    >
+                                                                        {lesson.tenBaiHoc}
                                                                     </span>
+
+                                                                    {/* Warning icon + tooltip nếu REJECTED */}
+                                                                    {isRejected && (
+                                                                        <Tooltip text="Video vi phạm chính sách, cần chỉnh sửa">
+                                                                            <AlertTriangle
+                                                                                size={15}
+                                                                                className="shrink-0 text-rose-500"
+                                                                            />
+                                                                        </Tooltip>
+                                                                    )}
+
+                                                                    {lesson.thoiLuong > 0 ? (
+                                                                        <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                                                            {Math.round(
+                                                                                lesson.thoiLuong / 60,
+                                                                            )}{' '}
+                                                                            phút
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+
+                                                                {!isLocked ? (
+                                                                    <div className="ml-4 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                navigate(
+                                                                                    `/instructor/lessons/${lesson.maBH}/edit`,
+                                                                                );
+                                                                            }}
+                                                                            className={`rounded-sm p-1.5 transition-colors ${
+                                                                                isRejected
+                                                                                    ? 'text-rose-400 hover:bg-rose-100 hover:text-rose-600'
+                                                                                    : 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
+                                                                            }`}
+                                                                            title="Sửa bài học"
+                                                                        >
+                                                                            <Edit3 size={15} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                void handleDeleteLesson(
+                                                                                    lesson.maBH,
+                                                                                );
+                                                                            }}
+                                                                            className="rounded-sm p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                                                                            title="Xóa bài học"
+                                                                        >
+                                                                            <Trash2 size={15} />
+                                                                        </button>
+                                                                    </div>
                                                                 ) : null}
                                                             </div>
-
-                                                            {!isLocked ? (
-                                                                <div className="ml-4 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            navigate(`/instructor/lessons/${lesson.maBH}/edit`);
-                                                                        }}
-                                                                        className="rounded-sm p-1.5 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
-                                                                        title="Sua bai hoc"
-                                                                    >
-                                                                        <Edit3 size={15} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            void handleDeleteLesson(lesson.maBH);
-                                                                        }}
-                                                                        className="rounded-sm p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-500"
-                                                                        title="Xoa bai hoc"
-                                                                    >
-                                                                        <Trash2 size={15} />
-                                                                    </button>
-                                                                </div>
-                                                            ) : null}
-                                                        </div>
-                                                    ))
+                                                        );
+                                                    })
                                                 )}
                                             </div>
                                         </div>
