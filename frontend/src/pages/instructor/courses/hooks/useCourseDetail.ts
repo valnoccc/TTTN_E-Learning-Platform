@@ -12,8 +12,8 @@ export interface CourseForm {
     hinh_anh: string;
     trang_thai: string;
     hinh_thu_nho?: string | null;
-    muc_tieu: string[]; // ĐÃ THÊM
-    yeu_cau: string[];  // ĐÃ THÊM
+    muc_tieu: string[];
+    yeu_cau: string[];
 }
 
 export interface Lesson {
@@ -25,6 +25,13 @@ export interface Lesson {
     aiRejectReason?: string | null;
 }
 
+/** Bài học bị AI từ chối, trả về từ Backend khi gửi duyệt có video REJECTED */
+export interface ViolatingLesson {
+    id: number;
+    title: string;
+    aiRejectReason: string | null;
+}
+
 interface CourseDetailApiData {
     ten_khoa_hoc?: string;
     mo_ta?: string;
@@ -34,8 +41,8 @@ interface CourseDetailApiData {
     hinh_thu_nho?: string | null;
     hinh_anh?: string | null;
     trang_thai?: string;
-    muc_tieu?: string[]; // ĐÃ THÊM
-    yeu_cau?: string[];  // ĐÃ THÊM
+    muc_tieu?: string[];
+    yeu_cau?: string[];
 }
 
 interface CourseDetailApiResponse {
@@ -65,12 +72,18 @@ export interface InstructorCourseContextValue {
     handleImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
     handleImagePickerOpen: () => void;
     handleDeleteLesson: (lessonId: string | number) => Promise<void>;
-    handleStatusChange: (newStatus: string) => Promise<void>;
+    /** Đổi trạng thái khóa học. Trả về { violatingLessons } nếu có video bị AI REJECTED */
+    handleStatusChange: (
+        newStatus: string,
+        options?: { isAppealing?: boolean; appealReason?: string },
+    ) => Promise<{ violatingLessons?: ViolatingLesson[] } | void>;
+    /** Gửi kháng cáo kèm lý do, tự động set isAppealing=true */
+    handleAppealSubmit: (appealReason: string) => Promise<{ violatingLessons?: ViolatingLesson[] } | void>;
     navigate: ReturnType<typeof useNavigate>;
     isSaving: boolean;
     isStatusChanging: boolean;
 
-    // CÁC HÀM XỬ LÝ MỤC TIÊU/YÊU CẦU ĐƯỢC XUẤT RA GIAO DIỆN
+    // CÁC HÀM XỬ LÝ MỤC TIÊU/YÊU CẦU
     updateObjective: (index: number, value: string) => void;
     removeObjective: (index: number) => void;
     addObjective: () => void;
@@ -99,7 +112,6 @@ export function useCourseDetail(
         category: '',
         hinh_anh: '',
         trang_thai: 'DRAFT',
-        // ĐÃ KHỞI TẠO MẢNG MẶC ĐỊNH ĐỂ GIAO DIỆN KHÔNG BỊ TRỐNG
         muc_tieu: ['', '', '', ''],
         yeu_cau: [''],
     });
@@ -133,7 +145,6 @@ export function useCourseDetail(
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
-                    // ĐỒNG BỘ DỮ LIỆU MỤC TIÊU & YÊU CẦU TỪ DATABASE
                     muc_tieu: courseData.muc_tieu?.length ? courseData.muc_tieu : ['', '', '', ''],
                     yeu_cau: courseData.yeu_cau?.length ? courseData.yeu_cau : [''],
                 });
@@ -211,7 +222,6 @@ export function useCourseDetail(
         setFormData(prev => ({ ...prev, yeu_cau: [...(prev.yeu_cau || []), ''] }));
     };
 
-
     const handleChange = (
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     ) => {
@@ -268,8 +278,6 @@ export function useCourseDetail(
             data.append('giaBan', coursePrice.toString());
             data.append('gia', coursePrice.toString());
             data.append('id_danh_muc', String(selectedCategory));
-
-            // Gắn mảng Mục tiêu và Yêu cầu vào request dưới dạng JSON string
             data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
             data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
 
@@ -320,79 +328,71 @@ export function useCourseDetail(
         }
     };
 
-    const handleStatusChange = async (newStatus: string) => {
-        console.log('[handleStatusChange] Đã click đổi trạng thái sang:', newStatus);
-        if (!id) {
-            console.log('[handleStatusChange] LỖI: Không tìm thấy ID khóa học!');
-            return;
-        }
+    const handleStatusChange = async (
+        newStatus: string,
+        options?: { isAppealing?: boolean; appealReason?: string },
+    ): Promise<{ violatingLessons?: ViolatingLesson[] } | void> => {
+        if (!id) return;
 
-        // 1. KIỂM TRA RÀNG BUỘC DỮ LIỆU TRƯỚC KHI LƯU VÀ GỬI DUYỆT
-        console.log('[handleStatusChange] Đang kiểm tra dữ liệu formData...', formData);
         const trimmedTitle = formData.title.trim();
         const selectedCategory = Number(formData.category);
         const coursePrice = Number(formData.price);
+
         if (!trimmedTitle) {
-            console.log('[handleStatusChange] LỖI: Tên khóa học trống');
             toast.error('Tên khóa học không được để trống!');
             navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (trimmedTitle.length > COURSE_TITLE_MAX_LENGTH) {
-            console.log('[handleStatusChange] LỖI: Tên khóa học quá dài');
             toast.error(`Tên khóa học không được vượt quá ${COURSE_TITLE_MAX_LENGTH} ký tự!`);
             navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (!Number.isFinite(selectedCategory) || selectedCategory <= 0) {
-            console.log('[handleStatusChange] LỖI: Chưa chọn danh mục');
             toast.error('Vui lòng chọn danh mục khóa học!');
             navigate(`/instructor/courses/${id}/overview`);
             return;
         }
         if (!Number.isFinite(coursePrice) || coursePrice < 0) {
-            console.log('[handleStatusChange] LỖI: Giá không hợp lệ');
             toast.error('Giá khóa học không hợp lệ!');
             navigate(`/instructor/courses/${id}/overview`);
             return;
         }
-
         if (newStatus === 'PENDING' && lessons.length === 0) {
-            console.log('[handleStatusChange] LỖI: Khóa học chưa có bài học');
             toast.error('Khóa học này chưa có bài học nào. Vui lòng thêm ít nhất 1 bài học trước khi gửi yêu cầu duyệt.');
             return;
         }
 
-        console.log('[handleStatusChange] Đã qua bước kiểm tra dữ liệu. Bắt đầu gọi API...');
         try {
             setIsStatusChanging(true);
-            // 2. AUTO-SAVE: TỰ ĐỘNG LƯU TOÀN BỘ NỘI DUNG MỚI TRƯỚC KHI ĐỔI TRẠNG THÁI
-            const data = new FormData();
-            data.append('ten_khoa_hoc', trimmedTitle);
-            data.append('mo_ta', formData.description);
-            data.append('giaBan', coursePrice.toString());
-            data.append('gia', coursePrice.toString());
-            data.append('id_danh_muc', String(selectedCategory));
-            data.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
-            data.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
-            if (imageFile) {
-                data.append('image', imageFile);
-            }
 
-            console.log('[handleStatusChange] Gọi API PUT /courses/' + id);
-            // Gọi API lưu dữ liệu (PUT)
-            await axiosClient.put(`/courses/${id}`, data, {
+            // Auto-save trước khi đổi trạng thái
+            const saveData = new FormData();
+            saveData.append('ten_khoa_hoc', trimmedTitle);
+            saveData.append('mo_ta', formData.description);
+            saveData.append('giaBan', coursePrice.toString());
+            saveData.append('gia', coursePrice.toString());
+            saveData.append('id_danh_muc', String(selectedCategory));
+            saveData.append('muc_tieu', JSON.stringify((formData.muc_tieu || []).filter(Boolean)));
+            saveData.append('yeu_cau', JSON.stringify((formData.yeu_cau || []).filter(Boolean)));
+            if (imageFile) {
+                saveData.append('image', imageFile);
+            }
+            await axiosClient.put(`/courses/${id}`, saveData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
-            console.log('[handleStatusChange] Gọi API PATCH /courses/' + id + '/status');
-            // 3. NẾU LƯU DỮ LIỆU THÀNH CÔNG -> GỌI API CẬP NHẬT TRẠNG THÁI (PATCH)
-            const statusResponse = await axiosClient.patch(`/courses/${id}/status`, { trang_thai: newStatus });
-            const responseMessage =
-                statusResponse?.data?.message ||
-                'Đã lưu lại nội dung và cập nhật trạng thái mới!';
+            // Gọi API đổi trạng thái, kèm flag appeal nếu có
+            const statusPayload: Record<string, unknown> = { trang_thai: newStatus };
+            if (options?.isAppealing) {
+                statusPayload.isAppealing = true;
+                statusPayload.appealReason = options.appealReason ?? '';
+            }
 
-            console.log('[handleStatusChange] THÀNH CÔNG!');
+            const statusResponse = await axiosClient.patch(`/courses/${id}/status`, statusPayload);
+            const responseMessage =
+                statusResponse?.data?.message || 'Đã cập nhật trạng thái mới!';
+
             toast.success(responseMessage);
             setFormData((current) => ({
                 ...current,
@@ -403,22 +403,45 @@ export function useCourseDetail(
             }));
 
         } catch (error: unknown) {
-            console.error('[handleStatusChange] CATCH LỖI:', error);
-            // Bắt lỗi nếu quá trình lưu hoặc đổi trạng thái thất bại
-            const message = typeof error === 'object' && error !== null && 'response' in error &&
-                typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
-                ? (error as { response: { data: { message: string } } }).response.data.message
-                : 'Lỗi khi xử lý yêu cầu. Vui lòng kiểm tra lại!';
+            // Trường hợp đặc biệt: Backend trả 400 do có video bị AI REJECTED
+            const axiosErr = error as {
+                response?: {
+                    status?: number;
+                    data?: {
+                        message?: string;
+                        errorCode?: string;
+                        violatingLessons?: ViolatingLesson[];
+                    };
+                };
+            };
+
+            if (
+                axiosErr?.response?.status === 400 &&
+                axiosErr?.response?.data?.errorCode === 'HAS_AI_REJECTED_LESSONS'
+            ) {
+                // Trả violatingLessons về component để hiện Appeal Modal
+                // KHÔNG toast lỗi tại đây
+                return { violatingLessons: axiosErr.response.data.violatingLessons ?? [] };
+            }
+
+            const message =
+                axiosErr?.response?.data?.message ??
+                'Lỗi khi xử lý yêu cầu. Vui lòng kiểm tra lại!';
             toast.error(message);
         } finally {
             setIsStatusChanging(false);
         }
     };
 
+    /** Gửi kháng cáo với lý do. Tái sử dụng handleStatusChange với isAppealing=true */
+    const handleAppealSubmit = (appealReason: string) => {
+        return handleStatusChange('PENDING', { isAppealing: true, appealReason });
+    };
+
     const handleDeleteCourse = () => setIsDeleteModalOpen(true);
     const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
-    const isLocked = ['PENDING', 'PUBLISHED'].includes(formData.trang_thai);
+    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED'].includes(formData.trang_thai);
 
     return {
         id,
@@ -438,16 +461,16 @@ export function useCourseDetail(
         handleImagePickerOpen,
         handleDeleteLesson,
         handleStatusChange,
+        handleAppealSubmit,
         navigate,
         isSaving,
         isStatusChanging,
 
-        // XUẤT CÁC HÀM NÀY RA ĐỂ GIAO DIỆN CÓ THỂ SỬ DỤNG
         updateObjective,
         removeObjective,
         addObjective,
         updateRequirement,
         removeRequirement,
-        addRequirement
+        addRequirement,
     };
 }

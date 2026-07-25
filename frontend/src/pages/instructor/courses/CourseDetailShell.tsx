@@ -10,6 +10,8 @@ import {
   Trash2,
   Bookmark,
   Loader2,
+  ShieldAlert,
+  MessageSquareWarning,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -17,6 +19,7 @@ import InstructorLayout from "../../../layouts/InstructorLayout";
 import {
   useCourseDetail,
   type InstructorCourseContextValue,
+  type ViolatingLesson,
 } from "./hooks/useCourseDetail";
 
 const InstructorCourseContext =
@@ -59,12 +62,20 @@ export default function InstructorCourseDetail({
     confirmDelete,
     setIsDeleteModalOpen,
     handleStatusChange,
+    handleAppealSubmit,
     navigate,
     isSaving,
     isStatusChanging,
   } = course as any;
 
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
+  // ─── State cho Appeal Modal ────────────────────────────────────────────────
+  const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
+  const [violatingLessons, setViolatingLessons] = useState<ViolatingLesson[]>([]);
+  const [appealReason, setAppealReason] = useState("");
+  const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
+  // ──────────────────────────────────────────────────────────────────────────
 
   const videoLessons = (lessons ?? []).filter((lesson: any) =>
     Boolean(lesson.video_url || lesson.videoUrl),
@@ -101,13 +112,13 @@ export default function InstructorCourseDetail({
     publishBtnTitle = "Có video đang được AI xử lý";
   } else if (canAutoApprove) {
     publishBtnTitle =
-      "Tỉ lệ nội dung đạt tiêu chuẩn, khóa học sẽ tự duyệt và public";
+      "Tỉ lệ nội dung đạt tiêu chuẩn, khóa học sẽ chờ admin duyệt";
   } else if (needsAdminReview) {
     publishBtnTitle =
       "Tỉ lệ nội dung cần điều chỉnh, khóa học sẽ chờ admin duyệt";
   } else if (hasAutoRejectRisk) {
     publishBtnTitle =
-      "Tỉ lệ nội dung cần điều chỉnh vượt 40%, khóa học sẽ bị từ chối tự động và gửi thông báo";
+      "Tỉ lệ nội dung cần điều chỉnh vượt 40%, khóa học sẽ bị từ chối tự động";
   }
   const courseReviewBanner = (() => {
     if (videoLessons.length === 0) {
@@ -133,7 +144,7 @@ export default function InstructorCourseDetail({
         tone: "emerald",
         title: "Khóa học đạt điều kiện duyệt",
         description:
-          "Tỉ lệ nội dung đạt tiêu chuẩn. Khi gửi duyệt, hệ thống sẽ tự động public khóa học.",
+          "Tỉ lệ nội dung đạt tiêu chuẩn. Khi gửi duyệt, hệ thống sẽ chuyển khóa học sang hàng chờ phê duyệt của Admin.",
       };
     }
 
@@ -179,6 +190,39 @@ export default function InstructorCourseDetail({
       console.groupEnd();
     }
   }, [formData.title, id, lessons]);
+
+  /** Xử lý click "Gửi yêu cầu duyệt": gọi API, nếu có video REJECTED thì mở Appeal Modal */
+  const handleSubmitForReview = async () => {
+    if (isAiChecking) {
+      toast.error("Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.");
+      return;
+    }
+    setIsPublishModalOpen(false);
+
+    const result = await handleStatusChange("PENDING");
+    if (result?.violatingLessons && result.violatingLessons.length > 0) {
+      setViolatingLessons(result.violatingLessons);
+      setAppealReason("");
+      setIsAppealModalOpen(true);
+    }
+  };
+
+  /** Xử lý click "Gửi Kháng Cáo" trong Appeal Modal */
+  const handleConfirmAppeal = async () => {
+    if (!appealReason.trim()) {
+      toast.error("Vui lòng nhập lý do kháng cáo trước khi gửi.");
+      return;
+    }
+    setIsSubmittingAppeal(true);
+    try {
+      await handleAppealSubmit(appealReason.trim());
+      setIsAppealModalOpen(false);
+      setViolatingLessons([]);
+      setAppealReason("");
+    } finally {
+      setIsSubmittingAppeal(false);
+    }
+  };
 
   return (
     <InstructorLayout>
@@ -226,7 +270,6 @@ export default function InstructorCourseDetail({
                     <StatusActions
                       status={formData.trang_thai}
                       onAction={() =>
-                        // Luôn trả về DRAFT (Nháp) dù là Hủy duyệt hay Tạm ẩn xuất bản
                         void handleStatusChange("DRAFT")
                       }
                     />
@@ -270,14 +313,6 @@ export default function InstructorCourseDetail({
                       <button
                         onClick={() => {
                           if (isAiChecking) {
-                            console.warn(
-                              "[Course AI Debug] Chặn gửi duyệt vì AI vẫn đang xử lý bài học",
-                              {
-                                courseId: id,
-                                courseTitle: formData.title,
-                                lessons,
-                              },
-                            );
                             toast.error(
                               "Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.",
                             );
@@ -355,6 +390,7 @@ export default function InstructorCourseDetail({
         </div>
       </InstructorCourseContext.Provider>
 
+      {/* ─── Modal Xóa Khóa Học ──────────────────────────────────────────────── */}
       {isDeleteModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4">
           <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
@@ -390,6 +426,7 @@ export default function InstructorCourseDetail({
         </div>
       ) : null}
 
+      {/* ─── Modal Xác Nhận Gửi Duyệt (Thông thường) ────────────────────────── */}
       {isPublishModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -414,13 +451,94 @@ export default function InstructorCourseDetail({
                 Hủy bỏ
               </button>
               <button
-                onClick={() => {
-                  setIsPublishModalOpen(false);
-                  void handleStatusChange("PENDING");
-                }}
-                className="rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md"
+                onClick={() => void handleSubmitForReview()}
+                disabled={isStatusChanging}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md disabled:opacity-60"
               >
+                {isStatusChanging && <Loader2 className="animate-spin" size={15} />}
                 Xác nhận gửi
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ─── Modal Kháng Cáo – hiện khi có video bị AI REJECTED ─────────────── */}
+      {isAppealModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl border border-red-100 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-start gap-4 rounded-t-2xl bg-red-50 px-6 py-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 shadow-inner">
+                <ShieldAlert size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-red-800">
+                  Khóa học chứa nội dung vi phạm
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-red-700">
+                  AI đã phát hiện {violatingLessons.length} bài học có video vi phạm chính sách nội dung. Bạn có thể gửi kháng cáo kèm lý do giải thích.
+                </p>
+              </div>
+            </div>
+
+            {/* Danh sách bài học vi phạm */}
+            <div className="px-6 pt-4">
+              <p className="mb-2 text-sm font-semibold text-slate-700">
+                Bài học bị AI từ chối:
+              </p>
+              <ul className="space-y-2 rounded-lg border border-red-100 bg-red-50/60 p-3">
+                {violatingLessons.map((lesson) => (
+                  <li key={lesson.id} className="flex items-start gap-2 text-sm">
+                    <MessageSquareWarning size={15} className="mt-0.5 shrink-0 text-red-500" />
+                    <span>
+                      <span className="font-semibold text-slate-800">{lesson.title}</span>
+                      {lesson.aiRejectReason && (
+                        <span className="ml-1 text-slate-500">— {lesson.aiRejectReason}</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Textarea lý do kháng cáo */}
+            <div className="px-6 pt-4">
+              <label
+                htmlFor="appeal-reason-input"
+                className="mb-1.5 block text-sm font-semibold text-slate-700"
+              >
+                Lý do kháng cáo <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="appeal-reason-input"
+                value={appealReason}
+                onChange={(e) => setAppealReason(e.target.value)}
+                placeholder="Ví dụ: Video của tôi là demo lập trình, không chứa hình ảnh nhạy cảm. Tôi xin Admin xem xét lại..."
+                rows={4}
+                className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#1dbf73] focus:bg-white focus:ring-2 focus:ring-[#1dbf73]/20"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 px-6 py-5">
+              <button
+                onClick={() => {
+                  setIsAppealModalOpen(false);
+                  setViolatingLessons([]);
+                  setAppealReason("");
+                }}
+                className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+              >
+                Quay lại chỉnh sửa
+              </button>
+              <button
+                onClick={() => void handleConfirmAppeal()}
+                disabled={isSubmittingAppeal || !appealReason.trim()}
+                className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmittingAppeal && <Loader2 className="animate-spin" size={15} />}
+                Gửi Kháng Cáo
               </button>
             </div>
           </div>
@@ -515,6 +633,17 @@ function StatusActions({
     );
   }
 
+  if (status === "PENDING_APPEAL") {
+    return (
+      <button
+        onClick={onAction}
+        className="inline-flex items-center gap-2 rounded-sm border border-orange-500 bg-transparent px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
+      >
+        Hủy kháng cáo
+      </button>
+    );
+  }
+
   if (status === "PUBLISHED") {
     return (
       <button
@@ -533,10 +662,14 @@ function getStatusLabel(status: string) {
   switch (status) {
     case "PENDING":
       return "Chờ duyệt";
+    case "PENDING_APPEAL":
+      return "Chờ duyệt (Kháng cáo)";
     case "PUBLISHED":
       return "Đã xuất bản";
     case "HIDDEN":
       return "Đang ẩn";
+    case "REJECTED":
+      return "Bị từ chối";
     default:
       return "Bản nháp";
   }

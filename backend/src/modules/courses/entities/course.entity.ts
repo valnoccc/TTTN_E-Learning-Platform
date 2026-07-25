@@ -39,7 +39,7 @@ export class KhoaHoc {
 
   @Column({
     type: 'enum',
-    enum: ['DRAFT', 'PUBLISHED', 'BANNED', 'PENDING'],
+    enum: ['DRAFT', 'PUBLISHED', 'BANNED', 'PENDING', 'PENDING_APPEAL', 'REJECTED'],
     default: 'DRAFT',
     name: 'TrangThai',
   })
@@ -53,6 +53,12 @@ export class KhoaHoc {
 
   @Column({ name: 'YeuCauKhoaHoc', type: 'text', nullable: true })
   yeuCauKhoaHoc?: string;
+
+  @Column({ name: 'LyDoKhieuNai', type: 'text', nullable: true })
+  appealReason?: string;
+
+  @Column({ name: 'DangKhieuNai', type: 'boolean', default: false })
+  isAppealing!: boolean;
 
   @UpdateDateColumn({
     name: 'NgayCapNhat',

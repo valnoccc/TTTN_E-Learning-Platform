@@ -55,6 +55,26 @@ export class CoursesService implements OnModuleInit {
           `ALTER TABLE \`KhoaHoc\`
            MODIFY COLUMN \`NgayCapNhat\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
         );
+
+        // Cột lưu lý do kháng cáo khi giảng viên gửi appeal
+        await this.addColumnIfMissing(
+          'KhoaHoc',
+          'LyDoKhieuNai',
+          'TEXT NULL AFTER `NgayCapNhat`',
+        );
+
+        // Cột đánh dấu khóa học đang trong trạng thái kháng cáo
+        await this.addColumnIfMissing(
+          'KhoaHoc',
+          'DangKhieuNai',
+          'TINYINT(1) NOT NULL DEFAULT 0 AFTER `LyDoKhieuNai`',
+        );
+
+        // Mở rộng enum TrangThai để bao gồm PENDING_APPEAL và REJECTED
+        await this.dataSource.query(
+          `ALTER TABLE \`KhoaHoc\`
+           MODIFY COLUMN \`TrangThai\` ENUM('DRAFT','PUBLISHED','BANNED','PENDING','PENDING_APPEAL','REJECTED') NOT NULL DEFAULT 'DRAFT'`,
+        );
       })();
     }
 
@@ -265,13 +285,14 @@ export class CoursesService implements OnModuleInit {
     courseId: number,
     instructorId: number,
     trangThai: string,
+    options?: { isAppealing?: boolean; appealReason?: string },
   ) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
     });
 
     if (!course) {
-      throw new ForbiddenException('B?n kh?ng c? quy?n s?a kh?a h?c n?y');
+      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
     }
 
     if (trangThai === 'PENDING') {
@@ -292,68 +313,99 @@ export class CoursesService implements OnModuleInit {
       const normalizeStatus = (value: string | null | undefined) =>
         String(value ?? '').trim().toUpperCase();
 
+      // Chặn khi có video đang chờ AI xử lý
       const pendingLessons = lessons.filter((lesson) =>
         ['PENDING', 'PROCESSING'].includes(normalizeStatus(lesson.aiStatus)),
       );
       if (pendingLessons.length > 0) {
         const details = pendingLessons
           .map((lesson) => {
-            const lessonTitle =
-              lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
+            const lessonTitle = lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
             const status = lesson.aiStatus || 'CHƯA KIỂM DUYỆT';
-            const reason =
-              lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
+            const reason = lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
             return `- ${lessonTitle}: ${status} - ${reason}`;
           })
           .join('\n');
 
         throw new BadRequestException(
-          `Kh?a h?c c?n video ?ang ch? AI x? l?. Vui l?ng ??i ho?n t?t tr??c khi g?i duy?t.\n${details}`,
+          `Khóa học còn video đang chờ AI xử lý. Vui lòng đợi hoàn tất trước khi gửi duyệt.\n${details}`,
         );
       }
 
-      const flaggedLessons = lessons.filter((lesson) => {
-        const status = normalizeStatus(lesson.aiStatus);
-        return status === 'NEEDS_REVIEW' || status === 'REJECTED';
-      });
-      const reviewRatio = flaggedLessons.length / lessons.length;
+      // ─── LOGIC MỚI: Kiểm tra video bị AI REJECTED cứng ──────────────────────
+      const hardRejectedLessons = lessons.filter(
+        (lesson) => normalizeStatus(lesson.aiStatus) === 'REJECTED',
+      );
 
-      // Sửa lỗi: Luôn đặt trạng thái là PENDING để Admin phê duyệt thủ công.
-      // Không tự động PUBLISHED kể cả khi AI đánh giá tốt.
-      const nextStatus = reviewRatio <= COURSE_AUTO_REJECT_THRESHOLD ? 'PENDING' : 'DRAFT';
+      if (hardRejectedLessons.length > 0) {
+        // Nếu client KHÔNG gửi flag isAppealing → trả 400 kèm danh sách vi phạm
+        if (!options?.isAppealing) {
+          throw new BadRequestException({
+            message:
+              'Khóa học chứa bài học có video bị AI từ chối. Vui lòng chỉnh sửa hoặc gửi kháng cáo.',
+            errorCode: 'HAS_AI_REJECTED_LESSONS',
+            violatingLessons: hardRejectedLessons.map((lesson) => ({
+              id: Number(lesson.maBH),
+              title: lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`,
+              aiRejectReason: lesson.aiRejectReason || null,
+            })),
+          });
+        }
 
-      await this.khoaHocRepository.update(courseId, {
-        trangThai: nextStatus,
-        ngayCapNhat: new Date(),
-      });
+        // Nếu có isAppealing = true → đổi sang PENDING_APPEAL, lưu lý do
+        const trimmedReason = options.appealReason?.trim();
+        if (!trimmedReason) {
+          throw new BadRequestException(
+            'Vui lòng nhập lý do kháng cáo để tiếp tục gửi duyệt.',
+          );
+        }
 
-      if (nextStatus === 'DRAFT' && flaggedLessons.length > 0) {
-        await this.sendAutoRejectNotification({
-          courseId,
-          instructorId,
-          courseName: course.tenKhoaHoc,
-          reviewRatio,
-          flaggedLessons,
-        });
+        course.trangThai = 'PENDING_APPEAL';
+        course.appealReason = trimmedReason;
+        course.isAppealing = true;
+        course.ngayCapNhat = new Date();
+        await this.khoaHocRepository.save(course);
+
+        return {
+          id: courseId,
+          trangThai: 'PENDING_APPEAL',
+          isAppealing: true,
+          appealReason: trimmedReason,
+          reviewCount: hardRejectedLessons.length,
+          totalVideoLessons: lessons.length,
+        };
       }
+      // ─────────────────────────────────────────────────────────────────────────
+
+      // Không có REJECTED → luôn đặt PENDING để Admin duyệt thủ công
+      course.trangThai = 'PENDING';
+      course.isAppealing = false;
+      course.appealReason = undefined;
+      course.ngayCapNhat = new Date();
+      await this.khoaHocRepository.save(course);
 
       return {
         id: courseId,
-        trangThai: nextStatus,
-        reviewRatio,
-        reviewCount: flaggedLessons.length,
+        trangThai: 'PENDING',
+        isAppealing: false,
+        reviewCount: 0,
         totalVideoLessons: lessons.length,
       };
     }
 
-    await this.khoaHocRepository.update(courseId, {
-      trangThai,
-      ngayCapNhat: new Date(),
-    });
+    // Đổi các trạng thái khác (DRAFT, v.v.)
+    course.trangThai = trangThai;
+    if (trangThai === 'DRAFT') {
+      course.isAppealing = false;
+      course.appealReason = undefined;
+    }
+    course.ngayCapNhat = new Date();
+    await this.khoaHocRepository.save(course);
+
     return {
       id: courseId,
       trangThai,
-      reviewRatio: null,
+      isAppealing: false,
       reviewCount: 0,
       totalVideoLessons: 0,
     };
@@ -522,9 +574,9 @@ export class CoursesService implements OnModuleInit {
   async getInstructorStats(
     instructorId: number,
   ): Promise<{ totalCourses: number; totalStudents: number }> {
-    // T?nh t?ng s? kh?a h?c (bao g?m c? ?ang ch? duy?t v? ?? duy?t)
+    // Tính tổng số khóa học (bao gồm cả đang chờ duyệt và đã duyệt)
     const totalCoursesResult = await this.dataSource.query(
-      `SELECT COUNT(*) as total FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING')`,
+      `SELECT COUNT(*) as total FROM KhoaHoc WHERE MaND_GiangVien = ? AND TrangThai IN ('PUBLISHED', 'PENDING', 'PENDING_APPEAL')`,
       [instructorId],
     );
     const totalCourses =
