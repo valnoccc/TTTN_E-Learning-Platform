@@ -15,7 +15,7 @@ const CourseTag = () => {
                     {categories.map((cat: any) => (
                         <Link 
                             key={cat.maDM} 
-                            to={process.env.PUBLIC_URL + `/course-grid?categoryId=${cat.maDM}`}
+                            to={`/course-grid?categoryId=${cat.maDM}`}
                         >
                             {cat.tenDM}
                         </Link>

@@ -137,12 +137,12 @@ export default function MyCourses() {
                       src={
                         course.image.startsWith('http')
                           ? course.image
-                          : `${process.env.PUBLIC_URL || ''}/assets/images/${course.image.replace(/^\/?\/?/, '')}`
+                          : `/assets/images/${course.image.replace(/^\/?\/?/, '')}`
                       }
                       alt={course.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e: any) => {
-                        e.target.src = `${process.env.PUBLIC_URL || ''}/assets/images/course-1.jpg`;
+                        e.target.src = '/assets/images/course-1.jpg';
                       }}
                     />
                   ) : (

@@ -38,8 +38,8 @@ const PopularCourse = () => {
                     {
                         courses.map((data: any, i: number) => {
                             const rawImage = data.hinhThuNho;
-                            const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : process.env.PUBLIC_URL + '/assets/images/' + rawImage) : process.env.PUBLIC_URL + '/assets/images/course-1.jpg';
-                            const courseUrl = process.env.PUBLIC_URL + `/course-details/${data.maKH}`;
+                            const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                            const courseUrl = `/course-details/${data.maKH}`;
                             return (
                                 <div className="item-box d-flex" key={i}>
                                     <div className="item-img">
