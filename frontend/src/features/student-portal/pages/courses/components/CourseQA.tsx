@@ -806,6 +806,18 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
           </button>
         </div>
 
+        {canAskQuestion && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setViewState('new')}
+              className="border-2 border-slate-800 text-slate-800 font-bold px-6 py-2.5 rounded hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Plus size={18} /> Đặt câu hỏi mới
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-4 items-center">
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1">Bộ lọc:</label>
@@ -958,18 +970,6 @@ export default function CourseQA({ courseId, currentLesson }: { courseId: string
           >
             <ChevronRight size={18} className="text-slate-700" />
           </button>
-        </div>
-      )}
-
-      {/* Button Tạo câu hỏi mới ở đáy */}
-      {canAskQuestion && (
-        <div className="pt-8 pb-12 flex justify-center">
-           <button 
-             onClick={() => setViewState('new')}
-             className="border-2 border-slate-800 text-slate-800 font-bold px-8 py-3 rounded hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2"
-           >
-             <Plus size={18} /> Đặt câu hỏi mới
-           </button>
         </div>
       )}
 
