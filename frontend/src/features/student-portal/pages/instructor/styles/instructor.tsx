@@ -421,11 +421,21 @@ export const Styles = styled.div`
             }
             .instructor-course-slider {
                 position: relative;
+
+                .swiper-slide {
+                    height: auto;
+                    display: flex;
+                }
+
                 .course-item {
                     border: 1px solid ${colors.border1};
                     border-radius : 5px;
                     transition : all 0.2s ease;
                     margin-bottom: 30px;
+                    height: 100%;
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
 
                     .course-image {
                         width              : 100%;
@@ -441,10 +451,22 @@ export const Styles = styled.div`
                             left    : 20px;
                             bottom  : 20px;
 
-                            img {
-                                max-width: 40px;
-                                border-radius : 50%;
+                            .img {
+                                width: 40px;
+                                height: 40px;
+                                flex: 0 0 40px;
+                                overflow: hidden;
+                                border-radius: 50%;
                                 margin-right: 5px;
+                                border: 2px solid #ffffff;
+                                background: #f1f5f9;
+                            }
+
+                            img {
+                                width: 100%;
+                                height: 100%;
+                                display: block;
+                                object-fit: cover;
                             }
 
                             .title {
@@ -487,8 +509,14 @@ export const Styles = styled.div`
                         background: #fff;
                         padding   : 20px 25px;
                         border-radius : 0 0 5px 5px;
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
 
                         h6.heading {
+                            min-height: 48px;
+                            margin-bottom: 0;
+
                             a {
                                 color        : ${colors.black1};
                                 font-weight  : 600;
@@ -508,9 +536,15 @@ export const Styles = styled.div`
                             border-bottom : 1px solid ${colors.border1};
                             padding-bottom: 10px;
                             margin-bottom : 12px;
+                            min-height: 61px;
+                            display: -webkit-box;
+                            -webkit-box-orient: vertical;
+                            -webkit-line-clamp: 2;
+                            overflow: hidden;
                         }
 
                         .course-face {
+                            margin-top: auto;
 
                             .duration,
                             .student {
