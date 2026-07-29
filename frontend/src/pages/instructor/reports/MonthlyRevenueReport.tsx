@@ -7,6 +7,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 import axiosClient from "../../../api/axios";
 import InstructorLayout from "../../../layouts/InstructorLayout";
@@ -48,6 +49,10 @@ function formatMonthLabel(month: string) {
   }
 
   return `Tháng ${monthPart}/${yearPart}`;
+}
+
+function createExportFileName(month: string) {
+  return `bao-cao-doanh-thu-${month.replace("/", "-")}.xlsx`;
 }
 
 function MonthlyRevenueContent() {
@@ -144,6 +149,47 @@ function MonthlyRevenueContent() {
     [currentYear, selectedData],
   );
 
+  const handleExport = () => {
+    if (!selectedData || selectedData.rows.length === 0) {
+      toast.error("Tháng đã chọn chưa có dữ liệu để xuất.");
+      return;
+    }
+
+    const summaryRows = [
+      ["BÁO CÁO DOANH THU GIẢNG VIÊN"],
+      ["Kỳ báo cáo", formatMonthLabel(selectedData.month)],
+      ["Tổng lượt mua", selectedData.totalPurchases],
+      ["Tổng doanh thu gộp", selectedData.totalGrossRevenue],
+      [
+        "Tổng thực nhận",
+        selectedData.rows.reduce(
+          (total, row) => total + row.instructorRevenue,
+          0,
+        ),
+      ],
+      [],
+      ["Khóa học", "Lượt mua", "Doanh thu gộp", "Thực nhận"],
+      ...selectedData.rows.map((row) => [
+        row.courseName,
+        row.purchases,
+        row.grossRevenue,
+        row.instructorRevenue,
+      ]),
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    worksheet["!cols"] = [
+      { wch: 42 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 18 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Doanh thu");
+    XLSX.writeFile(workbook, createExportFileName(selectedData.month));
+    toast.success("Đã xuất báo cáo doanh thu.");
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 text-slate-800">
       <div className="flex w-full items-end justify-end gap-4">
@@ -167,7 +213,9 @@ function MonthlyRevenueContent() {
 
         <button
           type="button"
-          className="inline-flex h-[42px] items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[14px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          onClick={handleExport}
+          disabled={loading || !selectedData || selectedData.rows.length === 0}
+          className="inline-flex h-[42px] items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[14px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Download size={16} />
           Xuất bảng

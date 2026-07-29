@@ -1,5 +1,11 @@
 import { type ReactNode } from "react";
-import { CheckCheck, Clock3, ShieldAlert, TriangleAlert } from "lucide-react";
+import {
+  CheckCheck,
+  Clock3,
+  Download,
+  ShieldAlert,
+  TriangleAlert,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -19,6 +25,7 @@ import {
 import InstructorLayout from "../../../layouts/InstructorLayout";
 import { useInstructorNotifications } from "../../../layouts/InstructorNotificationsContext";
 import { useInstructorReports } from "./hooks/useInstructorReports";
+import * as XLSX from "xlsx";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -39,6 +46,18 @@ function formatCompactCurrency(value: number) {
     return `${(value / 1_000).toFixed(0)}K`;
   }
   return `${value}`;
+}
+
+function getRangeLabel(range: string) {
+  const labels: Record<string, string> = {
+    "30days": "30 ngày gần nhất",
+    this_month: "Tháng này",
+    last_month: "Tháng trước",
+    this_year: "Năm nay",
+    all_time: "Toàn thời gian",
+  };
+
+  return labels[range] ?? range;
 }
 
 // Icon Ngôi sao dùng chung cho phần đánh giá
@@ -122,6 +141,93 @@ function InstructorReportsContent() {
     )
     .slice(0, 3);
 
+  const handleExportReport = () => {
+    const selectedCourse = courses.find(
+      (course) => String(course.courseId) === courseId,
+    );
+    const workbook = XLSX.utils.book_new();
+    const summaryRows = [
+      ["BÁO CÁO TỔNG QUAN GIẢNG VIÊN"],
+      ["Khoảng thời gian", getRangeLabel(range)],
+      ["Khóa học", selectedCourse?.courseName ?? "Tất cả khóa học"],
+      [],
+      ["Chỉ số", "Giá trị"],
+      ["Thực nhận", board.overview.totalRevenue],
+      ["Doanh thu gộp", board.overview.grossRevenue],
+      ["Phần admin", board.overview.adminRevenue],
+      ["Lượt ghi danh mới", board.overview.newEnrollments],
+      ["Tổng học viên", board.overview.totalStudents],
+      ["Khóa học đang hoạt động", board.overview.activeCourses],
+      ["Khóa học chờ duyệt", board.overview.pendingCourses],
+      ["Đánh giá trung bình", board.overview.averageRating ?? "Chưa có"],
+    ];
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    summarySheet["!cols"] = [{ wch: 30 }, { wch: 28 }];
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Tổng quan");
+
+    const revenueSheet = XLSX.utils.json_to_sheet(
+      board.revenueSeries.map((point) => ({
+        Tháng: point.label,
+        "Thực nhận": point.instructorRevenue,
+        "Doanh thu gộp": point.grossRevenue,
+        "Phần admin": point.adminRevenue,
+        "Lượt ghi danh": point.enrollments,
+      })),
+    );
+    revenueSheet["!cols"] = [
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, revenueSheet, "Xu hướng doanh thu");
+
+    const courseSheet = XLSX.utils.json_to_sheet(
+      board.topCourses.map((course) => ({
+        "Khóa học": course.courseName,
+        "Lượt ghi danh": course.enrollments,
+        "Thực nhận": course.instructorRevenue,
+        "Doanh thu gộp": course.grossRevenue,
+        "Đánh giá": course.averageRating ?? "Chưa có",
+      })),
+    );
+    courseSheet["!cols"] = [
+      { wch: 42 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 14 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, courseSheet, "Khóa học");
+
+    const enrollmentSheet = XLSX.utils.json_to_sheet(
+      board.recentEnrollments.map((enrollment) => ({
+        "Mã đơn hàng": enrollment.enrollmentCode,
+        "Học viên": enrollment.studentName,
+        Email: enrollment.studentEmail,
+        "Khóa học": enrollment.courseName,
+        "Số tiền": enrollment.amount,
+        "Thực nhận": enrollment.instructorAmount,
+        "Ngày mua": enrollment.purchasedAt,
+        "Trạng thái": enrollment.status,
+      })),
+    );
+    enrollmentSheet["!cols"] = [
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 30 },
+      { wch: 36 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, enrollmentSheet, "Giao dịch gần đây");
+
+    XLSX.writeFile(workbook, `bao-cao-tong-quan-giang-vien-${range}.xlsx`);
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 animate-fade-in text-slate-800">
       {/* Header & Bộ lọc */}
@@ -162,7 +268,13 @@ function InstructorReportsContent() {
             <option value="this_year">Năm nay</option>
             <option value="all_time">Toàn thời gian</option>
           </select>
-          <button className="rounded-xl bg-slate-900 px-5 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-slate-800 transition whitespace-nowrap">
+          <button
+            type="button"
+            onClick={handleExportReport}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-slate-900 px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={16} />
             Xuất Báo Cáo
           </button>
         </div>
