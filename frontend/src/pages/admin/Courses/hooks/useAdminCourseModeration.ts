@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import axiosClient from '../../../../api/axios';
 
-export type AdminCourseStatus = 'ALL' | 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'BANNED';
+export type AdminCourseStatus = 'ALL' | 'DRAFT' | 'PENDING' | 'PENDING_APPEAL' | 'PUBLISHED' | 'BANNED';
 
 export interface AdminManagedCourse {
     id: number;
@@ -18,6 +18,9 @@ export interface AdminManagedCourse {
     categoryName: string;
     lessonCount: number;
     orderCount: number;
+    lyDoKhangCao: string | null;
+    appealReason?: string | null;
+    isAppealing?: boolean;
 }
 
 export interface AdminModerationLesson {
@@ -92,8 +95,20 @@ export function useAdminCourseModeration() {
         const fetchCourses = async () => {
             setLoading(true);
             try {
+                const params: Record<string, unknown> = {
+                    search: search.trim() || undefined,
+                };
+
+                // Tuyệt đối không hardcode status=PENDING đơn lẻ khi lấy danh sách chờ duyệt.
+                // Truyền mảng statuses để bao gồm cả PENDING và PENDING_APPEAL
+                if (status === 'PENDING') {
+                    params.statuses = ['PENDING', 'PENDING_APPEAL'];
+                } else if (status !== 'ALL') {
+                    params.statuses = [status];
+                }
+
                 const response = await axiosClient.get<{ data?: AdminManagedCourse[] }>('/admin/courses', {
-                    params: { status, search: search.trim() || undefined },
+                    params,
                     signal: controller.signal,
                 } as any);
                 setCourses(Array.isArray(response?.data) ? response.data : []);

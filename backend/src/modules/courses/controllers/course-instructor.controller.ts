@@ -212,10 +212,17 @@ export class CoursesController {
     @Request() req,
     @Body() statusData: any,
   ) {
+    const trangThai = statusData.trangThai ?? statusData.trang_thai;
+    const isAppealing = statusData.isAppealing === true || statusData.isAppealing === 'true';
+    const appealReason = typeof statusData.appealReason === 'string'
+      ? statusData.appealReason
+      : undefined;
+
     const updatedCourse = await this.coursesService.updateCourseStatus(
       Number(id),
       req.user.sub,
-      statusData.trangThai ?? statusData.trang_thai,
+      trangThai,
+      isAppealing ? { isAppealing: true, appealReason } : undefined,
     );
 
     return {

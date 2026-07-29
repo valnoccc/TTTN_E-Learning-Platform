@@ -27,10 +27,28 @@ export class CourseAdminController {
 
   @Get()
   async getCourses(
-    @Query('status') status?: string,
+    @Query() query: Record<string, any>,
     @Query('search') search?: string,
   ) {
-    const data = await this.courseAdminService.getCourses({ status, search });
+    const rawStatus = query.status ?? query['status'];
+    const rawStatuses = query.statuses ?? query['statuses[]'] ?? query['status[]'];
+
+    let statusesArray: string[] | undefined;
+    if (rawStatuses !== undefined && rawStatuses !== null && rawStatuses !== '') {
+      statusesArray = Array.isArray(rawStatuses) ? rawStatuses : [rawStatuses];
+    } else if (rawStatus !== undefined && rawStatus !== null && rawStatus !== '' && rawStatus !== 'ALL') {
+      if (rawStatus === 'PENDING') {
+        statusesArray = ['PENDING', 'PENDING_APPEAL'];
+      } else {
+        statusesArray = [rawStatus];
+      }
+    }
+
+    const data = await this.courseAdminService.getCourses({
+      status: typeof rawStatus === 'string' ? rawStatus : undefined,
+      statuses: statusesArray,
+      search,
+    });
     return {
       message: 'Lấy danh sách khóa học thành công.',
       data,
@@ -39,9 +57,7 @@ export class CourseAdminController {
 
   @Get('pending')
   async getPendingCourses() {
-    const data = await this.courseAdminService.getCourses({
-      status: 'PENDING',
-    });
+    const data = await this.courseAdminService.getPendingCourses();
     return {
       message: 'Lấy danh sách khóa học chờ duyệt thành công.',
       data,

@@ -1,3 +1,13 @@
+export type AiModerationStatus =
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'APPROVED'
+    | 'REJECTED'
+    | 'NEEDS_REVIEW'
+    | null;
+
+export type VideoSourceType = 'UPLOAD' | 'YOUTUBE';
+
 export interface LessonData {
     maBH: number;
     maChuong: number;
@@ -6,6 +16,14 @@ export interface LessonData {
     noiDung: string | null;
     thuTu: number;
     thoiLuong: number;
+    /** Trạng thái kiểm duyệt AI */
+    aiStatus?: AiModerationStatus;
+    /** Nhãn nội dung do AI phát hiện trong video */
+    aiLabels?: string[] | null;
+    /** Lý do từ chối (nếu aiStatus === REJECTED) */
+    aiRejectReason?: string | null;
+    /** Nguồn video */
+    videoSourceType?: VideoSourceType;
     choPhepXemTruoc?: boolean;
 }
 

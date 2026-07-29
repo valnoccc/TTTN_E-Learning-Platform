@@ -22,6 +22,26 @@ interface LessonRecord {
   thuTu: number;
   thoiLuong: number;
   choPhepXemTruoc?: number | boolean;
+  aiLabels?: string | string[] | null;
+}
+
+function parseAiLabels(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((label): label is string => typeof label === 'string');
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((label): label is string => typeof label === 'string')
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 @Injectable()
@@ -66,7 +86,8 @@ export class CourseInstructorCurriculumService {
 
     const lessons = await this.dataSource.query(
       `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc, 
-              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc
+              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc,
+              AiStatus AS aiStatus, AiLabels AS aiLabels, VideoSourceType AS videoSourceType, AiRejectReason AS aiRejectReason
        FROM BaiHoc
        WHERE MaChuong IN (${placeholders}) AND TrangThai = 'ACTIVE'
        ORDER BY ThuTu ASC`,
@@ -80,6 +101,7 @@ export class CourseInstructorCurriculumService {
             .filter((lesson: any) => lesson.maChuong === chapter.maChuong)
             .map(async (lesson: any) => ({
               ...lesson,
+              aiLabels: parseAiLabels(lesson.aiLabels),
               videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
                 lesson.videoUrl,
               ),
@@ -165,7 +187,8 @@ export class CourseInstructorCurriculumService {
 
     const lessons = await this.dataSource.query(
       `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc,
-              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc
+              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc,
+              AiStatus AS aiStatus, AiLabels AS aiLabels, VideoSourceType AS videoSourceType, AiRejectReason AS aiRejectReason
        FROM BaiHoc
        WHERE MaChuong = ? AND TrangThai = 'ACTIVE'
        ORDER BY ThuTu ASC`,
@@ -179,6 +202,7 @@ export class CourseInstructorCurriculumService {
         .sort((a: LessonRecord, b: LessonRecord) => a.thuTu - b.thuTu)
         .map(async (lesson: LessonRecord) => ({
           ...lesson,
+          aiLabels: parseAiLabels(lesson.aiLabels),
           videoUrl: await this.lessonVideoStorageService.getPlayableUrl(
             lesson.videoUrl,
           ),

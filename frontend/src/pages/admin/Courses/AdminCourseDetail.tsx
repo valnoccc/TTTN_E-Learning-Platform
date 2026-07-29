@@ -49,9 +49,11 @@ function formatDateTime(value: string) {
 function getStatusLabel(status: string) {
     const labels: Record<string, string> = {
         PENDING: 'Chờ duyệt',
+        PENDING_APPEAL: 'Chờ duyệt (Kháng cáo)',
         PUBLISHED: 'Đã xuất bản',
         BANNED: 'Đã ban',
         DRAFT: 'Bản nháp',
+        REJECTED: 'Bị từ chối',
         ACTIVE: 'Đang hoạt động',
         DELETED: 'Đã xóa',
     };
@@ -62,8 +64,10 @@ function getStatusLabel(status: string) {
 function StatusBadge({ status }: { status: string }) {
     const styles: Record<string, string> = {
         PENDING: 'border-amber-300 bg-amber-50 text-amber-700',
+        PENDING_APPEAL: 'border-orange-400 bg-orange-100 text-orange-800',
         PUBLISHED: 'border-emerald-300 bg-emerald-50 text-emerald-700',
         BANNED: 'border-rose-300 bg-rose-50 text-rose-700',
+        REJECTED: 'border-red-300 bg-red-50 text-red-700',
         DRAFT: 'border-slate-300 bg-slate-50 text-slate-600',
         ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-700',
         INACTIVE: 'border-slate-300 bg-slate-50 text-slate-600',
@@ -195,6 +199,19 @@ export default function AdminCourseDetail() {
                                     <p className="mt-3 text-[14px] leading-7 text-slate-600">
                                         {course.moTa || 'Chưa có mô tả khóa học.'}
                                     </p>
+
+                                    {/* Block Kháng Cáo – chỉ hiển khi PENDING_APPEAL */}
+                                    {(course as any).trangThai === 'PENDING_APPEAL' && (course as any).lyDoKhangCao && (
+                                        <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+                                            <div className="flex items-start gap-2">
+                                                <ShieldAlert size={16} className="mt-0.5 shrink-0 text-orange-600" />
+                                                <div>
+                                                    <p className="text-[13px] font-bold text-orange-800">Lý do kháng cáo của giảng viên</p>
+                                                    <p className="mt-1 text-[13px] leading-6 text-orange-700">{(course as any).lyDoKhangCao}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="mt-5 flex flex-wrap gap-3">
                                         <span className="rounded-full bg-slate-50 px-4 py-2 text-[13px] font-semibold text-slate-700">
                                             Giá: {formatCurrency(course.giaBan)}

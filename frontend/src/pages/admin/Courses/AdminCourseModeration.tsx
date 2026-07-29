@@ -20,6 +20,7 @@ import {
 
 const statusOptions: { value: AdminCourseStatus; label: string }[] = [
     { value: 'PENDING', label: 'Chờ duyệt' },
+    { value: 'PENDING_APPEAL', label: 'Có Kháng Cáo' },
     { value: 'ALL', label: 'Tất cả' },
     { value: 'DRAFT', label: 'Bản nháp' },
     { value: 'PUBLISHED', label: 'Đã xuất bản' },
@@ -94,6 +95,11 @@ export default function AdminCourseModeration() {
                 return {
                     label: 'Chờ duyệt',
                     className: 'bg-amber-50 text-amber-600 border-amber-200'
+                };
+            case 'PENDING_APPEAL':
+                return {
+                    label: 'Có Kháng Cáo',
+                    className: 'bg-orange-100 text-orange-700 border-orange-300 font-bold'
                 };
             case 'PUBLISHED':
                 return {
@@ -225,11 +231,17 @@ export default function AdminCourseModeration() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {/* min-w-0 giúp text truncate hoạt động đúng trong flexbox */}
                                                     <div className="min-w-0 flex-1">
-                                                        <h3 className="truncate text-[14px] font-semibold text-slate-800" title={course.tenKhoaHoc}>
-                                                            {course.tenKhoaHoc}
-                                                        </h3>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="truncate text-[14px] font-semibold text-slate-800" title={course.tenKhoaHoc}>
+                                                                {course.tenKhoaHoc}
+                                                            </h3>
+                                                            {course.trangThai === 'PENDING_APPEAL' && (
+                                                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-700">
+                                                                    ⚠️ Có Kháng Cáo
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="mt-1 line-clamp-2 text-[13px] text-slate-500" title={course.moTa || 'Chưa có mô tả khóa học.'}>
                                                             {course.moTa || 'Chưa có mô tả khóa học.'}
                                                         </p>

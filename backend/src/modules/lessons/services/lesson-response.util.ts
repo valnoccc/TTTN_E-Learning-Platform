@@ -1,4 +1,4 @@
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson, VideoSourceType } from '../entities/lesson.entity';
 
 export function serializeLesson(lesson: Lesson) {
   return {
@@ -20,5 +20,8 @@ export function serializeLesson(lesson: Lesson) {
     aiLabels: lesson.aiLabels ?? [],
     aiRejectReason: lesson.aiRejectReason ?? null,
     durationSeconds: lesson.durationSeconds ?? 0,
+    // New video source fields
+    videoSourceType: lesson.videoSourceType ?? VideoSourceType.UPLOAD,
+    resolution: lesson.resolution ?? null,
   };
 }

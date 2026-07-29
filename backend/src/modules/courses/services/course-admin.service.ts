@@ -29,6 +29,10 @@ type AdminCourseRow = {
   categoryName?: string | null;
   lessonCount?: string | number;
   orderCount?: string | number;
+  lyDoKhangCao?: string | null;
+  appealReason?: string | null;
+  isAppealing?: boolean | number;
+  dangKhieuNai?: boolean | number;
 };
 
 type CourseGoalRow = { NoiDung?: string | null };
@@ -68,6 +72,7 @@ type CourseReviewRow = {
 export interface AdminCourseFilters {
   search?: string;
   status?: string;
+  statuses?: string[];
 }
 
 @Injectable()
@@ -104,6 +109,54 @@ export class CourseAdminService {
       categoryName: row.categoryName ?? 'Chưa phân loại',
       lessonCount: Number(row.lessonCount ?? 0),
       orderCount: Number(row.orderCount ?? 0),
+      lyDoKhangCao: row.lyDoKhangCao ?? row.appealReason ?? null,
+      appealReason: row.appealReason ?? row.lyDoKhangCao ?? null,
+      isAppealing: Boolean(row.isAppealing ?? row.dangKhieuNai),
+    }));
+  }
+
+  /**
+   * Lấy danh sách khóa học chờ duyệt cho Admin.
+   * Bao gồm cả PENDING (thường) và PENDING_APPEAL (có kháng cáo).
+   * PENDING_APPEAL được ưu tiên hiển thị trước.
+   */
+  async getPendingCourses() {
+    const courses = await this.courseRepository
+      .createQueryBuilder('khoa_hoc')
+      .leftJoinAndSelect('khoa_hoc.giangVien', 'giangVien')
+      .leftJoinAndSelect('khoa_hoc.danhMuc', 'danhMuc')
+      .loadRelationCountAndMap('khoa_hoc.lessonCount', 'khoa_hoc.baiHocs')
+      .where("khoa_hoc.TrangThai IN (:...statuses)", {
+        statuses: ['PENDING', 'PENDING_APPEAL'],
+      })
+      .orderBy(
+        `CASE WHEN khoa_hoc.TrangThai = 'PENDING_APPEAL' THEN 0 WHEN khoa_hoc.TrangThai = 'PENDING' THEN 1 ELSE 2 END`,
+        'ASC',
+      )
+      .addOrderBy('khoa_hoc.maKH', 'DESC')
+      .getMany();
+
+    return courses.map((course: any) => ({
+      id: Number(course.maKH ?? 0),
+      tenKhoaHoc: course.tenKhoaHoc ?? '',
+      giaBan: Number(course.giaBan ?? 0),
+      trangThai: course.trangThai ?? 'DRAFT',
+      hinhThuNho: course.hinhThuNho ?? null,
+      moTa: course.moTa ?? '',
+      ngayCapNhat:
+        course.ngayCapNhat instanceof Date
+          ? course.ngayCapNhat.toISOString()
+          : (course.ngayCapNhat ?? null),
+      instructorId: Number(course.maND_GiangVien ?? 0),
+      instructorName: course.giangVien?.hoTen ?? '',
+      instructorEmail: course.giangVien?.email ?? '',
+      instructorAvatar: course.giangVien?.anhDaiDien ?? null,
+      categoryName: course.danhMuc?.tenDM ?? 'Chưa phân loại',
+      lessonCount: Number(course.lessonCount ?? 0),
+      orderCount: 0,
+      appealReason: course.appealReason ?? null,
+      isAppealing: Boolean(course.isAppealing),
+      lyDoKhangCao: course.appealReason ?? null,
     }));
   }
 
@@ -193,6 +246,10 @@ export class CourseAdminService {
           : (course.ngayCapNhat ?? null),
       maDM: course.maDM,
       instructorId: course.maND_GiangVien,
+      // Thông tin kháng cáo (nếu có)
+      lyDoKhangCao: course.appealReason ?? null,
+      appealReason: course.appealReason ?? null,
+      isAppealing: Boolean(course.isAppealing),
       mucTieu: mucTieuRows
         .map((item) => item.NoiDung?.trim() ?? '')
         .filter(Boolean),
@@ -234,7 +291,7 @@ export class CourseAdminService {
     if (!course) {
       throw new NotFoundException('Không tìm thấy khóa học.');
     }
-    if (course.trangThai !== 'PENDING') {
+    if (!['PENDING', 'PENDING_APPEAL'].includes(course.trangThai)) {
       throw new BadRequestException(
         'Chỉ khóa học đang chờ duyệt mới có thể phê duyệt.',
       );
@@ -277,7 +334,7 @@ export class CourseAdminService {
     if (!course) {
       throw new NotFoundException('Không tìm thấy khóa học.');
     }
-    if (course.trangThai !== 'PENDING') {
+    if (!['PENDING', 'PENDING_APPEAL'].includes(course.trangThai)) {
       throw new BadRequestException(
         'Chỉ khóa học đang chờ duyệt mới có thể từ chối.',
       );
@@ -357,6 +414,9 @@ export class CourseAdminService {
         kh.HinhThuNho as hinhThuNho,
         kh.MoTa as moTa,
         kh.NgayCapNhat as ngayCapNhat,
+        kh.LyDoKhieuNai as lyDoKhangCao,
+        kh.LyDoKhieuNai as appealReason,
+        kh.DangKhieuNai as isAppealing,
         nd.MaND as instructorId,
         nd.HoTen as instructorName,
         nd.Email as instructorEmail,
@@ -373,9 +433,17 @@ export class CourseAdminService {
     `;
     const params: any[] = [];
 
-    if (filters.status && filters.status !== 'ALL') {
-      sql += ` AND kh.TrangThai = ?`;
-      params.push(filters.status);
+    if (filters.statuses && filters.statuses.length > 0) {
+      const placeholders = filters.statuses.map(() => '?').join(', ');
+      sql += ` AND kh.TrangThai IN (${placeholders})`;
+      params.push(...filters.statuses);
+    } else if (filters.status && filters.status !== 'ALL') {
+      if (filters.status === 'PENDING') {
+        sql += ` AND kh.TrangThai IN ('PENDING', 'PENDING_APPEAL')`;
+      } else {
+        sql += ` AND kh.TrangThai = ?`;
+        params.push(filters.status);
+      }
     }
 
     if (filters.search?.trim()) {
@@ -393,13 +461,15 @@ export class CourseAdminService {
         kh.HinhThuNho,
         kh.MoTa,
         kh.NgayCapNhat,
+        kh.LyDoKhieuNai,
+        kh.DangKhieuNai,
         nd.MaND,
         nd.HoTen,
         nd.Email,
         nd.AnhDaiDien,
         dm.TenDM
       ORDER BY
-        CASE WHEN kh.TrangThai = 'PENDING' THEN 0 ELSE 1 END,
+        CASE WHEN kh.TrangThai = 'PENDING_APPEAL' THEN 0 WHEN kh.TrangThai = 'PENDING' THEN 1 ELSE 2 END,
         kh.MaKH DESC
     `;
 

@@ -154,7 +154,7 @@ export function useAdminCourseDetail(courseId: number) {
         }
     };
 
-    const canApproveOrReject = course?.trangThai === 'PENDING';
+    const canApproveOrReject = course?.trangThai === 'PENDING' || course?.trangThai === 'PENDING_APPEAL';
     const canBanCourse = course?.trangThai === 'PUBLISHED';
     const action = activeAction ? actionConfig[activeAction] : null;
 

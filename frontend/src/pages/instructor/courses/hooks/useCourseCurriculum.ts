@@ -183,19 +183,15 @@ export function useCourseCurriculum() {
                     }
                     : lesson),
             })));
-            toast.success('Da cap nhat bai hoc thanh cong!');
+            toast.success('Đã cập nhật nội dung bài học thành công!');
             return true;
         } catch {
-            toast.error('Loi khi cap nhat bai hoc.');
+            toast.error('Lỗi khi cập nhật bài học.');
             return false;
         }
     };
 
     const handleDeleteLesson = async (lessonId: number) => {
-        if (!window.confirm('Ban co chac chan muon xoa bai hoc nay?')) {
-            return;
-        }
-
         try {
             await axiosClient.delete(`/lessons/${lessonId}`);
             setChapters((prev) =>
@@ -204,9 +200,9 @@ export function useCourseCurriculum() {
                     baiHocs: chapter.baiHocs.filter((lesson) => lesson.maBH !== lessonId),
                 })),
             );
-            toast.success('Da xoa bai hoc thanh cong!');
+            toast.success('Đã xóa bài học thành công!');
         } catch {
-            toast.error('Loi khi xoa bai hoc.');
+            toast.error('Lỗi khi xóa bài học.');
         }
     };
 
@@ -228,7 +224,7 @@ export function useCourseCurriculum() {
 
         const nextTitle = editingChapterTitle.trim();
         if (!nextTitle) {
-            toast.error('Ten chuong khong duoc de trong!');
+            toast.error('Tên chương không được để trống!');
             return;
         }
 
@@ -245,17 +241,13 @@ export function useCourseCurriculum() {
                 ),
             );
             handleCancelEditChapter();
-            toast.success('Da cap nhat chuong hoc!');
+            toast.success('Đã cập nhật chương học!');
         } catch {
-            toast.error('Loi khi cap nhat chuong hoc.');
+            toast.error('Lỗi khi cập nhật chương học.');
         }
     };
 
     const handleDeleteChapter = async (chapterId: number) => {
-        if (!window.confirm('Ban co chac chan muon xoa chuong hoc nay?')) {
-            return;
-        }
-
         try {
             await axiosClient.delete(`/courses/chapters/${chapterId}`);
             const nextChapters = chapters.filter((chapter) => chapter.maChuong !== chapterId);
@@ -273,9 +265,9 @@ export function useCourseCurriculum() {
 
                 return nextChapters[0]?.maChuong ?? null;
             });
-            toast.success('Da xoa chuong hoc thanh cong!');
+            toast.success('Đã xóa chương học thành công!');
         } catch {
-            toast.error('Loi khi xoa chuong hoc.');
+            toast.error('Lỗi khi xóa chương học.');
         }
     };
 
