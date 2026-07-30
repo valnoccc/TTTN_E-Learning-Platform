@@ -138,6 +138,10 @@ describe('CheckoutService', () => {
       expect.stringContaining('INSERT INTO ChiTietHoaDon'),
       [55, 101, 100000, 80, 80000],
     );
+    expect(queryRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE ctgh FROM ChiTietGioHang'),
+      [7, 101],
+    );
   });
 
   it('does not consume coupon usage when creating a pending MoMo payment', async () => {
@@ -208,6 +212,7 @@ describe('CheckoutService', () => {
       ])
       .mockResolvedValueOnce({ affectedRows: 1 })
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce([{ TongTien: 250000 }])
       .mockResolvedValueOnce([{ totalOrderValue: 300000 }]);

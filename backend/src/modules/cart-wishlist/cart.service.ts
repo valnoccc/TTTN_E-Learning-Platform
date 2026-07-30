@@ -40,6 +40,13 @@ export class CartService {
        LEFT JOIN NguoiDung n  ON n.MaND  = k.MaND_GiangVien
        LEFT JOIN DanhMuc   dm ON dm.MaDM = k.MaDM
        WHERE gh.MaND = ?
+         AND NOT EXISTS (
+           SELECT 1
+           FROM DangKyKhoaHoc dk
+           WHERE dk.MaND = gh.MaND
+             AND dk.MaKH = ctgh.MaKH
+             AND dk.TrangThai = 'ACTIVE'
+         )
        ORDER BY ctgh.MaCTGH DESC`,
       [userId],
     );

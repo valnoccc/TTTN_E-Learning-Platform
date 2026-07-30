@@ -552,6 +552,13 @@ export class CheckoutService {
       }
 
       // 4d. Ghi nhận coupon đã được tài khoản này sử dụng
+      await queryRunner.query(
+        `DELETE ctgh FROM ChiTietGioHang ctgh
+         JOIN GioHang gh ON gh.MaGioHang = ctgh.MaGioHang
+         WHERE gh.MaND = ? AND ctgh.MaKH IN (${placeholders})`,
+        [userId, ...validCourseIds],
+      );
+
       if (appliedCouponId) {
         const [invoiceRows, detailRows] = await Promise.all([
           queryRunner.query(
@@ -774,6 +781,13 @@ export class CheckoutService {
           [userId, course.MaKH, invoiceId, 'ACTIVE'],
         );
       }
+
+      await queryRunner.query(
+        `DELETE ctgh FROM ChiTietGioHang ctgh
+         JOIN GioHang gh ON gh.MaGioHang = ctgh.MaGioHang
+         WHERE gh.MaND = ? AND ctgh.MaKH IN (${placeholders})`,
+        [userId, ...courseIds],
+      );
 
       if (appliedCouponId) {
         await this.couponsService.recordCouponRedemption(
