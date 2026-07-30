@@ -50,6 +50,14 @@ interface CourseDetailApiResponse {
     data?: CourseDetailApiData;
 }
 
+interface CourseStatusApiResponse {
+    message?: string;
+    data?: {
+        trangThai?: string;
+        trang_thai?: string;
+    };
+}
+
 interface LessonListApiResponse {
     message?: string;
     data?: Lesson[];
@@ -397,16 +405,19 @@ export function useCourseDetail(
                 statusPayload.appealReason = options.appealReason ?? '';
             }
 
-            const statusResponse = await axiosClient.patch(`/courses/${id}/status`, statusPayload);
+            const statusResponse = await axiosClient.patch<CourseStatusApiResponse>(
+                `/courses/${id}/status`,
+                statusPayload,
+            );
             const responseMessage =
-                statusResponse?.data?.message || 'Đã cập nhật trạng thái mới!';
+                statusResponse?.message || 'Đã cập nhật trạng thái mới!';
 
             toast.success(responseMessage);
             setFormData((current) => ({
                 ...current,
                 trang_thai:
-                    statusResponse?.data?.data?.trangThai ||
-                    statusResponse?.data?.data?.trang_thai ||
+                    statusResponse?.data?.trangThai ||
+                    statusResponse?.data?.trang_thai ||
                     newStatus,
             }));
 

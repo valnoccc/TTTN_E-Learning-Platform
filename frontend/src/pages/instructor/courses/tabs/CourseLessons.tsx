@@ -311,13 +311,13 @@ export default function InstructorCourseLessons() {
                             <Edit3 size={16} />
                           </button>
                           <button
-                          onClick={() =>
-                            setDeleteTarget({
-                              type: "chapter",
-                              id: chapter.maChuong,
-                              name: chapter.tenChuong,
-                            })
-                          }
+                            onClick={() =>
+                              setDeleteTarget({
+                                type: "chapter",
+                                id: chapter.maChuong,
+                                name: chapter.tenChuong,
+                              })
+                            }
                             title="Xóa chương"
                             aria-label="Xóa chương"
                             className="rounded-md border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
@@ -597,7 +597,7 @@ export default function InstructorCourseLessons() {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    {/* <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
                       Thứ tự
                     </label>
                     <input
@@ -612,7 +612,7 @@ export default function InstructorCourseLessons() {
                       }
                       disabled={isLocked || isLessonSaving}
                       className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-100"
-                    />
+                    /> */}
                     <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
                       <input
                         type="checkbox"
@@ -768,11 +768,16 @@ export default function InstructorCourseLessons() {
                 <AlertTriangle size={20} />
               </div>
               <div>
-                <h2 id="delete-dialog-title" className="text-lg font-bold text-slate-900">
-                  Xác nhận xóa {deleteTarget.type === "lesson" ? "bài học" : "chương học"}
+                <h2
+                  id="delete-dialog-title"
+                  className="text-lg font-bold text-slate-900"
+                >
+                  Xác nhận xóa{" "}
+                  {deleteTarget.type === "lesson" ? "bài học" : "chương học"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Bạn có chắc chắn muốn xóa “{deleteTarget.name}” không? Hành động này không thể hoàn tác.
+                  Bạn có chắc chắn muốn xóa “{deleteTarget.name}” không? Hành
+                  động này không thể hoàn tác.
                 </p>
               </div>
             </div>
