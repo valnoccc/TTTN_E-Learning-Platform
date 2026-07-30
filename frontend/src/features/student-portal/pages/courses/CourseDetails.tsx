@@ -110,13 +110,22 @@ function CourseDetails() {
             try {
                 const response: any = await axiosClient.get(`/public/courses/${id}`);
                 if (response && response.data) {
-                    let parsedKetQua = [];
-                    let parsedYeuCau = [];
-                    try { if (response.data.ketQuaHocTap) parsedKetQua = JSON.parse(response.data.ketQuaHocTap); } catch(e){}
-                    try { if (response.data.yeuCauKhoaHoc) parsedYeuCau = JSON.parse(response.data.yeuCauKhoaHoc); } catch(e){}
+                    const parseList = (raw: unknown): string[] => {
+                        if (Array.isArray(raw)) return raw.map(String).map(item => item.trim()).filter(Boolean);
+                        if (typeof raw !== 'string' || !raw.trim()) return [];
+                        try {
+                            const parsed = JSON.parse(raw);
+                            if (Array.isArray(parsed)) return parsed.map(String).map(item => item.trim()).filter(Boolean);
+                        } catch {
+                            // Dữ liệu cũ có thể là chuỗi đơn hoặc JSON không hợp lệ.
+                        }
+                        return [raw.trim()];
+                    };
 
-                    const isEnglishDummyKetQua = parsedKetQua.some((str: string) => str.includes('Handle advanced') || str.includes('Machine Learning'));
-                    if (isEnglishDummyKetQua || parsedKetQua.length === 0) {
+                    let parsedKetQua = parseList(response.data.muc_tieu ?? response.data.ketQuaHocTap);
+                    let parsedYeuCau = parseList(response.data.yeu_cau ?? response.data.yeuCauKhoaHoc);
+
+                    if (parsedKetQua.length === 0) {
                         parsedKetQua = [
                             'Nắm vững các kiến thức nền tảng và chuyên sâu của khóa học',
                             'Thành thạo các công cụ và kỹ năng thông qua bài tập thực tế',
@@ -125,8 +134,7 @@ function CourseDetails() {
                         ];
                     }
 
-                    const isEnglishDummyYeuCau = parsedYeuCau.some((str: string) => str.toLowerCase().includes('python') || str.toLowerCase().includes('experience'));
-                    if (isEnglishDummyYeuCau || parsedYeuCau.length === 0) {
+                    if (parsedYeuCau.length === 0) {
                         parsedYeuCau = [
                             'Máy tính có kết nối internet ổn định',
                             'Tinh thần tự học và sẵn sàng hoàn thành các bài tập thực hành',

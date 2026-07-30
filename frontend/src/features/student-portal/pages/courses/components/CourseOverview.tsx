@@ -94,8 +94,8 @@ export default function CourseOverview({ courseData, curriculum }: { courseData:
 
   if (!courseData) return null;
 
-  const ketQuaItems = parseListContent(courseData.ketQuaHocTap);
-  const yeuCauItems = parseListContent(courseData.yeuCauKhoaHoc);
+  const ketQuaItems = parseListContent(courseData.ketQuaHocTap ?? courseData.muc_tieu);
+  const yeuCauItems = parseListContent(courseData.yeuCauKhoaHoc ?? courseData.yeu_cau);
   
   // Tính toán số liệu thực tế
   let totalLessons = 0;

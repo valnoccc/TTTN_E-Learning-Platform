@@ -27,6 +27,8 @@ import { CourseInstructorCurriculumService } from '../services/course-instructor
 import { CoursesService } from '../services/course-instructor.service';
 
 const COURSE_TITLE_MAX_LENGTH = 60;
+const MAX_OBJECTIVES = 6;
+const MAX_REQUIREMENTS = 4;
 
 const parseArrayData = (data: any): string[] => {
   if (!data) return [];
@@ -130,6 +132,12 @@ export class CoursesController {
 
     const mucTieu = parseArrayData(courseData.muc_tieu);
     const yeuCau = parseArrayData(courseData.yeu_cau);
+    if (mucTieu.length > MAX_OBJECTIVES) {
+      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`);
+    }
+    if (yeuCau.length > MAX_REQUIREMENTS) {
+      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`);
+    }
 
     const newCourse = await this.coursesService.createCourse(
       payload,
@@ -191,6 +199,12 @@ export class CoursesController {
 
     const mucTieu = parseArrayData(courseData.muc_tieu);
     const yeuCau = parseArrayData(courseData.yeu_cau);
+    if (mucTieu.length > MAX_OBJECTIVES) {
+      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`);
+    }
+    if (yeuCau.length > MAX_REQUIREMENTS) {
+      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`);
+    }
 
     const updatedCourse = await this.coursesService.updateCourse(
       Number(courseId),

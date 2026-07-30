@@ -97,6 +97,8 @@ interface UseCourseDetailOptions {
 }
 
 const COURSE_TITLE_MAX_LENGTH = 60;
+export const MAX_OBJECTIVES = 6;
+export const MAX_REQUIREMENTS = 4;
 
 export function useCourseDetail(
     { mode = 'edit' }: UseCourseDetailOptions = {},
@@ -196,7 +198,10 @@ export function useCourseDetail(
     };
 
     const addObjective = () => {
-        setFormData(prev => ({ ...prev, muc_tieu: [...(prev.muc_tieu || []), ''] }));
+        setFormData(prev => {
+            if ((prev.muc_tieu || []).length >= MAX_OBJECTIVES) return prev;
+            return { ...prev, muc_tieu: [...(prev.muc_tieu || []), ''] };
+        });
     };
 
     // ==========================================
@@ -219,7 +224,10 @@ export function useCourseDetail(
     };
 
     const addRequirement = () => {
-        setFormData(prev => ({ ...prev, yeu_cau: [...(prev.yeu_cau || []), ''] }));
+        setFormData(prev => {
+            if ((prev.yeu_cau || []).length >= MAX_REQUIREMENTS) return prev;
+            return { ...prev, yeu_cau: [...(prev.yeu_cau || []), ''] };
+        });
     };
 
     const handleChange = (

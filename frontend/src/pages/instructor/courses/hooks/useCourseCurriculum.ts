@@ -185,8 +185,16 @@ export function useCourseCurriculum() {
             })));
             toast.success('Đã cập nhật nội dung bài học thành công!');
             return true;
-        } catch {
-            toast.error('Lỗi khi cập nhật bài học.');
+        } catch (error: unknown) {
+            console.error('[CourseCurriculum] Không thể cập nhật bài học:', error);
+            const responseData = (error as {
+                response?: { data?: { message?: string | string[] } };
+            })?.response?.data;
+            const responseMessage = responseData?.message;
+            const message = Array.isArray(responseMessage)
+                ? responseMessage.join(', ')
+                : responseMessage || 'Lỗi khi cập nhật bài học.';
+            toast.error(message);
             return false;
         }
     };

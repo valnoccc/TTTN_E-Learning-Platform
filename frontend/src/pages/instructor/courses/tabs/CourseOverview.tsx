@@ -17,6 +17,7 @@ import {
     useInstructorCourseContext,
 } from '../CourseDetailShell';
 import { useCourseCategories } from '../hooks/useCourseCategories';
+import { MAX_OBJECTIVES, MAX_REQUIREMENTS } from '../hooks/useCourseDetail';
 
 export default function InstructorCourseOverview() {
     // UI lấy trực tiếp state formData và các action sửa/xóa từ Hook thông qua Context
@@ -106,7 +107,7 @@ export default function InstructorCourseOverview() {
                 {/* 2. MỤC TIÊU KHÓA HỌC */}
                 <CourseSectionCard
                     title="Học viên sẽ học được gì trong khóa học của bạn?"
-                    description="Bạn phải nhập ít nhất 4 mục tiêu hoặc kết quả học tập mà học viên có thể mong đợi đạt được sau khi hoàn thành khóa học."
+                    description={`Bạn phải nhập ít nhất 4 mục tiêu hoặc kết quả học tập. Có thể nhập tối đa ${MAX_OBJECTIVES} mục tiêu.`}
                 >
                     <div className="space-y-3">
                         {(formData.muc_tieu || []).map((obj, index) => (
@@ -137,7 +138,7 @@ export default function InstructorCourseOverview() {
                         <button
                             type="button"
                             onClick={addObjective}
-                            disabled={isLocked}
+                            disabled={isLocked || formData.muc_tieu.length >= MAX_OBJECTIVES}
                             className="flex items-center gap-2 pt-2 text-sm font-bold text-[#169b5c] transition hover:text-[#0f7b48]"
                         >
                             <Plus size={16} /> Thêm nội dung vào phản hồi của bạn
@@ -148,7 +149,7 @@ export default function InstructorCourseOverview() {
                 {/* 3. YÊU CẦU KHÓA HỌC */}
                 <CourseSectionCard
                     title="Yêu cầu hoặc điều kiện tiên quyết để tham gia khóa học của bạn là gì?"
-                    description="Liệt kê các kỹ năng, kinh nghiệm, công cụ hoặc thiết bị mà học viên bắt buộc phải có trước khi tham gia. Nếu bạn không có yêu cầu nào, hãy coi đây là cơ hội để bạn hạ thấp tiêu chuẩn cho người mới bắt đầu."
+                    description={`Liệt kê các kỹ năng, kinh nghiệm, công cụ hoặc thiết bị mà học viên cần có trước khi tham gia. Có thể nhập tối đa ${MAX_REQUIREMENTS} yêu cầu.`}
                 >
                     <div className="space-y-3">
                         {(formData.yeu_cau || []).map((req, index) => (
@@ -179,7 +180,7 @@ export default function InstructorCourseOverview() {
                         <button
                             type="button"
                             onClick={addRequirement}
-                            disabled={isLocked}
+                            disabled={isLocked || formData.yeu_cau.length >= MAX_REQUIREMENTS}
                             className="flex items-center gap-2 pt-2 text-sm font-bold text-[#169b5c] transition hover:text-[#0f7b48]"
                         >
                             <Plus size={16} /> Thêm nội dung vào phản hồi của bạn
