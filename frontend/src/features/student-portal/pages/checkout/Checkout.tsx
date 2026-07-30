@@ -191,18 +191,28 @@ export default function Checkout() {
   const handlePayment = async () => {
     const errors: { [key: string]: string } = {};
 
+    const orderTotal = courses.reduce(
+      (total, course) => total + Number(course.price || 0),
+      0,
+    );
+    const finalOrderTotal = Math.max(0, orderTotal - discountValue);
+    const isFreeOrder = courses.length > 0 && finalOrderTotal === 0;
+
     if (!formData.fullName) errors.fullName = 'Vui lòng nhập họ và tên';
     if (!formData.email) errors.email = 'Vui lòng nhập địa chỉ email';
     if (!formData.phone) errors.phone = 'Vui lòng nhập số điện thoại';
 
-    if (paymentMethod === 'VNPAY') {
+    if (!isFreeOrder && paymentMethod === 'VNPAY') {
       if (!selectedBank) toast.error('Vui lòng chọn ngân hàng thanh toán');
       if (!cardInfo.cardNumber) errors.cardNumber = 'Vui lòng nhập số thẻ';
       if (!cardInfo.cardName) errors.cardName = 'Vui lòng nhập tên in trên thẻ';
       if (!cardInfo.issueDate) errors.issueDate = 'Vui lòng nhập ngày phát hành (MM/YY)';
     }
 
-    if (Object.keys(errors).length > 0 || (paymentMethod === 'VNPAY' && !selectedBank)) {
+    if (
+      Object.keys(errors).length > 0 ||
+      (!isFreeOrder && paymentMethod === 'VNPAY' && !selectedBank)
+    ) {
       setFormErrors(errors);
       return;
     }
@@ -211,6 +221,25 @@ export default function Checkout() {
 
     try {
       setIsProcessing(true);
+
+      if (isFreeOrder) {
+        const res = await processPayment({
+          courseIds: courses.map((course) => course.id),
+          paymentMethod: 'FREE',
+          couponCode: discountValue > 0 ? couponCode : undefined,
+          customerDetails: formData,
+        });
+
+        if (res.success) {
+          courses.forEach((course) => dispatch(removeFromCart(course.id)));
+          setPaymentMethod('FREE');
+          setSuccessData({ invoiceId: res.invoiceId });
+          window.scrollTo(0, 0);
+          toast.success('Đăng ký khóa học miễn phí thành công!');
+          setTimeout(() => navigate('/student/profile'), 3000);
+        }
+        return;
+      }
 
       // ── MoMo: Tạo QR động & chuyển hướng ─────────────────────────────────
       if (paymentMethod === 'MOMO') {
@@ -619,7 +648,7 @@ export default function Checkout() {
                         Đang xử lý...
                       </>
                     ) : (
-                      'Xác nhận thanh toán'
+                      finalPrice === 0 ? 'Đăng ký khóa học miễn phí' : 'Xác nhận thanh toán'
                     )}
                   </button>
                 </div>

@@ -730,6 +730,12 @@ export class CheckoutService {
         finalPrice = Math.max(0, totalOriginalPrice - discountAmount);
       }
 
+      if (paymentMethod === 'FREE' && finalPrice > 0) {
+        throw new BadRequestException(
+          'Chỉ được sử dụng phương thức FREE cho đơn hàng có tổng tiền bằng 0',
+        );
+      }
+
       const insertHoaDonResult = await queryRunner.query(
         `INSERT INTO HoaDon (MaND, TongTien, TrangThaiThanhToan, PhuongThucThanhToan, MaCoupon, NgayThanhToan) VALUES (?, ?, ?, ?, ?, NOW())`,
         [userId, finalPrice, 'PAID', paymentMethod, appliedCouponId],
@@ -805,12 +811,17 @@ export class CheckoutService {
       await queryRunner.commitTransaction();
 
       const courseNames = courses.map((c: any) => c.TenKhoaHoc).join(', ');
+      const isFreeEnrollment = paymentMethod === 'FREE' && finalPrice === 0;
       try {
         await this.notificationsService.createNotification({
           maND: userId,
           loaiThongBao: NotificationType.PAYMENT,
-          tieuDe: 'Thanh toán thành công!',
-          noiDung: `Bạn đã mua thành công ${courses.length} khóa học: ${courseNames}. Tổng thanh toán: ${finalPrice.toLocaleString('vi-VN')}đ. Chúc bạn học tập vui vẻ!`,
+          tieuDe: isFreeEnrollment
+            ? 'Đăng ký khóa học miễn phí thành công!'
+            : 'Thanh toán thành công!',
+          noiDung: isFreeEnrollment
+            ? `Bạn đã đăng ký miễn phí ${courses.length} khóa học: ${courseNames}. Chúc bạn học tập vui vẻ!`
+            : `Bạn đã mua thành công ${courses.length} khóa học: ${courseNames}. Tổng thanh toán: ${finalPrice.toLocaleString('vi-VN')}đ. Chúc bạn học tập vui vẻ!`,
         });
 
         for (const course of courses) {
