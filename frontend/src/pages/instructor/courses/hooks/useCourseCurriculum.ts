@@ -105,15 +105,15 @@ export function useCourseCurriculum() {
             setShowAddChapterForm(false);
             setExpandedChapterId(createdChapter.maChuong);
             sessionStorage.setItem('expandedChapterId', createdChapter.maChuong.toString());
-            toast.success('Da them chuong hoc moi thanh cong!');
+            toast.success('Đã thêm chương học mới thành công!');
         } catch {
-            toast.error('Loi khi them chuong hoc moi.');
+            toast.error('Lỗi khi thêm chương học mới.');
         }
     };
 
     const handleAddLesson = async (chapterId: number) => {
         if (!newLessonTitle.trim()) {
-            toast.error('Ten bai hoc khong duoc de trong!');
+            toast.error('Tên bài học không được để trống!');
             return null;
         }
 
@@ -141,10 +141,10 @@ export function useCourseCurriculum() {
             setActiveAddLessonChapterId(null);
             setExpandedChapterId(chapterId);
             sessionStorage.setItem('expandedChapterId', chapterId.toString());
-            toast.success('Da them bai hoc moi!');
+            toast.success('Đã thêm bài học mới!');
             return createdLesson;
         } catch {
-            toast.error('Loi khi tao bai hoc.');
+            toast.error('Lỗi khi tạo bài học.');
             return null;
         }
     };
