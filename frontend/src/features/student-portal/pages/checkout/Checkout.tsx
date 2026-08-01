@@ -19,6 +19,7 @@ import {
 import { removeFromCart } from '../../../cart/cartSlice';
 import { CouponModal } from '../../components/checkout/CouponModal';
 import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
+import CourseRecommendations from './CourseRecommendations';
 
 const BANKS = [
   { id: 'vcb', name: 'Vietcombank', logo: '/assets/images/banks/VCB.png' },
@@ -221,6 +222,7 @@ export default function Checkout() {
 
     try {
       setIsProcessing(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       if (isFreeOrder) {
         const res = await processPayment({
@@ -236,7 +238,6 @@ export default function Checkout() {
           setSuccessData({ invoiceId: res.invoiceId });
           window.scrollTo(0, 0);
           toast.success('Đăng ký khóa học miễn phí thành công!');
-          setTimeout(() => navigate('/student/profile'), 3000);
         }
         return;
       }
@@ -278,9 +279,6 @@ export default function Checkout() {
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
         toast.success('Thanh toán thành công!');
-        setTimeout(() => {
-          navigate('/student/profile');
-        }, 3000);
       }
     } catch (error: any) {
       toast.dismiss('momo-loading');
@@ -306,11 +304,20 @@ export default function Checkout() {
   }
 
   if (successData) {
+    const userStr = localStorage.getItem('user');
+    let currentUserId: number | undefined = undefined;
+    if (userStr) {
+      try {
+        const parsedUser = JSON.parse(userStr);
+        currentUserId = parsedUser.id || parsedUser.maND || parsedUser.sub;
+      } catch (e) {}
+    }
+
     return (
       <Styles>
         <div className="main-wrapper checkout-page">
           <Container>
-            <div className="card-box py-5 text-center">
+            <div className="card-box py-5 text-center mb-5">
               <i
                 className="las la-check-circle text-success"
                 style={{ fontSize: '80px' }}
@@ -326,10 +333,23 @@ export default function Checkout() {
               <p>
                 Phương thức thanh toán: <strong>{paymentMethod}</strong>
               </p>
-              <p className="text-muted mt-4">
-                Chuyển hướng đến khóa học của bạn trong 3 giây...
-              </p>
+              <div className="mt-4">
+                <button className="btn btn-success" style={{ marginRight: '10px' }} onClick={() => navigate('/student/my-courses')}>
+                  Vào học ngay
+                </button>
+                <button className="btn btn-outline-secondary" onClick={() => navigate('/student/profile?tab=payments')}>
+                  Xem lịch sử thanh toán
+                </button>
+              </div>
             </div>
+            
+            {courses.length > 0 && (
+              <CourseRecommendations 
+                courseIds={courses.map((c) => c.id)}
+                courseId={courses[0].id}
+                userId={currentUserId} 
+              />
+            )}
           </Container>
         </div>
       </Styles>
@@ -583,7 +603,13 @@ export default function Checkout() {
                       style={{ display: 'flex', alignItems: 'center' }}
                     >
                       <img
-                        src={course.thumbnail}
+                        src={
+                          course.thumbnail
+                            ? course.thumbnail.startsWith('http')
+                              ? course.thumbnail
+                              : `/assets/images/${course.thumbnail}`
+                            : '/assets/images/course-1.jpg'
+                        }
                         alt={course.courseName}
                         style={{
                           width: '80px',

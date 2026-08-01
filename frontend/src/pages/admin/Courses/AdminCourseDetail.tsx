@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+    AlertTriangle,
     ArrowLeft,
     Ban,
     BookOpen,
@@ -293,17 +294,36 @@ export default function AdminCourseDetail() {
                                             course.curriculum.map((chapter) => {
                                                 const expanded = expandedChapterId === chapter.maChuong;
                                                 return (
-                                                    <div key={chapter.maChuong} className="overflow-hidden rounded-[18px] border border-slate-200 bg-white">
+                                                    <div
+                                                        key={chapter.maChuong}
+                                                        className={`overflow-hidden rounded-[18px] border bg-white ${
+                                                            chapter.baiHocs.some((l) => l.aiStatus === 'REJECTED')
+                                                                ? 'border-rose-300'
+                                                                : 'border-slate-200'
+                                                        }`}
+                                                    >
                                                         <button
                                                             onClick={() => setExpandedChapterId(expanded ? null : chapter.maChuong)}
                                                             className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-slate-50"
                                                         >
-                                                            <div>
-                                                                <p className="text-[14px] font-bold text-slate-800">
-                                                                    Chương {chapter.thuTu}: {chapter.tenChuong}
-                                                                </p>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    {chapter.baiHocs.some((l) => l.aiStatus === 'REJECTED') && (
+                                                                        <span title="Chương có bài học vi phạm AI">
+                                                                            <AlertTriangle size={15} className="shrink-0 text-rose-500" />
+                                                                        </span>
+                                                                    )}
+                                                                    <p className="text-[14px] font-bold text-slate-800">
+                                                                        Chương {chapter.thuTu}: {chapter.tenChuong}
+                                                                    </p>
+                                                                </div>
                                                                 <p className="mt-1 text-[12px] font-medium text-slate-500">
                                                                     {chapter.baiHocs.length} bài học
+                                                                    {chapter.baiHocs.some((l) => l.aiStatus === 'REJECTED') && (
+                                                                        <span className="ml-2 font-semibold text-rose-500">
+                                                                            • {chapter.baiHocs.filter((l) => l.aiStatus === 'REJECTED').length} cần xem xét
+                                                                        </span>
+                                                                    )}
                                                                 </p>
                                                             </div>
                                                             <ChevronDown
@@ -321,20 +341,41 @@ export default function AdminCourseDetail() {
                                                                         <button
                                                                             key={lesson.maBH}
                                                                             onClick={() => setSelectedLesson(lesson)}
-                                                                            className={`flex w-full items-start justify-between gap-3 rounded-2xl px-3 py-3 text-left transition ${selectedLesson?.maBH === lesson.maBH
-                                                                                ? 'bg-blue-50 text-blue-800 ring-1 ring-blue-100'
-                                                                                : 'bg-white hover:bg-slate-50'
-                                                                                }`}
+                                                                            className={`flex w-full items-start justify-between gap-3 rounded-2xl px-3 py-3 text-left transition ${
+                                                                                selectedLesson?.maBH === lesson.maBH
+                                                                                    ? lesson.aiStatus === 'REJECTED'
+                                                                                        ? 'bg-rose-50 text-rose-900 ring-1 ring-rose-200'
+                                                                                        : 'bg-blue-50 text-blue-800 ring-1 ring-blue-100'
+                                                                                    : lesson.aiStatus === 'REJECTED'
+                                                                                        ? 'bg-rose-50/60 hover:bg-rose-50'
+                                                                                        : 'bg-white hover:bg-slate-50'
+                                                                            }`}
                                                                         >
-                                                                            <div>
-                                                                                <p className="text-[13px] font-bold">
-                                                                                    Bài {lesson.thuTu}: {lesson.tenBaiHoc}
-                                                                                </p>
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    {lesson.aiStatus === 'REJECTED' && (
+                                                                                        <span title="Bài học vi phạm kiểm duyệt AI">
+                                                                                            <AlertTriangle size={13} className="shrink-0 text-rose-500" />
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <p className={`text-[13px] font-bold ${
+                                                                                        lesson.aiStatus === 'REJECTED' ? 'text-rose-700' : ''
+                                                                                    }`}>
+                                                                                        Bài {lesson.thuTu}: {lesson.tenBaiHoc}
+                                                                                    </p>
+                                                                                </div>
                                                                                 <p className="mt-1 line-clamp-2 text-[12px] text-slate-500">
                                                                                     {lesson.noiDung || 'Chưa có nội dung bài học.'}
                                                                                 </p>
                                                                             </div>
-                                                                            {lesson.videoURL ? <PlayCircle size={16} className="mt-0.5 shrink-0 text-blue-600" /> : null}
+                                                                            <div className="flex shrink-0 items-center gap-1.5 mt-0.5">
+                                                                                {lesson.aiStatus === 'REJECTED' && (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700">
+                                                                                        Cần xem xét
+                                                                                    </span>
+                                                                                )}
+                                                                                {lesson.videoURL ? <PlayCircle size={16} className="text-blue-600" /> : null}
+                                                                            </div>
                                                                         </button>
                                                                     ))
                                                                 )}

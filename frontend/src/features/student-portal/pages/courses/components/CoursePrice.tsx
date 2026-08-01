@@ -4,7 +4,11 @@ import { Styles } from '../styles/coursePrice';
 const CoursePrice = ({ filters, setFilters }: { filters: any, setFilters: any }) => {
 
     const handlePriceChange = (priceValue: string | null) => {
-        setFilters({ ...filters, price: priceValue });
+        if (priceValue !== null && filters.price === priceValue) {
+            setFilters({ ...filters, price: null });
+        } else {
+            setFilters({ ...filters, price: priceValue });
+        }
     };
 
     return (
@@ -19,8 +23,8 @@ const CoursePrice = ({ filters, setFilters }: { filters: any, setFilters: any })
                                 type="checkbox" 
                                 id="price-all" 
                                 className="check-box" 
-                                checked={filters.price === null}
-                                onChange={() => handlePriceChange(null)}
+                                checked={filters.price === 'all'}
+                                onChange={() => handlePriceChange('all')}
                             />
                             Tất cả
                         </label>

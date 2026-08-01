@@ -56,12 +56,18 @@ export default function ForumHome() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('MOI_NHAT');
+  const [tuKhoa, setTuKhoa] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
       try {
-        const data: any = await axiosClient.get(`/forum/questions?sapXep=${sortBy}`);
+        let url = `/forum/questions?sapXep=${sortBy}`;
+        if (tuKhoa) {
+          url += `&tuKhoa=${encodeURIComponent(tuKhoa)}`;
+        }
+        const data: any = await axiosClient.get(url);
         if (data) {
           setQuestions(data.danhSach || []);
           setTotalCount(data.tongSo || 0);
@@ -74,7 +80,12 @@ export default function ForumHome() {
     };
 
     fetchQuestions();
-  }, [sortBy]);
+  }, [sortBy, tuKhoa]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTuKhoa(searchInput);
+  };
 
   return (
     <>
@@ -91,10 +102,21 @@ export default function ForumHome() {
           {/* Stats and Filters */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <div className="text-lg text-gray-700">
-              {totalCount.toLocaleString()} câu hỏi
+              {totalCount.toLocaleString()} câu hỏi {tuKhoa && <span className="text-sm text-gray-500 ml-2">(kết quả cho "{tuKhoa}")</span>}
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* <form onSubmit={handleSearch} className="flex items-center relative">
+                <input 
+                  type="text" 
+                  placeholder="Tìm kiếm câu hỏi..." 
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 border border-gray-400 rounded text-sm focus:outline-none focus:border-[#0a95ff] focus:ring-1 focus:ring-[#0a95ff]"
+                />
+                <svg className="w-4 h-4 absolute left-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </form> */}
+
               <div className="flex border border-gray-400 rounded overflow-hidden text-[13px]">
                 <button 
                   onClick={() => setSortBy('MOI_NHAT')}
@@ -116,10 +138,6 @@ export default function ForumHome() {
                 </button>
               </div>
               
-              <button className="flex items-center gap-1 bg-[#e1ecf4] text-[#39739d] hover:bg-[#b3d3ea] border border-[#7aa7c7] px-3 py-2 rounded text-sm transition">
-                <svg aria-hidden="true" className="w-4 h-4" width="18" height="18" viewBox="0 0 18 18"><path d="M2 4h14v2H2zM4 8h10v2H4zM6 12h6v2H6z" fill="currentColor"></path></svg>
-                Lọc
-              </button>
             </div>
           </div>
 

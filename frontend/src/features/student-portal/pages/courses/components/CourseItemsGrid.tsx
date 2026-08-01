@@ -67,12 +67,15 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
       setLoading(true);
       // Reset trang 1 mỗi khi filter/search thay đổi
       setCurrentPage(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       try {
         const params = new URLSearchParams();
         if (filters?.search) params.append("search", filters.search);
         if (filters?.categoryId)
           params.append("categoryId", filters.categoryId.toString());
         if (filters?.price) params.append("price", filters.price);
+        if (filters?.rating) params.append("rating", filters.rating);
+        if (filters?.sort) params.append("sort", filters.sort);
 
         console.log(
           "[CourseItemsGrid] Fetching with params:",
@@ -97,7 +100,7 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
       }
     };
     fetchCourses();
-  }, [filters?.search, filters?.categoryId, filters?.price]);
+  }, [filters?.search, filters?.categoryId, filters?.price, filters?.rating, filters?.sort]);
 
   const totalPages = Math.ceil(courses.length / itemsPerPage);
 
@@ -373,7 +376,10 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={(page) => setCurrentPage(page)}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         </Col>
       )}

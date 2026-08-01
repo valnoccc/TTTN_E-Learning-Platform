@@ -23,18 +23,28 @@ interface RecommendationsData {
   crossSellVoucher: CrossSellVoucher | null;
 }
 
-export default function CourseRecommendations({ courseId, userId }: { courseId: number, userId?: number }) {
+export default function CourseRecommendations({ 
+  courseId, 
+  courseIds, 
+  userId 
+}: { 
+  courseId?: number; 
+  courseIds?: number[]; 
+  userId?: number; 
+}) {
   const [data, setData] = useState<RecommendationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const idsParam = courseIds && courseIds.length > 0 ? courseIds.join(',') : courseId;
+
   useEffect(() => {
-    if (!courseId) return;
+    if (!idsParam) return;
     const fetchRecommendations = async () => {
       try {
         const url = userId 
-          ? `/public/courses/${courseId}/recommendations?userId=${userId}` 
-          : `/public/courses/${courseId}/recommendations`;
+          ? `/public/courses/${idsParam}/recommendations?userId=${userId}` 
+          : `/public/courses/${idsParam}/recommendations`;
         
         const response: any = await axiosClient.get(url);
         if (response && response.recommendations) {
@@ -70,7 +80,7 @@ export default function CourseRecommendations({ courseId, userId }: { courseId: 
       }
     };
     fetchRecommendations();
-  }, [courseId, userId]);
+  }, [idsParam, userId]);
 
   if (loading) {
     return (
