@@ -267,7 +267,9 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản không tồn tại!');
     }
 
-    const trangThai = String(rows[0].trangThai ?? '').trim().toUpperCase();
+    const trangThai = String(rows[0].trangThai ?? '')
+      .trim()
+      .toUpperCase();
 
     if (BLOCKED_STATUSES.has(trangThai)) {
       throw new UnauthorizedException(BLOCKED_ACCOUNT_MESSAGE);

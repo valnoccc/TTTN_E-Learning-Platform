@@ -484,9 +484,7 @@ export class AdminCouponsService
       }
       if (dto.ngayKetThuc !== undefined) {
         group1Updates.push('NgayKetThuc = ?');
-        group1Params.push(
-          dto.ngayKetThuc ? new Date(dto.ngayKetThuc) : null,
-        );
+        group1Params.push(dto.ngayKetThuc ? new Date(dto.ngayKetThuc) : null);
       }
       if (dto.soLuongGioiHan !== undefined) {
         group1Updates.push('SoLuongGioiHan = ?');
@@ -635,7 +633,9 @@ export class AdminCouponsService
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
       if (error.code === 'ER_DUP_ENTRY') {
-        throw new BadRequestException('Mã code này đã tồn tại, vui lòng dùng mã khác');
+        throw new BadRequestException(
+          'Mã code này đã tồn tại, vui lòng dùng mã khác',
+        );
       }
       throw error;
     } finally {

@@ -175,6 +175,11 @@ describe('CheckoutService', () => {
     });
 
     expect(couponsService.recordCouponRedemption).not.toHaveBeenCalled();
+    expect(axios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ requestType: 'captureWallet' }),
+      expect.any(Object),
+    );
   });
 
   it('treats MoMo string resultCode zero as successful and enrolls the student', async () => {

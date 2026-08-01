@@ -126,7 +126,7 @@ export class CourseAdminService {
       .leftJoinAndSelect('khoa_hoc.giangVien', 'giangVien')
       .leftJoinAndSelect('khoa_hoc.danhMuc', 'danhMuc')
       .loadRelationCountAndMap('khoa_hoc.lessonCount', 'khoa_hoc.baiHocs')
-      .where("khoa_hoc.TrangThai IN (:...statuses)", {
+      .where('khoa_hoc.TrangThai IN (:...statuses)', {
         statuses: ['PENDING', 'PENDING_APPEAL'],
       })
       .orderBy(

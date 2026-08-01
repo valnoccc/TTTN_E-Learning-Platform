@@ -133,10 +133,14 @@ export class CoursesController {
     const mucTieu = parseArrayData(courseData.muc_tieu);
     const yeuCau = parseArrayData(courseData.yeu_cau);
     if (mucTieu.length > MAX_OBJECTIVES) {
-      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`);
+      throw new BadRequestException(
+        `Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`,
+      );
     }
     if (yeuCau.length > MAX_REQUIREMENTS) {
-      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`);
+      throw new BadRequestException(
+        `Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`,
+      );
     }
 
     const newCourse = await this.coursesService.createCourse(
@@ -200,10 +204,14 @@ export class CoursesController {
     const mucTieu = parseArrayData(courseData.muc_tieu);
     const yeuCau = parseArrayData(courseData.yeu_cau);
     if (mucTieu.length > MAX_OBJECTIVES) {
-      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`);
+      throw new BadRequestException(
+        `Khóa học chỉ được tối đa ${MAX_OBJECTIVES} mục tiêu`,
+      );
     }
     if (yeuCau.length > MAX_REQUIREMENTS) {
-      throw new BadRequestException(`Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`);
+      throw new BadRequestException(
+        `Khóa học chỉ được tối đa ${MAX_REQUIREMENTS} yêu cầu`,
+      );
     }
 
     const updatedCourse = await this.coursesService.updateCourse(
@@ -227,10 +235,12 @@ export class CoursesController {
     @Body() statusData: any,
   ) {
     const trangThai = statusData.trangThai ?? statusData.trang_thai;
-    const isAppealing = statusData.isAppealing === true || statusData.isAppealing === 'true';
-    const appealReason = typeof statusData.appealReason === 'string'
-      ? statusData.appealReason
-      : undefined;
+    const isAppealing =
+      statusData.isAppealing === true || statusData.isAppealing === 'true';
+    const appealReason =
+      typeof statusData.appealReason === 'string'
+        ? statusData.appealReason
+        : undefined;
 
     const updatedCourse = await this.coursesService.updateCourseStatus(
       Number(id),

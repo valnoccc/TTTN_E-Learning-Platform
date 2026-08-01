@@ -16,7 +16,9 @@ const CourseGrid = () => {
     const [filters, setFilters] = useState<any>({
         search: searchQuery,
         categoryId: categoryIdParam ? Number(categoryIdParam) : null,
-        price: null
+        price: null,
+        rating: null,
+        sort: null
     });
 
     // Đồng bộ filters mỗi khi URL thay đổi (click keyword, submit form search)

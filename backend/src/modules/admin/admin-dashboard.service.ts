@@ -183,7 +183,9 @@ export class AdminDashboardService {
     const currentMonthYear = this.getCurrentMonthYear();
     const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
     const prevDays = days * 2;
-    console.log(`[AdminDashboard] getOverviewStats called with days=${days}, monthFilter=${JSON.stringify(monthFilter)}`);
+    console.log(
+      `[AdminDashboard] getOverviewStats called with days=${days}, monthFilter=${JSON.stringify(monthFilter)}`,
+    );
 
     // ── Date-filter helpers ───────────────────────────────────────────────────
     const isMonthMode = !!monthFilter;
@@ -193,8 +195,8 @@ export class AdminDashboardService {
       ? `MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ? AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?`
       : `COALESCE(hd.NgayThanhToan, hd.NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
     const hdDateParams = isMonthMode
-      ? [monthFilter!.month, monthFilter!.year] as unknown[]
-      : [days] as unknown[];
+      ? ([monthFilter.month, monthFilter.year] as unknown[])
+      : ([days] as unknown[]);
 
     // Flat HoaDon date WHERE (no alias)
     const hdFlatDateWhere = isMonthMode
@@ -203,29 +205,45 @@ export class AdminDashboardService {
     const hdFlatDateParams = hdDateParams;
 
     // Enrollment WHERE + params (current / prev period)
-    const prevMonth = isMonthMode ? (monthFilter!.month === 1 ? 12 : monthFilter!.month - 1) : 0;
-    const prevYear  = isMonthMode ? (monthFilter!.month === 1 ? monthFilter!.year - 1 : monthFilter!.year) : 0;
+    const prevMonth = isMonthMode
+      ? monthFilter.month === 1
+        ? 12
+        : monthFilter.month - 1
+      : 0;
+    const prevYear = isMonthMode
+      ? monthFilter.month === 1
+        ? monthFilter.year - 1
+        : monthFilter.year
+      : 0;
 
-    const enrollCurWhere  = isMonthMode
+    const enrollCurWhere = isMonthMode
       ? `MONTH(NgayDangKy) = ? AND YEAR(NgayDangKy) = ?`
       : `NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
-    const enrollCurParams = isMonthMode ? [monthFilter!.month, monthFilter!.year] as unknown[] : [days] as unknown[];
+    const enrollCurParams = isMonthMode
+      ? ([monthFilter.month, monthFilter.year] as unknown[])
+      : ([days] as unknown[]);
 
-    const enrollPrevWhere  = isMonthMode
+    const enrollPrevWhere = isMonthMode
       ? `MONTH(NgayDangKy) = ? AND YEAR(NgayDangKy) = ?`
       : `NgayDangKy >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND NgayDangKy < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
-    const enrollPrevParams = isMonthMode ? [prevMonth, prevYear] as unknown[] : [prevDays, days] as unknown[];
+    const enrollPrevParams = isMonthMode
+      ? ([prevMonth, prevYear] as unknown[])
+      : ([prevDays, days] as unknown[]);
 
     // Revenue WHERE + params
-    const revCurWhere  = isMonthMode
+    const revCurWhere = isMonthMode
       ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
       : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
-    const revCurParams = isMonthMode ? [monthFilter!.month, monthFilter!.year] as unknown[] : [days] as unknown[];
+    const revCurParams = isMonthMode
+      ? ([monthFilter.month, monthFilter.year] as unknown[])
+      : ([days] as unknown[]);
 
-    const revPrevWhere  = isMonthMode
+    const revPrevWhere = isMonthMode
       ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
       : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND COALESCE(NgayThanhToan, NgayLap) < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
-    const revPrevParams = isMonthMode ? [prevMonth, prevYear] as unknown[] : [prevDays, days] as unknown[];
+    const revPrevParams = isMonthMode
+      ? ([prevMonth, prevYear] as unknown[])
+      : ([prevDays, days] as unknown[]);
 
     const [
       studentStats,
@@ -316,7 +334,14 @@ export class AdminDashboardService {
             instructorPayout: '0',
           },
         ],
-        [...revCurParams, ...revCurParams, ...revCurParams, ...revCurParams, ...revCurParams, ...revPrevParams],
+        [
+          ...revCurParams,
+          ...revCurParams,
+          ...revCurParams,
+          ...revCurParams,
+          ...revCurParams,
+          ...revPrevParams,
+        ],
       ),
       this.queryWithFallback<QuotaRow[]>(
         `
@@ -557,7 +582,9 @@ export class AdminDashboardService {
       Math.round((storageQuotaUsedBytes / storageQuotaLimitBytes) * 100),
     );
 
-    console.log(`[AdminDashboard] days=${days} → grossRevenue=${revenueStats[0]?.grossRevenue}, orders=${ordersOverview[0]?.totalOrders}`);
+    console.log(
+      `[AdminDashboard] days=${days} → grossRevenue=${revenueStats[0]?.grossRevenue}, orders=${ordersOverview[0]?.totalOrders}`,
+    );
 
     return {
       totalStudents: parseInt(String(studentStats[0]?.total ?? 0), 10),

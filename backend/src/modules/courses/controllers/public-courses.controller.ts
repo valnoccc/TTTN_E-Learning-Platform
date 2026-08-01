@@ -21,8 +21,16 @@ export class PublicCoursesController {
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
     @Query('price') price?: string,
+    @Query('rating') rating?: string,
+    @Query('sort') sort?: string,
   ) {
-    const filters: PublicCourseFilters = { search, categoryId, price };
+    const filters: PublicCourseFilters = {
+      search,
+      categoryId,
+      price,
+      rating,
+      sort,
+    };
     const data =
       await this.courseStudentService.getAllPublishedCourses(filters);
 
@@ -34,20 +42,20 @@ export class PublicCoursesController {
 
   @Get(':id/recommendations')
   async getRecommendations(
-    @Param('id', ParseIntPipe) courseId: number,
+    @Param('id') id: string,
     @Query('userId') userId?: string,
-    @Query('courseIds') courseIds?: string,
   ) {
-    const requestedCourseIds = (courseIds ?? '')
+    const courseIds = id
       .split(',')
-      .map((value) => Number.parseInt(value.trim(), 10))
-      .filter((value) => Number.isFinite(value) && value > 0);
-    const recommendationCourseIds = Array.from(
-      new Set([courseId, ...requestedCourseIds]),
-    );
+      .map((item) => Number.parseInt(item.trim(), 10))
+      .filter((num) => !Number.isNaN(num));
+
+    if (courseIds.length === 0) {
+      throw new BadRequestException('Mã khóa học không hợp lệ');
+    }
 
     const data = await this.courseStudentService.getCourseRecommendations(
-      recommendationCourseIds,
+      courseIds,
       userId,
     );
 

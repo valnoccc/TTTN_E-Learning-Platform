@@ -31,12 +31,22 @@ export class CourseAdminController {
     @Query('search') search?: string,
   ) {
     const rawStatus = query.status ?? query['status'];
-    const rawStatuses = query.statuses ?? query['statuses[]'] ?? query['status[]'];
+    const rawStatuses =
+      query.statuses ?? query['statuses[]'] ?? query['status[]'];
 
     let statusesArray: string[] | undefined;
-    if (rawStatuses !== undefined && rawStatuses !== null && rawStatuses !== '') {
+    if (
+      rawStatuses !== undefined &&
+      rawStatuses !== null &&
+      rawStatuses !== ''
+    ) {
       statusesArray = Array.isArray(rawStatuses) ? rawStatuses : [rawStatuses];
-    } else if (rawStatus !== undefined && rawStatus !== null && rawStatus !== '' && rawStatus !== 'ALL') {
+    } else if (
+      rawStatus !== undefined &&
+      rawStatus !== null &&
+      rawStatus !== '' &&
+      rawStatus !== 'ALL'
+    ) {
       if (rawStatus === 'PENDING') {
         statusesArray = ['PENDING', 'PENDING_APPEAL'];
       } else {

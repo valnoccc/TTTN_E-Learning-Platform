@@ -38,6 +38,13 @@ export interface PaymentResponse {
   enrollmentId: number;
 }
 
+export interface VnpayPaymentResponse {
+  success: boolean;
+  invoiceId: number;
+  txnRef: string;
+  paymentUrl: string;
+}
+
 import axiosClient from './axios';
 
 export const getCourseDetails = async (
@@ -102,6 +109,20 @@ export const processPayment = async (
   } catch (error) {
     throw error;
   }
+};
+
+export const createVnpayPayment = async (data: {
+  courseIds: number[];
+  couponCode?: string;
+  customerDetails: PaymentRequest['customerDetails'];
+}): Promise<VnpayPaymentResponse> => {
+  const response: any = await axiosClient.post('/checkout/vnpay/create', data);
+  return response?.data ?? response;
+};
+
+export const getInvoiceDetails = async (invoiceId: number) => {
+  const response: any = await axiosClient.get(`/checkout/invoice/${invoiceId}`);
+  return response?.data ?? response;
 };
 
 export interface AvailableCoupon {

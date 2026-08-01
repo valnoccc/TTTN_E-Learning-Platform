@@ -637,8 +637,7 @@ export class InstructorsService {
         imgUrl: c.imgUrl || 'course-1.jpg',
         totalDurationSeconds: Number(c.totalDurationSeconds ?? 0),
         lessonCount: Number(c.lessonCount ?? 0),
-        averageRating:
-          c.averageRating == null ? 0 : Number(c.averageRating),
+        averageRating: c.averageRating == null ? 0 : Number(c.averageRating),
         reviewCount: Number(c.reviewCount ?? 0),
         views: Number(c.views ?? 0),
       })),

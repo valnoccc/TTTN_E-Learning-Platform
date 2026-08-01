@@ -110,7 +110,9 @@ describe('UserAdminService', () => {
 
     expect(dataSource.query).toHaveBeenNthCalledWith(
       2,
-      expect.stringContaining('UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?'),
+      expect.stringContaining(
+        'UPDATE NguoiDung SET TrangThai = ? WHERE MaND = ?',
+      ),
       ['LOCKED', 7],
     );
   });
@@ -136,8 +138,8 @@ describe('UserAdminService', () => {
   it('throws when target user does not exist', async () => {
     dataSource.query.mockResolvedValueOnce([]);
 
-    await expect(service.updateUserStatus(999, 'ACTIVE')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.updateUserStatus(999, 'ACTIVE'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

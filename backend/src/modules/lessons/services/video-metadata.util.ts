@@ -33,9 +33,7 @@ async function tryLoadFfmpeg(): Promise<any | null> {
     const ffmpeg = await import('fluent-ffmpeg');
     return ffmpeg.default ?? ffmpeg;
   } catch {
-    logger.warn(
-      'fluent-ffmpeg không có sẵn. Bỏ qua kiểm tra metadata video.',
-    );
+    logger.warn('fluent-ffmpeg không có sẵn. Bỏ qua kiểm tra metadata video.');
     return null;
   }
 }
@@ -110,7 +108,10 @@ export function validateVideoMetadata(metadata: VideoMetadata): void {
     );
   }
 
-  if (metadata.resolution !== null && metadata.resolution > MAX_RESOLUTION_HEIGHT) {
+  if (
+    metadata.resolution !== null &&
+    metadata.resolution > MAX_RESOLUTION_HEIGHT
+  ) {
     throw new BadRequestException(
       `Độ phân giải video quá cao: ${metadata.resolution}p. Hệ thống chỉ chấp nhận tối đa ${MAX_RESOLUTION_HEIGHT}p (1080p).`,
     );

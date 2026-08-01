@@ -9,6 +9,8 @@ export interface PublicCourseFilters {
   search?: string;
   categoryId?: string;
   price?: string;
+  rating?: string;
+  sort?: string;
 }
 
 type PublishedCourseRow = {
@@ -82,7 +84,36 @@ export class CourseStudentService {
       query.andWhere('khoaHoc.giaBan = 0');
     }
 
-    query.orderBy('khoaHoc.maKH', 'DESC');
+    if (filters.rating) {
+      const minRating = Number.parseFloat(filters.rating);
+      if (!Number.isNaN(minRating)) {
+        query.having('ratings.avgRating >= :minRating', { minRating });
+      }
+    }
+
+    if (filters.sort) {
+      switch (filters.sort) {
+        case 'oldest':
+          query.orderBy('khoaHoc.maKH', 'ASC');
+          break;
+        case 'name_asc':
+          query.orderBy('khoaHoc.tenKhoaHoc', 'ASC');
+          break;
+        case 'name_desc':
+          query.orderBy('khoaHoc.tenKhoaHoc', 'DESC');
+          break;
+        case 'price_asc':
+          query.orderBy('khoaHoc.giaBan', 'ASC');
+          break;
+        case 'price_desc':
+          query.orderBy('khoaHoc.giaBan', 'DESC');
+          break;
+        default:
+          query.orderBy('khoaHoc.maKH', 'DESC');
+      }
+    } else {
+      query.orderBy('khoaHoc.maKH', 'DESC');
+    }
 
     const { entities, raw } = await query.getRawAndEntities();
     return entities.map((course, index) => {
@@ -177,86 +208,139 @@ export class CourseStudentService {
     };
   }
 
-  async getCourseRecommendations(courseIds: number | number[], userId?: string) {
-    const sourceCourseIds = Array.from(
-      new Set(
-        (Array.isArray(courseIds) ? courseIds : [courseIds]).filter(
-          (id) => id > 0,
-        ),
-      ),
-    );
-
-    if (sourceCourseIds.length === 0) {
+  async getCourseRecommendations(
+    courseIdParam: number | number[],
+    userId?: string,
+  ) {
+    // ─── Chuẩn hoá đầu vào ───────────────────────────────────────────────────
+    const courseIds = Array.isArray(courseIdParam)
+      ? courseIdParam
+      : [courseIdParam];
+    if (courseIds.length === 0) {
       return { recommendations: [], crossSellVoucher: null };
     }
 
-    let recommendations: any[];
+    const TOTAL_LIMIT = 4; // Tổng số gợi ý muốn trả về (khớp với UI 4 card)
 
-    if (sourceCourseIds.length === 1) {
-      const courseId = sourceCourseIds[0];
-      let excludeCondition = `k.MaKH != ?`;
-      const params: any[] = [courseId];
+    // ─── Build điều kiện loại trừ (khóa học trong giỏ + đã đăng ký) ─────────
+    const excludePlaceholders = courseIds.map(() => '?').join(',');
+    const excludeParams: any[] = [...courseIds];
 
-      if (userId) {
-        const parsedUserId = Number.parseInt(userId, 10);
-        if (!Number.isNaN(parsedUserId)) {
-          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-          params.push(parsedUserId);
-        }
+    let enrolledExclude = '';
+    if (userId) {
+      const parsedUserId = Number.parseInt(userId, 10);
+      if (!Number.isNaN(parsedUserId)) {
+        enrolledExclude = ` AND k.MaKH NOT IN (
+          SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE'
+        )`;
+        excludeParams.push(parsedUserId);
       }
-
-      const courseInfo = await this.dataSource.query(
-        `SELECT MaDM FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
-        [courseId],
-      );
-      const maDM = courseInfo[0]?.MaDM || 0;
-
-      recommendations = await this.dataSource.query(
-        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
-                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
-                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
-         FROM KhoaHoc k
-         WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-         ORDER BY (k.MaDM = ?) DESC, RAND() LIMIT 4`,
-        [...params, maDM],
-      );
-    } else {
-      const placeholders = sourceCourseIds.map(() => '?').join(', ');
-      let excludeCondition = `k.MaKH NOT IN (${placeholders})`;
-      const params: any[] = [...sourceCourseIds];
-
-      if (userId) {
-        const parsedUserId = Number.parseInt(userId, 10);
-        if (!Number.isNaN(parsedUserId)) {
-          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-          params.push(parsedUserId);
-        }
-      }
-
-      // Chỉ lấy khóa học thuộc danh mục xuất hiện trong toàn bộ khóa học đã mua.
-      recommendations = await this.dataSource.query(
-        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
-                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
-                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
-         FROM KhoaHoc k
-         WHERE ${excludeCondition}
-           AND k.TrangThai = 'PUBLISHED'
-           AND k.MaDM IN (
-             SELECT source.MaDM
-             FROM KhoaHoc source
-             WHERE source.MaKH IN (${placeholders})
-             GROUP BY source.MaDM
-             HAVING COUNT(DISTINCT source.MaKH) = ?
-           )
-         ORDER BY RAND() LIMIT 4`,
-        [...params, ...sourceCourseIds, sourceCourseIds.length],
-      );
     }
 
-    const vouchers = await this.dataSource.query(
+    // ─── BƯỚC 1: Lấy danh mục duy nhất từ khóa học vừa mua ──────────────────
+    const categoryInfo: { MaDM: number }[] = await this.dataSource.query(
+      `SELECT DISTINCT MaDM FROM KhoaHoc WHERE MaKH IN (${excludePlaceholders})`,
+      courseIds,
+    );
+    const distinctMaDMs: number[] = categoryInfo
+      .map((r) => Number(r.MaDM))
+      .filter((id) => id > 0);
+
+    // ─── BƯỚC 1b: Lấy ứng viên theo từng danh mục trong 1 truy vấn duy nhất ─
+    // Mỗi danh mục lấy tối đa `TOTAL_LIMIT` ứng viên để có đủ xoay vòng.
+    // Dùng biến @rank để mô phỏng ROW_NUMBER tương thích MySQL 5.x/8.x.
+    const categoryRecommendations: any[] = [];
+
+    if (distinctMaDMs.length > 0) {
+      const catPlaceholders = distinctMaDMs.map(() => '?').join(',');
+      // Lấy top N khóa học của TẤT CẢ danh mục liên quan, gom vào 1 query
+      const candidateRows: any[] = await this.dataSource.query(
+        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
+                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH) as averageRating,
+                (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
+         FROM KhoaHoc k
+         WHERE k.MaKH NOT IN (${excludePlaceholders})${enrolledExclude}
+           AND k.TrangThai = 'PUBLISHED'
+           AND k.MaDM IN (${catPlaceholders})
+         ORDER BY k.MaDM ASC, soNguoiHoc DESC`,
+        [...excludeParams, ...distinctMaDMs],
+      );
+
+      // Group theo danh mục (không tốn thêm query)
+      const buckets = new Map<number, any[]>();
+      for (const row of candidateRows) {
+        const maDM = Number(row.maDM);
+        if (!buckets.has(maDM)) buckets.set(maDM, []);
+        buckets.get(maDM)!.push(row);
+      }
+
+      // Interleave: lần lượt lấy 1 khóa học từ mỗi bucket cho đến khi đủ N
+      const orderedBuckets = distinctMaDMs.map((id) => buckets.get(id) ?? []);
+      let pointer = 0;
+      while (categoryRecommendations.length < TOTAL_LIMIT) {
+        let pickedAny = false;
+        for (const bucket of orderedBuckets) {
+          if (bucket.length > pointer) {
+            categoryRecommendations.push(bucket[pointer]);
+            if (categoryRecommendations.length >= TOTAL_LIMIT) break;
+            pickedAny = true;
+          }
+        }
+        pointer++;
+        if (!pickedAny) break; // Tất cả bucket đã cạn
+      }
+    }
+
+    console.log(
+      `[Recommendations] courseIds=${JSON.stringify(courseIds)} | distinctMaDMs=${JSON.stringify(distinctMaDMs)} | categoryResults=${categoryRecommendations.length}`,
+    );
+
+    // ─── BƯỚC 2: Fallback – lấp đầy khoảng còn thiếu bằng Khóa học Nổi bật ──
+    // Ưu tiên cùng danh mục (Bước 1). Nếu chưa đủ TOTAL_LIMIT (do DB ít khoá),
+    // tự động bổ sung thêm popular courses cho đủ slot hiển thị.
+    const remaining = TOTAL_LIMIT - categoryRecommendations.length;
+    let finalRecommendations = [...categoryRecommendations];
+
+    if (remaining > 0) {
+      const alreadyPickedIds = [
+        ...courseIds,
+        ...categoryRecommendations.map((r) => r.maKH),
+      ];
+      const fallbackExcludePlaceholders = alreadyPickedIds
+        .map(() => '?')
+        .join(',');
+      const fallbackEnrolledExclude = enrolledExclude; // Cùng điều kiện đã đăng ký
+
+      // Bỏ userId params đã push trước đó, build lại cho fallback
+      const fallbackParams: any[] = [...alreadyPickedIds];
+      if (userId) {
+        const parsedUserId = Number.parseInt(userId, 10);
+        if (!Number.isNaN(parsedUserId)) fallbackParams.push(parsedUserId);
+      }
+
+      const fallbackRows: any[] = await this.dataSource.query(
+        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
+                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH) as averageRating,
+                (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
+         FROM KhoaHoc k
+         WHERE k.MaKH NOT IN (${fallbackExcludePlaceholders})${fallbackEnrolledExclude}
+           AND k.TrangThai = 'PUBLISHED'
+         ORDER BY soNguoiHoc DESC
+         LIMIT ?`,
+        [...fallbackParams, remaining],
+      );
+
+      finalRecommendations = [...finalRecommendations, ...fallbackRows];
+    }
+
+    // ─── Cross-sell voucher ───────────────────────────────────────────────────
+    const vouchers: any[] = await this.dataSource.query(
       `SELECT MaCode as code, GiaTriGiam as discount, LoaiGiam as discountType
-       FROM MaGiamGia 
-       WHERE LoaiKM = 'CROSS_SELL' AND TrangThai = 'ACTIVE' AND (NgayKetThuc IS NULL OR NgayKetThuc > NOW())
+       FROM MaGiamGia
+       WHERE LoaiKM = 'CROSS_SELL' AND TrangThai = 'ACTIVE'
+         AND (NgayKetThuc IS NULL OR NgayKetThuc > NOW())
        LIMIT 1`,
     );
 
@@ -270,12 +354,17 @@ export class CourseStudentService {
         : null;
 
     return {
-      recommendations: recommendations.map((r: any) => ({
-        ...r,
+      recommendations: finalRecommendations.map((r: any) => ({
+        maKH: Number(r.maKH),
+        tenKhoaHoc: r.tenKhoaHoc,
+        moTa: r.moTa,
         giaBan: Number(r.giaBan),
+        hinhAnh: r.hinhAnh,
+        maDM: Number(r.maDM),
         averageRating: r.averageRating
           ? Number(r.averageRating).toFixed(1)
           : '0.0',
+        soNguoiHoc: Number(r.soNguoiHoc ?? 0),
       })),
       crossSellVoucher,
     };

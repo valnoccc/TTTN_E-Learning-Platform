@@ -52,7 +52,9 @@ describe('CoursesService.updateCourseStatus', () => {
       { maBH: 2, tenBaiHoc: 'B?i 2', aiStatus: 'APPROVED' },
     ]);
 
-    await expect(service.updateCourseStatus(11, 99, 'PENDING')).resolves.toEqual(
+    await expect(
+      service.updateCourseStatus(11, 99, 'PENDING'),
+    ).resolves.toEqual(
       expect.objectContaining({
         id: 11,
         trangThai: 'PUBLISHED',
@@ -83,7 +85,9 @@ describe('CoursesService.updateCourseStatus', () => {
       { maBH: 5, tenBaiHoc: 'B?i 5', aiStatus: 'REJECTED' },
     ]);
 
-    await expect(service.updateCourseStatus(11, 99, 'PENDING')).resolves.toEqual(
+    await expect(
+      service.updateCourseStatus(11, 99, 'PENDING'),
+    ).resolves.toEqual(
       expect.objectContaining({
         id: 11,
         trangThai: 'PENDING',
@@ -109,7 +113,9 @@ describe('CoursesService.updateCourseStatus', () => {
       { maBH: 5, tenBaiHoc: 'B?i 5', aiStatus: 'REJECTED' },
     ]);
 
-    await expect(service.updateCourseStatus(11, 99, 'PENDING')).resolves.toEqual(
+    await expect(
+      service.updateCourseStatus(11, 99, 'PENDING'),
+    ).resolves.toEqual(
       expect.objectContaining({
         id: 11,
         trangThai: 'DRAFT',

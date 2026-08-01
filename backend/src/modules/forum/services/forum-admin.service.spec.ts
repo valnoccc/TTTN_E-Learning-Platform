@@ -21,8 +21,10 @@ describe('ForumAdminService', () => {
 
     dataSource = {
       query: jest.fn(),
-      transaction: jest.fn(async (callback: (transactionManager: typeof manager) => Promise<unknown>) =>
-        callback(manager),
+      transaction: jest.fn(
+        async (
+          callback: (transactionManager: typeof manager) => Promise<unknown>,
+        ) => callback(manager),
       ),
     };
 
@@ -110,9 +112,11 @@ describe('ForumAdminService', () => {
 
   it('deletes a root question after checking existence', async () => {
     dataSource.query.mockResolvedValueOnce([{ MaCH: 7, TieuDe: 'Topic 7' }]);
-    manager.query.mockResolvedValueOnce({ affectedRows: 1 }).mockResolvedValueOnce({
-      affectedRows: 1,
-    });
+    manager.query
+      .mockResolvedValueOnce({ affectedRows: 1 })
+      .mockResolvedValueOnce({
+        affectedRows: 1,
+      });
 
     const result = await service.deleteQuestion(7);
 

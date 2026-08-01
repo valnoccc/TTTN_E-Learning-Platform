@@ -105,6 +105,18 @@ export const Styles = styled.div`
                                 i.fa-youtube {
                                     background-color: #DD1343;
                                 }
+
+                                i.fa-instagram {
+                                    background-color: #C13584;
+                                }
+
+                                i.fa-github {
+                                    background-color: #333333;
+                                }
+
+                                i.la-globe {
+                                    background-color: ${colors.green};
+                                }
                             }
                         }
                     }

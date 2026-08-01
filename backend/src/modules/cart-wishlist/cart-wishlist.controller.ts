@@ -42,19 +42,13 @@ export class CartWishlistController {
 
   /** POST /cart/add — Thêm khóa học vào giỏ */
   @Post('cart/add')
-  addToCart(
-    @Req() req: AuthRequest,
-    @Body('courseId') courseId: number,
-  ) {
+  addToCart(@Req() req: AuthRequest, @Body('courseId') courseId: number) {
     return this.cartService.addToCart(this.getUserId(req), Number(courseId));
   }
 
   /** DELETE /cart/remove/:courseId — Xóa một khóa học khỏi giỏ */
   @Delete('cart/remove/:courseId')
-  removeFromCart(
-    @Req() req: AuthRequest,
-    @Param('courseId') courseId: string,
-  ) {
+  removeFromCart(@Req() req: AuthRequest, @Param('courseId') courseId: string) {
     return this.cartService.removeFromCart(
       this.getUserId(req),
       Number(courseId),
@@ -72,10 +66,7 @@ export class CartWishlistController {
    * Body: { courseIds: number[] }
    */
   @Post('cart/sync')
-  syncCart(
-    @Req() req: AuthRequest,
-    @Body('courseIds') courseIds: number[],
-  ) {
+  syncCart(@Req() req: AuthRequest, @Body('courseIds') courseIds: number[]) {
     return this.cartService.syncCartFromClient(this.getUserId(req), courseIds);
   }
 
@@ -89,10 +80,7 @@ export class CartWishlistController {
 
   /** POST /wishlist/toggle — Toggle một khóa học trong wishlist */
   @Post('wishlist/toggle')
-  toggleWishlist(
-    @Req() req: AuthRequest,
-    @Body('courseId') courseId: number,
-  ) {
+  toggleWishlist(@Req() req: AuthRequest, @Body('courseId') courseId: number) {
     return this.wishlistService.toggleWishlist(
       this.getUserId(req),
       Number(courseId),

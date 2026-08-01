@@ -58,8 +58,10 @@ describe('LessonVideoStorageService', () => {
         }
         if (key === 'GCS_PRIVATE_KEY_JSON') {
           return JSON.stringify({
-            client_email: 'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
-            private_key: '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
+            client_email:
+              'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
+            private_key:
+              '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
           });
         }
         if (key === 'GOOGLE_APPLICATION_CREDENTIALS') {
@@ -123,8 +125,10 @@ describe('LessonVideoStorageService', () => {
     writeFileSync(
       tempKeyFilePath,
       JSON.stringify({
-        client_email: 'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
-        private_key: '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
+        client_email:
+          'nestjs-storage-admin@video-intelligence-app-500806.iam.gserviceaccount.com',
+        private_key:
+          '-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n',
       }),
     );
 
@@ -147,7 +151,10 @@ describe('LessonVideoStorageService', () => {
     };
 
     expect(
-      new LessonVideoStorageService(configService as ConfigService, dataSource as never),
+      new LessonVideoStorageService(
+        configService as ConfigService,
+        dataSource as never,
+      ),
     ).toBeInstanceOf(LessonVideoStorageService);
   });
 });

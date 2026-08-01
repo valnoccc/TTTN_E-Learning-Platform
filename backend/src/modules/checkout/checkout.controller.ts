@@ -13,7 +13,11 @@
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CheckoutService } from './checkout.service';
-import type { PaymentRequest, MomoOrderData } from './checkout.service';
+import type {
+  PaymentRequest,
+  MomoOrderData,
+  VnpayOrderData,
+} from './checkout.service';
 
 @Controller('checkout')
 export class CheckoutController {
@@ -40,9 +44,10 @@ export class CheckoutController {
 
   // â”€â”€â”€ IPN Webhook tá»« MoMo (PUBLIC - KhÃ´ng dÃ¹ng JwtAuthGuard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('momo-ipn')
-  @HttpCode(HttpStatus.OK)
+  // MoMo requires HTTP 204 to acknowledge the IPN webhook.
+  @HttpCode(HttpStatus.NO_CONTENT)
   async handleMomoIPN(@Body() body: any, @Req() req: any) {
-    return this.checkoutService.handleMomoIPN(body);
+    await this.checkoutService.handleMomoIPN(body);
   }
 
   // â”€â”€â”€ Browser return tá»« MoMo: xÃ¡c thá»±c chá»¯ kÃ½ rá»“i Ä‘á»“ng bá»™ tráº¡ng thÃ¡i â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -51,6 +56,26 @@ export class CheckoutController {
   async handleMomoReturn(@Body() body: any, @Request() req) {
     const userId = req.user.sub || req.user.maND;
     return this.checkoutService.handleMomoReturn(body, userId);
+  }
+
+  // Tạo URL thanh toán VNPAY Sandbox. Không đánh dấu hóa đơn PAID ở bước này.
+  @Post('vnpay/create')
+  @UseGuards(JwtAuthGuard)
+  async createVnpayPayment(@Body() payload: VnpayOrderData, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.createVnpayPayment(userId, payload);
+  }
+
+  // IPN do VNPAY gọi server-to-server, không gắn JwtAuthGuard.
+  @Get('vnpay-ipn')
+  async handleVnpayIpn(@Query() query: Record<string, any>) {
+    console.log('[VNPAY IPN]', {
+      txnRef: query.vnp_TxnRef,
+      responseCode: query.vnp_ResponseCode,
+      transactionStatus: query.vnp_TransactionStatus,
+      amount: query.vnp_Amount,
+    });
+    return this.checkoutService.handleVnpayIpn(query);
   }
 
   // â”€â”€â”€ Thanh toÃ¡n thá»§ cÃ´ng (BANK / VNPAY / PAYPAL) (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

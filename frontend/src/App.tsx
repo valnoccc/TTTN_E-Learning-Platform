@@ -54,6 +54,7 @@ function AnimatedRoutes() {
         {/* ⚠️ QUAN TRỌNG: /checkout/success phải ĐẶT TRƯỚC /checkout/:courseId */}
         {/* Nếu đặt sau, React Router sẽ match "success" vào tham số :courseId => NaN */}
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/checkout/vnpay-return" element={<CheckoutSuccess />} />
         <Route path="/checkout/:courseId" element={<Checkout />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

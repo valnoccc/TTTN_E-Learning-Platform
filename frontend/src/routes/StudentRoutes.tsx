@@ -31,6 +31,7 @@ export default function StudentRoutes() {
       <Route path="cart" element={<Cart />} />
       <Route path="wishlist" element={<Wishlist />} />
       <Route path="checkout/success" element={<CheckoutSuccess />} />
+      <Route path="checkout/vnpay-return" element={<CheckoutSuccess />} />
       <Route path="*" element={<Navigate to="/student" replace />} />
     </Routes>
   );

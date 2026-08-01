@@ -311,7 +311,9 @@ export class CoursesService implements OnModuleInit {
       }
 
       const normalizeStatus = (value: string | null | undefined) =>
-        String(value ?? '').trim().toUpperCase();
+        String(value ?? '')
+          .trim()
+          .toUpperCase();
 
       // Chặn khi có video đang chờ AI xử lý
       const pendingLessons = lessons.filter((lesson) =>
@@ -320,9 +322,11 @@ export class CoursesService implements OnModuleInit {
       if (pendingLessons.length > 0) {
         const details = pendingLessons
           .map((lesson) => {
-            const lessonTitle = lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
+            const lessonTitle =
+              lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
             const status = lesson.aiStatus || 'CHƯA KIỂM DUYỆT';
-            const reason = lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
+            const reason =
+              lesson.aiRejectReason || 'Đang chờ AI xử lý hoặc cần xem xét lại';
             return `- ${lessonTitle}: ${status} - ${reason}`;
           })
           .join('\n');
@@ -418,7 +422,8 @@ export class CoursesService implements OnModuleInit {
     reviewRatio: number;
     flaggedLessons: CourseLessonRow[];
   }) {
-    const { instructorId, courseName, reviewRatio, flaggedLessons, courseId } = input;
+    const { instructorId, courseName, reviewRatio, flaggedLessons, courseId } =
+      input;
     const safeCourseName = courseName?.trim() || `KhÃ³a há»c #${courseId}`;
     const lessonSummary = flaggedLessons
       .slice(0, 5)
@@ -441,14 +446,19 @@ export class CoursesService implements OnModuleInit {
             reviewRatio * 100,
           )}% vÃ  vÆ°á»£t ngÆ°á»¡ng cho phÃ©p.`,
           'Vui lÃ²ng Äiá»u chá»nh láº¡i ná»i dung khÃ³a há»c cho phÃ¹ há»£p trÆ°á»c khi gá»­i duyá»t láº¡i.',
-          lessonSummary ? `CÃ¡c bÃ i há»c cáº§n xem láº¡i:\n${lessonSummary}` : null,
+          lessonSummary
+            ? `CÃ¡c bÃ i há»c cáº§n xem láº¡i:\n${lessonSummary}`
+            : null,
         ]
           .filter(Boolean)
           .join('\n\n'),
         daDoc: false,
       });
     } catch (error) {
-      console.error('KhÃ´ng thá» gá»­i thÃ´ng bÃ¡o tá»± Äá»ng tá»« chá»i khÃ³a há»c:', error);
+      console.error(
+        'KhÃ´ng thá» gá»­i thÃ´ng bÃ¡o tá»± Äá»ng tá»« chá»i khÃ³a há»c:',
+        error,
+      );
     }
   }
 
@@ -472,7 +482,10 @@ export class CoursesService implements OnModuleInit {
         daDoc: false,
       });
     } catch (error) {
-      console.error('Kh??ng th??? g???i th??ng b??o t??? duy???t kh??a h???c:', error);
+      console.error(
+        'Kh??ng th??? g???i th??ng b??o t??? duy???t kh??a h???c:',
+        error,
+      );
     }
   }
 
@@ -616,4 +629,3 @@ export class CoursesService implements OnModuleInit {
       : 0;
   }
 }
-

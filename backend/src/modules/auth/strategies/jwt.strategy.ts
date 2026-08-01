@@ -33,7 +33,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Tài khoản không tồn tại!');
     }
 
-    const trangThai = String(rows[0].TrangThai ?? '').trim().toUpperCase();
+    const trangThai = String(rows[0].TrangThai ?? '')
+      .trim()
+      .toUpperCase();
 
     if (BLOCKED_STATUSES.has(trangThai)) {
       throw new UnauthorizedException(BLOCKED_ACCOUNT_MESSAGE);

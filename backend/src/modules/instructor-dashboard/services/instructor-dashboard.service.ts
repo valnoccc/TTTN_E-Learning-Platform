@@ -200,7 +200,9 @@ export class InstructorDashboardService {
       const monthEntry = monthMap.get(monthLabel)!;
       const purchases = this.toNumber(row.purchases);
       const grossRevenue = this.toNumber(row.grossRevenue);
-      const instructorRevenue = Number((grossRevenue * INSTRUCTOR_REVENUE_SHARE).toFixed(0));
+      const instructorRevenue = Number(
+        (grossRevenue * INSTRUCTOR_REVENUE_SHARE).toFixed(0),
+      );
       monthEntry.totalPurchases += purchases;
       monthEntry.totalGrossRevenue += grossRevenue;
       monthEntry.rows.push({

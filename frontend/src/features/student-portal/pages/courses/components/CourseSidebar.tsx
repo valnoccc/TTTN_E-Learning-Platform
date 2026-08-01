@@ -5,6 +5,8 @@ import CoursePrice from './CoursePrice';
 import PopularCourse from './PopularCourse';
 import CourseTag from './CourseTag';
 import CourseCategory from './CourseCategory';
+import CourseRating from './CourseRating';
+import CourseSort from './CourseSort';
 
 const CourseSidebar = ({ filters, setFilters }: { filters: any, setFilters: any }) => {
     return (
@@ -18,6 +20,12 @@ const CourseSidebar = ({ filters, setFilters }: { filters: any, setFilters: any 
                 </Col>
                 <Col md="12">
                     <CoursePrice filters={filters} setFilters={setFilters} />
+                </Col>
+                <Col md="12">
+                    <CourseRating filters={filters} setFilters={setFilters} />
+                </Col>
+                <Col md="12">
+                    <CourseSort filters={filters} setFilters={setFilters} />
                 </Col>
                 <Col md="12">
                     <PopularCourse />
