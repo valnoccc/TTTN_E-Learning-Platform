@@ -177,3 +177,57 @@ export const syncMomoReturn = async (
     throw error;
   }
 };
+
+// ─── VNPay ────────────────────────────────────────────────────────────────────
+
+export interface VnpayPaymentRequest {
+  courseIds: number[];
+  couponCode?: string;
+  customerDetails: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface VnpayPaymentResponse {
+  success: boolean;
+  payUrl: string;
+  invoiceId: number;
+  txnRef: string;
+}
+
+export interface VnpayReturnResponse {
+  success: boolean;
+  invoiceId: number;
+  responseCode: string;
+  bankCode?: string;
+  transactionNo?: string;
+  amount?: number;
+  message: string;
+  userId?: number;
+  courseIds?: number[];
+}
+
+export const createVnpayPayment = async (
+  data: VnpayPaymentRequest,
+): Promise<VnpayPaymentResponse> => {
+  try {
+    const response: any = await axiosClient.post('/checkout/vnpay/create-payment', data);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const syncVnpayReturn = async (
+  queryParams: Record<string, string>,
+): Promise<VnpayReturnResponse> => {
+  try {
+    const qs = new URLSearchParams(queryParams).toString();
+    const response: any = await axiosClient.get(`/checkout/vnpay/return?${qs}`);
+    return response?.data ?? response;
+  } catch (error) {
+    throw error;
+  }
+};

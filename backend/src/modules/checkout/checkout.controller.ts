@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Post,
@@ -13,7 +13,7 @@
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CheckoutService } from './checkout.service';
-import type { PaymentRequest, MomoOrderData } from './checkout.service';
+import type { PaymentRequest, MomoOrderData, VnpayOrderData } from './checkout.service';
 
 @Controller('checkout')
 export class CheckoutController {
@@ -53,7 +53,29 @@ export class CheckoutController {
     return this.checkoutService.handleMomoReturn(body, userId);
   }
 
-  // â”€â”€â”€ Thanh toÃ¡n thá»§ cÃ´ng (BANK / VNPAY / PAYPAL) (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ———  // ─── Tạo thanh toán VNPay (Cần đăng nhập) ──────────────────────────
+  @Post('vnpay/create-payment')
+  @UseGuards(JwtAuthGuard)
+  async createVnpayPayment(@Body() payload: VnpayOrderData, @Request() req) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.createVnpayPayment(userId, payload);
+  }
+
+  // ─── VNPay Return URL (PUBLIC - VNPay redirect về sau khi thanh toán) ─────────
+  @Get('vnpay/return')
+  @HttpCode(HttpStatus.OK)
+  async handleVnpayReturn(@Query() query: Record<string, string>) {
+    return this.checkoutService.handleVnpayReturn(query);
+  }
+
+  // ─── VNPay IPN Webhook ngầm (PUBLIC) ──────────────────────────────────
+  @Get('vnpay-ipn')
+  @HttpCode(HttpStatus.OK)
+  async handleVnpayIPN(@Query() query: Record<string, string>) {
+    return this.checkoutService.handleVnpayIPN(query);
+  }
+
+  // ——— Thanh toán thủ công (BANK / VNPAY / PAYPAL) (Cần đăng nhập) —————————————————
   @Post('process-payment')
   @UseGuards(JwtAuthGuard)
   async processPayment(@Body() payload: PaymentRequest, @Request() req) {
