@@ -19,6 +19,7 @@ import {
 import { removeFromCart } from '../../../cart/cartSlice';
 import { CouponModal } from '../../components/checkout/CouponModal';
 import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
+import CourseRecommendations from './CourseRecommendations';
 
 const BANKS = [
   { id: 'vcb', name: 'Vietcombank', logo: '/assets/images/banks/VCB.png' },
@@ -236,7 +237,6 @@ export default function Checkout() {
           setSuccessData({ invoiceId: res.invoiceId });
           window.scrollTo(0, 0);
           toast.success('Đăng ký khóa học miễn phí thành công!');
-          setTimeout(() => navigate('/student/profile'), 3000);
         }
         return;
       }
@@ -278,9 +278,6 @@ export default function Checkout() {
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
         toast.success('Thanh toán thành công!');
-        setTimeout(() => {
-          navigate('/student/profile');
-        }, 3000);
       }
     } catch (error: any) {
       toast.dismiss('momo-loading');
@@ -326,9 +323,18 @@ export default function Checkout() {
               <p>
                 Phương thức thanh toán: <strong>{paymentMethod}</strong>
               </p>
-              <p className="text-muted mt-4">
-                Chuyển hướng đến khóa học của bạn trong 3 giây...
-              </p>
+              {courses.length > 0 && (
+                <CourseRecommendations
+                  courseIds={courses.map((course) => Number(course.id))}
+                />
+              )}
+              <button
+                type="button"
+                className="btn btn-primary mt-4"
+                onClick={() => navigate('/student/profile')}
+              >
+                Đến khóa học của tôi
+              </button>
             </div>
           </Container>
         </div>

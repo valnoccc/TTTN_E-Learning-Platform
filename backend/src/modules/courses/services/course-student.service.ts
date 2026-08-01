@@ -177,33 +177,81 @@ export class CourseStudentService {
     };
   }
 
-  async getCourseRecommendations(courseId: number, userId?: string) {
-    let excludeCondition = `k.MaKH != ?`;
-    const params: any[] = [courseId];
+  async getCourseRecommendations(courseIds: number | number[], userId?: string) {
+    const sourceCourseIds = Array.from(
+      new Set(
+        (Array.isArray(courseIds) ? courseIds : [courseIds]).filter(
+          (id) => id > 0,
+        ),
+      ),
+    );
 
-    if (userId) {
-      const parsedUserId = Number.parseInt(userId, 10);
-      if (!Number.isNaN(parsedUserId)) {
-        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-        params.push(parsedUserId);
-      }
+    if (sourceCourseIds.length === 0) {
+      return { recommendations: [], crossSellVoucher: null };
     }
 
-    const courseInfo = await this.dataSource.query(
-      `SELECT MaDM FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
-      [courseId],
-    );
-    const maDM = courseInfo[0]?.MaDM || 0;
+    let recommendations: any[];
 
-    const recommendations = await this.dataSource.query(
-      `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
-              k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
-              (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
-       FROM KhoaHoc k
-       WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-       ORDER BY (k.MaDM = ?) DESC, RAND() LIMIT 4`,
-      [...params, maDM],
-    );
+    if (sourceCourseIds.length === 1) {
+      const courseId = sourceCourseIds[0];
+      let excludeCondition = `k.MaKH != ?`;
+      const params: any[] = [courseId];
+
+      if (userId) {
+        const parsedUserId = Number.parseInt(userId, 10);
+        if (!Number.isNaN(parsedUserId)) {
+          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+          params.push(parsedUserId);
+        }
+      }
+
+      const courseInfo = await this.dataSource.query(
+        `SELECT MaDM FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
+        [courseId],
+      );
+      const maDM = courseInfo[0]?.MaDM || 0;
+
+      recommendations = await this.dataSource.query(
+        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa, 
+                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
+         FROM KhoaHoc k
+         WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
+         ORDER BY (k.MaDM = ?) DESC, RAND() LIMIT 4`,
+        [...params, maDM],
+      );
+    } else {
+      const placeholders = sourceCourseIds.map(() => '?').join(', ');
+      let excludeCondition = `k.MaKH NOT IN (${placeholders})`;
+      const params: any[] = [...sourceCourseIds];
+
+      if (userId) {
+        const parsedUserId = Number.parseInt(userId, 10);
+        if (!Number.isNaN(parsedUserId)) {
+          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
+          params.push(parsedUserId);
+        }
+      }
+
+      // Chỉ lấy khóa học thuộc danh mục xuất hiện trong toàn bộ khóa học đã mua.
+      recommendations = await this.dataSource.query(
+        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
+                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc WHERE MaKH = k.MaKH) as averageRating
+         FROM KhoaHoc k
+         WHERE ${excludeCondition}
+           AND k.TrangThai = 'PUBLISHED'
+           AND k.MaDM IN (
+             SELECT source.MaDM
+             FROM KhoaHoc source
+             WHERE source.MaKH IN (${placeholders})
+             GROUP BY source.MaDM
+             HAVING COUNT(DISTINCT source.MaKH) = ?
+           )
+         ORDER BY RAND() LIMIT 4`,
+        [...params, ...sourceCourseIds, sourceCourseIds.length],
+      );
+    }
 
     const vouchers = await this.dataSource.query(
       `SELECT MaCode as code, GiaTriGiam as discount, LoaiGiam as discountType

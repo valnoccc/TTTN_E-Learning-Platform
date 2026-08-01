@@ -36,9 +36,18 @@ export class PublicCoursesController {
   async getRecommendations(
     @Param('id', ParseIntPipe) courseId: number,
     @Query('userId') userId?: string,
+    @Query('courseIds') courseIds?: string,
   ) {
+    const requestedCourseIds = (courseIds ?? '')
+      .split(',')
+      .map((value) => Number.parseInt(value.trim(), 10))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const recommendationCourseIds = Array.from(
+      new Set([courseId, ...requestedCourseIds]),
+    );
+
     const data = await this.courseStudentService.getCourseRecommendations(
-      courseId,
+      recommendationCourseIds,
       userId,
     );
 

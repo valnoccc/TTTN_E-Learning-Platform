@@ -23,18 +23,32 @@ interface RecommendationsData {
   crossSellVoucher: CrossSellVoucher | null;
 }
 
-export default function CourseRecommendations({ courseId, userId }: { courseId: number, userId?: number }) {
+export default function CourseRecommendations({
+  courseIds,
+  userId,
+}: {
+  courseIds: number[];
+  userId?: number;
+}) {
   const [data, setData] = useState<RecommendationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const courseIdsKey = courseIds.join(',');
 
   useEffect(() => {
-    if (!courseId) return;
+    const normalizedCourseIds = Array.from(
+      new Set(courseIds.filter((courseId) => Number.isFinite(courseId) && courseId > 0)),
+    );
+    if (normalizedCourseIds.length === 0) return;
+
     const fetchRecommendations = async () => {
       try {
-        const url = userId 
-          ? `/public/courses/${courseId}/recommendations?userId=${userId}` 
-          : `/public/courses/${courseId}/recommendations`;
+        const params = new URLSearchParams({
+          courseIds: normalizedCourseIds.join(','),
+        });
+        if (userId) params.set('userId', String(userId));
+
+        const url = `/public/courses/${normalizedCourseIds[0]}/recommendations?${params.toString()}`;
         
         const response: any = await axiosClient.get(url);
         if (response && response.recommendations) {
@@ -70,7 +84,7 @@ export default function CourseRecommendations({ courseId, userId }: { courseId: 
       }
     };
     fetchRecommendations();
-  }, [courseId, userId]);
+  }, [courseIdsKey, userId]);
 
   if (loading) {
     return (

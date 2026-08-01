@@ -287,9 +287,9 @@ export default function CheckoutSuccess() {
             </div>
           </section>
 
-          {parsedCourseId && (
+          {parsedCourseIds.length > 0 && (
             <CourseRecommendations
-              courseId={parsedCourseId}
+              courseIds={parsedCourseIds}
               userId={parsedUserId || undefined}
             />
           )}
