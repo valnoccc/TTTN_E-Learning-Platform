@@ -65,6 +65,10 @@ export class AuthService {
     };
   }
 
+  createAuthResponseForUser(user: User) {
+    return this.buildAuthResponse(user);
+  }
+
   async googleLogin(token: string) {
     let googleUser: { email: string; name: string; picture: string };
     try {

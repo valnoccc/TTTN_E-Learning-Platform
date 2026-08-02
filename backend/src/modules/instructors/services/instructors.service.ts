@@ -6,14 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import {
-  ADMIN_REVENUE_SHARE,
-  INSTRUCTOR_REVENUE_SHARE,
-} from '../../../common/constants/revenue-share';
+import { getRevenueShareConfig } from '../../../config/revenue-share.config';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
 import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
+import { InstructorProfileDetailsService } from './instructor-profile-details.service';
 
 export interface InstructorPrincipal {
   maND?: number;
@@ -306,6 +304,7 @@ export class InstructorsService {
     @InjectRepository(HoSoGiangVien)
     private readonly hoSoRepo: Repository<HoSoGiangVien>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly profileDetailsService: InstructorProfileDetailsService,
   ) {}
 
   async updateProfile(
@@ -363,12 +362,22 @@ export class InstructorsService {
     if (dto.TieuSu !== undefined) profile.TieuSu = dto.TieuSu;
     if (dto.ChuyenMon !== undefined) profile.ChuyenMon = dto.ChuyenMon;
     if (dto.SoTaiKhoan !== undefined) profile.SoTaiKhoan = dto.SoTaiKhoan;
+    if (dto.MaNganHang !== undefined) profile.MaNganHang = dto.MaNganHang;
+    if (dto.TenNganHang !== undefined) profile.TenNganHang = dto.TenNganHang;
+    if (dto.TenChuTaiKhoan !== undefined) profile.TenChuTaiKhoan = dto.TenChuTaiKhoan;
     if (dto.FacebookURL !== undefined) profile.FacebookURL = dto.FacebookURL;
     if (dto.InstagramURL !== undefined) profile.InstagramURL = dto.InstagramURL;
     if (dto.GitHubURL !== undefined) profile.GitHubURL = dto.GitHubURL;
     if (dto.WebsiteURL !== undefined) profile.WebsiteURL = dto.WebsiteURL;
 
     await this.hoSoRepo.save(profile);
+
+    if (dto.BangCaps !== undefined || dto.KinhNghiems !== undefined) {
+      await this.profileDetailsService.replaceDetails(profile.MaHoSo, {
+        qualifications: dto.BangCaps,
+        experiences: dto.KinhNghiems,
+      });
+    }
 
     return {
       message: 'Cap nhat tron bo ho so thanh cong',
@@ -465,6 +474,7 @@ export class InstructorsService {
     instructorId: number,
     filters: InstructorStudentFilters,
   ) {
+    const { instructorShare } = getRevenueShareConfig();
     let sql = `
         SELECT 
             dk.MaND AS studentId,
@@ -472,7 +482,7 @@ export class InstructorsService {
             nd.Email AS studentEmail,
             dk.MaKH AS courseId,
             kh.TenKhoaHoc AS courseName,
-            COALESCE(cthd.DoanhThuGiangVien, kh.GiaBan * ${INSTRUCTOR_REVENUE_SHARE}) AS coursePrice,
+            COALESCE(cthd.DoanhThuGiangVien, kh.GiaBan * ${instructorShare}) AS coursePrice,
             dk.NgayDangKy AS purchasedAt
         FROM DangKyKhoaHoc dk
         JOIN NguoiDung nd ON dk.MaND = nd.MaND
@@ -527,11 +537,14 @@ export class InstructorsService {
     const profile = await this.hoSoRepo.findOne({
       where: { MaND: instructorId },
     });
+    const details = profile ? await this.profileDetailsService.getDetails(profile.MaHoSo) : { qualifications: [], experiences: [] };
 
     return {
       hoTen: user.hoTen,
       anhDaiDien: user.anhDaiDien,
       ...profile,
+      bangCaps: details.qualifications,
+      kinhNghiems: details.experiences,
     };
   }
 
@@ -569,6 +582,7 @@ export class InstructorsService {
     }
 
     const profile = await this.hoSoRepo.findOne({ where: { MaND: id } });
+    const details = profile ? await this.profileDetailsService.getDetails(profile.MaHoSo) : { qualifications: [], experiences: [] };
 
     const courses = await this.dataSource.query(
       `
@@ -624,6 +638,8 @@ export class InstructorsService {
       email: user.email,
       phone: '',
       bio: profile?.TieuSu || 'Giang vien chua cap nhat tieu su.',
+      qualifications: details.qualifications,
+      experiences: details.experiences,
       socialLinks: {
         facebook: profile?.FacebookURL || '',
         instagram: profile?.InstagramURL || '',

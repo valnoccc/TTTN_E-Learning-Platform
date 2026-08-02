@@ -41,6 +41,14 @@ class HeaderTwo extends Component {
                                                 </Dropdown.Menu>
                                             </Dropdown>
                                         </li>
+                                        <li className="list-inline-item">
+                                            <Link
+                                                to="/instructor-registration"
+                                                style={{ color: '#20a64a', fontWeight: 500, whiteSpace: 'nowrap', marginLeft: '10px' }}
+                                            >
+                                                <i className="las la-chalkboard-teacher"></i> Đăng ký giảng viên
+                                            </Link>
+                                        </li>
                                     </ul>
                                     <ul className="list-unstyled list-inline bar-social">
                                         <li className="list-inline-item"><a href={"/"}><i className="fab fa-facebook-f"></i></a></li>

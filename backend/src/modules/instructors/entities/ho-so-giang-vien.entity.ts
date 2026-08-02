@@ -26,6 +26,15 @@ export class HoSoGiangVien {
   @Column({ type: 'varchar', length: 50, nullable: true })
   SoTaiKhoan!: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  MaNganHang!: string;
+
+  @Column({ type: 'nvarchar', length: 150, nullable: true })
+  TenNganHang!: string;
+
+  @Column({ type: 'nvarchar', length: 150, nullable: true })
+  TenChuTaiKhoan!: string;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   FacebookURL!: string;
 

@@ -27,11 +27,17 @@ describe('InstructorsService', () => {
     uploadFile: jest.fn(),
   } as unknown as CloudinaryService;
 
+  const profileDetailsService = {
+    replaceDetails: jest.fn(),
+    getDetails: jest.fn().mockResolvedValue({ qualifications: [], experiences: [] }),
+  };
+
   const service = new InstructorsService(
     dataSource as never,
     userRepo as never,
     hoSoRepo as never,
     cloudinaryService,
+    profileDetailsService as never,
   );
 
   beforeEach(() => {

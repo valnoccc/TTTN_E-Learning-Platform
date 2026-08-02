@@ -29,6 +29,7 @@ import ForumHome from "./features/forum/pages/ForumHome";
 import ForumDetail from "./features/forum/pages/ForumDetail";
 import ForumAsk from "./features/forum/pages/ForumAsk";
 import CertificateView from "./features/student-portal/pages/courses/CertificateView";
+import InstructorApplicationPage from "./pages/instructor/InstructorApplicationPage";
 
 import StudentLayout from "./features/student-portal/components/StudentLayout";
 
@@ -60,6 +61,7 @@ function AnimatedRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/registration" element={<RegisterPage />} />
+        <Route path="/instructor-registration" element={<InstructorApplicationPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/blog-grid" element={<BlogGrid />} />

@@ -1,5 +1,1 @@
-export const ADMIN_REVENUE_SHARE = 0.2;
-export const INSTRUCTOR_REVENUE_SHARE = 0.8;
-
-export const ADMIN_REVENUE_PERCENT = ADMIN_REVENUE_SHARE * 100;
-export const INSTRUCTOR_REVENUE_PERCENT = INSTRUCTOR_REVENUE_SHARE * 100;
+export { getRevenueShareConfig } from '../../config/revenue-share.config';

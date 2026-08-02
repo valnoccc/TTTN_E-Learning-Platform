@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import {
-  ADMIN_REVENUE_SHARE,
-  INSTRUCTOR_REVENUE_SHARE,
-} from '../../common/constants/revenue-share';
+import { getRevenueShareConfig } from '../../config/revenue-share.config';
 import {
   AdminInstructorDebtBoardDto,
   DashboardStatsDto,
@@ -179,6 +176,7 @@ export class AdminDashboardService {
     days: number = 30,
     monthFilter?: { month: number; year: number },
   ): Promise<DashboardStatsDto> {
+    const { adminShare: ADMIN_REVENUE_SHARE, instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
     const currentMonthYear = this.getCurrentMonthYear();
     const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
@@ -707,6 +705,7 @@ export class AdminDashboardService {
     month?: number,
     year?: number,
   ): Promise<AdminInstructorDebtBoardDto> {
+    const { adminShare: ADMIN_REVENUE_SHARE, instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
     const selectedMonth = this.normalizeMonth(month);
     const selectedYear = this.normalizeYear(year);
     const monthLabel = this.buildMonthLabel(selectedMonth, selectedYear);

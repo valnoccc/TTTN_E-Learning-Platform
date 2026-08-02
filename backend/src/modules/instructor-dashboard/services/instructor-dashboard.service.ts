@@ -1,10 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-import {
-  ADMIN_REVENUE_SHARE,
-  INSTRUCTOR_REVENUE_SHARE,
-} from '../../../common/constants/revenue-share';
+import { getRevenueShareConfig } from '../../../config/revenue-share.config';
 import { UserRole } from '../../users/entities/user.entity';
 import {
   InstructorPrincipal,
@@ -151,6 +148,7 @@ export class InstructorDashboardService {
     const selectedYear = Number.isInteger(year)
       ? Number(year)
       : new Date().getFullYear();
+    const { instructorShare } = getRevenueShareConfig();
 
     const grossRevenueSql = this.buildLineNetRevenueSql();
     const paidRevenueJoins = this.buildPaidRevenueJoins();
@@ -201,7 +199,7 @@ export class InstructorDashboardService {
       const purchases = this.toNumber(row.purchases);
       const grossRevenue = this.toNumber(row.grossRevenue);
       const instructorRevenue = Number(
-        (grossRevenue * INSTRUCTOR_REVENUE_SHARE).toFixed(0),
+        (grossRevenue * instructorShare).toFixed(0),
       );
       monthEntry.totalPurchases += purchases;
       monthEntry.totalGrossRevenue += grossRevenue;
@@ -248,6 +246,7 @@ export class InstructorDashboardService {
     const instructorId = this.getInstructorId(principal);
     const range = filters.range ?? '30days';
     const courseId = filters.courseId;
+    const { instructorShare, adminShare } = getRevenueShareConfig();
 
     const whereClause = this.buildReportWhereClause(
       instructorId,
@@ -261,8 +260,8 @@ export class InstructorDashboardService {
     );
     const paidRevenueJoins = this.buildPaidRevenueJoins();
     const grossRevenueSql = this.buildLineNetRevenueSql();
-    const instructorRevenueSql = `(${grossRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}`;
-    const adminRevenueSql = `(${grossRevenueSql}) * ${ADMIN_REVENUE_SHARE}`;
+    const instructorRevenueSql = `(${grossRevenueSql}) * ${instructorShare}`;
+    const adminRevenueSql = `(${grossRevenueSql}) * ${adminShare}`;
 
     const reviewWhereClause = this.buildReviewReportWhereClause(
       instructorId,

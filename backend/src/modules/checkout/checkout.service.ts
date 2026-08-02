@@ -8,7 +8,7 @@ import {
 import { DataSource } from 'typeorm';
 import * as crypto from 'crypto';
 import axios from 'axios';
-import { INSTRUCTOR_REVENUE_PERCENT } from '../../common/constants/revenue-share';
+import { getRevenueShareConfig } from '../../config/revenue-share.config';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { StudentCouponsService } from '../coupons/services/student-coupons.service';
@@ -239,7 +239,7 @@ export class CheckoutService {
       const invoiceId: number = insertResult.insertId;
 
       // Lưu chi tiết hoá đơn tạm
-      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const instructorRevenueRate = getRevenueShareConfig().instructorPercent;
       const discountBaseSubtotal = discountTargetCourseIds.reduce(
         (sum, courseId) => {
           const targetCourse = courses.find(
@@ -753,7 +753,7 @@ export class CheckoutService {
       );
 
       const invoiceId = insertHoaDonResult.insertId;
-      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const instructorRevenueRate = getRevenueShareConfig().instructorPercent;
       const discountBaseSubtotal = discountTargetCourseIds.reduce(
         (sum, courseId) => {
           const targetCourse = courses.find(
@@ -930,7 +930,7 @@ export class CheckoutService {
       );
       const invoiceId = insertResult.insertId;
 
-      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const instructorRevenueRate = getRevenueShareConfig().instructorPercent;
       const discountBaseSubtotal = discountTargetCourseIds.reduce((sum, cid) => {
         const target = courses.find((c: any) => Number(c.MaKH) === Number(cid));
         return sum + Number(target?.GiaBan || 0);

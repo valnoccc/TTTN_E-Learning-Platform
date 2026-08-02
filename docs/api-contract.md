@@ -6,6 +6,8 @@ Source of truth:
 
 ## Auth & Account (Quan ly tai khoan)
 - `POST /auth/register`
+- `POST /instructor-applications/me` (Nguoi dung da dang nhap gui ho so giang vien; luu vao `HoSoGiangVien` va chuyen role sang `INSTRUCTOR` ngay, tra ve JWT moi)
+- `POST /instructor-applications/me` ho tro them `BangCaps[]` va `KinhNghiems[]`; moi phan tu duoc luu vao bang con theo `MaHoSo` va giu thu tu bang `ThuTu`
 - `POST /auth/login`
 - `GET /auth/me`
 - `PATCH /auth/profile` (Cap nhat thong tin ca nhan/tieu su)
@@ -13,8 +15,8 @@ Source of truth:
 - `POST /auth/forgot-password` (Khoi phuc mat khau)
 
 ## Users (Admin - Quan ly nguoi dung)
-- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; bao gom `grossRevenue`, `adminRevenue = 20%`, `instructorPayout = 80%`, `newEnrollments`, `pendingCourses`, `revenueChart`, `salesChart`, `categoryRevenue`, `topCourses`, `topInstructors`, `recentOrders` va cac KPI tang truong)
-- `GET /admin/dashboard/debts?month=MM&year=YYYY` (Admin - Lay cong no giang vien theo thang; tra ve `monthLabel`, `summary` va `items` cho tung giang vien, trong do `debtAmount = instructorPayout = 80% doanh thu hop le trong thang`)
+- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; `adminRevenue` va `instructorPayout` duoc tinh theo `ADMIN_REVENUE_PERCENT` va `INSTRUCTOR_REVENUE_PERCENT` trong backend `.env`)
+- `GET /admin/dashboard/debts?month=MM&year=YYYY` (Admin - Lay cong no giang vien theo thang; `debtAmount` duoc tinh theo ty le hoa hong dang cau hinh)
 - `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
 - `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)
 - `PATCH /admin/users/:id/role` (Admin - Cap vai tro he thong, body: `{ role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' }`)
@@ -68,14 +70,14 @@ Admin (Kiem duyet)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
 ## Quiz Questions (Ngan hang cau hoi trac nghiem)
-- Database prerequisite: run `draft/db/sql/create-quiz-questions.sql`, then `draft/db/sql/create-quiz-attempts.sql` once on the TiDB application schema before using these endpoints.
+- Database prerequisite: run `draft/db/sql/quiz-module-tidb.sql` once on the TiDB application schema before using these endpoints.
 - `GET /courses/chapters/:chapterId/questions` (Instructor - Xem danh sach cau hoi cua chuong)
 - `POST /courses/chapters/:chapterId/questions` (Instructor - Tao cau hoi voi dung 4 dap an; body: `{ noiDung, dapAnA, dapAnB, dapAnC, dapAnD, dapAnDung: 'A' | 'B' | 'C' | 'D', thuTu }`)
 - `PATCH /courses/chapters/:chapterId/questions/:questionId` (Instructor - Sua cau hoi cua chuong; body cho phep cac truong tren)
 - `DELETE /courses/chapters/:chapterId/questions/:questionId` (Instructor - Xoa cau hoi cua chuong)
 
 ## Quiz Attempts (Lich su lam bai cua hoc vien)
-- Database prerequisite: run `draft/db/sql/create-quiz-attempts.sql` after the quiz-question table exists.
+- Database prerequisite: the combined prerequisite is available at `draft/db/sql/quiz-module-tidb.sql`.
 - `GET /student/chapters/:chapterId/access` (Student - Kiem tra quyen vao chuong theo ket qua chuong truoc; response gom `canAccess` va `quizPassed`)
 - `POST /student/chapters/:chapterId/quiz-attempts` (Student - Tao mot lan lam bai moi; duoc lam lai)
 - `POST /student/quiz-attempts/:attemptId/submit` (Student - Nop bai; body: `{ answers: [{ maCauHoi, dapAnChon: 'A' | 'B' | 'C' | 'D' | null }] }`)
@@ -112,8 +114,10 @@ Admin (Kiem duyet)
 
 ## Instructors (Giang vien)
 - `GET /instructors/me/courses` (Lay danh sach khoa hoc cua giang vien)
+- `GET /instructors/me/profile` (Lay ho so giang vien kem danh sach bang cap va kinh nghiem)
+- `PATCH /instructors/me/profile` (Cap nhat ho so va thay the danh sach `BangCaps[]`, `KinhNghiems[]` neu duoc gui)
 - `GET /instructors/me/students` (Lay danh sach hoc vien da dang ky khoa hoc cua giang vien; khong tra ve link GitHub/bai nop)
-- `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh tren so tien sau giam gia voi `totalRevenue/instructorRevenue = 80%`, `adminRevenue = 20%`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
+- `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh theo ty le trong backend `.env`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
 
 ## Notifications (Thong bao)
 - `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)
