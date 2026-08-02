@@ -15,13 +15,10 @@ describe('getRevenueShareConfig', () => {
     });
   });
 
-  it('uses the current default split when variables are absent', () => {
-    expect(getRevenueShareConfig({})).toMatchObject({
-      instructorPercent: 80,
-      adminPercent: 20,
-      instructorShare: 0.8,
-      adminShare: 0.2,
-    });
+  it('requires both revenue percentages to be provided by the environment', () => {
+    expect(() => getRevenueShareConfig({})).toThrow(
+      'INSTRUCTOR_REVENUE_PERCENT is required.',
+    );
   });
 
   it('rejects invalid or unbalanced percentages', () => {
