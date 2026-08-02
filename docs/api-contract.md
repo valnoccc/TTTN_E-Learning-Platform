@@ -68,14 +68,14 @@ Admin (Kiem duyet)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
 ## Quiz Questions (Ngan hang cau hoi trac nghiem)
-- Database prerequisite: run `backend/src/modules/quiz-questions/sql/create-quiz-questions.sql` once on the application schema before using these endpoints.
+- Database prerequisite: run `draft/db/sql/create-quiz-questions.sql`, then `draft/db/sql/create-quiz-attempts.sql` once on the TiDB application schema before using these endpoints.
 - `GET /courses/chapters/:chapterId/questions` (Instructor - Xem danh sach cau hoi cua chuong)
 - `POST /courses/chapters/:chapterId/questions` (Instructor - Tao cau hoi voi dung 4 dap an; body: `{ noiDung, dapAnA, dapAnB, dapAnC, dapAnD, dapAnDung: 'A' | 'B' | 'C' | 'D', thuTu }`)
 - `PATCH /courses/chapters/:chapterId/questions/:questionId` (Instructor - Sua cau hoi cua chuong; body cho phep cac truong tren)
 - `DELETE /courses/chapters/:chapterId/questions/:questionId` (Instructor - Xoa cau hoi cua chuong)
 
 ## Quiz Attempts (Lich su lam bai cua hoc vien)
-- Database prerequisite: run `backend/src/modules/quiz-attempts/sql/create-quiz-attempts.sql` after the quiz-question table exists.
+- Database prerequisite: run `draft/db/sql/create-quiz-attempts.sql` after the quiz-question table exists.
 - `GET /student/chapters/:chapterId/access` (Student - Kiem tra quyen vao chuong theo ket qua chuong truoc; response gom `canAccess` va `quizPassed`)
 - `POST /student/chapters/:chapterId/quiz-attempts` (Student - Tao mot lan lam bai moi; duoc lam lai)
 - `POST /student/quiz-attempts/:attemptId/submit` (Student - Nop bai; body: `{ answers: [{ maCauHoi, dapAnChon: 'A' | 'B' | 'C' | 'D' | null }] }`)
