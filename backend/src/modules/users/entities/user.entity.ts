@@ -52,4 +52,10 @@ export class User {
 
   @Column({ name: 'resetPasswordExpires', type: 'datetime', nullable: true })
   resetPasswordExpires?: Date;
+
+  @Column({ name: 'instructorPolicyAcceptedAt', type: 'datetime', nullable: true })
+  instructorPolicyAcceptedAt?: Date;
+
+  @Column({ name: 'forumPolicyAcceptedAt', type: 'datetime', nullable: true })
+  forumPolicyAcceptedAt?: Date;
 }

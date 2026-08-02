@@ -296,7 +296,7 @@ export class AdminDashboardService {
         `
           SELECT COUNT(*) as total
           FROM KhoaHoc
-          WHERE TrangThai = 'PENDING'
+          WHERE TrangThai IN ('PENDING', 'PENDING_APPEAL')
         `,
         [{ total: '0' }],
       ),
@@ -751,10 +751,13 @@ export class AdminDashboardService {
       const adminRevenue = Number(row.adminRevenue ?? 0);
       const instructorPayout = Number(row.instructorPayout ?? 0);
 
+      const avatar = row.instructorAvatar;
+      const cleanAvatar = avatar && String(avatar).trim() !== 'null' && String(avatar).trim() !== '' ? avatar : null;
+
       return {
         instructorId: Number(row.instructorId ?? 0),
         instructorName: row.instructorName ?? '',
-        instructorAvatar: row.instructorAvatar ?? null,
+        instructorAvatar: cleanAvatar,
         specialty: row.specialty ?? null,
         courseCount: Number(row.courseCount ?? 0),
         orderCount: Number(row.orderCount ?? 0),

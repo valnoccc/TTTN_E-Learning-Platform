@@ -83,7 +83,7 @@ export interface InstructorCourseContextValue {
     /** Đổi trạng thái khóa học. Trả về { violatingLessons } nếu có video bị AI REJECTED */
     handleStatusChange: (
         newStatus: string,
-        options?: { isAppealing?: boolean; appealReason?: string },
+        options?: { isAppealing?: boolean; appealReason?: string; isPolicyAgreed?: boolean },
     ) => Promise<{ violatingLessons?: ViolatingLesson[] } | void>;
     /** Gửi kháng cáo kèm lý do, tự động set isAppealing=true */
     handleAppealSubmit: (appealReason: string) => Promise<{ violatingLessons?: ViolatingLesson[] } | void>;
@@ -346,7 +346,7 @@ export function useCourseDetail(
 
     const handleStatusChange = async (
         newStatus: string,
-        options?: { isAppealing?: boolean; appealReason?: string },
+        options?: { isAppealing?: boolean; appealReason?: string; isPolicyAgreed?: boolean },
     ): Promise<{ violatingLessons?: ViolatingLesson[] } | void> => {
         if (!id) return;
 
@@ -398,11 +398,13 @@ export function useCourseDetail(
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
-            // Gọi API đổi trạng thái, kèm flag appeal nếu có
             const statusPayload: Record<string, unknown> = { trang_thai: newStatus };
             if (options?.isAppealing) {
                 statusPayload.isAppealing = true;
                 statusPayload.appealReason = options.appealReason ?? '';
+            }
+            if (options?.isPolicyAgreed !== undefined) {
+                statusPayload.isPolicyAgreed = options.isPolicyAgreed;
             }
 
             const statusResponse = await axiosClient.patch<CourseStatusApiResponse>(

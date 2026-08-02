@@ -10,6 +10,7 @@ import { ForumController } from './controllers/forum.controller';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ForumAdminService } from './services/forum-admin.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ForumAdminService } from './services/forum-admin.service';
     ]),
     CloudinaryModule,
     NotificationsModule,
+    UsersModule,
   ],
   controllers: [ForumController],
   providers: [ForumService, ForumAdminService],

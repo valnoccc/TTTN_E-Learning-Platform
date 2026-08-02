@@ -270,20 +270,31 @@ export class CourseStudentService {
         buckets.get(maDM)!.push(row);
       }
 
-      // Interleave: lần lượt lấy 1 khóa học từ mỗi bucket cho đến khi đủ N
-      const orderedBuckets = distinctMaDMs.map((id) => buckets.get(id) ?? []);
-      let pointer = 0;
-      while (categoryRecommendations.length < TOTAL_LIMIT) {
-        let pickedAny = false;
-        for (const bucket of orderedBuckets) {
-          if (bucket.length > pointer) {
-            categoryRecommendations.push(bucket[pointer]);
-            if (categoryRecommendations.length >= TOTAL_LIMIT) break;
-            pickedAny = true;
+      // BƯỚC 3: Thuật toán phân bổ rút bài vòng tròn (Round-Robin)
+      const activeBuckets = distinctMaDMs.map((id) => buckets.get(id) ?? []);
+      let currentIndex = 0;
+
+      while (categoryRecommendations.length < TOTAL_LIMIT && activeBuckets.length > 0) {
+        const currentPool = activeBuckets[currentIndex];
+
+        if (currentPool && currentPool.length > 0) {
+          // Lấy khóa học đầu tiên ra khỏi Pool (xóa khỏi mảng pool ban đầu)
+          const course = currentPool.shift();
+          
+          if (course) {
+            categoryRecommendations.push(course);
+          }
+          
+          // Chuyển sang danh mục tiếp theo
+          currentIndex = (currentIndex + 1) % activeBuckets.length;
+        } else {
+          // Bỏ qua (Skip): Nếu Pool đã cạn, loại bỏ danh mục này khỏi vòng lặp Round-Robin
+          activeBuckets.splice(currentIndex, 1);
+          
+          if (activeBuckets.length > 0) {
+            currentIndex = currentIndex % activeBuckets.length;
           }
         }
-        pointer++;
-        if (!pickedAny) break; // Tất cả bucket đã cạn
       }
     }
 

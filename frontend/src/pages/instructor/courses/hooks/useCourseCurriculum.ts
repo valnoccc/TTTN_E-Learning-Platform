@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 import axiosClient from '../../../../api/axios';
@@ -37,24 +37,29 @@ export function useCourseCurriculum() {
     const [newChapterTitle, setNewChapterTitle] = useState('');
     const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
     const [editingChapterTitle, setEditingChapterTitle] = useState('');
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Giữ bản sao mới nhất của chapters để so sánh mà không gây re-render
+    const chaptersRef = useRef<ChapterData[]>([]);
 
-    useEffect(() => {
-        if (isNewCourse || !id) {
-            setLoading(false);
-            return;
-        }
+    const hasProcessingLessons = (data: ChapterData[]) =>
+        data.some(ch =>
+            ch.baiHocs.some(
+                (l) => l.aiStatus === 'PROCESSING' || l.aiStatus === 'PENDING',
+            ),
+        );
 
-        const fetchCurriculum = async () => {
-            try {
-                const response = await axiosClient.get<ChapterData[] | CurriculumApiResponse<ChapterData[]>>(
-                    `/courses/${id}/curriculum`,
-                );
-                const data = unwrapPayload(response) ?? [];
+    const fetchCurriculum = useCallback(async (isInitial = false) => {
+        try {
+            const response = await axiosClient.get<ChapterData[] | CurriculumApiResponse<ChapterData[]>>(
+                `/courses/${id}/curriculum`,
+            );
+            const data = unwrapPayload(response) ?? [];
+            const sortedData = [...data].sort((a, b) => a.thuTu - b.thuTu).map(normalizeChapter);
 
-                const sortedData = [...data].sort((a, b) => a.thuTu - b.thuTu).map(normalizeChapter);
-
+            if (isInitial) {
+                // Lần đầu: luôn cập nhật UI
+                chaptersRef.current = sortedData;
                 setChapters(sortedData);
-
                 if (sortedData.length > 0) {
                     const savedChapterId = sessionStorage.getItem('expandedChapterId');
                     if (savedChapterId && sortedData.some(c => c.maChuong.toString() === savedChapterId)) {
@@ -63,16 +68,57 @@ export function useCourseCurriculum() {
                         setExpandedChapterId(sortedData[0].maChuong);
                     }
                 }
-            } catch (error) {
-                console.error('Loi tai chuong trinh hoc:', error);
-                toast.error('Khong the tai chuong trinh hoc cua khoa hoc nay.');
-            } finally {
-                setLoading(false);
+            } else {
+                // Polling: chỉ cập nhật UI khi có trạng thái AI nào đó thay đổi
+                const prev = chaptersRef.current;
+                const hasChange = sortedData.some(newCh => {
+                    const oldCh = prev.find(c => c.maChuong === newCh.maChuong);
+                    if (!oldCh) return true;
+                    return newCh.baiHocs.some(newL => {
+                        const oldL = oldCh.baiHocs.find(l => l.maBH === newL.maBH);
+                        return !oldL || oldL.aiStatus !== newL.aiStatus;
+                    });
+                });
+                if (hasChange) {
+                    chaptersRef.current = sortedData;
+                    setChapters(sortedData);
+                }
+            }
+
+            // Kiểm tra có bài đang chờ không để quyết định tiếp tục hay dừng polling
+            if (hasProcessingLessons(sortedData)) {
+                if (!pollingRef.current) {
+                    pollingRef.current = setInterval(() => {
+                        void fetchCurriculum(false);
+                    }, 5000);
+                }
+            } else {
+                if (pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
+                }
+            }
+        } catch (error) {
+            console.error('Loi tai chuong trinh hoc:', error);
+            if (isInitial) toast.error('Khong the tai chuong trinh hoc cua khoa hoc nay.');
+        } finally {
+            if (isInitial) setLoading(false);
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (isNewCourse || !id) {
+            setLoading(false);
+            return;
+        }
+        void fetchCurriculum(true);
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
             }
         };
-
-        void fetchCurriculum();
-    }, [id, isNewCourse]);
+    }, [id, isNewCourse, fetchCurriculum]);
 
     const toggleChapter = (chapterId: number) => {
         setExpandedChapterId((prev) => {

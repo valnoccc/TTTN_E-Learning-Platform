@@ -72,7 +72,7 @@ describe('LessonVideoStorageService', () => {
     };
 
     service = new LessonVideoStorageService(
-      configService as ConfigService,
+      configService as unknown as ConfigService,
       dataSource as never,
     );
   });
@@ -151,10 +151,7 @@ describe('LessonVideoStorageService', () => {
     };
 
     expect(
-      new LessonVideoStorageService(
-        configService as ConfigService,
-        dataSource as never,
-      ),
+      new LessonVideoStorageService(configService as unknown as ConfigService, dataSource as never),
     ).toBeInstanceOf(LessonVideoStorageService);
   });
 });

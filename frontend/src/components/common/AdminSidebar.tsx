@@ -1,6 +1,7 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText, Ticket, Shield, Wallet, MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import axiosClient from '../../api/axios';
 
 // Dùng lại UserDropdown của giảng viên (hoặc bạn có thể tạo một bản copy tên AdminDropdown nếu cần đổi link bên trong)
 import UserDropdown from '../instructor/UserDropdown';
@@ -9,6 +10,7 @@ type SidebarItem = {
     label: string;
     path: string;
     icon: ReactNode;
+    badge?: number;
 };
 
 type SidebarSection = {
@@ -27,6 +29,8 @@ export default function AdminSidebar() {
     const navigate = useNavigate();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    const [pendingCount, setPendingCount] = useState<number>(0);
 
     const [user] = useState<StoredAdminUser | null>(() => JSON.parse(localStorage.getItem('user') || 'null'));
     const userRole = String(user?.vaiTro ?? '').toUpperCase();
@@ -49,6 +53,27 @@ export default function AdminSidebar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        if (!isAdmin) return;
+        const fetchPendingCount = async () => {
+            try {
+                const res: any = await axiosClient.get('/admin/courses/pending');
+                if (res && res.data && Array.isArray(res.data)) {
+                    setPendingCount(res.data.length);
+                } else if (Array.isArray(res)) {
+                    setPendingCount(res.length);
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải số lượng khóa học chờ duyệt', error);
+            }
+        };
+        fetchPendingCount();
+        
+        // Cập nhật lại mỗi 60s để hiển thị real-time hơn một chút
+        const interval = setInterval(fetchPendingCount, 60000);
+        return () => clearInterval(interval);
+    }, [isAdmin]);
+
     const sections: SidebarSection[] = [
         {
             title: 'Tổng quan',
@@ -65,7 +90,7 @@ export default function AdminSidebar() {
         {
             title: 'Quản lý nội dung',
             items: [
-                { label: 'Phê duyệt khóa học', path: '/admin/courses', icon: <BookOpen size={18} /> },
+                { label: 'Phê duyệt khóa học', path: '/admin/courses', icon: <BookOpen size={18} />, badge: pendingCount },
                 { label: 'Quản lý danh mục', path: '/admin/categories', icon: <Layers size={18} /> },
                 { label: 'Quản lý bài viết', path: '/admin/posts', icon: <FileText size={18} /> },
                 { label: 'Diễn đàn', path: '/admin/forum', icon: <MessageSquare size={18} /> },
@@ -121,7 +146,12 @@ export default function AdminSidebar() {
                                                     }`}
                                             >
                                                 <span className={isActive ? 'text-white' : 'text-[#a0aec0]'}>{item.icon}</span>
-                                                <span>{item.label}</span>
+                                                <span className="flex-1">{item.label}</span>
+                                                {item.badge ? (
+                                                    <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[11px] font-bold text-white shadow-sm shadow-rose-500/20">
+                                                        {item.badge > 99 ? '99+' : item.badge}
+                                                    </span>
+                                                ) : null}
                                             </Link>
                                         </li>
                                     );

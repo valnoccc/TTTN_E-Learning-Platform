@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { NotificationType } from './entities/notification.entity';
 
 describe('NotificationsService', () => {
   const notificationRepository = {
@@ -32,14 +33,14 @@ describe('NotificationsService', () => {
       service.createNotification({
         maND: 7,
         maNguoiGui: 99,
-        loaiThongBao: 'COURSE',
+        loaiThongBao: NotificationType.COURSE,
         tieuDe: 'Khóa học bị từ chối xuất bản',
         noiDung: 'Can bo sung bai hoc',
       }),
     ).resolves.toEqual({
       maND: 7,
       maNguoiGui: 99,
-      loaiThongBao: 'COURSE',
+      loaiThongBao: NotificationType.COURSE,
       tieuDe: 'Khóa học bị từ chối xuất bản',
       noiDung: 'Can bo sung bai hoc',
       daDoc: false,

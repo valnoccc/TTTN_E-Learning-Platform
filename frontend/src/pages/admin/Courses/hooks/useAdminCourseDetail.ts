@@ -111,6 +111,15 @@ export function useAdminCourseDetail(courseId: number) {
         setLoading(true);
         try {
             const detail = await fetchAdminCourseModerationDetail(courseId);
+            if (detail && detail.trangThai === 'PUBLISHED' && detail.curriculum) {
+                detail.curriculum.forEach(chapter => {
+                    chapter.baiHocs.forEach(lesson => {
+                        if (lesson.aiStatus === 'REJECTED' || lesson.aiStatus === 'NEEDS_REVIEW') {
+                            lesson.aiStatus = 'APPROVED';
+                        }
+                    });
+                });
+            }
             setCourse(detail);
             const firstChapter = detail?.curriculum[0] ?? null;
             setExpandedChapterId(firstChapter?.maChuong ?? null);

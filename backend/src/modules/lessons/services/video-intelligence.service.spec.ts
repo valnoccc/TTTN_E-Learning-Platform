@@ -8,13 +8,29 @@ import { NotificationsService } from '../../notifications/notifications.service'
 import { VideoIntelligenceService } from './video-intelligence.service';
 import { DataSource } from 'typeorm';
 
+jest.mock('../../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class {},
+}));
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
+
 const annotateVideoMock = jest.fn();
+const generateContentMock = jest.fn();
 
 jest.mock('@google-cloud/video-intelligence', () => ({
   VideoIntelligenceServiceClient: jest.fn().mockImplementation(() => ({
     annotateVideo: annotateVideoMock,
   })),
 }));
+
+jest.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: generateContentMock,
+    }),
+  })),
+}));
+
+import { ConfigService } from '@nestjs/config';
 
 describe('VideoIntelligenceService', () => {
   let service: VideoIntelligenceService;
@@ -62,6 +78,7 @@ describe('VideoIntelligenceService', () => {
 
   beforeEach(async () => {
     annotateVideoMock.mockReset();
+    generateContentMock.mockReset();
 
     lessonRepository = {
       update: jest.fn(),
@@ -96,6 +113,13 @@ describe('VideoIntelligenceService', () => {
         { provide: getRepositoryToken(KhoaHoc), useValue: courseRepository },
         { provide: DataSource, useValue: dataSource },
         { provide: NotificationsService, useValue: notificationsService },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('fake-key') } },
+        {
+          provide: LessonVideoStorageService,
+          useValue: {
+            getPlayableUrl: jest.fn().mockResolvedValue('https://signed.example.com/lesson.mp4'),
+          },
+        },
       ],
     }).compile();
 
@@ -162,6 +186,18 @@ describe('VideoIntelligenceService', () => {
       trangThai: 'PENDING',
     });
     courseRepository.update.mockResolvedValue({ affected: 1 });
+    // Gemini mặc định trả về 'cần xét admin' vì đây là test NEEDS_REVIEW
+    generateContentMock.mockResolvedValue({
+      response: {
+        text: () =>
+          JSON.stringify({
+            isApproved: true,
+            violationType: null,
+            reason: 'Nội dung an toàn',
+            confidenceScore: 0.95,
+          }),
+      },
+    });
     annotateVideoMock.mockResolvedValue([
       {
         promise: jest.fn().mockResolvedValue([
@@ -232,6 +268,17 @@ describe('VideoIntelligenceService', () => {
     courseRepository.findOne.mockResolvedValue({
       maKH: 10,
       trangThai: 'PENDING',
+    });
+    generateContentMock.mockResolvedValue({
+      response: {
+        text: () =>
+          JSON.stringify({
+            isApproved: true,
+            violationType: null,
+            reason: 'Nội dung an toàn',
+            confidenceScore: 0.95,
+          }),
+      },
     });
     annotateVideoMock.mockResolvedValue([
       {

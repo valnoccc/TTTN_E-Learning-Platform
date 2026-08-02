@@ -62,7 +62,7 @@ export class KhoaHoc {
   yeuCauKhoaHoc?: string;
 
   @Column({ name: 'LyDoKhieuNai', type: 'text', nullable: true })
-  appealReason?: string;
+  appealReason?: string | null;
 
   @Column({ name: 'DangKhieuNai', type: 'boolean', default: false })
   isAppealing!: boolean;

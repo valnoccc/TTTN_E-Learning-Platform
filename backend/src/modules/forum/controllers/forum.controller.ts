@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Delete,
   Get,
   Post,
@@ -15,6 +16,7 @@ import {
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ForumService } from '../services/forum.service';
+import { UsersService } from '../../users/services/users.service';
 import { ForumAdminService } from '../services/forum-admin.service';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -32,6 +34,7 @@ export class ForumController {
     private readonly forumService: ForumService,
     private readonly forumAdminService: ForumAdminService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly usersService: UsersService,
   ) {}
 
   @Get('questions')
@@ -54,6 +57,15 @@ export class ForumController {
     @Req() req: Request & { user: { sub: number } },
     @Body() body: CreateQuestionDto,
   ) {
+    const user = await this.usersService.findOne(req.user.sub);
+    // @ts-ignore
+    if (!user?.forumPolicyAcceptedAt) {
+      throw new ForbiddenException({
+         message: 'Bạn phải chấp nhận Nội quy diễn đàn trước khi đăng bài',
+         code: 'POLICY_NOT_ACCEPTED'
+      });
+    }
+
     const question = await this.forumService.taoCauHoi(req.user.sub, body);
     return { message: 'Tạo câu hỏi thành công', data: question };
   }
@@ -65,6 +77,15 @@ export class ForumController {
     @Req() req: Request & { user: { sub: number } },
     @Body() body: CreateAnswerDto,
   ) {
+    const user = await this.usersService.findOne(req.user.sub);
+    // @ts-ignore
+    if (!user?.forumPolicyAcceptedAt) {
+      throw new ForbiddenException({
+         message: 'Bạn phải chấp nhận Nội quy diễn đàn trước khi bình luận',
+         code: 'POLICY_NOT_ACCEPTED'
+      });
+    }
+
     const answer = await this.forumService.taoTraLoi(id, req.user.sub, body);
     return { message: 'Tạo câu trả lời thành công', data: answer };
   }
