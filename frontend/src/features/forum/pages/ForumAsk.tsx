@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import axiosClient from '../../../api/axios';
 import { toast } from 'react-hot-toast';
+import { PolicyModal } from '../../../components/common/PolicyModal';
 
 export default function ForumAsk() {
   const navigate = useNavigate();
@@ -12,8 +13,42 @@ export default function ForumAsk() {
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
   
   const quillRef = useRef<ReactQuill>(null);
+
+  React.useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (!user.forumPolicyAcceptedAt) {
+        setShowPolicy(true);
+      }
+    }
+  }, []);
+
+  const handleAcceptPolicy = async () => {
+    try {
+      const response = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
+      // Update local storage
+      if (response.data && response.data.data) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          user.forumPolicyAcceptedAt = response.data.data.forumPolicyAcceptedAt;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
+      setShowPolicy(false);
+    } catch (error) {
+      console.error('Failed to accept policy', error);
+      toast.error('Có lỗi xảy ra khi xác nhận chính sách');
+    }
+  };
+
+  const handleDeclinePolicy = () => {
+    navigate(-1); // Go back if declined
+  };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
@@ -103,7 +138,15 @@ export default function ForumAsk() {
   }), []);
 
   return (
-    <div className="min-h-screen bg-[#f1f2f3]">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      {showPolicy && (
+        <PolicyModal
+          isOpen={showPolicy}
+          type="forum"
+          onAccept={handleAcceptPolicy}
+          onDecline={handleDeclinePolicy}
+        />
+      )}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Đặt câu hỏi</h1>

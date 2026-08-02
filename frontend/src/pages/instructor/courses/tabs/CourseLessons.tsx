@@ -58,7 +58,7 @@ function LessonIcon({ lesson }: { lesson: LessonData }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function InstructorCourseLessons() {
-  const { isLocked } = useInstructorCourseContext();
+  const { isLocked, id: courseId } = useInstructorCourseContext();
   const {
     loading,
     chapters,
@@ -86,8 +86,13 @@ export default function InstructorCourseLessons() {
   } = useCourseCurriculum();
 
   const firstLesson = chapters[0]?.baiHocs?.[0]?.maBH ?? null;
+  const storageKey = `course_${courseId}_selectedLessonId`;
+
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(
-    firstLesson,
+    () => {
+      const saved = sessionStorage.getItem(storageKey);
+      return saved ? Number(saved) : firstLesson;
+    }
   );
 
   useEffect(() => {
@@ -95,6 +100,13 @@ export default function InstructorCourseLessons() {
       setSelectedLessonId(firstLesson);
     }
   }, [firstLesson, selectedLessonId]);
+
+  useEffect(() => {
+    if (selectedLessonId) {
+      sessionStorage.setItem(storageKey, selectedLessonId.toString());
+    }
+  }, [selectedLessonId, storageKey]);
+
 
   const selectedLesson = useMemo(
     () =>
@@ -433,6 +445,9 @@ export default function InstructorCourseLessons() {
                         ) : (
                           chapter.baiHocs.map((lesson) => {
                             const isRejected = lesson.aiStatus === "REJECTED";
+                            const isProcessing =
+                              lesson.aiStatus === "PROCESSING" ||
+                              lesson.aiStatus === "PENDING";
 
                             return (
                               <div
@@ -445,7 +460,9 @@ export default function InstructorCourseLessons() {
                                 } ${
                                   isRejected
                                     ? "bg-rose-50/40 hover:bg-rose-50/70"
-                                    : "hover:bg-slate-50/70"
+                                    : isProcessing
+                                      ? "bg-amber-50/40 hover:bg-amber-50/70"
+                                      : "hover:bg-slate-50/70"
                                 }`}
                               >
                                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -466,13 +483,23 @@ export default function InstructorCourseLessons() {
                                     {lesson.tenBaiHoc}
                                   </span>
 
-                                  {/* Warning icon + tooltip nếu REJECTED */}
+                                  {/* Warning icon nếu REJECTED */}
                                   {isRejected && (
                                     <Tooltip text="Video vi phạm chính sách, cần chỉnh sửa">
                                       <AlertTriangle
                                         size={15}
                                         className="shrink-0 text-rose-500"
                                       />
+                                    </Tooltip>
+                                  )}
+
+                                  {/* Spinner AI đang kiểm duyệt */}
+                                  {isProcessing && (
+                                    <Tooltip text="AI đang kiểm duyệt video...">
+                                      <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                                        <Loader2 size={10} className="animate-spin" />
+                                        Đang kiểm duyệt
+                                      </span>
                                     </Tooltip>
                                   )}
 

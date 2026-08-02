@@ -7,7 +7,7 @@ import {
   Users,
   BookOpen,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import AdminLayout from "../../../layouts/AdminLayout";
 import {
   AdminInstructorDebtItem,
@@ -70,16 +70,19 @@ function DebtBadge({ value }: { value: string }) {
 }
 
 function TableRow({ item }: { item: AdminInstructorDebtItem }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
-            {item.instructorAvatar ? (
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 shadow-sm">
+            {item.instructorAvatar && !imgError ? (
               <img
-                src={item.instructorAvatar}
+                src={item.instructorAvatar.startsWith('http') || item.instructorAvatar.startsWith('data:') ? item.instructorAvatar : `/assets/images/${item.instructorAvatar}`}
                 alt={item.instructorName}
                 className="h-full w-full object-cover"
+                onError={() => setImgError(true)}
               />
             ) : (
               <span className="text-sm font-bold text-slate-500">

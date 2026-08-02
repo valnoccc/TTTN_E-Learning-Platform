@@ -4,6 +4,7 @@ import { User } from './entities/user.entity';
 import { UsersController } from './controllers/users.controller';
 import { StudentController } from './controllers/student.controller';
 import { UserAdminController } from './controllers/user-admin-management.controller';
+import { UserPolicyController } from './controllers/user-policy.controller';
 import { UsersService } from './services/users.service';
 import { UserAdminService } from './services/user-admin.service';
 import { StudentProfileService } from './services/student-profile.service';
@@ -13,7 +14,12 @@ import { StudentCertificateService } from './services/student-certificate.servic
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
-  controllers: [UsersController, StudentController, UserAdminController],
+  controllers: [
+    UsersController, 
+    StudentController, 
+    UserAdminController, 
+    UserPolicyController
+  ],
   providers: [
     UsersService,
     UserAdminService,

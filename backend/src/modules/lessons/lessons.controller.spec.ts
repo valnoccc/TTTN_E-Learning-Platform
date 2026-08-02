@@ -68,7 +68,6 @@ describe('LessonsController', () => {
     });
 
     await controller.create(
-      {},
       {
         maKH: '10',
         tieu_de: 'Bài học thử',
@@ -128,7 +127,6 @@ describe('LessonsController', () => {
     });
 
     await controller.create(
-      {},
       {
         maKH: '10',
         tieu_de: 'Bài học có video',

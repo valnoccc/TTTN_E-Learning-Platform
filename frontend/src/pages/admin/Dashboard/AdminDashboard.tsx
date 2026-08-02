@@ -94,6 +94,8 @@ function TrendBadge({ value }: { value: number }) {
   );
 }
 
+import { Link } from "react-router-dom";
+
 function KpiCard({
   label,
   value,
@@ -101,6 +103,7 @@ function KpiCard({
   tone,
   trend,
   detail,
+  to,
 }: {
   label: string;
   value: string;
@@ -108,9 +111,10 @@ function KpiCard({
   tone: string;
   trend?: number;
   detail: string;
+  to?: string;
 }) {
-  return (
-    <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.42)] transition-transform duration-300 hover:-translate-y-1">
+  const content = (
+    <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.42)] transition-transform duration-300 hover:-translate-y-1 block h-full">
       <div
         className={`absolute -right-8 -top-8 h-28 w-28 rounded-full blur-3xl opacity-20 ${tone}`}
       />
@@ -141,6 +145,8 @@ function KpiCard({
       </div>
     </div>
   );
+
+  return to ? <Link to={to} className="block h-full">{content}</Link> : content;
 }
 
 function Panel({
@@ -675,6 +681,7 @@ export default function AdminDashboard() {
                 tone="bg-amber-500"
                 trend={stats.revenueGrowth}
                 detail=""
+                to="/admin/debts"
               />
               <KpiCard
                 label="Lượt ghi danh mới"
@@ -683,6 +690,7 @@ export default function AdminDashboard() {
                 tone="bg-cyan-500"
                 trend={stats.newEnrollmentGrowth}
                 detail=""
+                to="/admin/users"
               />
               <KpiCard
                 label="Hàng chờ kiểm duyệt"
@@ -690,6 +698,7 @@ export default function AdminDashboard() {
                 icon={<Layers3 size={20} className="text-rose-600" />}
                 tone="bg-rose-500"
                 detail=""
+                to="/admin/courses"
               />
             </section>
 

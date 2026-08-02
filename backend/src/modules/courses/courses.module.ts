@@ -13,6 +13,7 @@ import { CourseInstructorCurriculumService } from './services/course-instructor-
 import { CoursesService } from './services/course-instructor.service';
 import { CourseAdminService } from './services/course-admin.service';
 import { CourseStudentService } from './services/course-student.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CourseStudentService } from './services/course-student.service';
     CloudinaryModule,
     LessonVideoStorageModule,
     NotificationsModule,
+    UsersModule,
   ],
   controllers: [
     CoursesController,

@@ -298,7 +298,16 @@ export class CourseAdminService {
     }
 
     course.trangThai = 'PUBLISHED';
+    course.isAppealing = false;
+    course.appealReason = null;
     await this.courseRepository.save(course);
+
+    // Xóa cờ cảnh báo trên các bài học
+    await this.dataSource.query(
+      `UPDATE BaiHoc SET AiStatus = 'APPROVED' WHERE MaKH = ? AND AiStatus IN ('REJECTED', 'NEEDS_REVIEW')`,
+      [course.maKH],
+    );
+
     await this.notificationsService.createNotification({
       maND: course.maND_GiangVien,
       maNguoiGui: adminId,

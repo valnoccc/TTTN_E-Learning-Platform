@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Body,
   Controller,
   Delete,
@@ -22,6 +23,7 @@ import {
   CloudinaryService,
   type UploadedAsset,
 } from '../../cloudinary/cloudinary.service';
+import { UsersService } from '../../users/services/users.service';
 import { serializeCourse } from '../services/course-response.util';
 import { CourseInstructorCurriculumService } from '../services/course-instructor-curriculum.service';
 import { CoursesService } from '../services/course-instructor.service';
@@ -58,6 +60,7 @@ export class CoursesController {
     private readonly coursesService: CoursesService,
     private readonly curriculumService: CourseInstructorCurriculumService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly usersService: UsersService,
   ) {}
 
   @Get('my-courses')
@@ -96,6 +99,15 @@ export class CoursesController {
     @Body() courseData: any,
     @UploadedFile() file: UploadedAsset,
   ) {
+    const user = await this.usersService.findOne(req.user.sub);
+    // @ts-ignore
+    if (!user?.instructorPolicyAcceptedAt) {
+      throw new ForbiddenException({
+         message: 'Bạn phải chấp nhận Chính sách Giảng viên trước khi tạo khóa học',
+         code: 'POLICY_NOT_ACCEPTED'
+      });
+    }
+
     const tenKhoaHoc = courseData.tenKhoaHoc ?? courseData.ten_khoa_hoc;
     if (typeof tenKhoaHoc !== 'string' || !tenKhoaHoc.trim()) {
       throw new BadRequestException('Tên khóa học không được để trống');
@@ -241,6 +253,10 @@ export class CoursesController {
       typeof statusData.appealReason === 'string'
         ? statusData.appealReason
         : undefined;
+
+    if (trangThai === 'PENDING_REVIEW' && statusData.isPolicyAgreed !== true && statusData.isPolicyAgreed !== 'true') {
+      throw new BadRequestException('Bạn phải đồng ý với Chính sách nền tảng để gửi duyệt.');
+    }
 
     const updatedCourse = await this.coursesService.updateCourseStatus(
       Number(id),

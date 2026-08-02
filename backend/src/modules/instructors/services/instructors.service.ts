@@ -17,7 +17,6 @@ import { HoSoGiangVien } from '../entities/ho-so-giang-vien.entity';
 
 export interface InstructorPrincipal {
   maND?: number;
-  S;
   sub?: number;
   vaiTro?: UserRole;
 }

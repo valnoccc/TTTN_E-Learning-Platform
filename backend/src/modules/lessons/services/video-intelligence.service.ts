@@ -13,6 +13,9 @@ import { AiQuotaTracker } from '../entities/ai-quota-tracker.entity';
 import { AiStatus, Lesson } from '../entities/lesson.entity';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 const QUOTA_LIMIT_SECONDS = 60_000;
 const QUOTA_WARNING_SECONDS = 54_000;
@@ -36,6 +39,7 @@ export class VideoIntelligenceService implements OnModuleInit {
   private aiStatusSchemaReady: Promise<void> | null = null;
   private moderationWorkerTimer: ReturnType<typeof setInterval> | null = null;
   private moderationWorkerBusy = false;
+  private readonly genAI: GoogleGenerativeAI | null = null;
 
   constructor(
     @InjectRepository(Lesson)
@@ -44,8 +48,14 @@ export class VideoIntelligenceService implements OnModuleInit {
     private readonly quotaRepository: Repository<AiQuotaTracker>,
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
+    private readonly lessonVideoStorageService: LessonVideoStorageService,
   ) {
     this.client = new VideoIntelligenceServiceClient();
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (apiKey) {
+      this.genAI = new GoogleGenerativeAI(apiKey);
+    }
     this.logger.log('VideoIntelligenceService initialized');
   }
 
@@ -375,6 +385,29 @@ export class VideoIntelligenceService implements OnModuleInit {
       const decision = this.evaluateAnnotation(annotation);
       durationSeconds = decision.durationSeconds;
 
+      // Bước 2: Gemini phân tích nội dung video trực tiếp từ GCS (bóc băng + kiểm duyệt ngữ nghĩa)
+      if (this.genAI && decision.status !== AiStatus.REJECTED) {
+        try {
+          this.logger.log(`[Lesson ${lessonId}] Bắt đầu phân tích video bằng Gemini...`);
+          const llmDecision = await this.analyzeVideoWithGemini(videoUrl);
+          if (!llmDecision.isApproved) {
+            decision.status = AiStatus.REJECTED;
+            decision.rejectReason = `Gemini từ chối (${llmDecision.violationType}): ${llmDecision.reason}`;
+            this.logger.warn(`[Lesson ${lessonId}] Gemini từ chối: ${llmDecision.reason}`);
+          } else {
+            this.logger.log(`[Lesson ${lessonId}] Gemini duyệt: nội dung an toàn`);
+          }
+        } catch (error) {
+          this.logger.error(`[Lesson ${lessonId}] Lỗi kiểm duyệt Gemini:`, error);
+          if (decision.status === AiStatus.APPROVED) {
+            decision.status = AiStatus.NEEDS_REVIEW;
+            decision.rejectReason = 'Không thể gọi API Gemini để kiểm duyệt ngữ nghĩa';
+          }
+        }
+      } else if (!this.genAI) {
+        this.logger.warn(`[Lesson ${lessonId}] Chưa cấu hình GEMINI_API_KEY - bỏ qua kiểm duyệt ngữ nghĩa`);
+      }
+
       await this.lessonRepository.update(lessonId, {
         aiStatus: decision.status,
         aiLabels: decision.labels,
@@ -432,6 +465,58 @@ export class VideoIntelligenceService implements OnModuleInit {
         );
       }
     }
+  }
+
+  private async analyzeVideoWithGemini(gcsUri: string): Promise<{
+    isApproved: boolean;
+    violationType: string | null;
+    reason: string;
+    confidenceScore: number;
+  }> {
+    if (!this.genAI) throw new Error('Missing Gemini API Key');
+
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
+
+    const prompt = `Bạn là một Chuyên gia Kiểm duyệt Nội dung (Content Moderator) cho nền tảng giáo dục trực tuyến Edumeo.
+Nhiệm vụ: Xem video bài giảng này và xác định xem nội dung âm thanh (lời nói) hoặc hình ảnh có vi phạm tiêu chuẩn cộng đồng hay không.
+
+CÁC TIÊU CHÍ VI PHẠM (chỉ cần vi phạm 1 là từ chối):
+1. Ngôn từ thô tục, chửi thề, xúc phạm (Profanity/Hate Speech).
+2. Phân biệt chủng tộc, giới tính, tôn giáo, vùng miền.
+3. Bàn luận về các vấn đề chính trị nhạy cảm, xuyên tạc lịch sử.
+4. Xúi giục bạo lực, hành vi phạm pháp hoặc các nội dung độc hại, lừa đảo.
+5. Nội dung khiêu dâm, tình dục, bạo lực hoặc gây sốc.
+
+YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
+{
+  "isApproved": boolean,
+  "violationType": string | null,
+  "reason": string,
+  "confidenceScore": number
+}`;
+
+    this.logger.log(`[Gemini] Phân tích video từ GCS: ${gcsUri}`);
+
+    // Tạo signed URL 5 phút để Gemini có thể tải video từ GCS private bucket
+    const signedUrl = await this.lessonVideoStorageService.getPlayableUrl(gcsUri);
+    if (!signedUrl) {
+      throw new Error(`Không thể tạo signed URL cho video: ${gcsUri}`);
+    }
+    this.logger.log(`[Gemini] Đã tạo signed URL thành công`);
+
+    const result = await model.generateContent([
+      {
+        fileData: {
+          mimeType: 'video/mp4',
+          fileUri: signedUrl,
+        },
+      },
+      { text: prompt },
+    ]);
+
+    let text = result.response.text();
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   }
 
   private evaluateAnnotation(annotation: any): VideoModerationDecision {

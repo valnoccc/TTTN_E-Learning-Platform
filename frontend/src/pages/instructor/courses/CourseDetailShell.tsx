@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
+import { PolicyModal } from "../../../components/common/PolicyModal";
 import InstructorLayout from "../../../layouts/InstructorLayout";
 import {
   useCourseDetail,
@@ -82,6 +83,8 @@ export default function InstructorCourseDetail({
   } = course as any;
 
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isPublishPolicyAgreed, setIsPublishPolicyAgreed] = useState(false);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
 
   // ─── State cho Appeal Modal ────────────────────────────────────────────────
   const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
@@ -209,9 +212,13 @@ export default function InstructorCourseDetail({
       );
       return;
     }
+    if (!isPublishPolicyAgreed) {
+      toast.error("Vui lòng đồng ý với Chính sách nền tảng");
+      return;
+    }
     setIsPublishModalOpen(false);
 
-    const result = await handleStatusChange("PENDING");
+    const result = await handleStatusChange("PENDING", { isPolicyAgreed: isPublishPolicyAgreed });
     if (result?.violatingLessons && result.violatingLessons.length > 0) {
       setViolatingLessons(result.violatingLessons);
       setAppealReason("");
@@ -447,6 +454,26 @@ export default function InstructorCourseDetail({
                 </p>
               </div>
             </div>
+
+            <div className="mt-6 px-2">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center mt-0.5">
+                  <input 
+                    type="checkbox" 
+                    checked={isPublishPolicyAgreed}
+                    onChange={(e) => setIsPublishPolicyAgreed(e.target.checked)}
+                    className="peer w-5 h-5 border-2 border-slate-300 rounded appearance-none checked:bg-[#1dbf73] checked:border-[#1dbf73] transition-colors cursor-pointer"
+                  />
+                  <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-slate-800">
+                  Tôi đã đọc và đồng ý với <button onClick={() => setShowPolicyModal(true)} className="text-[#1dbf73] hover:underline font-bold transition-all">Chính sách nền tảng</button> trước khi xuất bản khóa học.
+                </span>
+              </label>
+            </div>
+
             <div className="mt-8 flex justify-end gap-3">
               <button
                 onClick={() => setIsPublishModalOpen(false)}
@@ -456,8 +483,8 @@ export default function InstructorCourseDetail({
               </button>
               <button
                 onClick={() => void handleSubmitForReview()}
-                disabled={isStatusChanging}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md disabled:opacity-60"
+                disabled={isStatusChanging || !isPublishPolicyAgreed}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isStatusChanging && (
                   <Loader2 className="animate-spin" size={15} />
@@ -564,6 +591,19 @@ export default function InstructorCourseDetail({
           </div>
         </div>
       ) : null}
+
+      {/* Render PolicyModal if needed */}
+      {showPolicyModal && (
+        <PolicyModal 
+          isOpen={showPolicyModal}
+          type="instructor"
+          onAccept={() => {
+            setIsPublishPolicyAgreed(true);
+            setShowPolicyModal(false);
+          }}
+          onDecline={() => setShowPolicyModal(false)}
+        />
+      )}
     </InstructorLayout>
   );
 }
