@@ -35,6 +35,7 @@ export interface ChapterAccess {
   previousChapterId: number | null;
   canAccess: boolean;
   quizPassed: boolean;
+  hasQuiz: boolean;
 }
 
 function unwrap<T>(response: any): T {
@@ -57,7 +58,7 @@ export function useChapterQuiz() {
       setAccessByChapter((current) => ({ ...current, [chapterId]: access }));
       return access;
     } catch {
-      const denied = { chapterId, previousChapterId: null, canAccess: false, quizPassed: false };
+      const denied = { chapterId, previousChapterId: null, canAccess: false, quizPassed: false, hasQuiz: false };
       setAccessByChapter((current) => ({ ...current, [chapterId]: denied }));
       return denied;
     }
@@ -67,6 +68,10 @@ export function useChapterQuiz() {
     setLoading(true);
     try {
       const access = await getChapterAccess(chapterId);
+      if (!access.hasQuiz) {
+        toast.error('Chương này không có bài kiểm tra.');
+        return false;
+      }
       if (!access.canAccess) {
         toast.error('Bạn cần vượt qua bài kiểm tra chương trước để tiếp tục.');
         return false;
@@ -100,7 +105,14 @@ export function useChapterQuiz() {
       setResult(quizResult);
       if (quizResult.dat) {
         setAccessByChapter((current) => ({
-          ...current,
+          ...Object.fromEntries(
+            Object.entries(current).map(([chapterId, access]) => [
+              chapterId,
+              access.previousChapterId === quizResult.chapterId
+                ? { ...access, canAccess: true }
+                : access,
+            ]),
+          ),
           [quizResult.chapterId]: {
             ...current[quizResult.chapterId],
             chapterId: quizResult.chapterId,

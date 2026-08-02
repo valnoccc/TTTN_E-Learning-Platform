@@ -42,9 +42,6 @@ export class StudentProfileService {
     courseId: number,
     lessonId: number,
   ) {
-    console.log(
-      `[updateCurrentLesson] userId=${userId} | courseId=${courseId} | lessonId=${lessonId}`,
-    );
     await this.dataSource.query(
       `UPDATE DangKyKhoaHoc SET MaBaiHocGanNhat = ? WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'`,
       [lessonId, userId, courseId],
@@ -53,9 +50,6 @@ export class StudentProfileService {
   }
 
   async getCourseLastLesson(userId: number, courseId: number) {
-    console.log(
-      `[getCourseLastLesson] userId=${userId} | courseId=${courseId}`,
-    );
     const rows = await this.dataSource.query(
       `SELECT MaBaiHocGanNhat as lastLessonId FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE' LIMIT 1`,
       [userId, courseId],

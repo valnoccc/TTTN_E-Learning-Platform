@@ -63,4 +63,19 @@ describe('QuizAttemptsService', () => {
       BadRequestException,
     );
   });
+
+  it('allows access and reports no quiz when the chapter has no questions', async () => {
+    dataSource.query.mockResolvedValueOnce([{
+      maChuong: 6,
+      previousChapterId: 5,
+      canAccess: 1,
+      hasQuiz: 0,
+    }]);
+
+    await expect(service.getChapterAccess(7, 6)).resolves.toMatchObject({
+      chapterId: 6,
+      canAccess: true,
+      hasQuiz: false,
+    });
+  });
 });

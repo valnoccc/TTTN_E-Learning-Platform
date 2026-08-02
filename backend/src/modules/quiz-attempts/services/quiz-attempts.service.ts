@@ -22,6 +22,10 @@ export class QuizAttemptsService {
       `SELECT ch.MaChuong AS maChuong,
           CASE
             WHEN previous.MaChuong IS NULL THEN 1
+            WHEN NOT EXISTS (
+              SELECT 1 FROM CauHoiTracNghiem previousQuiz
+              WHERE previousQuiz.MaChuong = previous.MaChuong
+            ) THEN 1
             WHEN EXISTS (
               SELECT 1 FROM LichSuLamBai passed
               WHERE passed.MaND = ? AND passed.MaChuong = previous.MaChuong
@@ -169,7 +173,10 @@ export class QuizAttemptsService {
     const rows = await this.dataSource.query(
       `SELECT ch.MaChuong AS maChuong,
           previous.MaChuong AS previousChapterId,
-          CASE WHEN previous.MaChuong IS NULL OR EXISTS (
+          CASE WHEN previous.MaChuong IS NULL OR NOT EXISTS (
+            SELECT 1 FROM CauHoiTracNghiem previousChapterQuestion
+            WHERE previousChapterQuestion.MaChuong = previous.MaChuong
+          ) OR EXISTS (
             SELECT 1 FROM LichSuLamBai passed
             WHERE passed.MaND = ? AND passed.MaChuong = previous.MaChuong
               AND passed.Dat = 1 AND passed.TrangThai = 'SUBMITTED'
@@ -179,6 +186,10 @@ export class QuizAttemptsService {
             WHERE currentChapterPassed.MaND = ? AND currentChapterPassed.MaChuong = ch.MaChuong
               AND currentChapterPassed.Dat = 1 AND currentChapterPassed.TrangThai = 'SUBMITTED'
           ) THEN 1 ELSE 0 END AS quizPassed
+          ,CASE WHEN EXISTS (
+            SELECT 1 FROM CauHoiTracNghiem currentChapterQuestion
+            WHERE currentChapterQuestion.MaChuong = ch.MaChuong
+          ) THEN 1 ELSE 0 END AS hasQuiz
        FROM ChuongHoc ch
        INNER JOIN KhoaHoc kh ON kh.MaKH = ch.MaKH
        INNER JOIN DangKyKhoaHoc dk ON dk.MaKH = kh.MaKH
@@ -196,6 +207,7 @@ export class QuizAttemptsService {
       previousChapterId: rows[0].previousChapterId ? Number(rows[0].previousChapterId) : null,
       canAccess: Number(rows[0].canAccess) === 1,
       quizPassed: Number(rows[0].quizPassed) === 1,
+      hasQuiz: Number(rows[0].hasQuiz) === 1,
     };
   }
 }
