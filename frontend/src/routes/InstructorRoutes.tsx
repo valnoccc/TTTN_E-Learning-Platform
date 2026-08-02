@@ -4,6 +4,7 @@ import InstructorCourseCreate from '../pages/instructor/courses/CourseCreate';
 import InstructorCourseDetail from '../pages/instructor/courses/CourseDetailShell';
 import InstructorCourses from '../pages/instructor/courses/CourseList';
 import InstructorCourseLessons from '../pages/instructor/courses/tabs/CourseLessons';
+import InstructorCourseQuestions from '../pages/instructor/courses/tabs/CourseQuestions';
 import InstructorCourseOverview from '../pages/instructor/courses/tabs/CourseOverview';
 import InstructorCourseDiscussionsPage from '../pages/instructor/discussions/CourseDiscussions';
 import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
@@ -24,6 +25,7 @@ export default function InstructorRoutes() {
         <Route index element={<Navigate to="overview" replace />} />
         <Route path="overview" element={<InstructorCourseOverview />} />
         <Route path="lessons" element={<InstructorCourseLessons />} />
+        <Route path="questions" element={<InstructorCourseQuestions />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Route>
       <Route path="profile" element={<InstructorProfile />} />

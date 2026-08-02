@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   AlertTriangle,
@@ -6,6 +12,7 @@ import {
   BadgeInfo,
   BookOpen,
   FileEdit,
+  HelpCircle,
   Layers3,
   Trash2,
   Bookmark,
@@ -37,6 +44,12 @@ const detailTabs = [
     label: "Bài học",
     to: "lessons",
     icon: <BookOpen size={15} />,
+  },
+  {
+    key: "questions",
+    label: "Câu hỏi",
+    to: "questions",
+    icon: <HelpCircle size={15} />,
   },
 ] as const;
 
@@ -72,7 +85,9 @@ export default function InstructorCourseDetail({
 
   // ─── State cho Appeal Modal ────────────────────────────────────────────────
   const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
-  const [violatingLessons, setViolatingLessons] = useState<ViolatingLesson[]>([]);
+  const [violatingLessons, setViolatingLessons] = useState<ViolatingLesson[]>(
+    [],
+  );
   const [appealReason, setAppealReason] = useState("");
   const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
   // ──────────────────────────────────────────────────────────────────────────
@@ -125,8 +140,7 @@ export default function InstructorCourseDetail({
       return {
         tone: "sky",
         title: "Khóa học chưa có video bài giảng",
-        description:
-          "Bạn cần thêm ít nhất một bài học có video để hệ thống có thể đánh giá và quyết định trạng thái khóa học",
+        description: "",
       };
     }
 
@@ -134,8 +148,7 @@ export default function InstructorCourseDetail({
       return {
         tone: "amber",
         title: "Khóa học đang được AI kiểm duyệt",
-        description:
-          "Một số video vẫn đang được xử lý. Bạn có thể tiếp tục chỉnh sửa các phần khác trong lúc chờ.",
+        description: "",
       };
     }
 
@@ -143,8 +156,7 @@ export default function InstructorCourseDetail({
       return {
         tone: "emerald",
         title: "Khóa học đạt điều kiện duyệt",
-        description:
-          "Tỉ lệ nội dung đạt tiêu chuẩn. Khi gửi duyệt, hệ thống sẽ chuyển khóa học sang hàng chờ phê duyệt của Admin.",
+        description: "",
       };
     }
 
@@ -152,8 +164,7 @@ export default function InstructorCourseDetail({
       return {
         tone: "sky",
         title: "Khóa học cần chờ admin duyệt",
-        description:
-          "Tỉ lệ nội dung cần điều chỉnh. Khóa học sẽ chờ admin duyệt.",
+        description: "",
       };
     }
 
@@ -161,8 +172,7 @@ export default function InstructorCourseDetail({
       return {
         tone: "rose",
         title: "Khóa học vượt ngưỡng cho phép",
-        description:
-          "Tỉ lệ nội dung cần điều chỉnh vượt 40%. Hệ thống tự động từ chối và gửi thông báo yêu cầu chỉnh sửa.",
+        description: "",
       };
     }
 
@@ -194,7 +204,9 @@ export default function InstructorCourseDetail({
   /** Xử lý click "Gửi yêu cầu duyệt": gọi API, nếu có video REJECTED thì mở Appeal Modal */
   const handleSubmitForReview = async () => {
     if (isAiChecking) {
-      toast.error("Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.");
+      toast.error(
+        "Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.",
+      );
       return;
     }
     setIsPublishModalOpen(false);
@@ -269,9 +281,7 @@ export default function InstructorCourseDetail({
                   {!isNewCourse && (
                     <StatusActions
                       status={formData.trang_thai}
-                      onAction={() =>
-                        void handleStatusChange("DRAFT")
-                      }
+                      onAction={() => void handleStatusChange("DRAFT")}
                     />
                   )}
 
@@ -340,8 +350,8 @@ export default function InstructorCourseDetail({
             {!isNewCourse ? (
               <>
                 <div className="border-b border-slate-200 bg-white px-6 sm:px-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2">
-                    {detailTabs.map((tab) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-3">
+                    {detailTabs.map((tab, index) => (
                       <NavLink
                         key={tab.key}
                         to={tab.to}
@@ -358,18 +368,20 @@ export default function InstructorCourseDetail({
                         </span>
                         <span>
                           <span className="block text-sm font-extrabold tracking-wide sm:text-base">
-                            {tab.key === "overview" ? "01. " : "02. "}
-                            {tab.label}
+                            {String(index + 1).padStart(2, "0")}.{tab.label}
                           </span>
                           <span className="mt-1 block text-xs font-medium text-slate-400">
-                            {tab.key === "overview" ? "Thông tin cơ bản" : "Chương và nội dung"}
+                            {tab.key === "overview"
+                              ? "Thông tin cơ bản"
+                              : tab.key === "lessons"
+                                ? "Chương và bài học"
+                                : "Ngân hàng câu hỏi"}
                           </span>
                         </span>
                       </NavLink>
                     ))}
                   </div>
                 </div>
-
               </>
             ) : null}
 
@@ -429,7 +441,9 @@ export default function InstructorCourseDetail({
                   Xác nhận gửi duyệt
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Bạn có chắc chắn muốn gửi yêu cầu duyệt khóa học này không? Khóa học sẽ được kiểm tra nội dung để đảm bảo chất lượng trước khi được xuất bản.
+                  Bạn có chắc chắn muốn gửi yêu cầu duyệt khóa học này không?
+                  Khóa học sẽ được kiểm tra nội dung để đảm bảo chất lượng trước
+                  khi được xuất bản.
                 </p>
               </div>
             </div>
@@ -445,7 +459,9 @@ export default function InstructorCourseDetail({
                 disabled={isStatusChanging}
                 className="inline-flex items-center gap-2 rounded-lg bg-[#1dbf73] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#169b5c] hover:shadow-md disabled:opacity-60"
               >
-                {isStatusChanging && <Loader2 className="animate-spin" size={15} />}
+                {isStatusChanging && (
+                  <Loader2 className="animate-spin" size={15} />
+                )}
                 Xác nhận gửi
               </button>
             </div>
@@ -467,7 +483,9 @@ export default function InstructorCourseDetail({
                   Khóa học chứa nội dung vi phạm
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-red-700">
-                  AI đã phát hiện {violatingLessons.length} bài học có video vi phạm chính sách nội dung. Bạn có thể gửi kháng cáo kèm lý do giải thích.
+                  AI đã phát hiện {violatingLessons.length} bài học có video vi
+                  phạm chính sách nội dung. Bạn có thể gửi kháng cáo kèm lý do
+                  giải thích.
                 </p>
               </div>
             </div>
@@ -479,12 +497,22 @@ export default function InstructorCourseDetail({
               </p>
               <ul className="space-y-2 rounded-lg border border-red-100 bg-red-50/60 p-3">
                 {violatingLessons.map((lesson) => (
-                  <li key={lesson.id} className="flex items-start gap-2 text-sm">
-                    <MessageSquareWarning size={15} className="mt-0.5 shrink-0 text-red-500" />
+                  <li
+                    key={lesson.id}
+                    className="flex items-start gap-2 text-sm"
+                  >
+                    <MessageSquareWarning
+                      size={15}
+                      className="mt-0.5 shrink-0 text-red-500"
+                    />
                     <span>
-                      <span className="font-semibold text-slate-800">{lesson.title}</span>
+                      <span className="font-semibold text-slate-800">
+                        {lesson.title}
+                      </span>
                       {lesson.aiRejectReason && (
-                        <span className="ml-1 text-slate-500">— {lesson.aiRejectReason}</span>
+                        <span className="ml-1 text-slate-500">
+                          — {lesson.aiRejectReason}
+                        </span>
                       )}
                     </span>
                   </li>
@@ -527,7 +555,9 @@ export default function InstructorCourseDetail({
                 disabled={isSubmittingAppeal || !appealReason.trim()}
                 className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSubmittingAppeal && <Loader2 className="animate-spin" size={15} />}
+                {isSubmittingAppeal && (
+                  <Loader2 className="animate-spin" size={15} />
+                )}
                 Gửi Kháng Cáo
               </button>
             </div>
@@ -559,7 +589,7 @@ export function CourseSectionCard({
   children: ReactNode;
   action?: ReactNode;
 }) {
-    return (
+  return (
     <section className="border border-slate-300 bg-white">
       <div className="flex flex-col gap-3 border-b border-slate-300 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>

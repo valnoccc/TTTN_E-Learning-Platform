@@ -7,7 +7,6 @@ import {
   FileText,
   FolderX,
   GripVertical,
-  HelpCircle,
   Link2,
   Loader2,
   PlayCircle,
@@ -26,287 +25,6 @@ import {
   useInstructorCourseContext,
 } from "../CourseDetailShell";
 import type { LessonData } from "../types/curriculum";
-import axiosClient from "../../../../api/axios";
-
-interface QuizQuestion {
-  maCauHoi: number;
-  maChuong: number;
-  noiDung: string;
-  dapAnA: string;
-  dapAnB: string;
-  dapAnC: string;
-  dapAnD: string;
-  dapAnDung: "A" | "B" | "C" | "D";
-  thuTu: number;
-}
-
-type QuizQuestionForm = Omit<QuizQuestion, "maCauHoi" | "maChuong">;
-
-const emptyQuizQuestion: QuizQuestionForm = {
-  noiDung: "",
-  dapAnA: "",
-  dapAnB: "",
-  dapAnC: "",
-  dapAnD: "",
-  dapAnDung: "A",
-  thuTu: 1,
-};
-
-function readApiData<T>(response: unknown): T | undefined {
-  if (response && typeof response === "object" && "data" in response) {
-    return (response as { data?: T }).data;
-  }
-  return response as T;
-}
-
-function readApiErrorMessage(error: unknown, fallback: string) {
-  if (!error || typeof error !== "object" || !("response" in error)) {
-    return fallback;
-  }
-
-  const response = (error as { response?: { data?: { message?: string | string[] } } }).response;
-  const message = response?.data?.message;
-  if (Array.isArray(message)) return message.join(", ");
-  return message || fallback;
-}
-
-function QuizQuestionEditor({
-  chapter,
-  questions,
-  selectedQuestionId,
-  form,
-  loading,
-  saving,
-  locked,
-  onSelect,
-  onChange,
-  onSave,
-  onDelete,
-  onNew,
-}: {
-  chapter: { maChuong: number; tenChuong: string };
-  questions: QuizQuestion[];
-  selectedQuestionId: number | null;
-  form: QuizQuestionForm;
-  loading: boolean;
-  saving: boolean;
-  locked: boolean;
-  onSelect: (question: QuizQuestion) => void;
-  onChange: (field: keyof QuizQuestionForm, value: string | number) => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onNew: () => void;
-}) {
-  const answerFields = [
-    ["A", "dapAnA"],
-    ["B", "dapAnB"],
-    ["C", "dapAnC"],
-    ["D", "dapAnD"],
-  ] as const;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-            Câu hỏi của chương
-          </p>
-          <h2 className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
-            {chapter.tenChuong}
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Tạo và quản lý câu hỏi kiểm tra sau chương học.
-          </p>
-        </div>
-        {!locked ? (
-          <button
-            type="button"
-            onClick={onNew}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-          >
-            <Plus size={15} /> Câu hỏi mới
-          </button>
-        ) : null}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[230px_minmax(0,1fr)]">
-        <aside className="h-fit rounded-md border border-slate-200 bg-slate-50/60 p-3">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Ngân hàng câu hỏi
-            </span>
-            <span className="font-mono text-[10px] text-slate-400">
-              {questions.length}
-            </span>
-          </div>
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="h-12 animate-pulse rounded bg-slate-200" />
-              ))}
-            </div>
-          ) : questions.length === 0 ? (
-            <div className="rounded border border-dashed border-slate-300 bg-white px-3 py-6 text-center">
-              <HelpCircle className="mx-auto text-slate-300" size={22} />
-              <p className="mt-2 text-xs font-semibold text-slate-500">Chưa có câu hỏi</p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {questions.map((question) => (
-                <button
-                  key={question.maCauHoi}
-                  type="button"
-                  onClick={() => onSelect(question)}
-                  className={`flex w-full items-center gap-2 rounded border px-2.5 py-2.5 text-left transition ${
-                    selectedQuestionId === question.maCauHoi
-                      ? "border-emerald-300 bg-white text-emerald-800 shadow-sm"
-                      : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white"
-                  }`}
-                >
-                  <span className="font-mono text-[10px] text-slate-400">
-                    Q{question.thuTu}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">
-                    {question.noiDung}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </aside>
-
-        <form
-          className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSave();
-          }}
-        >
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                {selectedQuestionId ? `Câu hỏi ${form.thuTu}` : "Câu hỏi mới"}
-              </p>
-              <h3 className="mt-1 text-base font-bold text-slate-800">Soạn câu hỏi trắc nghiệm</h3>
-            </div>
-            <span className="rounded bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">
-              4 đáp án
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-5">
-            <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500" htmlFor="quiz-question-content">
-                Nội dung câu hỏi <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                id="quiz-question-content"
-                rows={4}
-                value={form.noiDung}
-                onChange={(event) => onChange("noiDung", event.target.value)}
-                disabled={locked || saving}
-                placeholder="Nhập nội dung câu hỏi..."
-                className="w-full resize-y rounded-md border border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-100"
-              />
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                    Các phương án trả lời <span className="text-rose-500">*</span>
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-400">Chọn một đáp án đúng.</p>
-                </div>
-                <span className="font-mono text-[10px] text-slate-400">4 / 4</span>
-              </div>
-              <div className="space-y-2">
-                {answerFields.map(([letter, field]) => (
-                  <label
-                    key={letter}
-                    className={`flex items-center gap-3 rounded-md border px-3 py-2 transition ${
-                      form.dapAnDung === letter
-                        ? "border-emerald-300 bg-emerald-50/60"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-slate-100 font-mono text-xs font-bold text-slate-500">
-                      {letter}
-                    </span>
-                    <input
-                      value={form[field]}
-                      onChange={(event) => onChange(field, event.target.value)}
-                      disabled={locked || saving}
-                      className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none"
-                      placeholder={`Nhập đáp án ${letter}`}
-                    />
-                    <input
-                      type="radio"
-                      name="quiz-correct-answer"
-                      checked={form.dapAnDung === letter}
-                      onChange={() => onChange("dapAnDung", letter)}
-                      disabled={locked || saving}
-                      className="h-4 w-4 accent-emerald-600"
-                      aria-label={`Chọn đáp án ${letter} là đáp án đúng`}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-200 pt-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-700" htmlFor="quiz-order">Thứ tự câu hỏi</label>
-                <p className="mt-1 text-[11px] text-slate-400">Số nhỏ hơn hiển thị trước.</p>
-              </div>
-              <input
-                id="quiz-order"
-                type="number"
-                min={1}
-                value={form.thuTu}
-                onChange={(event) => onChange("thuTu", Number(event.target.value))}
-                disabled={locked || saving}
-                className="w-20 rounded-md border border-slate-300 px-3 py-2 text-center text-sm outline-none focus:border-emerald-500"
-              />
-            </div>
-          </div>
-
-          {!locked ? (
-            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              {selectedQuestionId ? (
-                <button type="button" onClick={onDelete} disabled={saving} className="text-xs font-bold text-rose-500 hover:text-rose-700">
-                  Xóa câu hỏi
-                </button>
-              ) : <span />}
-              <button type="submit" disabled={saving || !form.noiDung.trim()} className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
-                {saving ? "Đang lưu..." : <><CheckCircle2 size={16} /> Lưu câu hỏi</>}
-              </button>
-            </div>
-          ) : null}
-        </form>
-      </div>
-
-      {selectedQuestionId ? (
-        <div className="border-t border-slate-200 pt-5">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Xem trước cho học viên</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          </div>
-          <div className="rounded-md border border-emerald-100 bg-emerald-50/40 p-4">
-            <p className="text-xs font-bold text-slate-800">{form.noiDung || "Nội dung câu hỏi"}</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {answerFields.map(([letter, field]) => (
-                <div key={letter} className={`rounded border px-3 py-2 text-xs ${form.dapAnDung === letter ? "border-emerald-300 bg-white font-bold text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
-                  <span className="mr-2 font-mono text-[10px] text-slate-400">{letter}</span>{form[field] || `Đáp án ${letter}`}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 // ─── Tooltip wrapper ─────────────────────────────────────────────────────────
 function Tooltip({
@@ -389,166 +107,6 @@ export default function InstructorCourseLessons() {
   const selectedChapter = chapters.find((chapter) =>
     chapter.baiHocs.some((lesson) => lesson.maBH === selectedLessonId),
   );
-
-  const [selectedQuestionChapterId, setSelectedQuestionChapterId] = useState<number | null>(null);
-  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
-  const [questionList, setQuestionList] = useState<QuizQuestion[]>([]);
-  const [questionForm, setQuestionForm] = useState<QuizQuestionForm>(emptyQuizQuestion);
-  const [questionLoading, setQuestionLoading] = useState(false);
-  const [questionSaving, setQuestionSaving] = useState(false);
-
-  const selectedQuestionChapter = chapters.find(
-    (chapter) => chapter.maChuong === selectedQuestionChapterId,
-  );
-
-  useEffect(() => {
-    if (!selectedQuestionChapterId) {
-      return;
-    }
-
-    let isActive = true;
-    setQuestionLoading(true);
-    void axiosClient
-      .get(`/courses/chapters/${selectedQuestionChapterId}/questions`)
-      .then((response) => {
-        if (!isActive) return;
-        const questions = (readApiData<QuizQuestion[]>(response) ?? []) as QuizQuestion[];
-        setQuestionList(questions);
-        const firstQuestion = questions[0];
-        if (firstQuestion) {
-          setSelectedQuestionId(firstQuestion.maCauHoi);
-          setQuestionForm({
-            noiDung: firstQuestion.noiDung,
-            dapAnA: firstQuestion.dapAnA,
-            dapAnB: firstQuestion.dapAnB,
-            dapAnC: firstQuestion.dapAnC,
-            dapAnD: firstQuestion.dapAnD,
-            dapAnDung: firstQuestion.dapAnDung,
-            thuTu: firstQuestion.thuTu,
-          });
-        } else {
-          setSelectedQuestionId(null);
-          setQuestionForm({ ...emptyQuizQuestion });
-        }
-      })
-      .catch(() => {
-        if (isActive) {
-          setQuestionList([]);
-          setSelectedQuestionId(null);
-          setQuestionForm({ ...emptyQuizQuestion });
-          toast.error(
-            readApiErrorMessage(
-              error,
-              "Không thể tải danh sách câu hỏi của chương",
-            ),
-          );
-        }
-      })
-      .finally(() => {
-        if (isActive) setQuestionLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [selectedQuestionChapterId]);
-
-  const openQuestionEditor = (chapterId: number) => {
-    setSelectedQuestionChapterId(chapterId);
-    setSelectedQuestionId(null);
-    setQuestionForm({ ...emptyQuizQuestion });
-    if (expandedChapterId !== chapterId) {
-      toggleChapter(chapterId);
-    }
-  };
-
-  const handleQuestionFieldChange = (
-    field: keyof QuizQuestionForm,
-    value: string | number,
-  ) => {
-    setQuestionForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const selectQuestion = (question: QuizQuestion) => {
-    setSelectedQuestionId(question.maCauHoi);
-    setQuestionForm({
-      noiDung: question.noiDung,
-      dapAnA: question.dapAnA,
-      dapAnB: question.dapAnB,
-      dapAnC: question.dapAnC,
-      dapAnD: question.dapAnD,
-      dapAnDung: question.dapAnDung,
-      thuTu: question.thuTu,
-    });
-  };
-
-  const handleNewQuestion = () => {
-    setSelectedQuestionId(null);
-    setQuestionForm({ ...emptyQuizQuestion, thuTu: questionList.length + 1 });
-  };
-
-  const handleSaveQuestion = async () => {
-    if (!selectedQuestionChapterId || !questionForm.noiDung.trim()) return;
-    setQuestionSaving(true);
-    try {
-      const path = `/courses/chapters/${selectedQuestionChapterId}/questions`;
-      const response = selectedQuestionId
-        ? await axiosClient.patch(`${path}/${selectedQuestionId}`, questionForm)
-        : await axiosClient.post(path, questionForm);
-      const savedQuestion =
-        (readApiData<QuizQuestion>(response) ?? questionForm) as QuizQuestion;
-      const normalizedQuestion = {
-        ...questionForm,
-        maCauHoi: savedQuestion.maCauHoi ?? selectedQuestionId ?? Date.now(),
-        maChuong: selectedQuestionChapterId,
-      };
-      setQuestionList((current) =>
-        selectedQuestionId
-          ? current.map((question) =>
-              question.maCauHoi === selectedQuestionId
-                ? normalizedQuestion
-                : question,
-            )
-          : [...current, normalizedQuestion],
-      );
-      setSelectedQuestionId(normalizedQuestion.maCauHoi);
-      toast.success(selectedQuestionId ? "Đã cập nhật câu hỏi" : "Đã tạo câu hỏi");
-    } catch (error) {
-      toast.error(
-        readApiErrorMessage(error, "Không thể lưu câu hỏi. Vui lòng thử lại"),
-      );
-    } finally {
-      setQuestionSaving(false);
-    }
-  };
-
-  const handleDeleteQuestion = async () => {
-    if (!selectedQuestionChapterId || !selectedQuestionId) return;
-    if (!window.confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) return;
-    setQuestionSaving(true);
-    try {
-      await axiosClient.delete(
-        `/courses/chapters/${selectedQuestionChapterId}/questions/${selectedQuestionId}`,
-      );
-      const nextQuestions = questionList.filter(
-        (question) => question.maCauHoi !== selectedQuestionId,
-      );
-      setQuestionList(nextQuestions);
-      const nextQuestion = nextQuestions[0];
-      if (nextQuestion) {
-        selectQuestion(nextQuestion);
-      } else {
-        handleNewQuestion();
-      }
-      toast.success("Đã xóa câu hỏi");
-    } catch (error) {
-      toast.error(
-        readApiErrorMessage(error, "Không thể xóa câu hỏi. Vui lòng thử lại"),
-      );
-    } finally {
-      setQuestionSaving(false);
-    }
-  };
 
   const [lessonForm, setLessonForm] = useState({
     tieu_de: "",
@@ -793,12 +351,6 @@ export default function InstructorCourseLessons() {
                         >
                           <Plus size={16} /> Thêm bài
                         </button>
-                        <button
-                          onClick={() => openQuestionEditor(chapter.maChuong)}
-                          className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
-                        >
-                          <HelpCircle size={16} /> Câu hỏi
-                        </button>
                       </div>
                     ) : null}
                   </div>
@@ -844,7 +396,7 @@ export default function InstructorCourseLessons() {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      {activeAddLessonChapterId === chapter.maChuong ? (
+                          {activeAddLessonChapterId === chapter.maChuong ? (
                         <div className="flex min-w-0 flex-col gap-2 border-y border-slate-100 bg-slate-50/30 px-4 py-3">
                           <input
                             type="text"
@@ -871,9 +423,9 @@ export default function InstructorCourseLessons() {
                             </button>
                           </div>
                         </div>
-                      ) : null}
+                          ) : null}
 
-                      <div className="divide-y divide-slate-100 bg-white">
+                          <div className="divide-y divide-slate-100 bg-white">
                         {chapter.baiHocs.length === 0 ? (
                           <p className="px-12 py-4 text-sm italic text-slate-400">
                             Hiện tại chưa có bài học nào!
@@ -967,7 +519,7 @@ export default function InstructorCourseLessons() {
                             );
                           })
                         )}
-                      </div>
+                          </div>
                     </div>
                   </div>
                 </div>
@@ -979,13 +531,9 @@ export default function InstructorCourseLessons() {
 
       <main className="min-w-0">
         <CourseSectionCard
-          title={selectedQuestionChapter ? "Câu hỏi trắc nghiệm" : "Thông tin bài học"}
+          title="Thông tin bài học"
           action={
-            selectedQuestionChapter ? (
-              <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-                Chương {selectedQuestionChapter.thuTu}
-              </span>
-            ) : selectedLesson ? (
+            selectedLesson ? (
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
                   selectedLesson.aiStatus === "REJECTED"
@@ -1004,22 +552,7 @@ export default function InstructorCourseLessons() {
             ) : null
           }
         >
-          {selectedQuestionChapter ? (
-            <QuizQuestionEditor
-              chapter={selectedQuestionChapter}
-              questions={questionList}
-              selectedQuestionId={selectedQuestionId}
-              form={questionForm}
-              loading={questionLoading}
-              saving={questionSaving}
-              locked={isLocked}
-              onSelect={selectQuestion}
-              onChange={handleQuestionFieldChange}
-              onSave={() => void handleSaveQuestion()}
-              onDelete={() => void handleDeleteQuestion()}
-              onNew={handleNewQuestion}
-            />
-          ) : !selectedLesson ? (
+          {!selectedLesson ? (
             <div className="flex min-h-[520px] flex-col items-center justify-center border border-dashed border-slate-300 bg-slate-50/60 px-6 text-center">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <FileText size={25} />
