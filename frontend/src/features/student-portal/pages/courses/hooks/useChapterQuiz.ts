@@ -51,8 +51,6 @@ export function useChapterQuiz() {
   const [submitting, setSubmitting] = useState(false);
 
   const getChapterAccess = useCallback(async (chapterId: number) => {
-    const cached = accessByChapter[chapterId];
-    if (cached) return cached;
     try {
       const access = unwrap<ChapterAccess>(await axiosClient.get(`/student/chapters/${chapterId}/access`));
       setAccessByChapter((current) => ({ ...current, [chapterId]: access }));
@@ -62,7 +60,7 @@ export function useChapterQuiz() {
       setAccessByChapter((current) => ({ ...current, [chapterId]: denied }));
       return denied;
     }
-  }, [accessByChapter]);
+  }, []);
 
   const startQuiz = useCallback(async (chapterId: number) => {
     setLoading(true);
@@ -77,6 +75,10 @@ export function useChapterQuiz() {
         return false;
       }
       const attempt = unwrap<ChapterQuizAttempt>(await axiosClient.post(`/student/chapters/${chapterId}/quiz-attempts`));
+      if (Number(attempt.chapterId) !== Number(chapterId)) {
+        toast.error('Dữ liệu bài kiểm tra không đúng chương đã chọn. Vui lòng thử lại.');
+        return false;
+      }
       setActiveAttempt(attempt);
       setAnswers({});
       setResult(null);

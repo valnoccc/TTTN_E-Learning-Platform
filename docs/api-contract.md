@@ -98,6 +98,12 @@ Admin (Kiem duyet)
 - `POST /checkout/momo/return` (Student - Xac thuc payload return co chu ky tu MoMo va dong bo trang thai hoa don; body la query params MoMo tra ve, response gom `invoiceId`, `resultCode`, `paymentStatus`)
 - `DELETE /admin/coupons/:id` (Admin - Xoa cung coupon neu chua co luot su dung; neu da co `SoLuongDaDung > 0` thi tra loi chan xoa)
 
+## Certificates (Chung chi)
+- `POST /users/me/certificates/:courseId/issue` (Student - Cap hoac lay chung chi neu da hoan thanh toan bo bai hoc va moi chuong co quiz dat tren 70%; chuong khong co quiz duoc bo qua)
+- `GET /users/me/certificates` (Student - Danh sach chung chi cua toi)
+- `GET /users/me/certificates/:courseId` (Student - Chi tiet chung chi theo khoa hoc)
+- `GET /users/me/certificates/by-id/:certificateId` (Student - Chi tiet chung chi theo ma chung chi)
+
 ## Submissions & Grading (Thuc hanh & Cham diem)
 - `POST /lessons/:lessonId/submissions` (Student - Nop bai tap qua link GitHub)
 - `GET /instructor/courses/:courseId/submissions` (Instructor - Xem danh sach bai nop cua hoc vien)

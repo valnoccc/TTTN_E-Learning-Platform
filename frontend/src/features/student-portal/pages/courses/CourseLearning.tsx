@@ -110,6 +110,7 @@ export default function CourseLearning() {
   } | null>(null);
   // Ref tránh lưu lần đầu khi vừa restore
   const isFirstMount = useRef(true);
+  const certificateRequestInFlight = useRef(false);
 
   useEffect(() => {
     const userString = localStorage.getItem("user");
@@ -336,6 +337,42 @@ export default function CourseLearning() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (
+      !id ||
+      certificateId ||
+      progress < 100 ||
+      curriculum.length === 0 ||
+      certificateRequestInFlight.current
+    ) {
+      return;
+    }
+
+    const lessons = curriculum.flatMap((module: any) => module.baiHocs ?? []);
+    if (lessons.length === 0 || !lessons.every((lesson: any) => lesson.completed)) {
+      return;
+    }
+
+    certificateRequestInFlight.current = true;
+    void axiosClient
+      .post(`/users/me/certificates/${id}/issue`)
+      .then((response: any) => {
+        const issuedCertificateId =
+          response?.certificateId ?? response?.data?.certificateId ?? null;
+        if (issuedCertificateId) {
+          setCertificateId(String(issuedCertificateId));
+          setIsCourseCompleted(true);
+          setIsGeneratingCertificate(true);
+        }
+      })
+      .catch(() => {
+        // Backend giữ quyền quyết định khi quiz chưa đạt trên 70%.
+      })
+      .finally(() => {
+        certificateRequestInFlight.current = false;
+      });
+  }, [chapterQuiz.result, certificateId, curriculum, id, progress]);
+
   const toggleModule = (moduleId: number) => {
     setExpandedModules((prev) =>
       prev.includes(moduleId)
@@ -449,6 +486,7 @@ export default function CourseLearning() {
 
   const handleVideoEnded = async () => {
     if (!activeLesson) return;
+    let certificateIssued = false;
 
     try {
       const userString = localStorage.getItem("user");
@@ -500,11 +538,18 @@ export default function CourseLearning() {
           );
           const certId =
             certRes?.certificateId ?? certRes?.data?.certificateId ?? null;
-          if (certId) setCertificateId(String(certId));
-        } catch (certErr) {
+          if (certId) {
+            setCertificateId(String(certId));
+            certificateIssued = true;
+          }
+        } catch (certErr: any) {
           console.warn(
             "[CourseLearning] Không thể cấp chứng chỉ (fail-safe):",
             certErr,
+          );
+          toast.error(
+            certErr?.response?.data?.message ??
+              "Bạn chưa đủ điều kiện nhận chứng chỉ.",
           );
         }
       }
@@ -513,8 +558,8 @@ export default function CourseLearning() {
     }
 
     if (!nextLesson) {
-      setIsCourseCompleted(true);
-      setIsGeneratingCertificate(true);
+      setIsCourseCompleted(certificateIssued);
+      setIsGeneratingCertificate(certificateIssued);
     }
   };
 
