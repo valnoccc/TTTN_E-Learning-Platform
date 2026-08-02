@@ -74,6 +74,14 @@ Admin (Kiem duyet)
 - `PATCH /courses/chapters/:chapterId/questions/:questionId` (Instructor - Sua cau hoi cua chuong; body cho phep cac truong tren)
 - `DELETE /courses/chapters/:chapterId/questions/:questionId` (Instructor - Xoa cau hoi cua chuong)
 
+## Quiz Attempts (Lich su lam bai cua hoc vien)
+- Database prerequisite: run `backend/src/modules/quiz-attempts/sql/create-quiz-attempts.sql` after the quiz-question table exists.
+- `GET /student/chapters/:chapterId/access` (Student - Kiem tra quyen vao chuong theo ket qua chuong truoc; response gom `canAccess` va `quizPassed`)
+- `POST /student/chapters/:chapterId/quiz-attempts` (Student - Tao mot lan lam bai moi; duoc lam lai)
+- `POST /student/quiz-attempts/:attemptId/submit` (Student - Nop bai; body: `{ answers: [{ maCauHoi, dapAnChon: 'A' | 'B' | 'C' | 'D' | null }] }`)
+- `GET /student/chapters/:chapterId/quiz-history` (Student - Xem lich su cac lan lam bai)
+- Dieu kien dat: `SoCauDung * 100 > TongSoCau * 50`, tuc la phai dung tren 50% cau hoi.
+
 ## Forum (Cong dong)
 - `GET /forum/questions` (Public - Danh sach topic)
 - `GET /forum/questions/:id` (Public - Chi tiet topic)

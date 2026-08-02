@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2, Trophy, X, Award } from 'lucide-react';
+import { ChevronLeft, PlayCircle, CheckCircle, FileText, BookOpen, Share2, Trophy, X, Award, Lock } from 'lucide-react';
 import axiosClient from '../../../../api/axios';
+import toast from 'react-hot-toast';
 import CourseOverview from './components/CourseOverview';
 import CourseQA from './components/CourseQA';
 import CourseReviews from './components/CourseReviews';
 import CourseLearningTools from './components/CourseLearningTools';
 import CustomVideoPlayer, { VideoPlaceholder } from './components/CustomVideoPlayer';
 import FooterTwo from '../../components/FooterTwo';
+import ChapterQuiz from './components/ChapterQuiz';
+import { useChapterQuiz } from './hooks/useChapterQuiz';
 
 const CourseCompletedScreen = () => {
   return (
@@ -70,6 +73,7 @@ export default function CourseLearning() {
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState<boolean>(false);
   const [certificateId, setCertificateId] = useState<string | null>(null);
   const [showTrophyDropdown, setShowTrophyDropdown] = useState<boolean>(false);
+  const chapterQuiz = useChapterQuiz();
   // Banner "Tiếp tục học" – hiển thị khi có bài học gần nhất
   const [resumeBanner, setResumeBanner] = useState<{ lesson: any; module: any } | null>(null);
   // Ref tránh lưu lần đầu khi vừa restore
@@ -163,6 +167,7 @@ export default function CourseLearning() {
 
           builtCurriculum = data;
           setCurriculum(data);
+          void Promise.all(data.map((module: any) => chapterQuiz.getChapterAccess(module.maChuong)));
         }
 
         // ─── Bước 2: SAU KHI curriculum đã sẵn, lấy bài học gần nhất ─────────
@@ -269,13 +274,40 @@ export default function CourseLearning() {
   const prevLesson = activeLessonIndex > 0 ? allLessons[activeLessonIndex - 1] : null;
 
   // ─── Khi học viên click chuyển bài ────────────────────────────────────────
-  const handleLessonClick = (lesson: any) => {
+  const handleLessonClick = async (lesson: any) => {
+    if (chapterQuiz.activeAttempt && !chapterQuiz.result) {
+      toast.error('Vui lòng hoàn thành và nộp bài kiểm tra trước khi chuyển đi.');
+      return;
+    }
+    if (chapterQuiz.activeAttempt && chapterQuiz.result) {
+      chapterQuiz.closeQuiz();
+    }
+
+    const parentModule = curriculum.find((m: any) =>
+      m.baiHocs?.some((l: any) => l.maBH === lesson.maBH),
+    );
+    const activeModule = activeLesson
+      ? curriculum.find((m: any) => m.baiHocs?.some((l: any) => l.maBH === activeLesson.maBH))
+      : null;
+    const isChangingChapter = Boolean(
+      parentModule && activeModule && parentModule.maChuong !== activeModule.maChuong,
+    );
+
+    if (parentModule && isChangingChapter) {
+      const access = await chapterQuiz.getChapterAccess(parentModule.maChuong);
+      if (!access.canAccess) {
+        const openedQuiz = activeModule
+          ? await chapterQuiz.startQuiz(activeModule.maChuong)
+          : false;
+        if (!openedQuiz) {
+          toast.error('Bạn cần vượt qua bài kiểm tra chương hiện tại để tiếp tục.');
+        }
+        return;
+      }
+    }
     setActiveLesson(lesson);
     setIsCourseCompleted(false);
     // Auto-expand module containing this lesson
-    const parentModule = curriculum.find((m: any) =>
-      m.baiHocs?.some((l: any) => l.maBH === lesson.maBH)
-    );
     if (parentModule) setExpandedModules([parentModule.maChuong]);
     setResumeBanner(null);
     if (id && lesson.maBH) {
@@ -283,8 +315,27 @@ export default function CourseLearning() {
     }
   };
 
-  const handleNextLesson = () => { if (nextLesson) handleLessonClick(nextLesson); };
+  const handleNextLesson = async () => {
+    if (!nextLesson) return;
+
+    const currentModule = activeLesson
+      ? curriculum.find((module: any) => module.baiHocs?.some((lesson: any) => lesson.maBH === activeLesson.maBH))
+      : null;
+    const nextModule = curriculum.find((module: any) => module.baiHocs?.some((lesson: any) => lesson.maBH === nextLesson.maBH));
+
+    if (currentModule && nextModule && currentModule.maChuong !== nextModule.maChuong) {
+      await chapterQuiz.startQuiz(currentModule.maChuong);
+      return;
+    }
+
+    await handleLessonClick(nextLesson);
+  };
   const handlePrevLesson = () => { if (prevLesson) handleLessonClick(prevLesson); };
+
+  const hasCompletedAllLessons = (module: any) => {
+    const lessons = module.baiHocs ?? [];
+    return lessons.length > 0 && lessons.every((lesson: any) => lesson.completed);
+  };
 
   const handleVideoEnded = async () => {
     if (!activeLesson) return;
@@ -463,7 +514,18 @@ export default function CourseLearning() {
         <div className="flex-1 flex flex-col min-w-0">
           {/* ── Custom Video Player ─────────────────────────────────────── */}
           <div className="w-full bg-black aspect-video lg:max-h-[70vh] relative shrink-0 overflow-hidden">
-            {isCourseCompleted ? (
+            {chapterQuiz.activeAttempt ? (
+              <ChapterQuiz
+                attempt={chapterQuiz.activeAttempt}
+                answers={chapterQuiz.answers}
+                result={chapterQuiz.result}
+                submitting={chapterQuiz.submitting}
+                onChoose={chapterQuiz.chooseAnswer}
+                onSubmit={() => void chapterQuiz.submitQuiz()}
+                onRetry={() => void chapterQuiz.startQuiz(chapterQuiz.activeAttempt!.chapterId)}
+                onClose={chapterQuiz.closeQuiz}
+              />
+            ) : isCourseCompleted ? (
               <CourseCompletedScreen />
             ) : activeLesson?.videoUrl && !activeLesson.videoUrl.includes('youtube.com') && !activeLesson.videoUrl.includes('youtu.be') ? (
               <CustomVideoPlayer
@@ -605,6 +667,34 @@ export default function CourseLearning() {
                             </div>
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!hasCompletedAllLessons(module)) {
+                              toast.error('Hãy xem và hoàn thành tất cả video trong chương trước.');
+                              return;
+                            }
+                            void chapterQuiz.startQuiz(module.maChuong);
+                          }}
+                          disabled={chapterQuiz.loading}
+                          className={`mt-2 flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors disabled:opacity-60 ${hasCompletedAllLessons(module) ? 'border-amber-200 bg-amber-50 hover:bg-amber-100' : 'border-slate-200 bg-slate-100 hover:bg-slate-200'}`}
+                        >
+                          {chapterQuiz.accessByChapter[module.maChuong]?.quizPassed ? (
+                            <CheckCircle size={17} className="shrink-0 text-emerald-600" />
+                          ) : !hasCompletedAllLessons(module) ? (
+                            <Lock size={16} className="shrink-0 text-slate-400" />
+                          ) : chapterQuiz.accessByChapter[module.maChuong]?.canAccess === false ? (
+                            <Lock size={16} className="shrink-0 text-amber-600" />
+                          ) : (
+                            <Trophy size={16} className="shrink-0 text-amber-600" />
+                          )}
+                          <span className="flex-1">
+                            <span className={`block text-sm font-bold ${chapterQuiz.accessByChapter[module.maChuong]?.quizPassed ? 'text-emerald-700' : hasCompletedAllLessons(module) ? 'text-amber-800' : 'text-slate-600'}`}>Bài kiểm tra chương</span>
+                            <span className={`mt-1 block text-xs ${hasCompletedAllLessons(module) ? 'text-amber-700' : 'text-slate-500'}`}>
+                              {chapterQuiz.accessByChapter[module.maChuong]?.quizPassed ? 'Đã hoàn thành · Đạt trên 50%' : hasCompletedAllLessons(module) ? 'Đạt trên 50% để mở chương tiếp theo' : 'Hoàn thành tất cả video để mở bài kiểm tra'}
+                            </span>
+                          </span>
+                        </button>
                       </div>
                     )}
                   </div>
