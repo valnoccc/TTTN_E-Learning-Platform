@@ -208,14 +208,9 @@ export class CourseStudentService {
     };
   }
 
-  async getCourseRecommendations(
-    courseIdParam: number | number[],
-    userId?: string,
-  ) {
+  async getCourseRecommendations(courseIdParam: number | number[], userId?: string) {
     // ─── Chuẩn hoá đầu vào ───────────────────────────────────────────────────
-    const courseIds = Array.isArray(courseIdParam)
-      ? courseIdParam
-      : [courseIdParam];
+    const courseIds = Array.isArray(courseIdParam) ? courseIdParam : [courseIdParam];
     if (courseIds.length === 0) {
       return { recommendations: [], crossSellVoucher: null };
     }
@@ -249,7 +244,7 @@ export class CourseStudentService {
     // ─── BƯỚC 1b: Lấy ứng viên theo từng danh mục trong 1 truy vấn duy nhất ─
     // Mỗi danh mục lấy tối đa `TOTAL_LIMIT` ứng viên để có đủ xoay vòng.
     // Dùng biến @rank để mô phỏng ROW_NUMBER tương thích MySQL 5.x/8.x.
-    const categoryRecommendations: any[] = [];
+    let categoryRecommendations: any[] = [];
 
     if (distinctMaDMs.length > 0) {
       const catPlaceholders = distinctMaDMs.map(() => '?').join(',');
@@ -307,9 +302,7 @@ export class CourseStudentService {
         ...courseIds,
         ...categoryRecommendations.map((r) => r.maKH),
       ];
-      const fallbackExcludePlaceholders = alreadyPickedIds
-        .map(() => '?')
-        .join(',');
+      const fallbackExcludePlaceholders = alreadyPickedIds.map(() => '?').join(',');
       const fallbackEnrolledExclude = enrolledExclude; // Cùng điều kiện đã đăng ký
 
       // Bỏ userId params đã push trước đó, build lại cho fallback
@@ -361,9 +354,7 @@ export class CourseStudentService {
         giaBan: Number(r.giaBan),
         hinhAnh: r.hinhAnh,
         maDM: Number(r.maDM),
-        averageRating: r.averageRating
-          ? Number(r.averageRating).toFixed(1)
-          : '0.0',
+        averageRating: r.averageRating ? Number(r.averageRating).toFixed(1) : '0.0',
         soNguoiHoc: Number(r.soNguoiHoc ?? 0),
       })),
       crossSellVoucher,

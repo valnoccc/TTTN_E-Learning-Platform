@@ -1,35 +1,36 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import ScrollToTop from './features/student-portal/helper/ScrollToTop';
-import BlockedAccountModal from './components/common/BlockedAccountModal';
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import ScrollToTop from "./features/student-portal/helper/ScrollToTop";
+import BlockedAccountModal from "./components/common/BlockedAccountModal";
 
-import RoleBasedRoute from './components/RoleBasedRoute';
-import AdminRoutes from './routes/AdminRoutes';
-import InstructorRoutes from './routes/InstructorRoutes';
-import StudentRoutes from './routes/StudentRoutes';
-import HomeTwo from './features/student-portal/HomeTwo';
-import About from './features/student-portal/pages/about/About';
-import CourseGrid from './features/student-portal/pages/courses/CourseGrid';
-import CourseList from './features/student-portal/pages/courses/CourseList';
-import CourseDetails from './features/student-portal/pages/courses/CourseDetails';
-import Faq from './features/student-portal/pages/faq/Faq';
-import Contact from './features/student-portal/pages/contact/Contact';
-import Instructors from './features/student-portal/pages/instructor/Instructors';
-import InstructorDetails from './features/student-portal/pages/instructor/InstructorDetails';
-import Checkout from './features/student-portal/pages/checkout/Checkout';
-import CheckoutSuccess from './features/student-portal/pages/checkout/CheckoutSuccess';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import BlogGrid from './features/student-portal/pages/blog/BlogGrid';
-import BlogDetails from './features/student-portal/pages/blog/BlogDetails';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import ForumHome from './features/forum/pages/ForumHome';
-import ForumDetail from './features/forum/pages/ForumDetail';
-import ForumAsk from './features/forum/pages/ForumAsk';
-import CertificateView from './features/student-portal/pages/courses/CertificateView';
+import RoleBasedRoute from "./components/RoleBasedRoute";
+import AdminRoutes from "./routes/AdminRoutes";
+import InstructorRoutes from "./routes/InstructorRoutes";
+import StudentRoutes from "./routes/StudentRoutes";
+import HomeTwo from "./features/student-portal/HomeTwo";
+import About from "./features/student-portal/pages/about/About";
+import CourseGrid from "./features/student-portal/pages/courses/CourseGrid";
+import CourseList from "./features/student-portal/pages/courses/CourseList";
+import CourseDetails from "./features/student-portal/pages/courses/CourseDetails";
+import Faq from "./features/student-portal/pages/faq/Faq";
+import Contact from "./features/student-portal/pages/contact/Contact";
+import Instructors from "./features/student-portal/pages/instructor/Instructors";
+import InstructorDetails from "./features/student-portal/pages/instructor/InstructorDetails";
+import Checkout from "./features/student-portal/pages/checkout/Checkout";
+import CheckoutSuccess from "./features/student-portal/pages/checkout/CheckoutSuccess";
+import VnpayReturn from "./features/student-portal/pages/checkout/VnpayReturn";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import BlogGrid from "./features/student-portal/pages/blog/BlogGrid";
+import BlogDetails from "./features/student-portal/pages/blog/BlogDetails";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import ForumHome from "./features/forum/pages/ForumHome";
+import ForumDetail from "./features/forum/pages/ForumDetail";
+import ForumAsk from "./features/forum/pages/ForumAsk";
+import CertificateView from "./features/student-portal/pages/courses/CertificateView";
 
-import StudentLayout from './features/student-portal/components/StudentLayout';
+import StudentLayout from "./features/student-portal/components/StudentLayout";
 
 function AnimatedRoutes() {
   return (
@@ -51,10 +52,10 @@ function AnimatedRoutes() {
         <Route path="/forum/ask" element={<ForumAsk />} />
         <Route path="/forum/question/:id" element={<ForumDetail />} />
         <Route path="/checkout" element={<Checkout />} />
-        {/* ⚠️ QUAN TRỌNG: /checkout/success phải ĐẶT TRƯỚC /checkout/:courseId */}
+        {/* ⚠️ QUAN TRỌNG: /checkout/success và /checkout/vnpay-return phải ĐẶT TRƯỚC /checkout/:courseId */}
         {/* Nếu đặt sau, React Router sẽ match "success" vào tham số :courseId => NaN */}
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
-        <Route path="/checkout/vnpay-return" element={<CheckoutSuccess />} />
+        <Route path="/checkout/vnpay-return" element={<VnpayReturn />} />
         <Route path="/checkout/:courseId" element={<Checkout />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -73,7 +74,7 @@ function AnimatedRoutes() {
       <Route
         path="/admin/*"
         element={
-          <RoleBasedRoute allowedRoles={['ADMIN']}>
+          <RoleBasedRoute allowedRoles={["ADMIN"]}>
             <AdminRoutes />
           </RoleBasedRoute>
         }
@@ -83,7 +84,7 @@ function AnimatedRoutes() {
       <Route
         path="/instructor/*"
         element={
-          <RoleBasedRoute allowedRoles={['INSTRUCTOR']}>
+          <RoleBasedRoute allowedRoles={["INSTRUCTOR"]}>
             <InstructorRoutes />
           </RoleBasedRoute>
         }
@@ -100,8 +101,11 @@ function App() {
       <ScrollToTop />
       <Toaster
         position="top-right"
-        containerStyle={{ top: '80px', zIndex: 999999 }}
-        toastOptions={{ duration: 3000, style: { fontSize: '14px', borderRadius: '8px' } }}
+        containerStyle={{ top: "80px", zIndex: 999999 }}
+        toastOptions={{
+          duration: 3000,
+          style: { fontSize: "14px", borderRadius: "8px" },
+        }}
       />
       <BlockedAccountModal />
       <AnimatedRoutes />

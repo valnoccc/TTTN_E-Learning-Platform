@@ -13,11 +13,7 @@
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CheckoutService } from './checkout.service';
-import type {
-  PaymentRequest,
-  MomoOrderData,
-  VnpayOrderData,
-} from './checkout.service';
+import type { PaymentRequest, MomoOrderData, VnpayOrderData } from './checkout.service';
 
 @Controller('checkout')
 export class CheckoutController {
@@ -58,27 +54,29 @@ export class CheckoutController {
     return this.checkoutService.handleMomoReturn(body, userId);
   }
 
-  // Tạo URL thanh toán VNPAY Sandbox. Không đánh dấu hóa đơn PAID ở bước này.
-  @Post('vnpay/create')
+  // ———  // ─── Tạo thanh toán VNPay (Cần đăng nhập) ──────────────────────────
+  @Post('vnpay/create-payment')
   @UseGuards(JwtAuthGuard)
   async createVnpayPayment(@Body() payload: VnpayOrderData, @Request() req) {
     const userId = req.user.sub || req.user.maND;
     return this.checkoutService.createVnpayPayment(userId, payload);
   }
 
-  // IPN do VNPAY gọi server-to-server, không gắn JwtAuthGuard.
-  @Get('vnpay-ipn')
-  async handleVnpayIpn(@Query() query: Record<string, any>) {
-    console.log('[VNPAY IPN]', {
-      txnRef: query.vnp_TxnRef,
-      responseCode: query.vnp_ResponseCode,
-      transactionStatus: query.vnp_TransactionStatus,
-      amount: query.vnp_Amount,
-    });
-    return this.checkoutService.handleVnpayIpn(query);
+  // ─── VNPay Return URL (PUBLIC - VNPay redirect về sau khi thanh toán) ─────────
+  @Get('vnpay/return')
+  @HttpCode(HttpStatus.OK)
+  async handleVnpayReturn(@Query() query: Record<string, string>) {
+    return this.checkoutService.handleVnpayReturn(query);
   }
 
-  // â”€â”€â”€ Thanh toÃ¡n thá»§ cÃ´ng (BANK / VNPAY / PAYPAL) (Cáº§n Ä‘Äƒng nháº­p) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── VNPay IPN Webhook ngầm (PUBLIC) ──────────────────────────────────
+  @Get('vnpay-ipn')
+  @HttpCode(HttpStatus.OK)
+  async handleVnpayIPN(@Query() query: Record<string, string>) {
+    return this.checkoutService.handleVnpayIPN(query);
+  }
+
+  // ——— Thanh toán thủ công (BANK / VNPAY / PAYPAL) (Cần đăng nhập) —————————————————
   @Post('process-payment')
   @UseGuards(JwtAuthGuard)
   async processPayment(@Body() payload: PaymentRequest, @Request() req) {

@@ -11,16 +11,16 @@ import {
   CourseDetailsData,
   getCourseDetails,
   processPayment,
-  createVnpayPayment,
   validateCoupon,
   createMomoPayment,
+  createVnpayPayment,
   getAvailableCoupons,
   AvailableCoupon,
-} from "../../../../api/checkout";
-import { removeFromCart } from "../../../cart/cartSlice";
-import { CouponModal } from "../../components/checkout/CouponModal";
-import { VoucherTrigger } from "../../components/checkout/VoucherTrigger";
-import CourseRecommendations from "./CourseRecommendations";
+} from '../../../../api/checkout';
+import { removeFromCart } from '../../../cart/cartSlice';
+import { CouponModal } from '../../components/checkout/CouponModal';
+import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
+import CourseRecommendations from './CourseRecommendations';
 
 const BANKS = [
   { id: "vcb", name: "Vietcombank", logo: "/assets/images/banks/VCB.png" },
@@ -86,9 +86,9 @@ export default function Checkout() {
         const parsedUser = JSON.parse(user);
         setFormData((prev) => ({
           ...prev,
-          fullName: parsedUser.HoTen || "",
-          email: parsedUser.Email || "",
-          phone: parsedUser.SoDienThoai || "",
+          fullName: parsedUser.name || parsedUser.fullName || parsedUser.HoTen || '',
+          email: parsedUser.email || parsedUser.Email || '',
+          phone: parsedUser.phone || parsedUser.SoDienThoai || '',
         }));
         setFormErrors({});
       } catch (e) {}
@@ -228,7 +228,13 @@ export default function Checkout() {
     if (!formData.email.trim()) errors.email = "Vui lòng nhập địa chỉ email";
     if (!formData.phone.trim()) errors.phone = "Vui lòng nhập số điện thoại";
 
-    if (Object.keys(errors).length > 0) {
+    if (!isFreeOrder && paymentMethod === 'VNPAY') {
+      // VNPay tự xử lý form nhập thẻ trên trang của họ — không cần validate card ở đây
+    }
+
+    if (
+      Object.keys(errors).length > 0
+    ) {
       setFormErrors(errors);
       return;
     }
@@ -252,7 +258,7 @@ export default function Checkout() {
           setPaymentMethod("FREE");
           setSuccessData({ invoiceId: res.invoiceId });
           window.scrollTo(0, 0);
-          toast.success("Đăng ký khóa học miễn phí thành công!");
+          toast.success('Đăng ký khóa học miễn phí thành công!');
         }
         return;
       }
@@ -278,24 +284,27 @@ export default function Checkout() {
         return;
       }
 
-      if (paymentMethod === "VNPAY") {
-        toast.loading("Đang tạo giao dịch VNPAY...", { id: "vnpay-loading" });
+      // ── VNPay: Tạo link và redirect sang cổng VNPay thật ──────────────────
+      if (paymentMethod === 'VNPAY') {
+        toast.loading('Đang kết nối VNPay...', { id: 'vnpay-loading' });
         const res = await createVnpayPayment({
-          courseIds: courses.map((course) => course.id),
+          courseIds: courses.map((c) => c.id),
           couponCode: discountValue > 0 ? couponCode : undefined,
           customerDetails: formData,
         });
-        toast.dismiss("vnpay-loading");
-        if (!res.paymentUrl) {
-          throw new Error("Không nhận được URL thanh toán VNPAY.");
+        toast.dismiss('vnpay-loading');
+        if (res.payUrl) {
+          toast.success('Đang chuyển đến VNPay...');
+          localStorage.removeItem('edumeo_cross_sell');
+          window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
+          window.location.href = res.payUrl;
+        } else {
+          toast.error('Không nhận được link thanh toán VNPay.');
         }
-        localStorage.removeItem("edumeo_cross_sell");
-        window.dispatchEvent(new Event("edumeo_cross_sell_updated"));
-        window.location.href = res.paymentUrl;
         return;
       }
 
-      // ── Các phương thức thủ công (BANK / PAYPAL) ───────────────────────────
+      // ── Các phương thức khác (BANK / PAYPAL) ──────────────────────
       const res = await processPayment({
         courseIds: courses.map((course) => course.id),
         paymentMethod,
@@ -310,7 +319,7 @@ export default function Checkout() {
         courses.forEach((course) => dispatch(removeFromCart(course.id)));
         setSuccessData({ invoiceId: res.invoiceId });
         window.scrollTo(0, 0);
-        toast.success("Thanh toán thành công!");
+        toast.success('Thanh toán thành công!');
       }
     } catch (error: any) {
       toast.dismiss("momo-loading");
@@ -340,7 +349,7 @@ export default function Checkout() {
   }
 
   if (successData) {
-    const userStr = localStorage.getItem("user");
+    const userStr = localStorage.getItem('user');
     let currentUserId: number | undefined = undefined;
     if (userStr) {
       try {
@@ -372,27 +381,20 @@ export default function Checkout() {
                 Phương thức thanh toán: <strong>{paymentMethod}</strong>
               </p>
               <div className="mt-4">
-                <button
-                  className="btn btn-success"
-                  style={{ marginRight: "10px" }}
-                  onClick={() => navigate("/student/my-courses")}
-                >
+                <button className="btn btn-success" style={{ marginRight: '10px' }} onClick={() => navigate('/student/my-courses')}>
                   Vào học ngay
                 </button>
-                <button
-                  className="btn btn-outline-secondary"
-                  onClick={() => navigate("/student/profile?tab=payments")}
-                >
+                <button className="btn btn-outline-secondary" onClick={() => navigate('/student/profile?tab=payments')}>
                   Xem lịch sử thanh toán
                 </button>
               </div>
             </div>
-
+            
             {courses.length > 0 && (
-              <CourseRecommendations
+              <CourseRecommendations 
                 courseIds={courses.map((c) => c.id)}
                 courseId={courses[0].id}
-                userId={currentUserId}
+                userId={currentUserId} 
               />
             )}
           </Container>
@@ -517,151 +519,30 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div style={{ display: "none" }}>
-                  {paymentMethod === "VNPAY" ? (
-                    <div className="vnpay-details mt-4">
-                      <h6 className="mb-3">Chọn ngân hàng</h6>
-                      <div
-                        className="d-flex flex-wrap mb-4"
-                        style={{ gap: "10px" }}
-                      >
-                        {BANKS.map((bank) => (
-                          <div
-                            key={bank.id}
-                            className={`bank-card border rounded p-2 text-center`}
-                            style={{
-                              width: "100px",
-                              cursor: "pointer",
-                              borderColor:
-                                selectedBank === bank.id
-                                  ? "#28a745"
-                                  : "#dee2e6",
-                              borderWidth:
-                                selectedBank === bank.id ? "2px" : "1px",
-                              opacity:
-                                selectedBank && selectedBank !== bank.id
-                                  ? 0.6
-                                  : 1,
-                              backgroundColor:
-                                selectedBank === bank.id ? "#f8fff9" : "#fff",
-                            }}
-                            onClick={() => setSelectedBank(bank.id)}
-                          >
-                            <img
-                              src={bank.logo}
-                              alt={bank.name}
-                              style={{
-                                width: "100%",
-                                height: "40px",
-                                objectFit: "contain",
-                              }}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  `https://placehold.co/100x40/ffffff/333333?text=${bank.id.toUpperCase()}`;
-                              }}
-                            />
-                            <small
-                              className="d-block mt-1 text-muted"
-                              style={{
-                                fontSize: "11px",
-                                fontWeight:
-                                  selectedBank === bank.id ? "bold" : "normal",
-                              }}
-                            >
-                              {bank.name}
-                            </small>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedBank && (
-                        <div
-                          className="card-info-form p-3 rounded"
-                          style={{ backgroundColor: "#f8f9fa" }}
-                        >
-                          <h6 className="mb-3">Thông tin thẻ</h6>
-                          <form>
-                            <Row>
-                              <Col md={12} className="mb-3">
-                                <label style={{ fontSize: "14px" }}>
-                                  Số thẻ
-                                </label>
-                                <input
-                                  type="text"
-                                  name="cardNumber"
-                                  className={`form-control ${formErrors.cardNumber ? "is-invalid" : ""}`}
-                                  placeholder="Nhập số thẻ (VD: 9704...)"
-                                  value={cardInfo.cardNumber}
-                                  onChange={handleCardInfoChange}
-                                />
-                                {formErrors.cardNumber && (
-                                  <small className="text-danger mt-1 d-block">
-                                    {formErrors.cardNumber}
-                                  </small>
-                                )}
-                              </Col>
-                              <Col md={6} className="mb-3">
-                                <label style={{ fontSize: "14px" }}>
-                                  Tên in trên thẻ
-                                </label>
-                                <input
-                                  type="text"
-                                  name="cardName"
-                                  className={`form-control ${formErrors.cardName ? "is-invalid" : ""}`}
-                                  placeholder="Tên không dấu (VD: NGUYEN VAN A)"
-                                  value={cardInfo.cardName}
-                                  onChange={handleCardInfoChange}
-                                  style={{ textTransform: "uppercase" }}
-                                />
-                                {formErrors.cardName && (
-                                  <small className="text-danger mt-1 d-block">
-                                    {formErrors.cardName}
-                                  </small>
-                                )}
-                              </Col>
-                              <Col md={6} className="mb-3">
-                                <label style={{ fontSize: "14px" }}>
-                                  Ngày phát hành
-                                </label>
-                                <input
-                                  type="text"
-                                  name="issueDate"
-                                  className={`form-control ${formErrors.issueDate ? "is-invalid" : ""}`}
-                                  placeholder="MM/YY"
-                                  value={cardInfo.issueDate}
-                                  onChange={handleCardInfoChange}
-                                />
-                                {formErrors.issueDate && (
-                                  <small className="text-danger mt-1 d-block">
-                                    {formErrors.issueDate}
-                                  </small>
-                                )}
-                              </Col>
-                            </Row>
-                            <p
-                              className="text-warning mt-2 mb-0"
-                              style={{ fontSize: "13px", fontWeight: "bold" }}
-                            >
-                              <i
-                                className="las la-info-circle mr-1"
-                                style={{ fontSize: "16px" }}
-                              />
-                              Lưu ý: Đây là môi trường Demo, thanh toán sẽ không
-                              bị trừ tiền thật.
-                            </p>
-                          </form>
+                  {paymentMethod === 'VNPAY' ? (
+                    <div className="vnpay-details mt-4 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', border: '1.5px solid #2563eb' }}>
+                      <div className="d-flex align-items-center gap-3">
+                        <img
+                          src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png"
+                          alt="VNPay"
+                          style={{ width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0, objectFit: 'contain' }}
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/56x56/2563eb/white?text=VNPay'; }}
+                        />
+                        <div>
+                          <h6 className="mb-1 fw-bold" style={{ color: '#1d4ed8' }}>Thanh toán qua cổng VNPay</h6>
+                          <p className="mb-0" style={{ fontSize: '13px', color: '#555' }}>
+                            Bấm <strong>"Xác nhận thanh toán"</strong> để được chuyển đến trang thanh toán
+                            chính thức của VNPay Sandbox. Nhập thông tin thẻ ATM trên trang của VNPay.
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  ) : null}
-                  </div>
-
-                  {paymentMethod === "VNPAY" ? (
-                    <div className="vnpay-details mt-4 p-3 rounded border border-primary-subtle bg-light">
-                      <h6 className="mb-2">Thanh toán qua thẻ ATM/NAPAS VNPAY</h6>
-                      <p className="mb-0 text-muted" style={{ fontSize: "13px" }}>
-                        Sau khi nhấn xác nhận, bạn sẽ được chuyển đến VNPAY Sandbox để chọn thẻ NAPAS và nhập thông tin thẻ/OTP. Thông tin thẻ không được lưu trên hệ thống Edumeo.
-                      </p>
+                      </div>
+                      <div className="mt-3 p-2 rounded" style={{ background: 'rgba(37, 99, 235, 0.08)', fontSize: '13px' }}>
+                        <span style={{ color: '#1d4ed8' }}>🔒</span>{' '}
+                        <span style={{ color: '#555' }}>Giao dịch được bảo mật bởi VNPay. Hệ thống sẽ tự động ghi danh khóa học sau khi thanh toán thành công.</span>
+                      </div>
+                      <div className="mt-3 p-2 rounded" style={{ background: '#fef9c3', border: '1px solid #fde047', fontSize: '13px' }}>
+                        <strong>🧪 Thẻ test Sandbox:</strong> Ngân hàng NCB — Số thẻ: <code>9704198526191432198</code> — Tên: <code>NGUYEN VIET HUNG</code> — Ngày PH: <code>07/15</code> — OTP: <code>123456</code>
+                      </div>
                     </div>
                   ) : null}
 
@@ -762,10 +643,10 @@ export default function Checkout() {
                       <img
                         src={
                           course.thumbnail
-                            ? course.thumbnail.startsWith("http")
+                            ? course.thumbnail.startsWith('http')
                               ? course.thumbnail
                               : `/assets/images/${course.thumbnail}`
-                            : "/assets/images/course-1.jpg"
+                            : '/assets/images/course-1.jpg'
                         }
                         alt={course.courseName}
                         style={{
@@ -774,6 +655,7 @@ export default function Checkout() {
                           objectFit: "cover",
                           borderRadius: "8px",
                         }}
+                        onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
                       />
                       <div className="details ml-3">
                         <h6 className="mb-1" style={{ fontSize: "15px" }}>

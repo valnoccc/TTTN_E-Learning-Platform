@@ -50,7 +50,7 @@ export class CheckoutService {
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
     private readonly couponsService: StudentCouponsService,
-  ) {}
+  ) { }
 
   private normalizeMomoResultCode(resultCode: unknown): number {
     const parsed = Number(resultCode);
@@ -150,276 +150,6 @@ export class CheckoutService {
     return Number(result?.affectedRows ?? 0);
   }
 
-  private buildVnpayQuery(params: Record<string, string | number>) {
-    return Object.keys(params)
-      .filter(
-        (key) =>
-          params[key] !== undefined &&
-          params[key] !== null &&
-          params[key] !== '',
-      )
-      .sort()
-      .map(
-        (key) =>
-          `${key}=${encodeURIComponent(String(params[key])).replace(/%20/g, '+')}`,
-      )
-      .join('&');
-  }
-
-  private createVnpaySignature(
-    params: Record<string, string | number>,
-    secret: string,
-  ) {
-    return crypto
-      .createHmac('sha512', secret)
-      .update(this.buildVnpayQuery(params))
-      .digest('hex');
-  }
-
-  private verifyVnpaySignature(params: Record<string, any>) {
-    const secret = process.env.VNPAY_HASH_SECRET;
-    const receivedHash = String(params.vnp_SecureHash || '');
-    if (!secret || !receivedHash) return false;
-
-    const signedParams = Object.fromEntries(
-      Object.entries(params).filter(
-        ([key]) => key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType',
-      ),
-    );
-    const expectedHash = this.createVnpaySignature(signedParams, secret);
-    return (
-      receivedHash.length === expectedHash.length &&
-      crypto.timingSafeEqual(
-        Buffer.from(receivedHash),
-        Buffer.from(expectedHash),
-      )
-    );
-  }
-
-  async createVnpayPayment(userId: number, orderData: VnpayOrderData) {
-    const tmnCode = process.env.VNPAY_TMN_CODE;
-    const hashSecret = process.env.VNPAY_HASH_SECRET;
-    const paymentUrl =
-      process.env.VNPAY_PAYMENT_URL ||
-      'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-    const returnUrl = process.env.VNPAY_RETURN_URL;
-
-    if (!tmnCode || !hashSecret || !returnUrl) {
-      throw new InternalServerErrorException(
-        'Thiếu cấu hình VNPAY trong hệ thống',
-      );
-    }
-
-    const { courseIds, couponCode } = orderData;
-    if (!courseIds?.length) throw new BadRequestException('Giỏ hàng trống');
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const placeholders = courseIds.map(() => '?').join(',');
-      const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
-        courseIds,
-      );
-      if (courses.length !== courseIds.length) {
-        throw new BadRequestException('Một số khóa học không tồn tại');
-      }
-
-      const existing = await queryRunner.query(
-        `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
-        [userId, ...courseIds],
-      );
-      if (existing.length) throw new BadRequestException('Đã đăng ký khóa học');
-
-      const totalOriginalPrice = courses.reduce(
-        (sum: number, course: any) => sum + Number(course.GiaBan || 0),
-        0,
-      );
-      let finalPrice = totalOriginalPrice;
-      let appliedCouponId: number | null = null;
-      let discountAmount = 0;
-      let discountTargetCourseIds: number[] = courseIds;
-
-      if (couponCode) {
-        const coupon = await this.couponsService.validateCoupon(
-          { maCode: couponCode, courseIds },
-          userId,
-        );
-        appliedCouponId = coupon.couponId;
-        discountAmount = coupon.discountAmount;
-        discountTargetCourseIds = coupon.targetCourseIds ?? courseIds;
-        finalPrice = Math.max(0, totalOriginalPrice - discountAmount);
-      }
-      if (finalPrice <= 0)
-        throw new BadRequestException('Đơn hàng miễn phí không cần qua VNPAY');
-
-      const insertResult = await queryRunner.query(
-        `INSERT INTO HoaDon (MaND, TongTien, TrangThaiThanhToan, PhuongThucThanhToan, MaCoupon) VALUES (?, ?, 'PENDING', 'VNPAY', ?)`,
-        [userId, finalPrice, appliedCouponId],
-      );
-      const invoiceId = Number(insertResult.insertId);
-      const rate = INSTRUCTOR_REVENUE_PERCENT;
-      const discountBase = discountTargetCourseIds.reduce((sum, courseId) => {
-        const course = courses.find(
-          (item: any) => Number(item.MaKH) === Number(courseId),
-        );
-        return sum + Number(course?.GiaBan || 0);
-      }, 0);
-
-      for (const course of courses) {
-        const price = Number(course.GiaBan || 0);
-        const courseDiscount =
-          appliedCouponId &&
-          discountTargetCourseIds.includes(Number(course.MaKH)) &&
-          discountBase > 0
-            ? (price / discountBase) * discountAmount
-            : 0;
-        await queryRunner.query(
-          `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
-          [
-            invoiceId,
-            course.MaKH,
-            price,
-            rate,
-            ((price - courseDiscount) * rate) / 100,
-          ],
-        );
-      }
-      await queryRunner.commitTransaction();
-
-      const txnRef = `${invoiceId}_${Date.now()}`;
-      const now = new Date();
-      const createDate = [
-        now.getFullYear(),
-        String(now.getMonth() + 1).padStart(2, '0'),
-        String(now.getDate()).padStart(2, '0'),
-        String(now.getHours()).padStart(2, '0'),
-        String(now.getMinutes()).padStart(2, '0'),
-        String(now.getSeconds()).padStart(2, '0'),
-      ].join('');
-      const params: Record<string, string | number> = {
-        vnp_Version: process.env.VNPAY_VERSION || '2.1.0',
-        vnp_Command: process.env.VNPAY_COMMAND || 'pay',
-        vnp_TmnCode: tmnCode,
-        vnp_Amount: Math.round(finalPrice * 100),
-        vnp_CreateDate: createDate,
-        vnp_CurrCode: process.env.VNPAY_CURR_CODE || 'VND',
-        vnp_IpAddr: '127.0.0.1',
-        vnp_Locale: process.env.VNPAY_LOCALE || 'vn',
-        vnp_OrderInfo: `Thanh toan don hang ${invoiceId}`,
-        vnp_OrderType: process.env.VNPAY_ORDER_TYPE || 'other',
-        vnp_ReturnUrl: returnUrl,
-        vnp_TxnRef: txnRef,
-      };
-      const signature = this.createVnpaySignature(params, hashSecret);
-      return {
-        success: true,
-        invoiceId,
-        txnRef,
-        paymentUrl: `${paymentUrl}?${this.buildVnpayQuery({ ...params, vnp_SecureHash: signature })}`,
-      };
-    } catch (error: any) {
-      if (queryRunner.isTransactionActive)
-        await queryRunner.rollbackTransaction();
-      if (
-        error instanceof BadRequestException ||
-        error instanceof InternalServerErrorException
-      )
-        throw error;
-      console.error('[VNPAY] Lỗi tạo thanh toán:', error);
-      throw new InternalServerErrorException(
-        `Lỗi tạo thanh toán VNPAY: ${error.message}`,
-      );
-    } finally {
-      if (!queryRunner.isReleased) await queryRunner.release();
-    }
-  }
-
-  async handleVnpayIpn(params: Record<string, any>) {
-    if (params.vnp_TmnCode !== process.env.VNPAY_TMN_CODE) {
-      return { RspCode: '01', Message: 'Invalid merchant' };
-    }
-    if (!this.verifyVnpaySignature(params)) {
-      return { RspCode: '97', Message: 'Invalid signature' };
-    }
-
-    const invoiceId = Number(String(params.vnp_TxnRef || '').split('_')[0]);
-    const paidAmount = Number(params.vnp_Amount || 0);
-    if (!Number.isInteger(invoiceId))
-      return { RspCode: '01', Message: 'Order not found' };
-
-    const invoices = await this.dataSource.query(
-      `SELECT MaHD, MaND, TongTien, TrangThaiThanhToan FROM HoaDon WHERE MaHD = ? LIMIT 1`,
-      [invoiceId],
-    );
-    const invoice = invoices[0];
-    if (!invoice) return { RspCode: '01', Message: 'Order not found' };
-    if (Math.round(Number(invoice.TongTien) * 100) !== paidAmount) {
-      return { RspCode: '04', Message: 'Invalid amount' };
-    }
-    if (invoice.TrangThaiThanhToan === 'PAID')
-      return { RspCode: '02', Message: 'Order already confirmed' };
-
-    const success =
-      params.vnp_ResponseCode === '00' && params.vnp_TransactionStatus === '00';
-    if (!success) {
-      await this.dataSource.query(
-        `UPDATE HoaDon SET TrangThaiThanhToan = 'FAILED' WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
-        [invoiceId],
-      );
-      return { RspCode: '00', Message: 'Confirm Success' };
-    }
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const updated = await queryRunner.query(
-        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID', NgayThanhToan = NOW() WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
-        [invoiceId],
-      );
-      if (this.toAffectedRows(updated) === 0) {
-        await queryRunner.rollbackTransaction();
-        return { RspCode: '02', Message: 'Order already confirmed' };
-      }
-
-      const details = await queryRunner.query(
-        `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ?`,
-        [invoiceId],
-      );
-      for (const detail of details) {
-        const exists = await queryRunner.query(
-          `SELECT MaDangKy FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE' LIMIT 1`,
-          [invoice.MaND, detail.MaKH],
-        );
-        if (!exists.length) {
-          await queryRunner.query(
-            `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, 'ACTIVE')`,
-            [invoice.MaND, detail.MaKH, invoiceId],
-          );
-        }
-      }
-      const courseIds = details.map((detail: any) => Number(detail.MaKH));
-      if (courseIds.length) {
-        const placeholders = courseIds.map(() => '?').join(',');
-        await queryRunner.query(
-          `DELETE ctgh FROM ChiTietGioHang ctgh JOIN GioHang gh ON gh.MaGioHang = ctgh.MaGioHang WHERE gh.MaND = ? AND ctgh.MaKH IN (${placeholders})`,
-          [invoice.MaND, ...courseIds],
-        );
-      }
-      await queryRunner.commitTransaction();
-      return { RspCode: '00', Message: 'Confirm Success' };
-    } catch (error) {
-      if (queryRunner.isTransactionActive)
-        await queryRunner.rollbackTransaction();
-      console.error('[VNPAY IPN] Lỗi cập nhật giao dịch:', error);
-      return { RspCode: '99', Message: 'Unknown error' };
-    } finally {
-      if (!queryRunner.isReleased) await queryRunner.release();
-    }
-  }
 
   private async getUserCouponContext(userId: number) {
     const [userRows, invoiceRows] = await Promise.all([
@@ -704,16 +434,16 @@ export class CheckoutService {
 
           const courseIds = Array.isArray(extraDecoded.courseIds)
             ? extraDecoded.courseIds
-                .map((courseId: any) => Number.parseInt(courseId, 10))
-                .filter((courseId: number) => Number.isFinite(courseId))
+              .map((courseId: any) => Number.parseInt(courseId, 10))
+              .filter((courseId: number) => Number.isFinite(courseId))
             : [];
           const failedCourses = courseIds.length
             ? await this.dataSource.query(
-                `SELECT TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${courseIds
-                  .map(() => '?')
-                  .join(',')})`,
-                courseIds,
-              )
+              `SELECT TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${courseIds
+                .map(() => '?')
+                .join(',')})`,
+              courseIds,
+            )
             : [];
           const courseNames = failedCourses
             .map((course: any) => course.TenKhoaHoc)
@@ -1141,6 +871,387 @@ export class CheckoutService {
   }
 
   // ────────────────────────────────────────────────────────────────────────────────
+  // VNPAY: Tạo URL thanh toán
+  // ────────────────────────────────────────────────────────────────────────────────
+  async createVnpayPayment(userId: number, orderData: VnpayOrderData) {
+    const { courseIds, couponCode } = orderData;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const placeholders = courseIds.map(() => '?').join(',');
+      const courses = await queryRunner.query(
+        `SELECT MaKH, GiaBan, TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        courseIds,
+      );
+
+      if (courses.length !== courseIds.length) {
+        throw new BadRequestException('Một số khóa học không tồn tại');
+      }
+
+      const existingEnrollments = await queryRunner.query(
+        `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
+        [userId, ...courseIds],
+      );
+      if (existingEnrollments.length > 0) {
+        throw new BadRequestException('Bạn đã đăng ký một trong các khóa học này rồi');
+      }
+
+      const totalOriginalPrice = courses.reduce(
+        (sum: number, c: any) => sum + Number(c.GiaBan || 0),
+        0,
+      );
+      let finalPrice = totalOriginalPrice;
+      let appliedCouponId: number | null = null;
+      let discountAmount = 0;
+      let discountTargetCourseIds: number[] = courseIds;
+
+      if (couponCode) {
+        const couponValidation = await this.couponsService.validateCoupon(
+          { maCode: couponCode, courseIds },
+          userId,
+        );
+        appliedCouponId = couponValidation.couponId;
+        discountAmount = couponValidation.discountAmount;
+        discountTargetCourseIds = couponValidation.targetCourseIds ?? courseIds;
+        finalPrice = Math.max(0, totalOriginalPrice - discountAmount);
+      }
+
+      if (finalPrice <= 0) {
+        throw new BadRequestException('Vui lòng dùng phương thức FREE cho đơn hàng miễn phí');
+      }
+
+      // Tạo hóa đơn tạm PENDING
+      const insertResult = await queryRunner.query(
+        `INSERT INTO HoaDon (MaND, TongTien, TrangThaiThanhToan, PhuongThucThanhToan, MaCoupon) VALUES (?, ?, 'PENDING', 'VNPAY', ?)`,
+        [userId, finalPrice, appliedCouponId],
+      );
+      const invoiceId = insertResult.insertId;
+
+      const instructorRevenueRate = INSTRUCTOR_REVENUE_PERCENT;
+      const discountBaseSubtotal = discountTargetCourseIds.reduce((sum, cid) => {
+        const target = courses.find((c: any) => Number(c.MaKH) === Number(cid));
+        return sum + Number(target?.GiaBan || 0);
+      }, 0);
+
+      for (const course of courses) {
+        const giaGhiNhan = Number(course.GiaBan || 0);
+        let doanhThuGiangVien = 0;
+        if (appliedCouponId) {
+          const currentCourseDiscount = discountTargetCourseIds.includes(Number(course.MaKH))
+            ? discountBaseSubtotal > 0 ? (giaGhiNhan / discountBaseSubtotal) * discountAmount : 0
+            : 0;
+          doanhThuGiangVien = ((giaGhiNhan - currentCourseDiscount) * instructorRevenueRate) / 100;
+        } else {
+          doanhThuGiangVien = (giaGhiNhan * instructorRevenueRate) / 100;
+        }
+        await queryRunner.query(
+          `INSERT INTO ChiTietHoaDon (MaHD, MaKH, GiaGhiNhan, TiLeGiangVien, DoanhThuGiangVien) VALUES (?, ?, ?, ?, ?)`,
+          [invoiceId, course.MaKH, giaGhiNhan, instructorRevenueRate, doanhThuGiangVien],
+        );
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Tạo URL VNPay
+      const tmnCode = process.env.VNPAY_TMN_CODE;
+      const hashSecret = process.env.VNPAY_HASH_SECRET;
+      const vnpUrl = process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+      const returnUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5173/checkout/vnpay-return';
+
+      if (!tmnCode || !hashSecret) {
+        throw new Error('Thiếu cấu hình VNPay trong hệ thống');
+      }
+
+      const createDate = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const createDateStr =
+        `${createDate.getFullYear()}${pad(createDate.getMonth() + 1)}${pad(createDate.getDate())}` +
+        `${pad(createDate.getHours())}${pad(createDate.getMinutes())}${pad(createDate.getSeconds())}`;
+
+      const txnRef = `${invoiceId}-${Date.now()}`;
+      const amount = Math.round(finalPrice) * 100; // VNPay tính theo đơn vị xu (x100)
+
+      const params: Record<string, string> = {
+        vnp_Version: process.env.VNPAY_VERSION || '2.1.0',
+        vnp_Command: process.env.VNPAY_COMMAND || 'pay',
+        vnp_TmnCode: tmnCode,
+        vnp_Locale: process.env.VNPAY_LOCALE || 'vn',
+        vnp_CurrCode: process.env.VNPAY_CURR_CODE || 'VND',
+        vnp_TxnRef: txnRef,
+        vnp_OrderInfo: `Thanh toan don hang ${invoiceId}`,
+        vnp_OrderType: process.env.VNPAY_ORDER_TYPE || 'other',
+        vnp_Amount: String(amount),
+        vnp_ReturnUrl: returnUrl,
+        vnp_IpAddr: '127.0.0.1',
+        vnp_CreateDate: createDateStr,
+        // vnp_BankCode: để trống → VNPay sẽ cho người dùng chọn ngân hàng trên trang của họ
+      };
+
+      // Tạo chuỗi ký tự hash theo đúng chuẩn VNPay
+      const sortedParams = this.sortVnpayObject(params);
+      const signData = Object.entries(sortedParams).map(([k, v]) => `${k}=${v}`).join('&');
+
+      const hmac = crypto.createHmac('sha512', hashSecret);
+      const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+      // Tạo chuỗi query string cho URL 
+      const queryString = Object.entries(sortedParams)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('&');
+      const payUrl = `${vnpUrl}?${queryString}&vnp_SecureHash=${signed}`;
+
+      return { success: true, payUrl, invoiceId, txnRef };
+    } catch (error: any) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      if (error instanceof BadRequestException || error instanceof InternalServerErrorException) throw error;
+      throw new InternalServerErrorException(`Lỗi tạo thanh toán VNPay: ${error.message}`);
+    } finally {
+      if (!queryRunner.isReleased) await queryRunner.release();
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────────
+  // VNPAY: Xác thực Return URL (Redirect từ VNPay về)
+  // ────────────────────────────────────────────────────────────────────────────────
+  async handleVnpayReturn(query: Record<string, string>) {
+    return this.processVnpayCallback(query, 'return');
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────────
+  // VNPAY: IPN Webhook ngầm (Backup)
+  // ────────────────────────────────────────────────────────────────────────────────
+  async handleVnpayIPN(query: Record<string, string>) {
+    return this.processVnpayCallback(query, 'ipn');
+  }
+
+  private verifyVnpaySignature(query: Record<string, string>): boolean {
+    const hashSecret = process.env.VNPAY_HASH_SECRET;
+    if (!hashSecret) throw new Error('Thiếu VNPAY_HASH_SECRET');
+
+    const secureHash = query['vnp_SecureHash'];
+
+    // Lọc bỏ vnp_SecureHash và vnp_SecureHashType
+    const paramsToSign: Record<string, string> = {};
+    for (const [k, v] of Object.entries(query)) {
+      if (k !== 'vnp_SecureHash' && k !== 'vnp_SecureHashType' && v !== '' && v !== undefined) {
+        paramsToSign[k] = v;
+      }
+    }
+
+    const sortedParams = this.sortVnpayObject(paramsToSign);
+    const signData = Object.entries(sortedParams).map(([k, v]) => `${k}=${v}`).join('&');
+
+    const hmac = crypto.createHmac('sha512', hashSecret);
+    const expected = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+    return secureHash === expected;
+  }
+
+  // Hàm helper sắp xếp object theo đúng chuẩn VNPay
+  private sortVnpayObject(obj: Record<string, string>): Record<string, string> {
+    const sorted: Record<string, string> = {};
+    const str: string[] = [];
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        str.push(encodeURIComponent(key));
+      }
+    }
+    str.sort();
+    for (let i = 0; i < str.length; i++) {
+      const key = str[i];
+      sorted[key] = encodeURIComponent(obj[key]).replace(/%20/g, '+');
+    }
+    return sorted;
+  }
+
+  private async processVnpayCallback(query: Record<string, string>, source: 'return' | 'ipn') {
+    // 1. Xác thực chữ ký
+    const isValid = this.verifyVnpaySignature(query);
+    if (!isValid) {
+      console.error('[VNPay] Chữ ký KHÔNG hợp lệ!');
+      if (source === 'ipn') return { RspCode: '97', Message: 'Fail checksum' };
+      throw new UnauthorizedException('Chữ ký VNPay không hợp lệ');
+    }
+
+    const responseCode = query['vnp_ResponseCode'];
+    const transactionStatus = query['vnp_TransactionStatus'];
+    const txnRef = query['vnp_TxnRef']; // format: invoiceId-timestamp
+    const vnpAmount = Number(query['vnp_Amount']) / 100;
+    const bankCode = query['vnp_BankCode'];
+    const transactionNo = query['vnp_TransactionNo'];
+
+    // Lấy invoiceId từ txnRef
+    const invoiceId = parseInt(txnRef?.split('-')?.[0] || '0', 10);
+    if (isNaN(invoiceId) || invoiceId === 0) {
+      if (source === 'ipn') return { RspCode: '01', Message: 'Order not found' };
+      throw new BadRequestException('Mã hóa đơn không hợp lệ');
+    }
+
+    // 2. Nếu thanh toán không thành công
+    if (responseCode !== '00' || transactionStatus !== '00') {
+      try {
+        await this.dataSource.query(
+          `UPDATE HoaDon SET TrangThaiThanhToan = 'FAILED' WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
+          [invoiceId],
+        );
+      } catch (e) {
+        console.error('[VNPay] Lỗi cập nhật FAILED:', e);
+      }
+      if (source === 'ipn') return { RspCode: '00', Message: 'Confirm Success' };
+      return { success: false, invoiceId, responseCode, message: 'Thanh toán VNPay không thành công' };
+    }
+
+    // 3. Thanh toán thành công → dùng transaction
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Kiểm tra hóa đơn
+      const invoices = await queryRunner.query(
+        `SELECT MaHD, TrangThaiThanhToan, MaND FROM HoaDon WHERE MaHD = ?`,
+        [invoiceId],
+      );
+      if (invoices.length === 0) {
+        await queryRunner.rollbackTransaction();
+        if (source === 'ipn') return { RspCode: '01', Message: 'Order not found' };
+        throw new NotFoundException(`Không tìm thấy hoá đơn ${invoiceId}`);
+      }
+      if (invoices[0].TrangThaiThanhToan === 'PAID') {
+        await queryRunner.rollbackTransaction();
+        if (source === 'ipn') return { RspCode: '02', Message: 'Order already confirmed' };
+        
+        // Fetch courseIds for frontend cross-sell even if already paid
+        const details = await this.dataSource.query(`SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ?`, [invoiceId]);
+        const validCourseIds = details.map((d: any) => Number(d.MaKH));
+        
+        return { 
+          success: true, 
+          invoiceId, 
+          message: 'Giao dịch đã được xác nhận thành công', 
+          userId: invoices[0].MaND, 
+          courseIds: validCourseIds 
+        };
+      }
+
+      const userId = invoices[0].MaND;
+
+      // Cập nhật hóa đơn PAID
+      const updateResult = await queryRunner.query(
+        `UPDATE HoaDon SET TrangThaiThanhToan = 'PAID', NgayThanhToan = NOW() WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
+        [invoiceId],
+      );
+      if (this.toAffectedRows(updateResult) === 0) {
+        await queryRunner.rollbackTransaction();
+        if (source === 'ipn') return { RspCode: '02', Message: 'Order already confirmed' };
+        
+        const details = await this.dataSource.query(`SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ?`, [invoiceId]);
+        const validCourseIds = details.map((d: any) => Number(d.MaKH));
+        
+        return { 
+          success: true, 
+          invoiceId, 
+          message: 'Giao dịch đã được xác nhận thành công',
+          userId,
+          courseIds: validCourseIds
+        };
+      }
+
+      // Lấy courseIds từ ChiTietHoaDon
+      const details = await queryRunner.query(
+        `SELECT MaKH FROM ChiTietHoaDon WHERE MaHD = ?`,
+        [invoiceId],
+      );
+      const validCourseIds: number[] = details.map((d: any) => Number(d.MaKH));
+
+      // Ghi danh học viên
+      const placeholders = validCourseIds.map(() => '?').join(',');
+      const existing = validCourseIds.length > 0
+        ? await queryRunner.query(
+          `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH IN (${placeholders}) AND TrangThai = 'ACTIVE'`,
+          [userId, ...validCourseIds],
+        )
+        : [];
+      const existingIds = existing.map((e: any) => Number(e.MaKH));
+
+      for (const courseId of validCourseIds) {
+        if (!existingIds.includes(courseId)) {
+          try {
+            await queryRunner.query(
+              `INSERT INTO DangKyKhoaHoc (MaND, MaKH, MaHD, TrangThai) VALUES (?, ?, ?, 'ACTIVE')`,
+              [userId, courseId, invoiceId],
+            );
+          } catch (insertError: any) {
+            console.warn('[VNPay IPN] Skip dup entry:', insertError.message);
+          }
+        }
+      }
+
+      // Xóa cart
+      if (validCourseIds.length > 0) {
+        await queryRunner.query(
+          `DELETE ctgh FROM ChiTietGioHang ctgh
+           JOIN GioHang gh ON gh.MaGioHang = ctgh.MaGioHang
+           WHERE gh.MaND = ? AND ctgh.MaKH IN (${placeholders})`,
+          [userId, ...validCourseIds],
+        );
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Thông báo (sau commit)
+      try {
+        const courses = await this.dataSource.query(
+          `SELECT k.TenKhoaHoc FROM ChiTietHoaDon c JOIN KhoaHoc k ON c.MaKH = k.MaKH WHERE c.MaHD = ?`,
+          [invoiceId],
+        );
+        const courseNames = courses.map((c: any) => c.TenKhoaHoc).join(', ');
+        await this.notificationsService.createNotification({
+          maND: userId,
+          loaiThongBao: NotificationType.PAYMENT,
+          tieuDe: 'Thanh toán VNPay thành công! 🎉',
+          noiDung: `Bạn đã thanh toán thành công qua VNPay cho khóa học: ${courseNames}. Chúc bạn học tập vui vẻ!`,
+        });
+        for (const course of courses) {
+          await this.notificationsService.createNotification({
+            maND: userId,
+            loaiThongBao: NotificationType.COURSE,
+            tieuDe: `Ghi danh thành công: ${course.TenKhoaHoc}`,
+            noiDung: `Bạn đã được ghi danh vào khóa học "${course.TenKhoaHoc}". Hãy bắt đầu học ngay!`,
+          });
+        }
+      } catch (notifError) {
+        console.error('[VNPay] Lỗi tạo thông báo:', notifError);
+      }
+
+      if (source === 'ipn') return { RspCode: '00', Message: 'Confirm Success' };
+      return {
+        success: true,
+        invoiceId,
+        responseCode,
+        bankCode,
+        transactionNo,
+        amount: vnpAmount,
+        message: 'Thanh toán VNPay thành công',
+        userId,
+        courseIds: validCourseIds,
+      };
+    } catch (error: any) {
+      if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
+      console.error('[VNPay] Lỗi xử lý callback:', error);
+      if (source === 'ipn') return { RspCode: '99', Message: 'Unknown error' };
+      throw new InternalServerErrorException(`Lỗi xử lý VNPay: ${error.message}`);
+    } finally {
+      if (!queryRunner.isReleased) await queryRunner.release();
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────────
   // Lấy danh sách voucher khả dụng
   // ────────────────────────────────────────────────────────────────────────────────
   async getAvailableCoupons(courseIdsStr: string, userId: number) {
@@ -1337,7 +1448,7 @@ export class CheckoutService {
                   : Number(rule.GiaTriDieuKien);
               const accountAgeHours = userContext.ngayTao
                 ? (Date.now() - userContext.ngayTao.getTime()) /
-                  (1000 * 60 * 60)
+                (1000 * 60 * 60)
                 : null;
 
               if (
@@ -1375,9 +1486,9 @@ export class CheckoutService {
                 ruleType === 'ACCOUNT_AGE_HOURS' &&
                 accountAgeHours !== null &&
                 accountAgeHours >
-                  (Number.isFinite(ruleValue) && ruleValue !== null
-                    ? ruleValue
-                    : 24)
+                (Number.isFinite(ruleValue) && ruleValue !== null
+                  ? ruleValue
+                  : 24)
               ) {
                 isAvailable = false;
                 reason =
@@ -1388,9 +1499,9 @@ export class CheckoutService {
               if (
                 ruleType === 'COMBO_ONLY' &&
                 courseIds.length <
-                  (Number.isFinite(ruleValue) && ruleValue !== null
-                    ? ruleValue
-                    : 2)
+                (Number.isFinite(ruleValue) && ruleValue !== null
+                  ? ruleValue
+                  : 2)
               ) {
                 isAvailable = false;
                 reason =
@@ -1401,9 +1512,9 @@ export class CheckoutService {
               if (
                 ruleType === 'MIN_ORDER_VALUE' &&
                 applicablePrice <
-                  (Number.isFinite(ruleValue) && ruleValue !== null
-                    ? ruleValue
-                    : 0)
+                (Number.isFinite(ruleValue) && ruleValue !== null
+                  ? ruleValue
+                  : 0)
               ) {
                 isAvailable = false;
                 reason =
@@ -1414,9 +1525,9 @@ export class CheckoutService {
               if (
                 ruleType === 'MIN_COURSE_COUNT' &&
                 courseIds.length <
-                  (Number.isFinite(ruleValue) && ruleValue !== null
-                    ? ruleValue
-                    : 1)
+                (Number.isFinite(ruleValue) && ruleValue !== null
+                  ? ruleValue
+                  : 1)
               ) {
                 isAvailable = false;
                 reason =

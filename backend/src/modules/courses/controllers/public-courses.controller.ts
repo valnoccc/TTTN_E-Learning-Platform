@@ -24,13 +24,7 @@ export class PublicCoursesController {
     @Query('rating') rating?: string,
     @Query('sort') sort?: string,
   ) {
-    const filters: PublicCourseFilters = {
-      search,
-      categoryId,
-      price,
-      rating,
-      sort,
-    };
+    const filters: PublicCourseFilters = { search, categoryId, price, rating, sort };
     const data =
       await this.courseStudentService.getAllPublishedCourses(filters);
 
