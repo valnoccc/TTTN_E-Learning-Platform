@@ -67,6 +67,13 @@ Admin (Kiem duyet)
 - `PATCH /lessons/:id` (Instructor - Sua noi dung bai hoc, ho tro `choPhepXemTruoc`)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
+## Quiz Questions (Ngan hang cau hoi trac nghiem)
+- Database prerequisite: run `backend/src/modules/quiz-questions/sql/create-quiz-questions.sql` once on the application schema before using these endpoints.
+- `GET /courses/chapters/:chapterId/questions` (Instructor - Xem danh sach cau hoi cua chuong)
+- `POST /courses/chapters/:chapterId/questions` (Instructor - Tao cau hoi voi dung 4 dap an; body: `{ noiDung, dapAnA, dapAnB, dapAnC, dapAnD, dapAnDung: 'A' | 'B' | 'C' | 'D', thuTu }`)
+- `PATCH /courses/chapters/:chapterId/questions/:questionId` (Instructor - Sua cau hoi cua chuong; body cho phep cac truong tren)
+- `DELETE /courses/chapters/:chapterId/questions/:questionId` (Instructor - Xoa cau hoi cua chuong)
+
 ## Forum (Cong dong)
 - `GET /forum/questions` (Public - Danh sach topic)
 - `GET /forum/questions/:id` (Public - Chi tiet topic)

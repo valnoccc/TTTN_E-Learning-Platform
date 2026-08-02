@@ -27,6 +27,7 @@ import { ForumModule } from './modules/forum/forum.module';
 import { LearningToolsModule } from './modules/learning-tools/learning-tools.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CartWishlistModule } from './modules/cart-wishlist/cart-wishlist.module';
+import { QuizQuestionsModule } from './modules/quiz-questions/quiz-questions.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { CartWishlistModule } from './modules/cart-wishlist/cart-wishlist.module
     LearningToolsModule,
     ReportsModule,
     CartWishlistModule,
+    QuizQuestionsModule,
   ],
 })
 export class AppModule {}
