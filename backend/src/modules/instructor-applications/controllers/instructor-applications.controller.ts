@@ -1,8 +1,9 @@
-import { Body, Controller, ForbiddenException, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApplyInstructorDto } from '../dto/apply-instructor.dto';
 import { InstructorApplicationsService } from '../services/instructor-applications.service';
+import { getRevenueShareConfig } from '../../../config/revenue-share.config';
 
 type AuthRequest = Request & { user: { sub?: number; maND?: number } };
 
@@ -10,6 +11,12 @@ type AuthRequest = Request & { user: { sub?: number; maND?: number } };
 @UseGuards(JwtAuthGuard)
 export class InstructorApplicationsController {
   constructor(private readonly applicationsService: InstructorApplicationsService) {}
+
+  @Get('policy')
+  getPolicy() {
+    const { instructorPercent, adminPercent } = getRevenueShareConfig();
+    return { instructorPercent, adminPercent };
+  }
 
   @Post('me')
   apply(@Body() dto: ApplyInstructorDto, @Req() req: AuthRequest) {

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axiosClient from "../../api/axios";
@@ -35,6 +36,11 @@ type KinhNghiemForm = {
   MoTa: string;
 };
 
+type RevenueSharePolicy = {
+  instructorPercent: number;
+  adminPercent: number;
+};
+
 const initialForm: ApplicationForm = {
   TieuSu: "",
   ChuyenMon: "",
@@ -61,6 +67,10 @@ export default function InstructorApplicationPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState<ApplicationForm>(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [policyLoading, setPolicyLoading] = useState(false);
+  const [policy, setPolicy] = useState<RevenueSharePolicy | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem("access_token"))
@@ -109,6 +119,26 @@ export default function InstructorApplicationPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!event.currentTarget.checkValidity()) {
+      event.currentTarget.reportValidity();
+      return;
+    }
+    setPolicyLoading(true);
+    try {
+      const response: any = await axiosClient.get("/instructor-applications/policy");
+      setPolicy(response?.data ?? response);
+      setAcceptedPolicy(false);
+      setPolicyOpen(true);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể tải chính sách nền tảng.");
+    } finally {
+      setPolicyLoading(false);
+    }
+  };
+
+  const confirmApplication = async () => {
+    if (!acceptedPolicy) return;
+    setPolicyOpen(false);
     setSubmitting(true);
     try {
       const applicationPayload = {
@@ -562,7 +592,7 @@ export default function InstructorApplicationPage() {
                 <button
                   type="submit"
                   className="btn px-4"
-                  disabled={submitting}
+                  disabled={submitting || policyLoading}
                   style={{
                     background: "#20a464",
                     borderColor: "#20a464",
@@ -571,12 +601,95 @@ export default function InstructorApplicationPage() {
                     borderRadius: 9,
                   }}
                 >
-                  {submitting ? "Đang lưu..." : "Đăng ký giảng viên"}
-                  {!submitting && <i className="las la-arrow-right ms-2" />}
+                  {policyLoading ? "Đang tải chính sách..." : "Đăng ký giảng viên"}
+                  {!submitting && !policyLoading && <i className="las la-arrow-right ms-2" />}
                 </button>
               </div>
             </div>
           </form>
+          {policyOpen && policy && createPortal((
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="instructor-policy-title"
+              className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-start justify-content-center p-3"
+              style={{ background: "rgba(7, 19, 45, 0.74)", zIndex: 2147483000, paddingTop: "clamp(24px, 6vh, 64px)" }}
+            >
+              <div className="w-100 d-flex flex-column" style={{ maxWidth: 720, maxHeight: "calc(100dvh - 48px)", background: "#fff", border: "1px solid #dce6f0", borderRadius: 16, boxShadow: "0 24px 70px rgba(7, 19, 45, 0.34)", overflow: "hidden" }}>
+                <div className="d-flex justify-content-between align-items-start gap-3 p-4 p-md-5" style={{ background: "#0b1f3a", color: "#fff", borderBottom: "3px solid #11b67a" }}>
+                  <div>
+                    <div className="d-flex align-items-center gap-2 mb-2" style={{ color: "#76e0b4", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" }}>
+                      <i className="las la-file-contract" style={{ fontSize: 18 }} />
+                      ĐIỀU KHOẢN GIẢNG VIÊN
+                    </div>
+                    <h2 id="instructor-policy-title" className="h4 mb-1" style={{ color: "#fff", fontWeight: 700 }}>Xác nhận trở thành giảng viên</h2>
+                    <p className="mb-0" style={{ color: "#c5d3e4", fontSize: 14 }}>Vui lòng đọc kỹ trước khi xác nhận hồ sơ.</p>
+                  </div>
+                  <button type="button" className="btn rounded-circle" aria-label="Đóng" onClick={() => setPolicyOpen(false)} style={{ width: 36, height: 36, padding: 0, color: "#fff", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", fontSize: 22, lineHeight: 1 }}>×</button>
+                </div>
+
+                <div className="p-4 p-md-5" style={{ overflowY: "auto", color: "#435d52", fontSize: 14, lineHeight: 1.65 }}>
+                  <section className="mb-4">
+                    <h3 className="h6" style={{ color: "#17352a", fontWeight: 700 }}>1. Trách nhiệm của giảng viên</h3>
+                    <ul className="mb-0 ps-3">
+                      <li>Cung cấp thông tin hồ sơ chính xác và chịu trách nhiệm về nội dung đã đăng tải.</li>
+                      <li>Chỉ đăng nội dung do bạn sở hữu hoặc có quyền sử dụng hợp pháp.</li>
+                      <li>Không đăng nội dung vi phạm pháp luật, bản quyền, quyền riêng tư hoặc gây hại cho người học.</li>
+                    </ul>
+                  </section>
+                  <section className="mb-4 p-3" style={{ background: "#effaf7", border: "1px solid #bcebd6", borderRadius: 12 }}>
+                    <h3 className="h6 mb-2" style={{ color: "#08764f", fontWeight: 700 }}>2. Chính sách chia doanh thu hiện tại</h3>
+                    <div className="row g-2 text-center">
+                      <div className="col-6"><div style={{ color: "#168a58", fontSize: 28, fontWeight: 700 }}>{policy.instructorPercent}%</div><small>Phần giảng viên nhận</small></div>
+                      <div className="col-6"><div style={{ color: "#315247", fontSize: 28, fontWeight: 700 }}>{policy.adminPercent}%</div><small>Phần nền tảng / admin</small></div>
+                    </div>
+                    <p className="mb-0 mt-3" style={{ fontSize: 13 }}>Tỷ lệ trên được lấy từ cấu hình hiện tại của nền tảng và áp dụng cho doanh thu hợp lệ sau các khoản giảm giá, hoàn tiền hoặc điều chỉnh giao dịch.</p>
+                  </section>
+                  <section className="mb-4">
+                    <h3 className="h6" style={{ color: "#17352a", fontWeight: 700 }}>3. Thanh toán và điều chỉnh</h3>
+                    <ul className="mb-0 ps-3">
+                      <li>Doanh thu chỉ được ghi nhận khi giao dịch thanh toán thành công và không trong thời gian hoàn tiền.</li>
+                      <li>Thông tin ngân hàng phải chính xác; nền tảng không chịu trách nhiệm cho việc chuyển sai do thông tin cung cấp không đúng.</li>
+                      <li>Nền tảng có thể cập nhật chính sách, tỷ lệ chia doanh thu hoặc quy trình chi trả cho các giao dịch phát sinh sau thời điểm thay đổi.</li>
+                    </ul>
+                  </section>
+                  <section className="mb-4">
+                    <h3 className="h6" style={{ color: "#17352a", fontWeight: 700 }}>4. Quy trình vận hành khóa học</h3>
+                    <ul className="mb-0 ps-3">
+                      <li>Giảng viên chịu trách nhiệm cập nhật nội dung, tài liệu và thông tin khóa học chính xác.</li>
+                      <li>Khóa học có thể được kiểm tra chất lượng trước khi xuất bản hoặc khi có phản ánh hợp lệ.</li>
+                      <li>Nền tảng có quyền ẩn hoặc tạm dừng nội dung vi phạm chính sách để bảo vệ người học.</li>
+                    </ul>
+                  </section>
+                  <section className="mb-4">
+                    <h3 className="h6" style={{ color: "#17352a", fontWeight: 700 }}>5. Bảo mật và dữ liệu</h3>
+                    <ul className="mb-0 ps-3">
+                      <li>Thông tin hồ sơ và tài khoản nhận tiền được sử dụng cho mục đích vận hành, đối soát và chi trả.</li>
+                      <li>Giảng viên không được chia sẻ dữ liệu cá nhân hoặc thông tin của học viên cho bên thứ ba khi chưa được phép.</li>
+                      <li>Giảng viên cần bảo vệ tài khoản, mật khẩu và thông tin đăng nhập của mình.</li>
+                    </ul>
+                  </section>
+                  <div className="mb-4 p-3" style={{ background: "#f1f6fb", border: "1px solid #d5e3f0", borderRadius: 12, color: "#36516d" }}>
+                    <strong><i className="las la-info-circle me-1" style={{ color: "#11b67a" }} />Lưu ý:</strong> Việc tích đồng ý xác nhận rằng bạn đã đọc và chấp nhận các điều khoản trên. Bạn có thể liên hệ bộ phận hỗ trợ nếu cần giải đáp trước khi đăng ký.
+                  </div>
+                  <label className="d-flex align-items-start gap-2 p-3 mb-0" style={{ background: "#f5f8fc", border: "1px solid #dce6f0", borderRadius: 10, color: "#173a59", fontWeight: 600 }}>
+                    <input type="checkbox" checked={acceptedPolicy} onChange={(event) => setAcceptedPolicy(event.target.checked)} style={{ marginTop: 5 }} />
+                    <span>Tôi đã đọc, hiểu và đồng ý với chính sách giảng viên và chính sách chia doanh thu của nền tảng.</span>
+                  </label>
+                </div>
+
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 p-4" style={{ background: "#f5f8fc", borderTop: "1px solid #dce6f0", flexShrink: 0 }}>
+                  <small style={{ color: "#60748d" }}><i className="las la-shield-alt me-1" style={{ color: "#11b67a" }} />Bạn có thể quay lại và chỉnh sửa hồ sơ</small>
+                  <div className="d-flex justify-content-end gap-2">
+                  <button type="button" className="btn px-4" onClick={() => setPolicyOpen(false)} style={{ background: "#fff", border: "1px solid #cbd8e5", color: "#173a59", fontWeight: 600, borderRadius: 9 }}>Quay lại</button>
+                  <button type="button" className="btn px-4" disabled={!acceptedPolicy || submitting} onClick={confirmApplication} style={{ background: acceptedPolicy ? "#11b67a" : "#b7d8c8", borderColor: acceptedPolicy ? "#11b67a" : "#b7d8c8", color: "#fff", fontWeight: 600, borderRadius: 9 }}>
+                    {submitting ? "Đang cập nhật..." : "Tôi đồng ý và xác nhận"}
+                  </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ), document.body)}
         </div>
       </div>
     </main>

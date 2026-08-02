@@ -7,6 +7,7 @@ Source of truth:
 ## Auth & Account (Quan ly tai khoan)
 - `POST /auth/register`
 - `POST /instructor-applications/me` (Nguoi dung da dang nhap gui ho so giang vien; luu vao `HoSoGiangVien` va chuyen role sang `INSTRUCTOR` ngay, tra ve JWT moi)
+- `GET /instructor-applications/policy` (Lay ty le chia doanh thu hien tai de hien thi truoc khi nguoi dung xac nhan dang ky giang vien)
 - `POST /instructor-applications/me` ho tro them `BangCaps[]` va `KinhNghiems[]`; moi phan tu duoc luu vao bang con theo `MaHoSo` va giu thu tu bang `ThuTu`
 - `POST /auth/login`
 - `GET /auth/me`
