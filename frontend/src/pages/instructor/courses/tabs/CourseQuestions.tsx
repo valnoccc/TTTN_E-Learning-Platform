@@ -26,7 +26,6 @@ function QuestionForm({
   onChange,
   onSave,
   onDelete,
-  onNew,
 }: {
   form: QuizQuestionForm;
   selectedQuestionId: number | null;
@@ -35,7 +34,6 @@ function QuestionForm({
   onChange: (field: keyof QuizQuestionForm, value: string | number) => void;
   onSave: () => void;
   onDelete: () => void;
-  onNew: () => void;
 }) {
   const answers = ["A", "B", "C", "D"] as const;
   const fields = {
@@ -149,14 +147,6 @@ function QuestionForm({
           )}
           <div className="flex gap-2">
             <button
-              type="button"
-              onClick={onNew}
-              disabled={saving}
-              className="rounded-md border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600"
-            >
-              Câu hỏi mới
-            </button>
-            <button
               type="submit"
               disabled={saving || !form.noiDung.trim()}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -203,9 +193,6 @@ export default function InstructorCourseQuestions() {
       <aside className="h-fit min-w-0 border border-slate-300 bg-white p-5 xl:sticky xl:top-5">
         <div className="mb-4">
           <h2 className="text-lg font-bold text-slate-900">Chương học</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Chọn chương để quản lý ngân hàng câu hỏi.
-          </p>
         </div>
         {loading ? (
           <div className="animate-pulse space-y-3">
@@ -256,10 +243,7 @@ export default function InstructorCourseQuestions() {
                             onClick={() => selectQuestion(question)}
                             className={`flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left text-sm last:border-b-0 ${selectedQuestionId === question.maCauHoi ? "bg-sky-50 font-semibold text-sky-800" : "text-slate-700 hover:bg-slate-50"}`}
                           >
-                            <span className="font-mono text-[10px] text-slate-400">
-                              Q{question.thuTu}
-                            </span>
-                            <span className="min-w-0 truncate">
+                            <span className="min-w-0 truncate text-md">
                               {question.noiDung}
                             </span>
                           </button>
@@ -303,10 +287,9 @@ export default function InstructorCourseQuestions() {
                 selectedQuestionId={selectedQuestionId}
                 locked={isLocked}
                 saving={saving}
-                onChange={changeField}
-                onSave={() => void saveQuestion()}
-                onDelete={() => void deleteQuestion()}
-                onNew={newQuestion}
+                  onChange={changeField}
+                  onSave={() => void saveQuestion()}
+                  onDelete={() => void deleteQuestion()}
               />
             </div>
           ) : (

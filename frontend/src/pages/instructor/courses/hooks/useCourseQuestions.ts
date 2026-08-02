@@ -138,7 +138,12 @@ export function useCourseQuestions({
       setQuestions((current) => selectedQuestionId
         ? current.map((question) => question.maCauHoi === selectedQuestionId ? normalized : question)
         : [...current, normalized]);
-      setSelectedQuestionId(normalized.maCauHoi);
+      if (selectedQuestionId) {
+        setSelectedQuestionId(normalized.maCauHoi);
+      } else {
+        setSelectedQuestionId(null);
+        setForm({ ...emptyQuestion, thuTu: questions.length + 2 });
+      }
       toast.success(selectedQuestionId ? "Đã cập nhật câu hỏi" : "Đã tạo câu hỏi");
     } catch (error) {
       toast.error(readApiErrorMessage(error, "Không thể lưu câu hỏi. Vui lòng thử lại"));
