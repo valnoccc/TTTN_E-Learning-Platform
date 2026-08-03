@@ -26,7 +26,7 @@ video-intelligence-app-500806-3301ee8ac39d.json
 frontend/.env.*
 
 # =========================================
-# 🏗️ BUILD OUTPUTS (Thư mục build & biên dịch)
+# BUILD OUTPUTS (Thư mục build & biên dịch)
 # =========================================
 dist/
 build/
@@ -40,14 +40,14 @@ draft/
 docs/
 
 # =========================================
-# 🤖 AI TOOLS & CACHE (Công cụ AI)
+# AI TOOLS & CACHE (Công cụ AI)
 # =========================================
 .codegraph/
 .cursor/
 .cursorrules
 
 # =========================================
-# 🗄️ DATABASE & PRISMA
+# DATABASE & PRISMA
 # =========================================
 *.db
 *.db-journal
@@ -55,7 +55,7 @@ docs/
 *.sqlite3
 
 # =========================================
-# 📝 LOGS (File lưu vết lỗi)
+# LOGS (File lưu vết lỗi)
 # =========================================
 logs/
 *.log

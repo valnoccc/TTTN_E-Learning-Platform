@@ -30,6 +30,7 @@ import { CartWishlistModule } from './modules/cart-wishlist/cart-wishlist.module
 import { QuizQuestionsModule } from './modules/quiz-questions/quiz-questions.module';
 import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module';
 import { InstructorApplicationsModule } from './modules/instructor-applications/instructor-applications.module';
+import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { InstructorApplicationsModule } from './modules/instructor-applications/
     QuizQuestionsModule,
     QuizAttemptsModule,
     InstructorApplicationsModule,
+    WithdrawalsModule,
   ],
 })
 export class AppModule {}

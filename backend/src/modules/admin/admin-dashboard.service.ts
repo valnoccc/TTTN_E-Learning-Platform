@@ -181,9 +181,6 @@ export class AdminDashboardService {
     const currentMonthYear = this.getCurrentMonthYear();
     const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
     const prevDays = days * 2;
-    console.log(
-      `[AdminDashboard] getOverviewStats called with days=${days}, monthFilter=${JSON.stringify(monthFilter)}`,
-    );
 
     // ── Date-filter helpers ───────────────────────────────────────────────────
     const isMonthMode = !!monthFilter;
@@ -580,9 +577,6 @@ export class AdminDashboardService {
       Math.round((storageQuotaUsedBytes / storageQuotaLimitBytes) * 100),
     );
 
-    console.log(
-      `[AdminDashboard] days=${days} → grossRevenue=${revenueStats[0]?.grossRevenue}, orders=${ordersOverview[0]?.totalOrders}`,
-    );
 
     return {
       totalStudents: parseInt(String(studentStats[0]?.total ?? 0), 10),

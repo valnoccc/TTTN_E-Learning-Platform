@@ -26,10 +26,15 @@ describe('CheckoutService', () => {
     recordCouponRedemption: jest.fn(),
   };
 
+  const instructorWalletService = {
+    creditPaidInvoice: jest.fn(),
+  };
+
   const service = new CheckoutService(
     dataSource as never,
     notificationsService as never,
     couponsService as never,
+    instructorWalletService as never,
   );
 
   const signMomoBody = (body: Record<string, any>) => {
@@ -87,6 +92,8 @@ describe('CheckoutService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    process.env.INSTRUCTOR_REVENUE_PERCENT = '80';
+    process.env.ADMIN_REVENUE_PERCENT = '20';
     dataSource.createQueryRunner.mockImplementation(() => queryRunner);
     jest.spyOn(axios, 'post').mockResolvedValue({
       data: {

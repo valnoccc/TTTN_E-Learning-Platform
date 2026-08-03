@@ -10,6 +10,8 @@ import AdminUsers from '../pages/admin/Users/AdminUsers';
 import AdminCoupons from '../pages/admin/Coupons/AdminCoupons';
 import AdminInstructorDebts from '../pages/admin/Debts/AdminInstructorDebts';
 import ModerationDashboard from '../pages/admin/Moderation/ModerationDashboard';
+import AdminWithdrawals from '../pages/admin/Withdrawals/AdminWithdrawals';
+import AdminWithdrawalDetail from '../pages/admin/Withdrawals/AdminWithdrawalDetail';
 
 export default function AdminRoutes() {
     return (
@@ -21,6 +23,8 @@ export default function AdminRoutes() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="coupons" element={<AdminCoupons />} />
             <Route path="debts" element={<AdminInstructorDebts />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
+            <Route path="withdrawals/:id" element={<AdminWithdrawalDetail />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="posts" element={<AdminPosts />} />
             <Route path="posts/new" element={<AdminPostForm />} />

@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText, Ticket, Shield, Wallet, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Layers, ChevronUp, ShieldCheck, FileText, Ticket, Shield, Wallet, MessageSquare, Landmark } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import axiosClient from '../../api/axios';
 
@@ -101,6 +101,7 @@ export default function AdminSidebar() {
             items: [
                 { label: 'Mã giảm giá', path: '/admin/coupons', icon: <Ticket size={18} /> },
                 { label: 'Công nợ', path: '/admin/debts', icon: <Wallet size={18} /> },
+                { label: 'Yêu cầu rút tiền', path: '/admin/withdrawals', icon: <Landmark size={18} /> },
             ],
         },
         {

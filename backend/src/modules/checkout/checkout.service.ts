@@ -12,6 +12,7 @@ import { getRevenueShareConfig } from '../../config/revenue-share.config';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { StudentCouponsService } from '../coupons/services/student-coupons.service';
+import { InstructorWalletService } from '../withdrawals/services/instructor-wallet.service';
 
 export interface PaymentRequest {
   courseIds: number[];
@@ -50,6 +51,7 @@ export class CheckoutService {
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
     private readonly couponsService: StudentCouponsService,
+    private readonly instructorWalletService: InstructorWalletService,
   ) { }
 
   private normalizeMomoResultCode(resultCode: unknown): number {
@@ -602,6 +604,8 @@ export class CheckoutService {
 
       await queryRunner.commitTransaction();
 
+      await this.instructorWalletService.creditPaidInvoice(invoiceId);
+
       // 5. Tạo thông báo (sau commit, không rollback nếu lỗi thông báo)
       try {
         const courses = await this.dataSource.query(
@@ -820,6 +824,8 @@ export class CheckoutService {
       }
 
       await queryRunner.commitTransaction();
+
+      await this.instructorWalletService.creditPaidInvoice(invoiceId);
 
       const courseNames = courses.map((c: any) => c.TenKhoaHoc).join(', ');
       const isFreeEnrollment = paymentMethod === 'FREE' && finalPrice === 0;
@@ -1203,6 +1209,8 @@ export class CheckoutService {
       }
 
       await queryRunner.commitTransaction();
+
+      await this.instructorWalletService.creditPaidInvoice(invoiceId);
 
       // Thông báo (sau commit)
       try {
