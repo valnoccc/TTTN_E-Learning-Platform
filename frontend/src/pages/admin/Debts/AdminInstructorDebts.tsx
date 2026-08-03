@@ -193,10 +193,10 @@ export default function AdminInstructorDebts() {
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="Tổng phải trả"
-                value={formatCurrency(summary.instructorPayout)}
+                value={formatCurrency(summary.outstandingDebt)}
                 icon={<Wallet size={20} className="text-amber-600" />}
                 tone="bg-amber-500"
-                subtitle="Công nợ tháng hiện tại"
+                subtitle="Công nợ còn phải trả"
               />
               <StatCard
                 label="Giảng viên phát sinh"
@@ -231,7 +231,7 @@ export default function AdminInstructorDebts() {
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Bảng này thể hiện số tiền phải trả cho từng giảng viên trong
-                    tháng đã chọn.
+                    còn phải trả cho từng giảng viên. Số tiền giảm ngay khi yêu cầu rút được chuyển thành công.
                   </p>
                 </div>
 

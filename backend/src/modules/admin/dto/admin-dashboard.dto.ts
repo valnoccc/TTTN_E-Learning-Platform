@@ -116,6 +116,7 @@ export class AdminInstructorDebtSummaryDto {
   grossRevenue!: number;
   adminRevenue!: number;
   instructorPayout!: number;
+  outstandingDebt!: number;
   topDebtAmount!: number;
 }
 

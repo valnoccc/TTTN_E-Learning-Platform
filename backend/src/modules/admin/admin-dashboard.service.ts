@@ -96,7 +96,9 @@ type InstructorDebtRow = {
   grossRevenue?: string | number;
   adminRevenue?: string | number;
   instructorPayout?: string | number;
+  outstandingDebt?: string | number;
 };
+type OutstandingDebtRow = { outstandingDebt?: string | number };
 
 const AI_QUOTA_LIMIT_SECONDS = 60_000;
 const DEFAULT_STORAGE_QUOTA_LIMIT_GB = 100;
@@ -256,6 +258,7 @@ export class AdminDashboardService {
       topCourseRows,
       topInstructorRows,
       categoryRevenueRows,
+      outstandingDebtRows,
     ] = await Promise.all([
       this.queryWithFallback<CountGrowthRow[]>(
         `
@@ -555,6 +558,11 @@ export class AdminDashboardService {
         [],
         hdDateParams,
       ),
+      this.queryWithFallback<OutstandingDebtRow[]>(
+        `SELECT COALESCE(SUM(SoDuKhaDung + SoDuDangRut), 0) AS outstandingDebt
+         FROM ViGiangVien`,
+        [{ outstandingDebt: '0' }],
+      ),
     ]);
 
     const salesChart = this.buildSalesChart(salesChartRows);
@@ -604,9 +612,7 @@ export class AdminDashboardService {
       totalRevenue: parseFloat(String(revenueStats[0]?.total ?? 0)),
       grossRevenue: parseFloat(String(revenueStats[0]?.grossRevenue ?? 0)),
       adminRevenue: parseFloat(String(revenueStats[0]?.adminRevenue ?? 0)),
-      instructorPayout: parseFloat(
-        String(revenueStats[0]?.instructorPayout ?? 0),
-      ),
+      instructorPayout: parseFloat(String(outstandingDebtRows[0]?.outstandingDebt ?? 0)),
       revenueGrowth: this.calculateGrowth(
         revenueStats[0]?.currentMonth,
         revenueStats[0]?.lastMonth,
@@ -717,9 +723,11 @@ export class AdminDashboardService {
           COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${lineNetRevenueSql} ELSE 0 END), 0) AS grossRevenue,
           COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE} ELSE 0 END), 0) AS adminRevenue,
           COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE} ELSE 0 END), 0) AS instructorPayout
+          ,COALESCE(MAX(v.SoDuKhaDung), 0) + COALESCE(MAX(v.SoDuDangRut), 0) AS outstandingDebt
         FROM NguoiDung nd
         LEFT JOIN KhoaHoc kh ON kh.MaND_GiangVien = nd.MaND
         LEFT JOIN HoSoGiangVien hsgv ON hsgv.MaND = nd.MaND
+        LEFT JOIN ViGiangVien v ON v.MaND = nd.MaND
         LEFT JOIN DanhMuc dm ON kh.MaDM = dm.MaDM
         LEFT JOIN ChiTietHoaDon cthd ON cthd.MaKH = kh.MaKH
         LEFT JOIN HoaDon hd ON cthd.MaHD = hd.MaHD 
@@ -734,7 +742,7 @@ export class AdminDashboardService {
         ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
         WHERE nd.VaiTro = 'INSTRUCTOR'
         GROUP BY nd.MaND, nd.HoTen, nd.AnhDaiDien
-        ORDER BY instructorPayout DESC, grossRevenue DESC, nd.MaND DESC
+        ORDER BY outstandingDebt DESC, grossRevenue DESC, nd.MaND DESC
       `,
       [selectedYear, selectedMonth],
     );
@@ -743,6 +751,7 @@ export class AdminDashboardService {
       const grossRevenue = Number(row.grossRevenue ?? 0);
       const adminRevenue = Number(row.adminRevenue ?? 0);
       const instructorPayout = Number(row.instructorPayout ?? 0);
+      const debtAmount = Number(row.outstandingDebt ?? 0);
 
       const avatar = row.instructorAvatar;
       const cleanAvatar = avatar && String(avatar).trim() !== 'null' && String(avatar).trim() !== '' ? avatar : null;
@@ -757,12 +766,12 @@ export class AdminDashboardService {
         grossRevenue,
         adminRevenue,
         instructorPayout,
-        debtAmount: instructorPayout,
+        debtAmount,
       };
     });
 
     const summary = {
-      totalInstructors: items.filter((item) => item.grossRevenue > 0).length,
+      totalInstructors: items.filter((item) => item.debtAmount > 0).length,
       totalCourses: items.reduce((sum, item) => sum + item.courseCount, 0),
       totalOrders: items.reduce((sum, item) => sum + item.orderCount, 0),
       grossRevenue: items.reduce((sum, item) => sum + item.grossRevenue, 0),
@@ -771,6 +780,7 @@ export class AdminDashboardService {
         (sum, item) => sum + item.instructorPayout,
         0,
       ),
+      outstandingDebt: items.reduce((sum, item) => sum + item.debtAmount, 0),
       topDebtAmount: items[0]?.debtAmount ?? 0,
     };
 

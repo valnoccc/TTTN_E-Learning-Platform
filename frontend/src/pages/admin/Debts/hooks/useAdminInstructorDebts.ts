@@ -13,6 +13,7 @@ export interface AdminInstructorDebtItem {
   grossRevenue: number;
   adminRevenue: number;
   instructorPayout: number;
+  outstandingDebt: number;
   debtAmount: number;
 }
 
@@ -95,6 +96,7 @@ export function useAdminInstructorDebts() {
     grossRevenue: 0,
     adminRevenue: 0,
     instructorPayout: 0,
+    outstandingDebt: 0,
     topDebtAmount: 0,
   };
 

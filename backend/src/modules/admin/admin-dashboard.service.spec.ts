@@ -8,6 +8,8 @@ describe('AdminDashboardService', () => {
   const service = new AdminDashboardService(dataSource as never);
 
   beforeEach(() => {
+    process.env.INSTRUCTOR_REVENUE_PERCENT = '80';
+    process.env.ADMIN_REVENUE_PERCENT = '20';
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-06-10T00:00:00.000Z'));
     dataSource.query.mockReset();
@@ -133,7 +135,8 @@ describe('AdminDashboardService', () => {
           adminRevenue: '180000',
           instructorPayout: '720000',
         },
-      ]);
+      ])
+      .mockResolvedValueOnce([{ outstandingDebt: '800000' }]);
 
     await expect(service.getOverviewStats()).resolves.toEqual({
       totalStudents: 10,
@@ -149,7 +152,7 @@ describe('AdminDashboardService', () => {
       totalRevenue: 250000,
       grossRevenue: 1250000,
       adminRevenue: 250000,
-      instructorPayout: 1000000,
+      instructorPayout: 800000,
       revenueGrowth: 100,
       aiQuota: {
         monthYear: '06-2026',
@@ -360,6 +363,7 @@ describe('AdminDashboardService', () => {
         grossRevenue: '12500000',
         adminRevenue: '2500000',
         instructorPayout: '10000000',
+        outstandingDebt: '3500000',
       },
       {
         instructorId: 9,
@@ -371,6 +375,7 @@ describe('AdminDashboardService', () => {
         grossRevenue: '5000000',
         adminRevenue: '1000000',
         instructorPayout: '4000000',
+        outstandingDebt: '1000000',
       },
     ]);
 
@@ -385,7 +390,8 @@ describe('AdminDashboardService', () => {
         grossRevenue: 17500000,
         adminRevenue: 3500000,
         instructorPayout: 14000000,
-        topDebtAmount: 10000000,
+        outstandingDebt: 4500000,
+        topDebtAmount: 3500000,
       },
       items: [
         {
@@ -398,7 +404,7 @@ describe('AdminDashboardService', () => {
           grossRevenue: 12500000,
           adminRevenue: 2500000,
           instructorPayout: 10000000,
-          debtAmount: 10000000,
+          debtAmount: 3500000,
         },
         {
           instructorId: 9,
@@ -410,7 +416,7 @@ describe('AdminDashboardService', () => {
           grossRevenue: 5000000,
           adminRevenue: 1000000,
           instructorPayout: 4000000,
-          debtAmount: 4000000,
+          debtAmount: 1000000,
         },
       ],
     });
