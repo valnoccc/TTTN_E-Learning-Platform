@@ -13,6 +13,7 @@ import { toast } from "react-hot-toast";
 import * as XLSX from "xlsx";
 
 import axiosClient from "../../../api/axios";
+import Pagination from "../../../components/Pagination";
 import InstructorLayout from "../../../layouts/InstructorLayout";
 
 type MonthlyCourseRow = {
@@ -41,6 +42,7 @@ type WalletSummary = { availableBalance: number; pendingWithdrawalBalance: numbe
 type WithdrawalRequest = { requestId: number; amount: number; status: string; bankName: string; accountNumber: string; createdAt: string };
 const withdrawalStatusLabel: Record<string, string> = { PENDING: 'Chờ xử lý', COMPLETED: 'Đã chuyển', REJECTED: 'Đã từ chối', CANCELLED: 'Đã hủy' };
 const withdrawalStatusClass: Record<string, string> = { PENDING: 'border-amber-200 bg-amber-50 text-amber-700', COMPLETED: 'border-emerald-200 bg-emerald-50 text-emerald-700', REJECTED: 'border-rose-200 bg-rose-50 text-rose-700', CANCELLED: 'border-slate-200 bg-slate-100 text-slate-600' };
+const TABLE_PAGE_SIZE = 5;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -70,6 +72,8 @@ function MonthlyRevenueContent() {
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [withdrawalPage, setWithdrawalPage] = useState(1);
+  const [revenuePage, setRevenuePage] = useState(1);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
 
@@ -133,6 +137,7 @@ function MonthlyRevenueContent() {
       ]);
       setWallet(walletResponse);
       setWithdrawals(requestsResponse);
+      setWithdrawalPage(1);
     } catch {
       setWallet(null);
       setWithdrawals([]);
@@ -161,6 +166,22 @@ function MonthlyRevenueContent() {
     () => monthOptions.find((month) => month.month === selectedMonth) ?? null,
     [monthOptions, selectedMonth],
   );
+
+  const paginatedWithdrawals = useMemo(() => {
+    const start = (withdrawalPage - 1) * TABLE_PAGE_SIZE;
+    return withdrawals.slice(start, start + TABLE_PAGE_SIZE);
+  }, [withdrawalPage, withdrawals]);
+
+  const paginatedRevenueRows = useMemo(() => {
+    const rows = selectedData?.rows ?? [];
+    const start = (revenuePage - 1) * TABLE_PAGE_SIZE;
+    return rows.slice(start, start + TABLE_PAGE_SIZE);
+  }, [revenuePage, selectedData?.rows]);
+
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
+    setRevenuePage(1);
+  };
 
   const summaryCards = useMemo(
     () => [
@@ -242,7 +263,7 @@ function MonthlyRevenueContent() {
           </label>
           <select
             value={selectedMonth}
-            onChange={(event) => setSelectedMonth(event.target.value)}
+            onChange={(event) => handleMonthChange(event.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[14px] font-medium text-slate-700 outline-none transition-colors hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
           >
             <option value="">Chọn tháng</option>
@@ -301,7 +322,7 @@ function MonthlyRevenueContent() {
         <form onSubmit={submitWithdrawal} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center gap-2 text-slate-900"><Landmark size={19} className="text-emerald-600" /><h2 className="font-bold">Yêu cầu rút tiền</h2></div><p className="mt-1 text-sm text-slate-500">Tiền sẽ chuyển vào tài khoản đã lưu trong cài đặt.</p><input value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} inputMode="numeric" placeholder="Nhập số tiền (VND)" className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" /><button disabled={submittingWithdrawal || !wallet?.availableBalance} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"><Send size={16} />{submittingWithdrawal ? 'Đang gửi...' : 'Tạo yêu cầu rút'}</button></form>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><h2 className="font-bold text-slate-900">Lịch sử rút tiền</h2><p className="mt-1 text-sm text-slate-500">Theo dõi trạng thái chi trả của từng yêu cầu.</p></div></div><div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500"><tr><th className="px-6 py-4">Thời gian</th><th className="px-6 py-4">Tài khoản nhận</th><th className="px-6 py-4 text-right">Số tiền</th><th className="px-6 py-4 text-right">Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{withdrawals.length ? withdrawals.map((item) => <tr key={item.requestId}><td className="px-6 py-4 text-slate-600">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</td><td className="px-6 py-4 font-medium text-slate-800">{item.bankName} · {item.accountNumber}</td><td className="px-6 py-4 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td><td className="px-6 py-4 text-right"><span className={`rounded-full px-3 py-1 text-xs font-bold ${withdrawalStatusClass[item.status] ?? 'border border-slate-200 bg-slate-100 text-slate-600'}`}>{withdrawalStatusLabel[item.status] ?? item.status}</span></td></tr>) : <tr><td colSpan={4} className="px-6 py-10 text-center text-slate-500">Chưa có yêu cầu rút tiền nào.</td></tr>}</tbody></table></div></section>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><h2 className="font-bold text-slate-900">Lịch sử rút tiền</h2><p className="mt-1 text-sm text-slate-500">Theo dõi trạng thái chi trả của từng yêu cầu.</p></div></div><div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500"><tr><th className="px-6 py-4">Thời gian</th><th className="px-6 py-4">Tài khoản nhận</th><th className="px-6 py-4 text-right">Số tiền</th><th className="px-6 py-4 text-right">Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{withdrawals.length ? paginatedWithdrawals.map((item) => <tr key={item.requestId}><td className="px-6 py-4 text-slate-600">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</td><td className="px-6 py-4 font-medium text-slate-800">{item.bankName} · {item.accountNumber}</td><td className="px-6 py-4 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td><td className="px-6 py-4 text-right"><span className={`rounded-full px-3 py-1 text-xs font-bold ${withdrawalStatusClass[item.status] ?? 'border border-slate-200 bg-slate-100 text-slate-600'}`}>{withdrawalStatusLabel[item.status] ?? item.status}</span></td></tr>) : <tr><td colSpan={4} className="px-6 py-10 text-center text-slate-500">Chưa có yêu cầu rút tiền nào.</td></tr>}</tbody></table></div>{withdrawals.length > TABLE_PAGE_SIZE && <div className="px-6"><Pagination currentPage={withdrawalPage} totalPages={Math.ceil(withdrawals.length / TABLE_PAGE_SIZE)} onPageChange={setWithdrawalPage} totalItems={withdrawals.length} indexOfFirst={(withdrawalPage - 1) * TABLE_PAGE_SIZE} indexOfLast={withdrawalPage * TABLE_PAGE_SIZE} /></div>}</section>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-2 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
@@ -331,7 +352,7 @@ function MonthlyRevenueContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {selectedData.rows.map((row) => (
+                {paginatedRevenueRows.map((row) => (
                   <tr
                     key={`${selectedData.month}-${row.courseId}`}
                     className="hover:bg-slate-50/70"
@@ -370,6 +391,18 @@ function MonthlyRevenueContent() {
             </div>
           )}
         </div>
+        {selectedData && selectedData.rows.length > TABLE_PAGE_SIZE && (
+          <div className="px-6 pb-5">
+            <Pagination
+              currentPage={revenuePage}
+              totalPages={Math.ceil(selectedData.rows.length / TABLE_PAGE_SIZE)}
+              onPageChange={setRevenuePage}
+              totalItems={selectedData.rows.length}
+              indexOfFirst={(revenuePage - 1) * TABLE_PAGE_SIZE}
+              indexOfLast={revenuePage * TABLE_PAGE_SIZE}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
