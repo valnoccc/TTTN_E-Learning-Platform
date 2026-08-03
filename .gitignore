@@ -108,3 +108,4 @@ Thumbs.db
 tsbuildinfo
 *.tsbuildinfo
 .pnpm-store/
+.worktrees/
