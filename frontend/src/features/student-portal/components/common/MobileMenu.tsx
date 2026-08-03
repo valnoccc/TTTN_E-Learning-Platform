@@ -81,7 +81,12 @@ class MobileMenu extends Component {
                                         <p><i className="las la-phone"></i>+1 (396) 486 4709</p>
                                     </div>
                                     <div className="topbar-item">
-                                        <AuthControls />
+                                        <div className="mobile-account-actions">
+                                            <AuthControls />
+                                            <Link to="/instructor-registration" className="mobile-instructor-link">
+                                                Đăng ký GV
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mb-logo-area d-flex justify-content-between">
@@ -97,7 +102,7 @@ class MobileMenu extends Component {
                                     </div>
                                     <div className="mb-search-box">
                                         <form action="#">
-                                            <input type="text" name="search" placeholder="Nhập từ khóa tìm kiếm" />
+                                            <input type="text" name="search" placeholder="Tìm khóa học..." />
                                             <button type="submit"><i className="las la-search"></i></button>
                                         </form>
                                     </div>

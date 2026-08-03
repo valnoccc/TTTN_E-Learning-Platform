@@ -83,7 +83,7 @@ export default function AuthControls() {
 
   if (!user) {
     return (
-      <div className="d-flex align-items-center justify-content-end gap-3" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="mobile-auth-controls d-flex align-items-center justify-content-end gap-3" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         
         {/* Nút Đăng nhập - Thẳng hàng, mượt mà */}
         <button 
@@ -91,9 +91,6 @@ export default function AuthControls() {
           className="btn d-flex align-items-center p-0 text-dark border-0 backend-login-btn"
           style={{ background: 'none', cursor: 'pointer', gap: '8px', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
         >
-          <div className="icon-wrapper d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#eefbf4' }}>
-            <i className="las la-user text-success" style={{ fontSize: '18px', color: '#28a745' }}></i>
-          </div>
           <span style={{ fontWeight: '500', fontSize: '15px' }}>Đăng nhập</span>
         </button>
 

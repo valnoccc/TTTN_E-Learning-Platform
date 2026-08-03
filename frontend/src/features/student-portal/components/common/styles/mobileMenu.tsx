@@ -7,6 +7,36 @@ export const Styles = styled.div`
     display: none;
     .mb-topbar {
         border-bottom: 1px solid ${colors.black2};
+        align-items: center;
+
+        .topbar-item {
+            min-width: 0;
+        }
+
+        .topbar-item:first-child {
+            flex: 1 1 auto;
+        }
+
+        .topbar-item:last-child {
+            flex: 0 0 auto;
+        }
+
+        .mobile-account-actions {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+        }
+
+        .mobile-instructor-link {
+            border: 1px solid ${colors.green};
+            border-radius: 5px;
+            color: ${colors.green};
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 7px;
+            white-space: nowrap;
+        }
         .topbar-item {
             p {
                 font-size: 13px;
@@ -40,6 +70,14 @@ export const Styles = styled.div`
     }
 
     .mb-logo-area {
+        align-items: center;
+        gap: 10px;
+
+        .mb-logo-box {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
         padding : 18px 0;
         .mb-logo-box {
             .hm-button {
@@ -83,8 +121,11 @@ export const Styles = styled.div`
         }
 
         .mb-search-box {
+            flex: 0 0 150px;
+            min-width: 0;
+
             form {
-                width: 170px;
+                width: 100%;
                 position: relative;
                 input {
                     width: 100%;
@@ -94,8 +135,10 @@ export const Styles = styled.div`
                     color : #ffffff;
                     border-radius: 5px;
                     padding-left: 15px;
+                    padding-right: 40px;
+                    font-size: 13px;
                     &::placeholder {
-                        font-size : 14px;
+                        font-size : 12px;
                         color : ${colors.text3};
                     }
                     &:focus {
@@ -130,13 +173,134 @@ export const Styles = styled.div`
                 }
 
                 @media(max-width: 480px) {
-                    max-width : 130px;
+                    max-width : none;
                 }
             }
         }
     }
 
-    @media(max-width: 767px) {
+    @media(max-width: 480px) {
+        .mb-topbar {
+            gap: 8px;
+
+            .topbar-item:first-child p {
+                font-size: 11px;
+                margin-bottom: 0;
+                white-space: nowrap;
+            }
+
+            .mobile-auth-controls {
+                gap: 5px !important;
+
+                .backend-login-btn {
+                    gap: 0 !important;
+                    color: #ffffff !important;
+
+                    span {
+                        color: #ffffff !important;
+                        display: inline-block;
+                        font-size: 11px !important;
+                        max-width: 58px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+
+                    .icon-wrapper {
+                        height: 30px !important;
+                        width: 30px !important;
+                    }
+                }
+
+                button:last-child {
+                    font-size: 11px !important;
+                    height: 28px !important;
+                    padding: 4px 8px !important;
+                }
+
+                .backend-login-btn .icon-wrapper {
+                    height: 28px !important;
+                    width: 28px !important;
+                }
+            }
+
+            .mobile-account-actions {
+                gap: 5px;
+            }
+
+            .mobile-instructor-link {
+                font-size: 10px;
+                padding: 4px 5px;
+            }
+        }
+
+        .mb-logo-area {
+            .mb-search-box {
+                flex-basis: 130px;
+            }
+        }
+    }
+
+    @media(max-width: 360px) {
+        .mb-logo-area {
+            gap: 6px;
+
+            .mb-search-box {
+                flex-basis: 112px;
+            }
+
+            .mb-search-box input,
+            .mb-search-box button {
+                display: block !important;
+            }
+        }
+    }
+
+    @media(min-width: 481px) and (max-width: 991px) {
+        .mb-topbar {
+            .topbar-item:first-child p {
+                font-size: 12px;
+                margin-bottom: 0;
+            }
+
+            .mobile-auth-controls {
+                gap: 8px !important;
+
+                .backend-login-btn {
+                    color: #ffffff !important;
+                    gap: 0 !important;
+
+                    span {
+                        color: #ffffff !important;
+                        font-size: 12px !important;
+                    }
+                }
+
+                button:last-child {
+                    font-size: 12px !important;
+                    height: 30px !important;
+                    padding: 5px 12px !important;
+                }
+            }
+
+            .mobile-account-actions {
+                gap: 8px;
+            }
+
+            .mobile-instructor-link {
+                font-size: 11px;
+                padding: 5px 7px;
+            }
+        }
+
+        .mb-logo-area {
+            .mb-search-box {
+                flex-basis: 190px;
+            }
+        }
+    }
+
+    @media(max-width: 991px) {
         display : block;
     }
 }
@@ -229,7 +393,7 @@ export const Styles = styled.div`
         }
     }
 
-    @media(max-width: 767px) {
+    @media(max-width: 991px) {
         display : block;
     }
 

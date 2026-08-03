@@ -189,7 +189,7 @@ export const Styles = styled.div`
             }
         }
         
-        @media(max-width: 767px) {
+        @media(max-width: 991px) {
             display: none;
         }
     }
@@ -395,7 +395,7 @@ export const Styles = styled.div`
             }
         }
 
-        @media(max-width: 767px) {
+        @media(max-width: 991px) {
             display: none;
         }
     }
