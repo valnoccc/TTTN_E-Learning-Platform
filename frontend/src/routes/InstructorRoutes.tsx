@@ -10,6 +10,7 @@ import InstructorCourseDiscussionsPage from '../pages/instructor/discussions/Cou
 import InstructorLessonEdit from '../pages/instructor/lessons/LessonDetail';
 import InstructorLessonCreate from '../pages/instructor/lessons/LessonCreate';
 import InstructorProfile from '../pages/instructor/profile/InstructorProfile';
+import InstructorAccountSettings from '../pages/instructor/settings/InstructorAccountSettings';
 import InstructorCourseReviewsPage from '../pages/instructor/reviews/CourseReviews';
 import InstructorReports from '../pages/instructor/reports/RevenueReports';
 import MonthlyRevenueReport from '../pages/instructor/reports/MonthlyRevenueReport';
@@ -29,6 +30,7 @@ export default function InstructorRoutes() {
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Route>
       <Route path="profile" element={<InstructorProfile />} />
+      <Route path="settings" element={<InstructorAccountSettings />} />
       <Route path="courses/:id/lessons/new" element={<InstructorLessonCreate />} />
       <Route path="lessons/:lessonId/edit" element={<InstructorLessonEdit />} />
       <Route path="students" element={<InstructorStudents />} />

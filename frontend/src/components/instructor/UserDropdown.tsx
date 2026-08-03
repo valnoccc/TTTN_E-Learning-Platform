@@ -33,12 +33,12 @@ export default function UserDropdown({ user, onLogout }: UserDropdownProps) {
           </Link>
         )}
 
-        <button
-          type="button"
+        <Link
+          to={isInstructor ? "/instructor/settings" : "/student/profile?tab=profile"}
           className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] text-white transition hover:bg-[#112132]"
         >
           Cài đặt tài khoản
-        </button>
+        </Link>
 
         <button
           type="button"

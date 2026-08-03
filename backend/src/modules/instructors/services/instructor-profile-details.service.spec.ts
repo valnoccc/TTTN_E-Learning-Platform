@@ -44,4 +44,39 @@ describe('InstructorProfileDetailsService', () => {
     expect(qualificationRepository.delete).not.toHaveBeenCalled();
     expect(experienceRepository.delete).toHaveBeenCalledWith({ MaHoSo: 12 });
   });
+
+  it('accepts JSON strings from multipart profile updates', async () => {
+    const qualificationRepository = {
+      delete: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn((value) => value),
+      save: jest.fn((items) => Promise.resolve(items)),
+    };
+    const experienceRepository = {
+      delete: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn((value) => value),
+      save: jest.fn((items) => Promise.resolve(items)),
+    };
+    const service = new InstructorProfileDetailsService(
+      qualificationRepository as never,
+      experienceRepository as never,
+    );
+
+    await service.replaceDetails(12, {
+      qualifications: JSON.stringify([{ TenTruong: 'University', TenBangCap: 'Bachelor' }]) as never,
+      experiences: JSON.stringify([{ TenDonVi: 'Edumeo', ChucVu: 'Instructor' }]) as never,
+    });
+
+    expect(qualificationRepository.create).toHaveBeenCalledWith({
+      MaHoSo: 12,
+      ThuTu: 0,
+      TenTruong: 'University',
+      TenBangCap: 'Bachelor',
+    });
+    expect(experienceRepository.create).toHaveBeenCalledWith({
+      MaHoSo: 12,
+      ThuTu: 0,
+      TenDonVi: 'Edumeo',
+      ChucVu: 'Instructor',
+    });
+  });
 });
