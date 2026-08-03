@@ -12,8 +12,12 @@ export class AdminWithdrawalsController {
   constructor(private readonly withdrawalsService: WithdrawalsService) {}
 
   @Get()
-  getRequests(@Query('status') status?: string) {
-    return this.withdrawalsService.getAdminRequests(status);
+  getRequests(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.withdrawalsService.getAdminRequests(status, Number(page), Number(limit));
   }
 
   @Get(':id')

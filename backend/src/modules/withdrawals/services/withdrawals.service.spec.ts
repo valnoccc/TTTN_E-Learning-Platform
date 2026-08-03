@@ -90,11 +90,21 @@ describe('WithdrawalsService', () => {
     expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
   });
 
-  it('lists withdrawal requests for admin with instructor and payout snapshots', async () => {
-    const dataSource = { query: jest.fn().mockResolvedValue([{ requestId: '9', amount: '500000', status: 'PENDING', instructorName: 'A' }]) };
+  it('paginates withdrawal requests for admin with instructor and payout snapshots', async () => {
+    const dataSource = {
+      query: jest.fn()
+        .mockResolvedValueOnce([{ total: '21' }])
+        .mockResolvedValueOnce([{ requestId: '9', amount: '500000', status: 'PENDING', instructorName: 'A' }]),
+    };
     const service = new WithdrawalsService(dataSource as any);
-    const result = await service.getAdminRequests('PENDING');
-    expect(result[0]).toMatchObject({ requestId: 9, amount: 500000, status: 'PENDING', instructorName: 'A' });
-    expect(dataSource.query).toHaveBeenCalledWith(expect.stringContaining('FROM YeuCauRutTien'), ['PENDING']);
+    const result = await service.getAdminRequests('PENDING', 2, 20);
+    expect(result).toMatchObject({
+      items: [{ requestId: 9, amount: 500000, status: 'PENDING', instructorName: 'A' }],
+      page: 2,
+      limit: 20,
+      totalItems: 21,
+      totalPages: 2,
+    });
+    expect(dataSource.query).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), ['PENDING', 20, 20]);
   });
 });

@@ -25,6 +25,14 @@ export type AdminWithdrawalRequest = InstructorWithdrawalRequest & {
   accountHolder: string;
 };
 
+export type PaginatedWithdrawalRequests = {
+  items: AdminWithdrawalRequest[];
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
 type BankProfileRow = {
   SoTaiKhoan?: string | null;
   MaNganHang?: string | null;
@@ -164,8 +172,21 @@ export class WithdrawalsService {
     }));
   }
 
-  async getAdminRequests(status?: string): Promise<AdminWithdrawalRequest[]> {
+  async getAdminRequests(
+    status?: string,
+    requestedPage = 1,
+    requestedLimit = 20,
+  ): Promise<PaginatedWithdrawalRequests> {
+    const page = Math.max(1, Math.floor(Number(requestedPage) || 1));
+    const limit = Math.min(100, Math.max(1, Math.floor(Number(requestedLimit) || 20)));
+    const offset = (page - 1) * limit;
     const where = status ? 'WHERE ycrt.TrangThai = ?' : '';
+    const parameters = status ? [status] : [];
+    const totalRows = await this.dataSource.query(
+      `SELECT COUNT(*) AS total FROM YeuCauRutTien ycrt ${where}`,
+      parameters,
+    );
+    const totalItems = this.toMoney(totalRows[0]?.total as string);
     const rows = await this.dataSource.query(
       `SELECT ycrt.MaYeuCauRut AS requestId, ycrt.SoTien AS amount, ycrt.TrangThai AS status,
               ycrt.TenNganHang AS bankName, ycrt.SoTaiKhoan AS accountNumber,
@@ -173,15 +194,17 @@ export class WithdrawalsService {
               ycrt.NgayXuLy AS processedAt, ycrt.LyDoTuChoi AS rejectionReason,
               nd.HoTen AS instructorName
        FROM YeuCauRutTien ycrt INNER JOIN NguoiDung nd ON nd.MaND = ycrt.MaND
-       ${where} ORDER BY ycrt.NgayTao DESC, ycrt.MaYeuCauRut DESC`,
-      status ? [status] : [],
+       ${where} ORDER BY ycrt.NgayTao DESC, ycrt.MaYeuCauRut DESC
+       LIMIT ? OFFSET ?`,
+      [...parameters, limit, offset],
     );
-    return rows.map((row: Record<string, unknown>) => ({
+    const items = rows.map((row: Record<string, unknown>) => ({
       requestId: Number(row.requestId), amount: this.toMoney(row.amount as string), status: String(row.status),
       bankName: String(row.bankName), accountNumber: String(row.accountNumber), accountHolder: String(row.accountHolder),
       instructorName: String(row.instructorName), createdAt: row.createdAt as Date,
       processedAt: (row.processedAt as Date | null) ?? null, rejectionReason: (row.rejectionReason as string | null) ?? null,
     }));
+    return { items, page, limit, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / limit)) };
   }
 
   async getAdminRequestDetail(requestId: number) {
