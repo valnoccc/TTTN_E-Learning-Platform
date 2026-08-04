@@ -55,12 +55,6 @@ export class KhoaHoc {
   @Column({ name: 'HinhThuNho', type: 'varchar', length: 255, nullable: true })
   hinhThuNho?: string;
 
-  @Column({ name: 'KetQuaHocTap', type: 'text', nullable: true })
-  ketQuaHocTap?: string;
-
-  @Column({ name: 'YeuCauKhoaHoc', type: 'text', nullable: true })
-  yeuCauKhoaHoc?: string;
-
   @Column({ name: 'LyDoKhieuNai', type: 'text', nullable: true })
   appealReason?: string | null;
 
