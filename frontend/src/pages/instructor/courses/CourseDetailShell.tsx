@@ -98,18 +98,21 @@ export default function InstructorCourseDetail({
   const videoLessons = (lessons ?? []).filter((lesson: any) =>
     Boolean(lesson.video_url || lesson.videoUrl),
   );
-  const isAiChecking = videoLessons.some(
-    (lesson: any) =>
-      lesson.aiStatus === "PROCESSING" || lesson.aiStatus === "PENDING",
+  const getAiStatus = (lesson: any) =>
+    String(lesson.aiStatus ?? "").trim().toUpperCase();
+  const processingLessons = videoLessons.filter((lesson: any) =>
+    ["PROCESSING", "PENDING"].includes(getAiStatus(lesson)),
   );
-  const reviewLessons = videoLessons.filter((lesson: any) => {
-    const status = String(lesson.aiStatus ?? "")
-      .trim()
-      .toUpperCase();
-    return status === "NEEDS_REVIEW" || status === "REJECTED";
-  });
-  const reviewRatio =
-    videoLessons.length > 0 ? reviewLessons.length / videoLessons.length : 0;
+  const needsReviewLessons = videoLessons.filter(
+    (lesson: any) => getAiStatus(lesson) === "NEEDS_REVIEW",
+  );
+  const rejectedVideoLessons = videoLessons.filter(
+    (lesson: any) => getAiStatus(lesson) === "REJECTED",
+  );
+  const unmoderatedLessons = videoLessons.filter(
+    (lesson: any) => !getAiStatus(lesson),
+  );
+  const isAiChecking = processingLessons.length > 0;
   const isTechnicalAiReject = (lesson: any) => {
     const reason = String(lesson?.aiRejectReason ?? "").toLowerCase();
     return (
@@ -118,9 +121,6 @@ export default function InstructorCourseDetail({
       reason.includes("request contains an invalid argument")
     );
   };
-  const canAutoApprove = reviewRatio <= 0.2;
-  const needsAdminReview = reviewRatio > 0.2 && reviewRatio <= 0.4;
-  const hasAutoRejectRisk = reviewRatio > 0.4;
   const disablePublish =
     isSaving || isStatusChanging || isAiChecking || videoLessons.length === 0;
   let publishBtnTitle = "";
@@ -128,15 +128,17 @@ export default function InstructorCourseDetail({
     publishBtnTitle = "Khóa học chưa có video bài giảng";
   } else if (isAiChecking) {
     publishBtnTitle = "Có video đang được AI xử lý";
-  } else if (canAutoApprove) {
+  } else if (rejectedVideoLessons.length > 0) {
     publishBtnTitle =
-      "Tỉ lệ nội dung đạt tiêu chuẩn, khóa học sẽ chờ admin duyệt";
-  } else if (needsAdminReview) {
+      `Có ${rejectedVideoLessons.length} video bị AI từ chối. Hãy chỉnh sửa hoặc gửi kháng cáo.`;
+  } else if (needsReviewLessons.length > 0) {
     publishBtnTitle =
-      "Tỉ lệ nội dung cần điều chỉnh, khóa học sẽ chờ admin duyệt";
-  } else if (hasAutoRejectRisk) {
+      `Có ${needsReviewLessons.length} video cần admin xem xét thêm.`;
+  } else if (unmoderatedLessons.length > 0) {
     publishBtnTitle =
-      "Tỉ lệ nội dung cần điều chỉnh vượt 40%, khóa học sẽ bị từ chối tự động";
+      `Có ${unmoderatedLessons.length} video chưa có kết quả kiểm duyệt AI.`;
+  } else {
+    publishBtnTitle = "Tất cả video đã được AI kiểm duyệt.";
   }
   const courseReviewBanner = (() => {
     if (videoLessons.length === 0) {
@@ -150,36 +152,43 @@ export default function InstructorCourseDetail({
     if (isAiChecking) {
       return {
         tone: "amber",
-        title: "Khóa học đang được AI kiểm duyệt",
-        description: "",
+        title: `AI đang kiểm duyệt ${processingLessons.length}/${videoLessons.length} video`,
+        description:
+          "Vui lòng đợi kết quả kiểm duyệt trước khi gửi yêu cầu duyệt khóa học.",
       };
     }
 
-    if (canAutoApprove) {
-      return {
-        tone: "emerald",
-        title: "Khóa học đạt điều kiện duyệt",
-        description: "",
-      };
-    }
-
-    if (needsAdminReview) {
-      return {
-        tone: "sky",
-        title: "Khóa học cần chờ admin duyệt",
-        description: "",
-      };
-    }
-
-    if (hasAutoRejectRisk) {
+    if (rejectedVideoLessons.length > 0) {
       return {
         tone: "rose",
-        title: "Khóa học vượt ngưỡng cho phép",
-        description: "",
+        title: `Có ${rejectedVideoLessons.length} video bị AI từ chối`,
+        description:
+          "Hãy chỉnh sửa hoặc thay thế video. Bạn vẫn có thể gửi kháng cáo để admin xem xét.",
       };
     }
 
-    return null;
+    if (needsReviewLessons.length > 0) {
+      return {
+        tone: "amber",
+        title: `Có ${needsReviewLessons.length} video cần admin xem xét thêm`,
+        description: "AI chưa thể kết luận chắc chắn về các video này.",
+      };
+    }
+
+    if (unmoderatedLessons.length > 0) {
+      return {
+        tone: "sky",
+        title: `Có ${unmoderatedLessons.length} video chưa có kết quả AI`,
+        description:
+          "Video này chưa được AI kiểm duyệt hoặc không hỗ trợ kiểm duyệt tự động.",
+      };
+    }
+
+    return {
+      tone: "emerald",
+      title: `Tất cả ${videoLessons.length} video đã được AI kiểm duyệt`,
+      description: "Bạn có thể gửi yêu cầu để admin duyệt khóa học.",
+    };
   })();
 
   useEffect(() => {
@@ -218,7 +227,9 @@ export default function InstructorCourseDetail({
     }
     setIsPublishModalOpen(false);
 
-    const result = await handleStatusChange("PENDING", { isPolicyAgreed: isPublishPolicyAgreed });
+    const result = await handleStatusChange("PENDING", {
+      isPolicyAgreed: isPublishPolicyAgreed,
+    });
     if (result?.violatingLessons && result.violatingLessons.length > 0) {
       setViolatingLessons(result.violatingLessons);
       setAppealReason("");
@@ -251,6 +262,13 @@ export default function InstructorCourseDetail({
             <div className="border-b border-slate-200 px-6 py-5 sm:px-8">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
+                  <button
+                    onClick={() => navigate("/instructor/courses")}
+                    className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <ArrowLeft size={16} />
+                    Quay lại
+                  </button>
                   <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
                     {isNewCourse
                       ? "Tạo khóa học mới"
@@ -292,19 +310,11 @@ export default function InstructorCourseDetail({
                     />
                   )}
 
-                  <div className="mt-1 flex flex-wrap gap-3">
-                    <button
-                      onClick={() => navigate("/instructor/courses")}
-                      className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900"
-                    >
-                      <ArrowLeft size={16} />
-                      Quay lại
-                    </button>
-
+                  <div className="mt-1 flex flex-wrap justify-end gap-2">
                     {!isLocked && !isNewCourse ? (
                       <button
                         onClick={handleDeleteCourse}
-                        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 size={16} />
                         Xóa khóa học
@@ -315,7 +325,7 @@ export default function InstructorCourseDetail({
                       <button
                         onClick={() => void handleSave()}
                         disabled={isSaving || isStatusChanging}
-                        className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSaving ? (
                           <Loader2 className="animate-spin" size={16} />
@@ -339,7 +349,7 @@ export default function InstructorCourseDetail({
                         }}
                         disabled={disablePublish}
                         title={publishBtnTitle}
-                        className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-5 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isStatusChanging ? (
                           <Loader2 className="animate-spin" size={16} />
@@ -458,18 +468,35 @@ export default function InstructorCourseDetail({
             <div className="mt-6 px-2">
               <label className="flex items-start gap-3 cursor-pointer group">
                 <div className="relative flex items-center justify-center mt-0.5">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={isPublishPolicyAgreed}
                     onChange={(e) => setIsPublishPolicyAgreed(e.target.checked)}
                     className="peer w-5 h-5 border-2 border-slate-300 rounded appearance-none checked:bg-[#1dbf73] checked:border-[#1dbf73] transition-colors cursor-pointer"
                   />
-                  <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
                 <span className="text-sm font-medium text-slate-800">
-                  Tôi đã đọc và đồng ý với <button onClick={() => setShowPolicyModal(true)} className="text-[#1dbf73] hover:underline font-bold transition-all">Chính sách nền tảng</button> trước khi xuất bản khóa học.
+                  Tôi đã đọc và đồng ý với{" "}
+                  <button
+                    onClick={() => setShowPolicyModal(true)}
+                    className="text-[#1dbf73] hover:underline font-bold transition-all"
+                  >
+                    Chính sách nền tảng
+                  </button>{" "}
+                  trước khi xuất bản khóa học.
                 </span>
               </label>
             </div>
@@ -594,7 +621,7 @@ export default function InstructorCourseDetail({
 
       {/* Render PolicyModal if needed */}
       {showPolicyModal && (
-        <PolicyModal 
+        <PolicyModal
           isOpen={showPolicyModal}
           type="instructor"
           onAccept={() => {

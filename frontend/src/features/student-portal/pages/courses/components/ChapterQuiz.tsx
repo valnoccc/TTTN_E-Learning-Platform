@@ -75,7 +75,7 @@ export default function ChapterQuiz({
                 <p className="mt-2 text-sm text-slate-600">
                   {result.dat
                     ? "Chương tiếp theo đã được mở."
-                    : "Bạn có thể làm lại bài kiểm tra để đạt trên 50%."}
+                    : "Bạn cần làm lại bài kiểm tra để đạt yêu cầu."}
                 </p>
               </div>
             </div>
