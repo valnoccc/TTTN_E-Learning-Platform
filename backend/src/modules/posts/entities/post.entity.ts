@@ -9,6 +9,13 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+export enum ArticleCategory {
+  ANNOUNCEMENT = 'ANNOUNCEMENT',
+  SYSTEM_UPDATE = 'SYSTEM_UPDATE',
+  PROMOTION = 'PROMOTION',
+  NEWS = 'NEWS',
+}
+
 @Entity('BaiViet')
 export class BaiViet {
   @PrimaryGeneratedColumn({ name: 'MaBV' })
@@ -41,7 +48,18 @@ export class BaiViet {
   trangThai!: string;
 
   @Column({ name: 'MaND_TacGia', type: 'int' })
-  maND_TacGia!: number;
+  authorId!: number;
+
+  @Column({
+    name: 'DanhMuc',
+    type: 'enum',
+    enum: ArticleCategory,
+    default: ArticleCategory.NEWS,
+  })
+  category!: ArticleCategory;
+
+  @Column({ name: 'IsPinned', type: 'boolean', default: false })
+  isPinned!: boolean;
 
   @CreateDateColumn({ name: 'NgayTao', type: 'datetime' })
   ngayTao!: Date;
@@ -49,7 +67,7 @@ export class BaiViet {
   @UpdateDateColumn({ name: 'NgayCapNhat', type: 'datetime' })
   ngayCapNhat!: Date;
 
-  @ManyToOne(() => User, { eager: false })
+  @ManyToOne(() => User, { eager: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'MaND_TacGia' })
   tacGia!: User;
 }

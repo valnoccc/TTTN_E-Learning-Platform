@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import axiosClient from '../../../../api/axios';
-import { Calendar, User, Eye, ArrowLeft, Clock } from 'lucide-react';
+import { Calendar, User, Eye, ArrowLeft, Clock, Bookmark, BookmarkCheck } from 'lucide-react';
+import ArticleShare from './components/ArticleShare';
+import ArticleTableOfContents from './components/ArticleTableOfContents';
+import { useSavedArticles } from './hooks/useSavedArticles';
+import { estimateReadTime, sanitizeArticleHtml } from './utils/article';
+import toast from 'react-hot-toast';
 
 interface PostDetail {
   maBV: number;
@@ -33,18 +38,14 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function estimateReadTime(html: string): number {
-  const text = html.replace(/<[^>]*>/g, '');
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.ceil(wordCount / 200));
-}
-
 export default function BlogDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const articleContentRef = useRef<HTMLDivElement>(null);
+  const { isSaved, toggleSaved } = useSavedArticles();
 
   useEffect(() => {
     if (!slug) return;
@@ -121,6 +122,7 @@ export default function BlogDetails() {
   }
 
   const readTime = estimateReadTime(post.noiDung || '');
+  const sanitizedContent = sanitizeArticleHtml(post.noiDung || '');
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
@@ -128,7 +130,7 @@ export default function BlogDetails() {
 
       <Container>
         <Row className="justify-content-center">
-          <Col lg="9" md="10">
+          <Col lg="8" md="9">
             <article className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-10 mb-8">
               {/* Featured Image */}
               {post.hinhAnh && (
@@ -191,6 +193,29 @@ export default function BlogDetails() {
                   </span>
                 </div>
 
+                <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+                  <ArticleShare title={post.tieuDe} />
+                  <button type="button" onClick={async () => {
+                    const willSave = !isSaved(post.maBV);
+                    toggleSaved(post.maBV);
+                    if (willSave) {
+                      toast.success('Đã lưu bài viết vào danh sách của bạn');
+                    } else {
+                      toast.success('Đã bỏ lưu bài viết');
+                    }
+                    
+                    try {
+                      // Gửi notify để hiện chuông thông báo
+                      await axiosClient.post(`/posts/${post.maBV}/notify-save`, { isSaving: willSave });
+                    } catch (error) {
+                      console.error('Lỗi khi gửi thông báo lưu bài viết', error);
+                    }
+                  }} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
+                    {isSaved(post.maBV) ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                    {isSaved(post.maBV) ? 'Đã lưu' : 'Lưu bài viết'}
+                  </button>
+                </div>
+
                 {/* Summary */}
                 {post.tomTat && (
                   <div className="bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-xl p-4 mb-8">
@@ -202,6 +227,7 @@ export default function BlogDetails() {
 
                 {/* Content */}
                 <div
+                  ref={articleContentRef}
                   className="prose prose-slate prose-lg max-w-none
                     prose-headings:text-slate-800 prose-headings:font-bold
                     prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
@@ -213,10 +239,13 @@ export default function BlogDetails() {
                     prose-pre:bg-slate-900 prose-pre:rounded-xl prose-pre:text-sm
                     prose-code:text-emerald-600 prose-code:bg-emerald-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
                     prose-img:rounded-xl prose-img:shadow-md"
-                  dangerouslySetInnerHTML={{ __html: post.noiDung || '' }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                 />
               </div>
             </article>
+          </Col>
+          <Col lg="3" md="3" className="mt-10">
+            <ArticleTableOfContents containerRef={articleContentRef} content={sanitizedContent} />
           </Col>
         </Row>
       </Container>

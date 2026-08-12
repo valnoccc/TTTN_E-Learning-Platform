@@ -5,15 +5,18 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { BaiViet } from './entities/post.entity';
+import { ArticleCategory, BaiViet } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(BaiViet)
     private readonly postRepository: Repository<BaiViet>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -24,6 +27,7 @@ export class PostsService {
     page: number = 1,
     limit: number = 10,
     search?: string,
+    category?: ArticleCategory,
   ): Promise<{ data: BaiViet[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit;
 
@@ -31,11 +35,14 @@ export class PostsService {
     if (search) {
       whereCondition.tieuDe = Like(`%${search}%`);
     }
+    if (category) {
+      whereCondition.category = category;
+    }
 
     const [data, total] = await this.postRepository.findAndCount({
       where: whereCondition,
       relations: ['tacGia'],
-      order: { ngayTao: 'DESC' },
+      order: { isPinned: 'DESC', ngayTao: 'DESC' },
       skip,
       take: limit,
       select: {
@@ -48,7 +55,9 @@ export class PostsService {
         trangThai: true,
         ngayTao: true,
         ngayCapNhat: true,
-        maND_TacGia: true,
+        authorId: true,
+        category: true,
+        isPinned: true,
         tacGia: {
           maND: true,
           hoTen: true,
@@ -60,9 +69,11 @@ export class PostsService {
     return { data, total, page, limit };
   }
 
+  private viewCache = new Map<string, number>();
+
   /**
    * Lấy chi tiết bài viết theo Slug (Public API)
-   * Tự động tăng LuotXem thêm 1
+   * Tự động tăng LuotXem thêm 1 (có debounce 2 giây)
    */
   async findBySlug(slug: string): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
@@ -75,9 +86,16 @@ export class PostsService {
         `Không tìm thấy bài viết với slug: "${slug}"`,
       );
     }
-
-    await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
-    post.luotXem += 1;
+    
+    const now = Date.now();
+    const lastView = this.viewCache.get(slug) || 0;
+    
+    // Chỉ tăng lượt xem nếu cách lần cuối cùng >= 2 giây (Chống spam/React StrictMode)
+    if (now - lastView > 2000) {
+      this.viewCache.set(slug, now);
+      await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
+      post.luotXem += 1;
+    }
 
     return post;
   }
@@ -88,7 +106,7 @@ export class PostsService {
   async findAll(): Promise<BaiViet[]> {
     return this.postRepository.find({
       relations: ['tacGia'],
-      order: { ngayTao: 'DESC' },
+      order: { isPinned: 'DESC', ngayTao: 'DESC' },
       select: {
         maBV: true,
         tieuDe: true,
@@ -99,7 +117,9 @@ export class PostsService {
         trangThai: true,
         ngayTao: true,
         ngayCapNhat: true,
-        maND_TacGia: true,
+        authorId: true,
+        category: true,
+        isPinned: true,
         tacGia: {
           maND: true,
           hoTen: true,
@@ -125,6 +145,21 @@ export class PostsService {
     return post;
   }
 
+  async findPublishedById(id: number): Promise<BaiViet> {
+    const post = await this.postRepository.findOne({
+      where: { maBV: id, trangThai: 'PUBLISHED' },
+      relations: ['tacGia'],
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Không tìm thấy bài viết với ID: ${id}`);
+    }
+
+    await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
+    post.luotXem += 1;
+    return post;
+  }
+
   /**
    * Tạo bài viết mới (Admin API)
    */
@@ -146,7 +181,9 @@ export class PostsService {
       noiDung: dto.noiDung,
       hinhAnh: dto.hinhAnh,
       trangThai: dto.trangThai || 'DRAFT',
-      maND_TacGia: authorId,
+      authorId,
+      category: dto.category ?? ArticleCategory.NEWS,
+      isPinned: dto.isPinned ?? false,
     });
 
     return this.postRepository.save(post);
@@ -176,6 +213,8 @@ export class PostsService {
       ...(dto.noiDung !== undefined && { noiDung: dto.noiDung }),
       ...(dto.hinhAnh !== undefined && { hinhAnh: dto.hinhAnh }),
       ...(dto.trangThai !== undefined && { trangThai: dto.trangThai }),
+      ...(dto.category !== undefined && { category: dto.category }),
+      ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
     });
 
     return this.postRepository.save(post);
@@ -187,5 +226,23 @@ export class PostsService {
   async remove(id: number): Promise<void> {
     const post = await this.findOneById(id);
     await this.postRepository.remove(post);
+  }
+
+  async notifySave(postId: number, userId: number, isSaving: boolean) {
+    if (!isSaving) return; 
+    
+    const post = await this.postRepository.findOne({ where: { maBV: postId } });
+    if (!post) return;
+
+    let previewContent = post.tieuDe.substring(0, 50);
+    if (post.tieuDe.length > 50) previewContent += '...';
+
+    await this.notificationsService.createNotification({
+      maND: userId, // Gửi cho chính người vừa lưu
+      maNguoiGui: null,
+      loaiThongBao: NotificationType.INTERACTION,
+      tieuDe: `Bạn đã lưu bài viết: ${previewContent}`,
+      noiDung: `Bài viết "${post.tieuDe}" đã được thêm vào danh sách đã lưu của bạn.|||/blog/${post.slug}`,
+    });
   }
 }

@@ -21,7 +21,7 @@ export default function CourseCreate() {
 
   const handleAcceptPolicy = async () => {
     try {
-      const response = await axiosClient.patch('/users/me/policies', { policyType: 'instructor' });
+      const response = await axiosClient.patch<any>('/users/me/policies', { policyType: 'instructor' });
       // Update local storage
       if (response.data && response.data.data) {
         const userStr = localStorage.getItem('user');

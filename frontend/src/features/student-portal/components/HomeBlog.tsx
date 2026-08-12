@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Styles } from "./styles/homeBlog";
 import axiosClient from '../../../api/axios';
+import { BookmarkCheck } from 'lucide-react';
+import { useSavedArticles } from '../pages/blog/hooks/useSavedArticles';
 
 function formatDateShort(dateStr: string): string {
     const d = new Date(dateStr);
@@ -13,6 +15,7 @@ function formatDateShort(dateStr: string): string {
 }
 
 export default function HomeBlog() {
+    const { isSaved } = useSavedArticles();
     const [posts, setPosts] = useState<any[]>([]);
 
     useEffect(() => {
@@ -55,6 +58,11 @@ export default function HomeBlog() {
                                                             onError={(e: any) => { e.target.src = '/assets/images/blog-1.jpg'; }}
                                                         />
                                                     </Link>
+                                                    {isSaved(data.maBV) && (
+                                                        <div className="absolute top-2 left-2 inline-flex items-center justify-center w-6 h-6 bg-emerald-500/90 backdrop-blur-sm rounded-full text-white shadow-sm" title="Đã lưu" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                                                            <BookmarkCheck size={14} />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </Col>
                                             <Col lg="6" md="12">

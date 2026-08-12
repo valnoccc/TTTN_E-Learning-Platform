@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
+import { ArticleCategory } from '../entities/post.entity';
 
 export class CreatePostDto {
   @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
@@ -26,4 +27,14 @@ export class CreatePostDto {
     message: 'Trạng thái phải là DRAFT hoặc PUBLISHED',
   })
   trangThai?: string;
+
+  @IsOptional()
+  @IsEnum(ArticleCategory, {
+    message: 'Danh mục bài viết không hợp lệ',
+  })
+  category?: ArticleCategory;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }

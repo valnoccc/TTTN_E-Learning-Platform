@@ -158,6 +158,9 @@ export const NotificationDropdown = () => {
               >
                 <div className="d-flex justify-content-between align-items-start">
                   <strong style={{ fontSize: '14px', color: !notif.daDoc ? '#11B67A' : '#333', marginBottom: '4px' }}>
+                    {notif.tieuDe?.includes('thả tim') && <i className="las la-heart text-danger me-1"></i>}
+                    {notif.tieuDe?.includes('phản hồi') && <i className="las la-comment-dots text-primary me-1"></i>}
+                    {notif.tieuDe?.includes('lưu bài viết') && <i className="las la-bookmark text-emerald-500 me-1"></i>}
                     {notif.tieuDe}
                   </strong>
                   <small className="text-muted ms-2 flex-shrink-0" style={{ fontSize: '11px' }}>

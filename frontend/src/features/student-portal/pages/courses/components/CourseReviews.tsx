@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import axiosClient from '../../../../../api/axios';
 import { Star, Search, ThumbsUp, ThumbsDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { checkProfanity } from '../../../../../utils/profanity.util';
 
 export default function CourseReviews({ courseId }: { courseId: string }) {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -103,6 +104,15 @@ export default function CourseReviews({ courseId }: { courseId: string }) {
     const freshToken = localStorage.getItem('access_token');
     if (!freshToken) { toast.error('Vui lòng đăng nhập để gửi đánh giá.'); return; }
     if (!reviewContent.trim()) { toast.error('Vui lòng nhập nội dung đánh giá.'); return; }
+
+    // ── Profanity guard (client-side) ──
+    if (checkProfanity(reviewContent)) {
+      toast.error('Đánh giá của bạn chứa từ ngữ không phù hợp, vui lòng chỉnh sửa lại.', {
+        duration: 4000,
+        icon: '🚫',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {

@@ -4,7 +4,9 @@ import { Container, Row, Col } from 'react-bootstrap';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Styles } from './styles/blog';
 import axiosClient from '../../../../api/axios';
-import { Search, Calendar, User, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Calendar, User, Eye, ChevronLeft, ChevronRight, BookmarkCheck } from 'lucide-react';
+import { ARTICLE_CATEGORIES, ArticleCategory, estimateReadTime } from './utils/article';
+import { useSavedArticles } from './hooks/useSavedArticles';
 
 interface PostItem {
   maBV: number;
@@ -15,6 +17,7 @@ interface PostItem {
   luotXem: number;
   trangThai: string;
   ngayTao: string;
+  category: ArticleCategory;
   tacGia?: {
     maND: number;
     hoTen: string;
@@ -32,6 +35,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function BlogGrid() {
+  const { isSaved } = useSavedArticles();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -39,6 +43,7 @@ export default function BlogGrid() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [category, setCategory] = useState<ArticleCategory | ''>('');
   const limit = 6;
 
   useEffect(() => {
@@ -46,7 +51,7 @@ export default function BlogGrid() {
       setIsLoading(true);
       try {
         const res: any = await axiosClient.get('/posts', {
-          params: { page, limit, search: search || undefined },
+          params: { page, limit, search: search || undefined, category: category || undefined },
         });
         setPosts(res?.data ?? []);
         setTotal(res?.total ?? 0);
@@ -58,7 +63,7 @@ export default function BlogGrid() {
       }
     };
     fetchPosts();
-  }, [page, search]);
+  }, [page, search, category]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -100,6 +105,13 @@ export default function BlogGrid() {
                 </form>
               </Col>
             </Row>
+
+            <div className="mb-6 flex flex-wrap justify-center gap-2">
+              <button onClick={() => { setCategory(''); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${!category ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>Tất cả</button>
+              {Object.entries(ARTICLE_CATEGORIES).map(([key, label]) => (
+                <button key={key} onClick={() => { setCategory(key as ArticleCategory); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${category === key ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{label}</button>
+              ))}
+            </div>
 
             {/* Results count */}
             {!isLoading && (
@@ -167,11 +179,16 @@ export default function BlogGrid() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e: any) => { e.target.src = '/assets/images/blog-1.jpg'; }}
                           />
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute top-3 left-3 flex flex-col gap-2">
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-slate-600">
                               <Eye size={12} />
                               {post.luotXem}
                             </span>
+                            {isSaved(post.maBV) && (
+                              <span className="inline-flex items-center justify-center w-6 h-6 bg-emerald-500/90 backdrop-blur-sm rounded-full text-white shadow-sm" title="Đã lưu">
+                                <BookmarkCheck size={14} />
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -189,7 +206,10 @@ export default function BlogGrid() {
                                 {post.tacGia.hoTen}
                               </span>
                             )}
+                            <span>⏳ {estimateReadTime(post.tomTat || '')} phút đọc</span>
                           </div>
+
+                          <span className="mb-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{ARTICLE_CATEGORIES[post.category] ?? ARTICLE_CATEGORIES.NEWS}</span>
 
                           {/* Title */}
                           <h6 className="font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors leading-snug">

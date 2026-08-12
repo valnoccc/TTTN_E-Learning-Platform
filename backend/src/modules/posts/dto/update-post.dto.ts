@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsEnum } from 'class-validator';
+import { ArticleCategory } from '../entities/post.entity';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -26,4 +27,14 @@ export class UpdatePostDto {
     message: 'Trạng thái phải là DRAFT hoặc PUBLISHED',
   })
   trangThai?: string;
+
+  @IsOptional()
+  @IsEnum(ArticleCategory, {
+    message: 'Danh mục bài viết không hợp lệ',
+  })
+  category?: ArticleCategory;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }
