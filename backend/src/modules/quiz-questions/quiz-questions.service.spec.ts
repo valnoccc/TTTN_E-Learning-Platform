@@ -115,7 +115,8 @@ describe('QuizQuestionsService', () => {
       .mockResolvedValueOnce([{ maCauHoi: 9, maChuong: 5 }])
       .mockResolvedValueOnce(undefined);
 
-    await expect(service.update(5, 9, 7, { dapAnDung: 'C' })).resolves.toEqual(
+    const updateDto = { dapAnDung: 'C' as QuizAnswerKey };
+    await expect(service.update(5, 9, 7, updateDto)).resolves.toEqual(
       expect.objectContaining({ maCauHoi: 9, maChuong: 5, dapAnDung: 'C' }),
     );
     await expect(service.remove(5, 9, 7)).resolves.toBeUndefined();

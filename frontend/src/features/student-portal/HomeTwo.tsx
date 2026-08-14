@@ -30,7 +30,7 @@ export default class HomeTwo extends Component {
                 <NumberCounter />
 
                 {/* Free Course Area */}
-                <FreeCourse />
+                {/* <FreeCourse /> */}
 
                 {/* Team Slider */}
                 <TeamSlider />

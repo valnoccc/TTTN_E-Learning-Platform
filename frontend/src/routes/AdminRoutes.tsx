@@ -4,6 +4,7 @@ import AdminCourseModeration from '../pages/admin/Courses/AdminCourseModeration'
 import AdminCourseDetail from '../pages/admin/Courses/AdminCourseDetail';
 import AdminCategories from '../pages/admin/Categories/AdminCategories';
 import AdminPosts from '../pages/admin/Posts/AdminPosts';
+
 import AdminPostForm from '../pages/admin/Posts/AdminPostForm';
 import AdminPostPreview from '../pages/admin/Posts/AdminPostPreview';
 import AdminForumPosts from '../pages/admin/Forum/AdminForumPosts';
@@ -28,6 +29,7 @@ export default function AdminRoutes() {
             <Route path="withdrawals/:id" element={<AdminWithdrawalDetail />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="posts" element={<AdminPosts />} />
+        
             <Route path="posts/new" element={<AdminPostForm />} />
             <Route path="posts/preview/:id" element={<AdminPostPreview />} />
             <Route path="posts/:id/edit" element={<AdminPostForm />} />

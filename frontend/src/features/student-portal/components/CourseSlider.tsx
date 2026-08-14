@@ -69,7 +69,8 @@ const CourseSlider = () => {
         }
     };
 
-    const displayCourses = courses.length > 0 ? courses : [];
+    // Limit to 6 courses to avoid showing too many in the slider
+    const displayCourses = courses.length > 0 ? courses.slice(0, 6) : [];
 
     return (
         <Styles>
@@ -102,7 +103,14 @@ const CourseSlider = () => {
                                                 }
                                                 const categoryName = data.danhMuc?.tenDM || 'General';
                                                 const rawImage = data.hinhThuNho;
-                                                const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                                                const apiUrl = import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com';
+                                                const courseImage = rawImage 
+                                                    ? (rawImage.startsWith('http') 
+                                                        ? rawImage 
+                                                        : (rawImage.includes('/') 
+                                                            ? `${apiUrl}/${rawImage.startsWith('/') ? rawImage.slice(1) : rawImage}` 
+                                                            : `/assets/images/${rawImage}`)) 
+                                                    : '/assets/images/course-1.jpg';
                                                 const courseUrl = `/course-details/${data.maKH}`;
 
                                                 return (
@@ -208,23 +216,23 @@ const CourseSlider = () => {
                                                                     <div className="absolute left-4 top-4 z-10 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
                                                                         {categoryName}
                                                                     </div>
-                                                                    <img src={courseImage} alt={data.tenKhoaHoc} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                                    <img src={courseImage} alt={data.tenKhoaHoc} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" onError={(e) => {
+                                                                        const target = e.target as HTMLImageElement;
+                                                                        target.src = "/assets/images/course-1.jpg";
+                                                                    }} />
                                                                 </div>
                                                             </Link>
 
                                                             <div className="p-5">
-                                                                <div className="mb-2 flex items-center justify-between">
+                                                                <div className="mb-2 flex items-center">
                                                                     <div className="flex items-center space-x-1 text-amber-400">
-                                                                        {[1, 2, 3, 4, 5].map(star => {
+                                                                        {[1, 2, 3, 4, 5].map((star) => {
                                                                             const rating = parseFloat(data.averageRating || '0');
                                                                             if (rating >= star) return <i key={star} className="las la-star"></i>;
                                                                             if (rating >= star - 0.5) return <i key={star} className="las la-star-half-alt"></i>;
                                                                             return <i key={star} className="lar la-star"></i>;
                                                                         })}
                                                                         <span className="ml-1 text-sm text-gray-500">({data.averageRating || '0.0'})</span>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <span className="text-lg font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
                                                                     </div>
                                                                 </div>
 
@@ -236,6 +244,9 @@ const CourseSlider = () => {
                                                                     <div className="flex items-center space-x-2">
                                                                         <img src={instructorAvatar} alt={instructorName} className="h-8 w-8 rounded-full object-cover" onError={(e: any) => { e.target.src = defaultAvatar; }} />
                                                                         <span className="text-sm font-medium text-gray-600">{instructorName}</span>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-xl font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
                                                                     </div>
                                                                 </div>
 

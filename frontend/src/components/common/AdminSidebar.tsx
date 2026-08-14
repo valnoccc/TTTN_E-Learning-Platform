@@ -33,6 +33,7 @@ export default function AdminSidebar() {
     const [pendingCount, setPendingCount] = useState<number>(0);
 
     const [user] = useState<StoredAdminUser | null>(() => JSON.parse(localStorage.getItem('user') || 'null'));
+    const [avatarError, setAvatarError] = useState(false);
     const userRole = String(user?.vaiTro ?? '').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
 
@@ -71,7 +72,15 @@ export default function AdminSidebar() {
         
         // Cập nhật lại mỗi 60s để hiển thị real-time hơn một chút
         const interval = setInterval(fetchPendingCount, 60000);
-        return () => clearInterval(interval);
+        
+        // Lắng nghe sự kiện để cập nhật lập tức khi admin duyệt/từ chối/ban khóa học
+        const handleStatusChange = () => fetchPendingCount();
+        window.addEventListener('adminCourseStatusChanged', handleStatusChange);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('adminCourseStatusChanged', handleStatusChange);
+        };
     }, [isAdmin]);
 
     const sections: SidebarSection[] = [
@@ -173,8 +182,13 @@ export default function AdminSidebar() {
                     >
                         <div className="flex min-w-0 items-center gap-3">
                             <div className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-[2px] bg-[#1dbf73] text-[14px] font-bold text-white shrink-0">
-                                {user?.avatar ? (
-                                    <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                                {user?.avatar && user.avatar !== 'null' && user.avatar !== 'undefined' && !avatarError ? (
+                                    <img 
+                                        src={user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `/assets/images/${user.avatar.startsWith('/') ? user.avatar.substring(1) : user.avatar}`} 
+                                        alt="Avatar" 
+                                        className="h-full w-full object-cover" 
+                                        onError={() => setAvatarError(true)}
+                                    />
                                 ) : (
                                     (user?.fullName || 'A').charAt(0).toUpperCase()
                                 )}

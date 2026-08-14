@@ -16,6 +16,7 @@ interface PostFormData {
   noiDung: string;
   hinhAnh: string;
   trangThai: string;
+  maDMBV: number;
 }
 
 const QUILL_MODULES = {
@@ -54,6 +55,7 @@ export default function AdminPostForm() {
   const isEdit = Boolean(id);
   const [isFetching, setIsFetching] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
   
   // Khởi tạo React Hook Form
   const {
@@ -71,6 +73,7 @@ export default function AdminPostForm() {
       noiDung: '',
       hinhAnh: '',
       trangThai: 'DRAFT',
+      maDMBV: 1,
     },
   });
 
@@ -92,6 +95,7 @@ export default function AdminPostForm() {
             setValue('noiDung', post.noiDung || '');
             setValue('hinhAnh', post.hinhAnh || '');
             setValue('trangThai', post.trangThai || 'DRAFT');
+            setValue('maDMBV', post.maDMBV || 1);
             setSlugManuallyEdited(true);
           }
         })
@@ -103,6 +107,15 @@ export default function AdminPostForm() {
         .finally(() => setIsFetching(false));
     }
   }, [isEdit, id, navigate, setValue]);
+
+  // Load categories
+  useEffect(() => {
+    axiosClient.get('/admin/post-categories').then((res: any) => {
+      setCategories(res?.data || []);
+    }).catch(() => {
+      toast.error('Không thể tải danh mục bài viết');
+    });
+  }, []);
 
   // Giả lập hàm Upload Image
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -268,13 +281,16 @@ export default function AdminPostForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tóm tắt</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                    Tóm tắt <span className="text-red-500">*</span>
+                  </label>
                   <textarea
-                    {...register('tomTat')}
+                    {...register('tomTat', { required: 'Tóm tắt không được để trống', maxLength: { value: 500, message: 'Tóm tắt tối đa 500 ký tự' } })}
                     rows={3}
                     placeholder="Nội dung tóm tắt hiển thị ngoài danh sách..."
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition resize-none"
                   />
+                  {errors.tomTat && <p className="text-red-500 text-xs mt-1">{errors.tomTat.message}</p>}
                 </div>
               </div>
 
@@ -316,7 +332,7 @@ export default function AdminPostForm() {
               {/* Ảnh đại diện */}
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                 <label className="block text-sm font-semibold text-slate-700 mb-3">
-                  Ảnh đại diện (Thumbnail)
+                  Ảnh đại diện (Thumbnail) <span className="text-red-500">*</span>
                 </label>
                 <div 
                   className={`relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${watchHinhAnh ? 'border-transparent' : 'border-slate-300 hover:bg-slate-50 hover:border-emerald-400'}`}
@@ -354,7 +370,25 @@ export default function AdminPostForm() {
                   />
                 </div>
                 {/* Ẩn input lưu URL thực tế (kết nối với react-hook-form) */}
-                <input type="hidden" {...register('hinhAnh')} />
+                <input type="hidden" {...register('hinhAnh', { required: 'Vui lòng tải lên ảnh đại diện' })} />
+                {errors.hinhAnh && <p className="text-red-500 text-xs mt-2">{errors.hinhAnh.message}</p>}
+              </div>
+
+              {/* Danh mục bài viết */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Danh mục bài viết
+                </label>
+                <select
+                  {...register('maDMBV', { valueAsNumber: true })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition bg-white"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.maDMBV} value={cat.maDMBV}>
+                      {cat.tenDMBV}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Cài đặt trạng thái */}

@@ -17,7 +17,6 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
-import { ArticleCategory } from '../entities/post.entity';
 import { PostsService } from '../posts.service';
 
 type AuthRequest = Request & {
@@ -33,13 +32,13 @@ export class ArticlesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
-    @Query('category') category?: ArticleCategory,
+    @Query('maDMBV') maDMBV?: string,
   ) {
     const result = await this.postsService.findPublished(
       Math.max(1, Number(page) || 1),
       Math.min(50, Math.max(1, Number(limit) || 10)),
       search,
-      category,
+      maDMBV ? Number(maDMBV) : undefined,
     );
     return { message: 'Lấy danh sách bài viết thành công', ...result };
   }

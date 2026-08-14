@@ -18,7 +18,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getRedirectPath = (role: string) => {
+  const getRedirectPath = (role?: string) => {
     const stateFrom = (location.state as { from?: string } | null)?.from;
     const safeFrom =
       typeof stateFrom === 'string' &&
@@ -156,11 +156,11 @@ export default function LoginPage() {
                     <div className="social-login text-center">
                       <p>Đăng nhập bằng mạng xã hội</p>
                       <ul
-                        className="list-unstyled d-flex justify-content-center"
-                        style={{ gap: '15px' }}
+                        className="list-unstyled"
                       >
-                        <li>
+                        <li className="w-100">
                           <a
+                            className="w-100 d-block text-center"
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
@@ -175,11 +175,7 @@ export default function LoginPage() {
                             {googleLoading ? 'Đang xử lý...' : 'Google'}
                           </a>
                         </li>
-                        <li>
-                          <Link to="#">
-                            <i className="fab fa-facebook-f"></i> Facebook
-                          </Link>
-                        </li>
+
                       </ul>
                     </div>
                   </form>

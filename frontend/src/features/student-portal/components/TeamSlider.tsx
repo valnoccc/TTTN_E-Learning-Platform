@@ -77,12 +77,11 @@ const TeamSlider = () => {
                                         {
                                             displayData.map((data: any, i: number) => (
                                                 <div className="team-item" key={data.id || i}>
-                                                    <div style={{ overflow: 'hidden', borderRadius: '5px', height: '280px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+                                                    <div style={{ position: 'relative', width: '100%', paddingTop: '125%', overflow: 'hidden', borderRadius: '5px' }}>
                                                         <img 
                                                             src={data.personImage && data.personImage.startsWith('http') ? data.personImage : `/assets/images/${data.personImage}`} 
                                                             alt={data.personName} 
-                                                            className="img-fluid" 
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
+                                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                                                         />
                                                     </div>
                                                     <div className="img-content text-center">

@@ -5,7 +5,7 @@ import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { Styles } from './styles/blog';
 import axiosClient from '../../../../api/axios';
 import { Search, Calendar, User, Eye, ChevronLeft, ChevronRight, BookmarkCheck } from 'lucide-react';
-import { ARTICLE_CATEGORIES, ArticleCategory, estimateReadTime } from './utils/article';
+import { estimateReadTime } from './utils/article';
 import { useSavedArticles } from './hooks/useSavedArticles';
 
 interface PostItem {
@@ -17,7 +17,12 @@ interface PostItem {
   luotXem: number;
   trangThai: string;
   ngayTao: string;
-  category: ArticleCategory;
+  maDMBV: number;
+  category?: {
+    maDMBV: number;
+    tenDMBV: string;
+    slug: string;
+  };
   tacGia?: {
     maND: number;
     hoTen: string;
@@ -43,15 +48,25 @@ export default function BlogGrid() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [category, setCategory] = useState<ArticleCategory | ''>('');
+  const [maDMBV, setMaDMBV] = useState<number | ''>('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'views' | 'a-z' | 'z-a'>('newest');
+  const [categories, setCategories] = useState<{ maDMBV: number; tenDMBV: string; slug: string }[]>([]);
   const limit = 6;
+
+  useEffect(() => {
+    axiosClient.get('/post-categories').then((res: any) => {
+      setCategories(res?.data || []);
+    }).catch(() => {
+      console.error('Không thể tải danh mục bài viết');
+    });
+  }, []);
 
   useEffect(() => {
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
         const res: any = await axiosClient.get('/posts', {
-          params: { page, limit, search: search || undefined, category: category || undefined },
+          params: { page, limit, search: search || undefined, maDMBV: maDMBV || undefined, sortBy },
         });
         setPosts(res?.data ?? []);
         setTotal(res?.total ?? 0);
@@ -63,7 +78,7 @@ export default function BlogGrid() {
       }
     };
     fetchPosts();
-  }, [page, search, category]);
+  }, [page, search, maDMBV, sortBy]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -82,7 +97,7 @@ export default function BlogGrid() {
           <Container>
             {/* Search Bar */}
             <Row className="mb-4">
-              <Col lg="8" className="mx-auto">
+              <Col lg="6" md="8" className="mx-auto">
                 <form onSubmit={handleSearch} className="relative">
                   <div className="flex items-center bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:border-emerald-300 transition-colors">
                     <div className="pl-4 text-slate-400">
@@ -107,23 +122,21 @@ export default function BlogGrid() {
             </Row>
 
             <div className="mb-6 flex flex-wrap justify-center gap-2">
-              <button onClick={() => { setCategory(''); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${!category ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>Tất cả</button>
-              {Object.entries(ARTICLE_CATEGORIES).map(([key, label]) => (
-                <button key={key} onClick={() => { setCategory(key as ArticleCategory); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${category === key ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{label}</button>
+              <button onClick={() => { setMaDMBV(''); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${!maDMBV ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300'}`}>Tất cả</button>
+              {categories.map((cat) => (
+                <button key={cat.maDMBV} onClick={() => { setMaDMBV(cat.maDMBV); setPage(1); }} className={`rounded-full px-4 py-2 text-sm font-medium ${maDMBV === cat.maDMBV ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300'}`}>{cat.tenDMBV}</button>
               ))}
             </div>
 
-            {/* Results count */}
+            {/* Results count & Sorting */}
             {!isLoading && (
               <Row className="mb-3">
-                <Col>
-                  <p className="text-sm text-slate-500">
-                    {total > 0
-                      ? `Hiển thị ${posts.length} / ${total} bài viết`
-                      : 'Không tìm thấy bài viết nào'}
-                    {search && (
+                <Col className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <p className="text-sm text-slate-500 m-0">
+                    {total === 0 && 'Không tìm thấy bài viết nào'}
+                    {total > 0 && search && (
                       <span>
-                        {' '}cho từ khóa "<strong>{search}</strong>"
+                        Kết quả tìm kiếm cho từ khóa "<strong>{search}</strong>"
                         <button
                           onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }}
                           className="ml-2 text-emerald-600 hover:underline"
@@ -133,6 +146,22 @@ export default function BlogGrid() {
                       </span>
                     )}
                   </p>
+                  {total > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-slate-500 font-medium">Sắp xếp:</span>
+                      <select 
+                        value={sortBy} 
+                        onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
+                        className="text-sm border border-slate-200 rounded-md px-3 py-1.5 outline-none focus:border-emerald-500 bg-white shadow-sm"
+                      >
+                        <option value="newest">Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                        <option value="views">Xem nhiều nhất</option>
+                        <option value="a-z">Tên (A-Z)</option>
+                        <option value="z-a">Tên (Z-A)</option>
+                      </select>
+                    </div>
+                  )}
                 </Col>
               </Row>
             )}
@@ -209,7 +238,7 @@ export default function BlogGrid() {
                             <span>⏳ {estimateReadTime(post.tomTat || '')} phút đọc</span>
                           </div>
 
-                          <span className="mb-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{ARTICLE_CATEGORIES[post.category] ?? ARTICLE_CATEGORIES.NEWS}</span>
+                          <span className="mb-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{post.category?.tenDMBV ?? 'Tin tức'}</span>
 
                           {/* Title */}
                           <h6 className="font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors leading-snug">

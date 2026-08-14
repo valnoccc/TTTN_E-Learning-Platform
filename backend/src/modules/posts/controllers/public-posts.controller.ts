@@ -1,6 +1,5 @@
 import { Controller, Get, Param, Query, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { PostsService } from '../posts.service';
-import { ArticleCategory } from '../entities/post.entity';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @Controller('posts')
@@ -12,7 +11,8 @@ export class PublicPostsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
-    @Query('category') category?: ArticleCategory,
+    @Query('maDMBV') maDMBV?: string,
+    @Query('sortBy') sortBy?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
     const limitNum = Math.min(
@@ -24,7 +24,8 @@ export class PublicPostsController {
       pageNum,
       limitNum,
       search,
-      category,
+      maDMBV ? Number(maDMBV) : undefined,
+      sortBy,
     );
 
     return {

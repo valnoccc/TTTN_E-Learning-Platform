@@ -507,7 +507,7 @@ export default function Checkout() {
                       />
                       <span>Chuyển khoản</span>
                     </div>
-                    <div
+                    {/* <div
                       className={`payment-card ${paymentMethod === "PAYPAL" ? "selected" : ""}`}
                       onClick={() => setPaymentMethod("PAYPAL")}
                     >
@@ -516,7 +516,7 @@ export default function Checkout() {
                         style={{ fontSize: "30px" }}
                       />
                       <span>PayPal</span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {paymentMethod === 'VNPAY' ? (

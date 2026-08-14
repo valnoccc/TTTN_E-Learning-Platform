@@ -9,7 +9,7 @@ import { DataSource } from 'typeorm';
 
 import {
   CreateAdminCouponDto,
-  type AdminCouponRuleInput,
+  type AdminCouponRuleInputDto,
   type AdminCouponRuleType,
   type AdminCouponScopeType,
 } from '../dto/create-admin-coupon.dto';
@@ -329,7 +329,7 @@ export class AdminCouponsService
       giaTriDieuKien: number | null;
       moTa: string | null;
     }> = Array.isArray(payload.rules)
-      ? payload.rules.map((rule: AdminCouponRuleInput) => {
+      ? payload.rules.map((rule: AdminCouponRuleInputDto) => {
           const ruleValue =
             rule.giaTriDieuKien === null || rule.giaTriDieuKien === undefined
               ? null
@@ -609,7 +609,7 @@ export class AdminCouponsService
           giaTriDieuKien: number | null;
           moTa: string | null;
         }> = Array.isArray(dto.rules)
-          ? dto.rules.map((rule: AdminCouponRuleInput) => ({
+          ? dto.rules.map((rule: AdminCouponRuleInputDto) => ({
               loaiDieuKien: rule.loaiDieuKien,
               giaTriDieuKien:
                 rule.giaTriDieuKien === null ||

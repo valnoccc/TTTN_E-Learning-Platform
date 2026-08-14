@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Eye, FileText, Search, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2, FileText, CheckCircle, XCircle, ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from 'lucide-react';
 import AdminLayout from '../../../layouts/AdminLayout';
 import axiosClient from '../../../api/axios';
 import toast from 'react-hot-toast';
+import AdminPostCategoriesTab, { AdminPostCategoriesRef } from './AdminPostCategories';
 
 interface PostItem {
   maBV: number;
@@ -37,6 +38,10 @@ export default function AdminPosts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<PostItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'categories'>('posts');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const categoriesRef = useRef<AdminPostCategoriesRef>(null);
 
   const fetchPosts = async () => {
     setIsLoading(true);
@@ -71,46 +76,95 @@ export default function AdminPosts() {
     }
   };
 
-  const filteredPosts = posts.filter((p) =>
-    p.tieuDe.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredPosts = useMemo(() => {
+    return posts.filter((p) =>
+      p.tieuDe.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [posts, searchTerm]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
+  const indexOfLast = currentPage * PAGE_SIZE;
+  const indexOfFirst = indexOfLast - PAGE_SIZE;
+  const currentPosts = filteredPosts.slice(indexOfFirst, indexOfLast);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <FileText size={24} className="text-[#1dbf73]" />
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
               Quản lý bài viết
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Quản lý tất cả bài viết trên hệ thống Edumeo
-            </p>
           </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {activeTab === 'posts' && (
+              <div className="relative w-full sm:flex-1">
+                <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tiêu đề..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-[14px] text-slate-700 shadow-sm outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]"
+                />
+              </div>
+            )}
+
+            {activeTab === 'posts' ? (
+              <button
+                onClick={() => navigate('/admin/posts/new')}
+                className="inline-flex h-11 w-full flex-none items-center justify-center gap-2 rounded-2xl bg-[#1dbf73] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#18a864] active:translate-y-[1px] sm:w-auto"
+              >
+                <Plus size={18} />
+                Thêm bài viết
+              </button>
+            ) : (
+              <button
+                onClick={() => categoriesRef.current?.openCreate()}
+                className="inline-flex h-11 w-full flex-none items-center justify-center gap-2 rounded-2xl bg-[#1dbf73] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#18a864] active:translate-y-[1px] sm:w-auto"
+              >
+                <Plus size={18} />
+                Thêm danh mục
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200">
           <button
-            onClick={() => navigate('/admin/posts/new')}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1dbf73] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#18a864] shadow-sm"
+            onClick={() => setActiveTab('posts')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all duration-300 outline-none focus:outline-none ${
+              activeTab === 'posts'
+                ? 'border-[#1dbf73] text-[#1dbf73]'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
           >
-            <Plus size={18} />
-            Thêm bài viết
+            Danh sách bài viết
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all duration-300 outline-none focus:outline-none ${
+              activeTab === 'categories'
+                ? 'border-[#1dbf73] text-[#1dbf73]'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            Danh mục
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tiêu đề..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
-          />
-        </div>
-
-        {/* Table */}
+        {activeTab === 'posts' ? (
+          <>
+            {/* Toolbar */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -155,7 +209,7 @@ export default function AdminPosts() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredPosts.map((post) => (
+                  {currentPosts.map((post) => (
                     <tr
                       key={post.maBV}
                       className="hover:bg-slate-50/60 transition-colors"
@@ -236,6 +290,66 @@ export default function AdminPosts() {
               </table>
             </div>
           )}
+
+          {/* Pagination */}
+          {!isLoading && filteredPosts.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 bg-white px-5 py-4">
+              <span className="text-sm text-slate-500">
+                Hiển thị <span className="font-medium text-slate-700">{indexOfFirst + 1}</span> đến{' '}
+                <span className="font-medium text-slate-700">
+                  {Math.min(indexOfLast, filteredPosts.length)}
+                </span>{' '}
+                trong tổng số <span className="font-medium text-slate-700">{filteredPosts.length}</span> bài viết
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const page = idx + 1;
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`h-9 w-9 rounded-xl text-sm font-medium transition-colors ${
+                            currentPage === page
+                              ? 'bg-[#1dbf73] text-white'
+                              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return <span key={page} className="px-1 text-slate-400">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
@@ -257,6 +371,10 @@ export default function AdminPosts() {
               </strong>
             </span>
           </div>
+        )}
+          </>
+        ) : (
+          <AdminPostCategoriesTab ref={categoriesRef} />
         )}
       </div>
 

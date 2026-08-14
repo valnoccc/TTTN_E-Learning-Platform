@@ -140,6 +140,7 @@ export function useAdminCourseDetail(courseId: number) {
         try {
             await axiosClient.patch(`/admin/courses/${courseId}/approve`);
             toast.success('Đã phê duyệt khóa học.');
+            window.dispatchEvent(new Event('adminCourseStatusChanged'));
             await loadDetail();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Không thể phê duyệt khóa học.');
@@ -157,6 +158,7 @@ export function useAdminCourseDetail(courseId: number) {
             toast.success(config.successMessage);
             setActiveAction(null);
             setActionReason('');
+            window.dispatchEvent(new Event('adminCourseStatusChanged'));
             await loadDetail();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Không thể xử lý khóa học.');

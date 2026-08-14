@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { ArticleCategory, BaiViet } from './entities/post.entity';
+import { BaiViet } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -27,7 +27,8 @@ export class PostsService {
     page: number = 1,
     limit: number = 10,
     search?: string,
-    category?: ArticleCategory,
+    maDMBV?: number,
+    sortBy?: string,
   ): Promise<{ data: BaiViet[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit;
 
@@ -35,14 +36,25 @@ export class PostsService {
     if (search) {
       whereCondition.tieuDe = Like(`%${search}%`);
     }
-    if (category) {
-      whereCondition.category = category;
+    if (maDMBV) {
+      whereCondition.maDMBV = maDMBV;
+    }
+
+    let orderCondition: any = { isPinned: 'DESC', ngayTao: 'DESC' };
+    if (sortBy === 'oldest') {
+      orderCondition = { isPinned: 'DESC', ngayTao: 'ASC' };
+    } else if (sortBy === 'views') {
+      orderCondition = { isPinned: 'DESC', luotXem: 'DESC' };
+    } else if (sortBy === 'a-z') {
+      orderCondition = { isPinned: 'DESC', tieuDe: 'ASC' };
+    } else if (sortBy === 'z-a') {
+      orderCondition = { isPinned: 'DESC', tieuDe: 'DESC' };
     }
 
     const [data, total] = await this.postRepository.findAndCount({
       where: whereCondition,
-      relations: ['tacGia'],
-      order: { isPinned: 'DESC', ngayTao: 'DESC' },
+      relations: ['tacGia', 'category'],
+      order: orderCondition,
       skip,
       take: limit,
       select: {
@@ -56,7 +68,12 @@ export class PostsService {
         ngayTao: true,
         ngayCapNhat: true,
         authorId: true,
-        category: true,
+        maDMBV: true,
+        category: {
+          maDMBV: true,
+          tenDMBV: true,
+          slug: true,
+        },
         isPinned: true,
         tacGia: {
           maND: true,
@@ -78,7 +95,7 @@ export class PostsService {
   async findBySlug(slug: string): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
       where: { slug, trangThai: 'PUBLISHED' },
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
     });
 
     if (!post) {
@@ -105,7 +122,7 @@ export class PostsService {
    */
   async findAll(): Promise<BaiViet[]> {
     return this.postRepository.find({
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
       order: { isPinned: 'DESC', ngayTao: 'DESC' },
       select: {
         maBV: true,
@@ -118,7 +135,12 @@ export class PostsService {
         ngayTao: true,
         ngayCapNhat: true,
         authorId: true,
-        category: true,
+        maDMBV: true,
+        category: {
+          maDMBV: true,
+          tenDMBV: true,
+          slug: true,
+        },
         isPinned: true,
         tacGia: {
           maND: true,
@@ -135,7 +157,7 @@ export class PostsService {
   async findOneById(id: number): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
       where: { maBV: id },
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
     });
 
     if (!post) {
@@ -148,7 +170,7 @@ export class PostsService {
   async findPublishedById(id: number): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
       where: { maBV: id, trangThai: 'PUBLISHED' },
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
     });
 
     if (!post) {
@@ -182,7 +204,7 @@ export class PostsService {
       hinhAnh: dto.hinhAnh,
       trangThai: dto.trangThai || 'DRAFT',
       authorId,
-      category: dto.category ?? ArticleCategory.NEWS,
+      maDMBV: dto.maDMBV ?? 1,
       isPinned: dto.isPinned ?? false,
     });
 
@@ -213,7 +235,7 @@ export class PostsService {
       ...(dto.noiDung !== undefined && { noiDung: dto.noiDung }),
       ...(dto.hinhAnh !== undefined && { hinhAnh: dto.hinhAnh }),
       ...(dto.trangThai !== undefined && { trangThai: dto.trangThai }),
-      ...(dto.category !== undefined && { category: dto.category }),
+      ...(dto.maDMBV !== undefined && { maDMBV: dto.maDMBV }),
       ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
     });
 

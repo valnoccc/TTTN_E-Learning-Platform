@@ -287,7 +287,7 @@ const InstructorDetails = () => {
                 </div>
                 <div className="instructor-course-slider">
                   {instructor.courses && instructor.courses.length > 0 ? (
-                    <SwiperComponent {...settings}>
+                    <SwiperComponent {...settings} loop={instructor.courses.length > 3}>
                       {instructor.courses.map((course: any, i: number) => {
                         const courseImg = course.imgUrl?.startsWith("http")
                           ? course.imgUrl

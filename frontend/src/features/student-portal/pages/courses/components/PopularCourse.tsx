@@ -38,13 +38,23 @@ const PopularCourse = () => {
                     {
                         courses.map((data: any, i: number) => {
                             const rawImage = data.hinhThuNho;
-                            const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                            const apiUrl = import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com';
+                            const courseImage = rawImage 
+                                ? (rawImage.startsWith('http') 
+                                    ? rawImage 
+                                    : (rawImage.includes('/') 
+                                        ? `${apiUrl}/${rawImage.startsWith('/') ? rawImage.slice(1) : rawImage}` 
+                                        : `/assets/images/${rawImage}`)) 
+                                : '/assets/images/course-1.jpg';
                             const courseUrl = `/course-details/${data.maKH}`;
                             return (
                                 <div className="item-box d-flex" key={i}>
                                     <div className="item-img">
                                         <Link to={courseUrl}>
-                                            <img src={courseImage} alt={data.tenKhoaHoc} style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
+                                            <img src={courseImage} alt={data.tenKhoaHoc} style={{ width: '80px', height: '80px', objectFit: 'cover' }} onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.src = "/assets/images/course-1.jpg";
+                                            }} />
                                         </Link>
                                     </div>
                                     <div className="item-content">

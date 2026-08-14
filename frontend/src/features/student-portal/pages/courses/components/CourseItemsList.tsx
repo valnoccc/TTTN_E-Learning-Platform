@@ -94,7 +94,14 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                     }
                     const categoryName = data.danhMuc?.tenDM || 'General';
                     const rawImage = data.hinhThuNho;
-                    const courseImage = rawImage ? (rawImage.startsWith('http') ? rawImage : `/assets/images/${rawImage}`) : '/assets/images/course-1.jpg';
+                    const apiUrl = import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com';
+                    const courseImage = rawImage
+                        ? rawImage.startsWith("http")
+                        ? rawImage
+                        : rawImage.includes("/")
+                        ? `${apiUrl}/${rawImage.startsWith('/') ? rawImage.slice(1) : rawImage}`
+                        : `/assets/images/${rawImage}`
+                        : "/assets/images/course-1.jpg";
                     const courseUrl = `/course-details/${data.maKH}`;
                     const courseDurationText = formatCourseDuration(
                         data.totalDurationSeconds ?? data.tongThoiLuong ?? data.totalDuration ?? 0,
@@ -108,11 +115,14 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                         <div className="absolute left-4 top-4 z-10 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
                                             {categoryName}
                                         </div>
-                                        <img src={courseImage} alt={data.tenKhoaHoc} className="h-64 w-full object-cover transition-transform duration-500 hover:scale-110 md:h-full" />
+                                        <img src={courseImage} alt={data.tenKhoaHoc} className="h-64 w-full object-cover transition-transform duration-500 hover:scale-110 md:h-full" onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = "/assets/images/course-1.jpg";
+                                        }} />
                                     </Link>
                                 </div>
                                 <div className="flex flex-1 flex-col p-6">
-                                    <div className="mb-2 flex items-center justify-between">
+                                    <div className="mb-2 flex items-center">
                                         <div className="flex items-center space-x-1 text-amber-400">
                                             <i className="las la-star"></i>
                                             <i className="las la-star"></i>
@@ -120,9 +130,6 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                             <i className="las la-star"></i>
                                             <i className="las la-star-half-alt"></i>
                                             <span className="ml-1 text-sm text-gray-500">(4.5)</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-xl font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
                                         </div>
                                     </div>
                                     
@@ -153,6 +160,9 @@ const CourseItemList = ({ filters }: { filters?: any }) => {
                                                 <i className="las la-signal text-emerald-500"></i>
                                                 <span>Mọi cấp độ</span>
                                             </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-bold text-emerald-500">{formatPrice(data.giaBan)}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button 

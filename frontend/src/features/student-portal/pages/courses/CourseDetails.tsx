@@ -156,7 +156,13 @@ function CourseDetails() {
                     setCourse({
                         id: parseInt(response.data.maKH),
                         courseName: response.data.tenKhoaHoc,
-                        thumbnail: response.data.hinhThuNho ? (response.data.hinhThuNho.startsWith('http') ? response.data.hinhThuNho : '/assets/images/' + response.data.hinhThuNho) : '/assets/images/course-1.jpg',
+                        thumbnail: response.data.hinhThuNho
+                            ? response.data.hinhThuNho.startsWith("http")
+                                ? response.data.hinhThuNho
+                                : response.data.hinhThuNho.includes("/")
+                                    ? `${import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com'}/${response.data.hinhThuNho.startsWith('/') ? response.data.hinhThuNho.slice(1) : response.data.hinhThuNho}`
+                                    : `/assets/images/${response.data.hinhThuNho}`
+                            : "/assets/images/course-1.jpg",
                         instructor: response.data.giangVien ? (response.data.giangVien.tenGiangVien || response.data.giangVien.hoTen || 'Unknown Instructor') : 'Unknown Instructor',
                         price: parseFloat(response.data.giaBan || '0'),
                         duration: '120 Min',

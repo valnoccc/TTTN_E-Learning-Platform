@@ -1,7 +1,9 @@
 import type {
-  AdminCouponRuleInput,
   AdminCouponScopeType,
 } from './create-admin-coupon.dto';
+import { AdminCouponRuleInputDto } from './create-admin-coupon.dto';
+import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ValidateNested } from 'class-validator';
 
 /**
  * DTO cho chức năng Sửa mã giảm giá (Admin).
@@ -18,38 +20,48 @@ import type {
 export class UpdateAdminCouponDto {
   // ── Nhóm 1: Luôn được sửa ────────────────────────────────────────────────
 
-  /** Ghi chú / mô tả mã khuyến mãi */
+  @IsOptional()
+  @IsString()
   ghiChu?: string | null;
 
-  /** Ngày kết thúc hiệu lực (ISO date string) */
+  @IsOptional()
+  @IsString()
   ngayKetThuc?: string | null;
 
-  /**
-   * Giới hạn tổng lượt sử dụng.
-   * Khi giảm, giá trị mới KHÔNG được nhỏ hơn soLuongDaDung hiện tại.
-   */
+  @IsOptional()
+  @IsNumber()
   soLuongGioiHan?: number | null;
 
-  /** Trạng thái kích hoạt */
+  @IsOptional()
+  @IsEnum(['ACTIVE', 'INACTIVE'])
   trangThai?: 'ACTIVE' | 'INACTIVE';
 
   // ── Nhóm 2: Chỉ sửa được khi soLuongDaDung === 0 ─────────────────────────
 
-  /** Mã code (VD: COMBO20, 24HNEW) — bị khóa nếu đã có lượt dùng */
+  @IsOptional()
+  @IsString()
   maCode?: string;
 
-  /** Kiểu giảm giá — bị khóa nếu đã có lượt dùng */
+  @IsOptional()
+  @IsEnum(['PERCENT', 'AMOUNT'])
   loaiGiam?: 'PERCENT' | 'AMOUNT';
 
-  /** Giá trị giảm — bị khóa nếu đã có lượt dùng */
+  @IsOptional()
+  @IsNumber()
   giaTriGiam?: number;
 
-  /** Loại phạm vi áp dụng — bị khóa nếu đã có lượt dùng */
+  @IsOptional()
+  @IsEnum(['ALL', 'COURSE', 'CATEGORY', 'INSTRUCTOR'])
   scopeType?: AdminCouponScopeType;
 
-  /** Danh sách ID đối tượng áp dụng — bị khóa nếu đã có lượt dùng */
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
   scopeTargetIds?: number[] | null;
 
-  /** Điều kiện áp dụng — bị khóa nếu đã có lượt dùng */
-  rules?: AdminCouponRuleInput[] | null;
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdminCouponRuleInputDto)
+  rules?: AdminCouponRuleInputDto[] | null;
 }

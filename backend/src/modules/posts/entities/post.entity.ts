@@ -9,12 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-export enum ArticleCategory {
-  ANNOUNCEMENT = 'ANNOUNCEMENT',
-  SYSTEM_UPDATE = 'SYSTEM_UPDATE',
-  PROMOTION = 'PROMOTION',
-  NEWS = 'NEWS',
-}
+import { PostCategory } from './post-category.entity';
 
 @Entity('BaiViet')
 export class BaiViet {
@@ -50,13 +45,12 @@ export class BaiViet {
   @Column({ name: 'MaND_TacGia', type: 'int' })
   authorId!: number;
 
-  @Column({
-    name: 'DanhMuc',
-    type: 'enum',
-    enum: ArticleCategory,
-    default: ArticleCategory.NEWS,
-  })
-  category!: ArticleCategory;
+  @Column({ name: 'MaDMBV', type: 'int', nullable: true })
+  maDMBV?: number;
+
+  @ManyToOne(() => PostCategory, category => category.posts)
+  @JoinColumn({ name: 'MaDMBV' })
+  category?: PostCategory;
 
   @Column({ name: 'IsPinned', type: 'boolean', default: false })
   isPinned!: boolean;

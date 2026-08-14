@@ -15,7 +15,7 @@ const CoursePrice = ({ filters, setFilters }: { filters: any, setFilters: any })
         <Styles>
             {/* Course Price */}
             <div className="course-price">
-                <h5>Giá khóa học</h5>
+                <h5 className="whitespace-nowrap">Giá khóa học</h5>
                 <ul className="price-item list-unstyled">
                     <li className="check-btn">
                         <label htmlFor="price-all">
