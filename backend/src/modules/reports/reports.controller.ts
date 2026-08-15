@@ -18,7 +18,9 @@ import { ReportsService, ReportReason, ResolveAction } from './reports.service';
 
 // ─── DTO gửi báo cáo ─────────────────────────────────────────────────────────
 interface CreateReportBody {
-  discussionId?: number; // Mã bình luận bị báo cáo (nullable)
+  discussionId?: number; // Mã bình luận bài học bị báo cáo (nullable)
+  forumQuestionId?: number; // Mã câu hỏi diễn đàn bị báo cáo (nullable)
+  forumAnswerId?: number; // Mã câu trả lời diễn đàn bị báo cáo (nullable)
   reportedUserId: number; // Mã người bị báo cáo
   reason: ReportReason; // Lý do vi phạm
   details?: string; // Chi tiết bổ sung
@@ -50,6 +52,8 @@ export class ReportsController {
       body.reportedUserId,
       body.reason,
       body.details,
+      body.forumQuestionId ?? null,
+      body.forumAnswerId ?? null,
     );
 
     return {

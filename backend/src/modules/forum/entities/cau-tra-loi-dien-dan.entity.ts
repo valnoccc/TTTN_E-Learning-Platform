@@ -28,6 +28,9 @@ export class CauTraLoiDienDan {
   @Column({ name: 'LaDapAnDung', type: 'boolean', default: false })
   laDapAnDung!: boolean;
 
+  @Column({ name: 'TrangThai', type: 'varchar', length: 20, default: 'ACTIVE' })
+  trangThai!: string;
+
   @CreateDateColumn({ name: 'NgayTao', type: 'timestamp' })
   ngayTao!: Date;
 

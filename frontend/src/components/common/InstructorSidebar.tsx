@@ -47,19 +47,20 @@ export default function InstructorSidebar() {
         const profileData = response.data || response;
 
         if (profileData && user) {
-          if (
-            profileData.hoTen !== user.fullName ||
-            profileData.anhDaiDien !== user.avatar
-          ) {
-            const updatedUser = {
-              ...user,
-              fullName: profileData.hoTen || user.fullName,
-              avatar: profileData.anhDaiDien || user.avatar,
-              AnhDaiDien: profileData.anhDaiDien || user.AnhDaiDien,
-            };
-            localStorage.setItem("user", JSON.stringify(updatedUser));
-            setUser(updatedUser);
-          }
+          const updatedUser = {
+            ...user,
+            fullName: profileData.hoTen || user.fullName,
+            avatar: profileData.anhDaiDien || user.avatar,
+            AnhDaiDien: profileData.anhDaiDien || user.AnhDaiDien,
+            anhDaiDien: profileData.anhDaiDien || user.anhDaiDien,
+            avatarUrl: profileData.anhDaiDien || user.avatarUrl,
+          };
+          
+          // Force update to fix any desync between fields
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          // Dispatch a custom event to update other components
+          window.dispatchEvent(new Event("auth-change"));
         }
       } catch (error) {
         console.error("Không thể đồng bộ thông tin sidebar từ DB:", error);
@@ -147,16 +148,36 @@ export default function InstructorSidebar() {
     window.location.reload();
   };
 
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar, user?.AnhDaiDien, user?.anhDaiDien]);
+
+  const candidates = [user?.avatar, user?.AnhDaiDien, user?.anhDaiDien];
+  let userAvatar = '';
+  for (const c of candidates) {
+    if (c && typeof c === 'string' && c.trim() !== 'null' && c.trim() !== 'undefined' && c.trim() !== '') {
+      userAvatar = c.trim();
+      break;
+    }
+  }
+  
+  const avatarUrl = userAvatar
+    ? (userAvatar.startsWith('http') || userAvatar.startsWith('data:') || userAvatar.startsWith('blob:') 
+        ? userAvatar 
+        : `/assets/images/${userAvatar.startsWith('/') ? userAvatar.substring(1) : userAvatar}`)
+    : '';
+
   return (
-    <aside className="sticky top-0 self-start flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-[#1f3348] bg-[#112132] text-white">
-      <div className="flex h-[60px] items-center justify-center border-b border-white/10 px-5">
-        <div className="flex items-center gap-2 text-[1.2rem] font-bold tracking-tight text-[#1dbf73]">
-          <GraduationCap size={20} />
-          <span>EDUMEO</span>
-        </div>
+    <aside
+      className="flex h-screen w-[260px] flex-col bg-[#112132] text-white shadow-xl transition-all duration-300"
+      aria-label="Sidebar giảng viên"
+    >
+      <div className="flex h-[60px] items-center gap-3 border-b border-white/10 px-5 text-lg font-bold">
+        <GraduationCap size={26} className="text-[#1dbf73]" />
+        <span className="tracking-wide">EDUMEO</span>
       </div>
 
-      <div className="border-b border-white/10 px-3 py-3">
+      <div className="px-3 pt-4 pb-2">
         <Link
           to="/"
           title="Về trang chủ"
@@ -229,20 +250,24 @@ export default function InstructorSidebar() {
           >
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-[2px] bg-[#1dbf73] text-[14px] font-bold text-white">
-                {user?.avatar && user.avatar !== 'null' && user.avatar !== 'undefined' && !avatarError ? (
+                {avatarUrl && !avatarError ? (
                   <img
-                    src={user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `/assets/images/${user.avatar.startsWith('/') ? user.avatar.substring(1) : user.avatar}`}
+                    src={avatarUrl}
                     alt="Avatar"
                     className="h-full w-full object-cover"
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
-                  (user?.fullName || "A").charAt(0).toUpperCase()
+                  <img 
+                    src="https://cdn-icons-png.flaticon.com/512/149/149071.png" 
+                    alt="Default Avatar" 
+                    className="h-full w-full object-cover opacity-80 bg-white" 
+                  />
                 )}
               </div>
               <div className="min-w-0 text-left">
                 <div className="truncate text-[14px] font-bold text-white">
-                  {user?.fullName || "Unknown"}
+                  {user?.fullName || user?.hoTen || "Unknown"}
                 </div>
                 <div className="text-[12px] text-[#a0aec0]">
                   {user?.role || "Giảng viên"}

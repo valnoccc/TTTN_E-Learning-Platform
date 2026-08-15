@@ -12,6 +12,7 @@ import {
 import axiosClient from "../../../api/axios";
 import toast from "react-hot-toast";
 import AdminSidebar from "../../../components/common/AdminSidebar";
+import { ConfirmModal } from "../../../components/common/ConfirmModal";
 import { formatReportContent } from "./reportContent";
 
 interface Report {
@@ -81,6 +82,18 @@ export default function ModerationDashboard() {
   const [total, setTotal] = useState(0);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    reportId: string | null;
+    action: ResolveAction | null;
+    message: string;
+  }>({
+    isOpen: false,
+    reportId: null,
+    action: null,
+    message: "",
+  });
+
   const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
@@ -109,30 +122,40 @@ export default function ModerationDashboard() {
     setPage(1);
   }, [statusFilter]);
 
-  const handleResolve = async (
+  const handleResolve = (
     reportId: string,
     action: ResolveAction,
-    notes?: string,
   ) => {
     const confirmMessages: Record<ResolveAction, string> = {
-      HIDE_COMMENT: "Ẩn bình luận này?",
+      HIDE_COMMENT: "Bạn có chắc chắn muốn ẩn nội dung vi phạm này?",
       WARN_USER:
-        "Gửi cảnh báo cho người dùng này? (>=3 lần vi phạm sẽ tự động khóa)",
-      BLOCK_USER: "Khóa tài khoản người dùng này vĩnh viễn?",
-      REJECT: "Từ chối báo cáo này?",
+        "Bạn có chắc chắn muốn gửi cảnh báo cho người dùng này? (>=3 lần vi phạm sẽ tự động khóa)",
+      BLOCK_USER: "Bạn có chắc chắn muốn khóa tài khoản người dùng này vĩnh viễn?",
+      REJECT: "Bạn có chắc chắn muốn từ chối báo cáo này?",
     };
 
-    if (!window.confirm(confirmMessages[action])) return;
+    setConfirmModal({
+      isOpen: true,
+      reportId,
+      action,
+      message: confirmMessages[action],
+    });
+  };
 
+  const executeResolve = async () => {
+    if (!confirmModal.reportId || !confirmModal.action) return;
+
+    const { reportId, action } = confirmModal;
+    setConfirmModal({ ...confirmModal, isOpen: false });
+    
     setProcessingId(reportId);
     try {
       await axiosClient.patch(`/admin/reports/${reportId}/resolve`, {
         action,
-        notes,
       });
 
       const actionMessages: Record<ResolveAction, string> = {
-        HIDE_COMMENT: "Đã ẩn bình luận vi phạm",
+        HIDE_COMMENT: "Đã ẩn nội dung vi phạm",
         WARN_USER: "Đã gửi cảnh báo đến người dùng",
         BLOCK_USER: "Đã khóa tài khoản người dùng",
         REJECT: "Đã từ chối báo cáo sai",
@@ -471,6 +494,14 @@ export default function ModerationDashboard() {
           </div>
         )}
       </main>
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="Xác nhận xử lý báo cáo"
+        message={confirmModal.message}
+        onConfirm={executeResolve}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        confirmText="Đồng ý"
+      />
     </div>
   );
 }

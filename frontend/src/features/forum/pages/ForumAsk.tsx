@@ -29,7 +29,7 @@ export default function ForumAsk() {
 
   const handleAcceptPolicy = async () => {
     try {
-      const response = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
+      const response: any = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
       // Update local storage
       if (response.data && response.data.data) {
         const userStr = localStorage.getItem('user');
@@ -80,9 +80,9 @@ export default function ForumAsk() {
       });
       toast.success('Đăng câu hỏi thành công!');
       navigate(`/forum`); // go back to forum home
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating question:', error);
-      toast.error('Có lỗi xảy ra khi tạo câu hỏi');
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi tạo câu hỏi');
     } finally {
       setIsSubmitting(false);
     }

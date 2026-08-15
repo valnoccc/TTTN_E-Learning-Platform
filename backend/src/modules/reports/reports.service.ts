@@ -33,6 +33,8 @@ export class ReportsService {
     reportedUserId: number,
     reason: ReportReason,
     details?: string,
+    forumQuestionId?: number | null,
+    forumAnswerId?: number | null,
   ) {
     const userCheck = await this.dataSource.query(
       `SELECT MaND FROM NguoiDung WHERE MaND = ?`,
@@ -46,12 +48,14 @@ export class ReportsService {
     const maBaoCao = uuidv4();
 
     await this.dataSource.query(
-      `INSERT INTO BaoCaoViPham (MaBaoCao, MaNguoiBaoCao, MaThaoLuan, MaUserBiBaoCao, LyDo, ChiTiet)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO BaoCaoViPham (MaBaoCao, MaNguoiBaoCao, MaThaoLuan, MaCauHoiDienDan, MaCauTraLoiDienDan, MaUserBiBaoCao, LyDo, ChiTiet)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maBaoCao,
         reporterId,
         discussionId,
+        forumQuestionId ?? null,
+        forumAnswerId ?? null,
         reportedUserId,
         reason,
         details || null,
@@ -121,7 +125,9 @@ export class ReportsService {
         bc.GhiChuAdmin AS adminNotes,
         bc.NgayTao AS createdAt,
         bc.MaThaoLuan AS discussionId,
-        tl.NoiDung AS commentContent,
+        bc.MaCauHoiDienDan AS forumQuestionId,
+        bc.MaCauTraLoiDienDan AS forumAnswerId,
+        COALESCE(tl.NoiDung, ch.NoiDung, ctl.NoiDung) AS commentContent,
         reporter.MaND AS reporterId,
         reporter.HoTen AS reporterName,
         reporter.AnhDaiDien AS reporterAvatar,
@@ -134,6 +140,8 @@ export class ReportsService {
       INNER JOIN NguoiDung reporter ON bc.MaNguoiBaoCao = reporter.MaND
       INNER JOIN NguoiDung reported ON bc.MaUserBiBaoCao = reported.MaND
       LEFT JOIN ThaoLuanKhoaHoc tl ON bc.MaThaoLuan = tl.MaThaoLuan
+      LEFT JOIN CauHoiDienDan ch ON bc.MaCauHoiDienDan = ch.MaCH
+      LEFT JOIN CauTraLoiDienDan ctl ON bc.MaCauTraLoiDienDan = ctl.MaCTL
       ${whereClause}
       ORDER BY bc.NgayTao DESC
       LIMIT ? OFFSET ?
@@ -159,7 +167,7 @@ export class ReportsService {
 
   async resolveReport(reportId: string, action: ResolveAction, notes?: string) {
     const reportRows = await this.dataSource.query(
-      `SELECT MaBaoCao, MaThaoLuan, MaUserBiBaoCao, TrangThai FROM BaoCaoViPham WHERE MaBaoCao = ?`,
+      `SELECT MaBaoCao, MaThaoLuan, MaCauHoiDienDan, MaCauTraLoiDienDan, MaUserBiBaoCao, TrangThai FROM BaoCaoViPham WHERE MaBaoCao = ?`,
       [reportId],
     );
 
@@ -174,15 +182,26 @@ export class ReportsService {
     }
 
     if (action === 'HIDE_COMMENT') {
-      if (!report.MaThaoLuan) {
+      if (report.MaThaoLuan) {
+        await this.dataSource.query(
+          `UPDATE ThaoLuanKhoaHoc SET IsHidden = TRUE WHERE MaThaoLuan = ?`,
+          [report.MaThaoLuan],
+        );
+      } else if (report.MaCauHoiDienDan) {
+        await this.dataSource.query(
+          `UPDATE CauHoiDienDan SET TrangThai = 'BANNED' WHERE MaCH = ?`,
+          [report.MaCauHoiDienDan],
+        );
+      } else if (report.MaCauTraLoiDienDan) {
+        await this.dataSource.query(
+          `UPDATE CauTraLoiDienDan SET TrangThai = 'BANNED' WHERE MaCTL = ?`,
+          [report.MaCauTraLoiDienDan],
+        );
+      } else {
         throw new BadRequestException(
-          'Báo cáo này không liên kết với bình luận nào',
+          'Báo cáo này không liên kết với nội dung nào',
         );
       }
-      await this.dataSource.query(
-        `UPDATE ThaoLuanKhoaHoc SET IsHidden = TRUE WHERE MaThaoLuan = ?`,
-        [report.MaThaoLuan],
-      );
     }
 
     if (action === 'WARN_USER' || action === 'BLOCK_USER') {

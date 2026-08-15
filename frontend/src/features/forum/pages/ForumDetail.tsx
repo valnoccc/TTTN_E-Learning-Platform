@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../../../api/axios';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -7,7 +7,9 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import DOMPurify from 'dompurify';
 import { toast } from 'react-hot-toast';
-
+import { PolicyModal } from '../../../components/common/PolicyModal';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
+import { ReportModal } from '../../../components/common/ReportModal';
 function formatDistance(dateStr: string) {
   let d = new Date(dateStr);
   let now = new Date();
@@ -40,6 +42,7 @@ interface Answer {
   luotBinhChon: number;
   laDapAnDung: boolean;
   ngayTao: string;
+  trangThai?: string;
   nguoiThich?: (string | number)[];
   tacGia: Author;
   cacPhanHoi?: Answer[];
@@ -65,6 +68,7 @@ const viewedQuestionsInSession = new Set<string>();
 
 export default function ForumDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'top'>('newest');
@@ -106,6 +110,84 @@ export default function ForumDetail() {
   useEffect(() => {
     if (id) fetchQuestion();
   }, [id]);
+
+  const [showPolicy, setShowPolicy] = useState(false);
+  
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const parsedUser = JSON.parse(userStr);
+      if (!parsedUser.forumPolicyAcceptedAt) {
+        setShowPolicy(true);
+      }
+    }
+  }, []);
+
+  const handleAcceptPolicy = async () => {
+    try {
+      const response: any = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
+      // Update local storage
+      if (response.data && response.data.data) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const parsedUser = JSON.parse(userStr);
+          parsedUser.forumPolicyAcceptedAt = response.data.data.forumPolicyAcceptedAt;
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+        }
+      }
+      setShowPolicy(false);
+    } catch (error) {
+      console.error('Failed to accept policy', error);
+      toast.error('Có lỗi xảy ra khi xác nhận chính sách');
+    }
+  };
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'question' | 'answer';
+    targetId?: number;
+  }>({ isOpen: false, type: 'question' });
+
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    forumQuestionId?: number;
+    forumAnswerId?: number;
+    reportedUserId: number;
+    reportedUserName: string;
+  }>({ isOpen: false, reportedUserId: 0, reportedUserName: '' });
+
+  const executeDelete = async () => {
+    if (confirmModal.type === 'question') {
+      const toastId = toast.loading('Đang xóa câu hỏi...');
+      try {
+        await axiosClient.delete(`/forum/questions/${id}`);
+        toast.success('Đã xóa câu hỏi thành công', { id: toastId });
+        navigate('/forum');
+      } catch (error) {
+        console.error('Error deleting question:', error);
+        toast.error('Không thể xóa câu hỏi', { id: toastId });
+      }
+    } else if (confirmModal.type === 'answer' && confirmModal.targetId) {
+      const toastId = toast.loading('Đang thu hồi...');
+      try {
+        await axiosClient.delete(`/forum/answers/${confirmModal.targetId}`);
+        toast.success('Đã thu hồi bình luận', { id: toastId });
+        fetchQuestion(); // reload
+      } catch (error) {
+        console.error('Error deleting answer:', error);
+        toast.error('Không thể thu hồi bình luận', { id: toastId });
+      }
+    }
+    setConfirmModal({ ...confirmModal, isOpen: false });
+  };
+
+  const handleDeleteQuestion = () => {
+    setConfirmModal({ isOpen: true, type: 'question' });
+  };
+
+  const handleDeleteAnswer = (answerId: number) => {
+    setConfirmModal({ isOpen: true, type: 'answer', targetId: answerId });
+  };
 
   const handleReplySubmit = async () => {
     if (!replyContent.trim() || replyContent === '<p><br></p>') {
@@ -215,15 +297,29 @@ export default function ForumDetail() {
       if (res.data) {
         setQuestion(prev => {
           if (!prev) return prev;
-          const newAnswers = prev.danhSachTraLoi.map(a => 
-            a.maCTL === answerId ? { 
-              ...a, 
-              luotBinhChon: res.data.luotBinhChon,
-              nguoiThich: res.data.isLiked 
-                ? [...(a.nguoiThich || []), user?.maND]
-                : (a.nguoiThich || []).filter((u: any) => u != user?.maND)
-            } : a
-          );
+          
+          const updateAnswers = (answers: Answer[]): Answer[] => {
+            return answers.map(a => {
+              if (a.maCTL === answerId) {
+                return {
+                  ...a,
+                  luotBinhChon: res.data.luotBinhChon,
+                  nguoiThich: res.data.isLiked 
+                    ? [...(a.nguoiThich || []), user?.maND]
+                    : (a.nguoiThich || []).filter((u: any) => u != user?.maND)
+                };
+              }
+              if (a.cacPhanHoi && a.cacPhanHoi.length > 0) {
+                return {
+                  ...a,
+                  cacPhanHoi: updateAnswers(a.cacPhanHoi)
+                };
+              }
+              return a;
+            });
+          };
+
+          const newAnswers = updateAnswers(prev.danhSachTraLoi);
           return { ...prev, danhSachTraLoi: newAnswers };
         });
       }
@@ -353,8 +449,20 @@ export default function ForumDetail() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path></svg>
               </button>
             </div>
-            
-            <button onClick={handleShare} className="text-gray-500 hover:text-gray-800 text-sm font-medium">Share</button>
+            <div className="flex items-center gap-4">
+              <button onClick={handleShare} className="text-gray-500 hover:text-gray-800 text-sm font-medium">Share</button>
+              {user?.maND === question.tacGia.maND && (
+                <button onClick={handleDeleteQuestion} className="text-red-500 hover:text-red-600 text-sm font-medium">Xóa câu hỏi</button>
+              )}
+              {user?.maND !== question.tacGia.maND && (
+                <button 
+                  onClick={() => setReportModal({ isOpen: true, reportedUserId: question.tacGia.maND, reportedUserName: question.tacGia.hoTen, forumQuestionId: question.maCH })} 
+                  className="text-gray-400 hover:text-red-500 text-sm font-medium transition"
+                >
+                  Báo cáo
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -419,28 +527,56 @@ export default function ForumDetail() {
                     <span className="text-gray-500">{formatDistance(answer.ngayTao)}</span>
                   </div>
                   <div className="ql-snow mb-3">
-                    <div 
-                      className="ql-editor text-gray-800 whitespace-pre-wrap text-sm forum-content"
-                      style={{ padding: 0 }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.noiDung) }}
-                    />
+                    {answer.trangThai === 'REVOKED' ? (
+                      <div className="text-gray-500 italic text-[15px]">
+                        {user?.maND === answer.tacGia.maND ? 'Bạn đã thu hồi bình luận này.' : 'Bình luận đã được thu hồi.'}
+                      </div>
+                    ) : answer.trangThai === 'BANNED' ? (
+                      <div className="text-red-500 italic text-[15px]">
+                        Bình luận đã bị quản trị viên gỡ bỏ.
+                      </div>
+                    ) : (
+                      <div 
+                        className="ql-editor text-gray-800 whitespace-pre-wrap text-sm forum-content"
+                        style={{ padding: 0 }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.noiDung) }}
+                      />
+                    )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <button 
-                      onClick={() => handleUpvoteAnswer(answer.maCTL)}
-                      className={`flex items-center font-medium transition ${answer.nguoiThich?.includes(user?.maND?.toString() as any) || answer.nguoiThich?.includes(user?.maND as any) ? 'text-[#f48225]' : 'hover:text-gray-800'}`}
-                    >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
-                      {answer.luotBinhChon}
-                    </button>
-                    <button onClick={handleShare} className="hover:text-gray-800">Share</button>
-                    <button 
-                      onClick={() => setReplyingTo(replyingTo === answer.maCTL ? null : answer.maCTL)} 
-                      className="hover:text-gray-800 font-medium ml-2"
-                    >
-                      Phản hồi
-                    </button>
-                  </div>
+                  {(!answer.trangThai || answer.trangThai === 'ACTIVE') && (
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <button 
+                        onClick={() => handleUpvoteAnswer(answer.maCTL)}
+                        className={`flex items-center font-medium transition ${answer.nguoiThich?.includes(user?.maND?.toString() as any) || answer.nguoiThich?.includes(user?.maND as any) ? 'text-[#f48225]' : 'hover:text-gray-800'}`}
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+                        {answer.luotBinhChon}
+                      </button>
+                      <button onClick={handleShare} className="hover:text-gray-800">Share</button>
+                      <button 
+                        onClick={() => setReplyingTo(replyingTo === answer.maCTL ? null : answer.maCTL)} 
+                        className="hover:text-gray-800 font-medium ml-2"
+                      >
+                        Phản hồi
+                      </button>
+                      {user?.maND === answer.tacGia.maND && (
+                        <button 
+                          onClick={() => handleDeleteAnswer(answer.maCTL)} 
+                          className="text-red-500 hover:text-red-600 font-medium ml-2"
+                        >
+                          Thu hồi
+                        </button>
+                      )}
+                      {user?.maND !== answer.tacGia.maND && (
+                        <button 
+                          onClick={() => setReportModal({ isOpen: true, reportedUserId: answer.tacGia.maND, reportedUserName: answer.tacGia.hoTen, forumAnswerId: answer.maCTL })} 
+                          className="text-gray-400 hover:text-red-500 font-medium ml-2 transition"
+                        >
+                          Báo cáo
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Reply Form */}
                   {replyingTo === answer.maCTL && (
@@ -501,12 +637,64 @@ export default function ForumDetail() {
                                   </div>
                                 </div>
                                 <div className="ql-snow">
-                                  <div 
-                                    className="ql-editor text-gray-800 whitespace-pre-wrap text-sm forum-content"
-                                    style={{ padding: 0 }}
-                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.noiDung) }}
-                                  />
+                                  {reply.trangThai === 'REVOKED' ? (
+                                    <div className="text-gray-500 italic text-[14px]">
+                                      {user?.maND === reply.tacGia.maND ? 'Bạn đã thu hồi bình luận này.' : 'Bình luận đã được thu hồi.'}
+                                    </div>
+                                  ) : reply.trangThai === 'BANNED' ? (
+                                    <div className="text-red-500 italic text-[14px]">
+                                      Bình luận đã bị quản trị viên gỡ bỏ.
+                                    </div>
+                                  ) : (
+                                    <div 
+                                      className="ql-editor text-gray-800 whitespace-pre-wrap text-sm forum-content"
+                                      style={{ padding: 0 }}
+                                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.noiDung) }}
+                                    />
+                                  )}
                                 </div>
+                                {(!reply.trangThai || reply.trangThai === 'ACTIVE') && (
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    <button 
+                                      onClick={() => handleUpvoteAnswer(reply.maCTL)}
+                                      className={`flex items-center font-medium transition ${reply.nguoiThich?.includes(user?.maND?.toString() as any) || reply.nguoiThich?.includes(user?.maND as any) ? 'text-[#f48225]' : 'hover:text-gray-800'}`}
+                                    >
+                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+                                      {reply.luotBinhChon}
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setReplyingTo(answer.maCTL);
+                                        const mentionTag = `<strong>@${reply.tacGia.hoTen}</strong>&nbsp;`;
+                                        if (!nestedReplyContent.includes(`@${reply.tacGia.hoTen}`)) {
+                                          setNestedReplyContent(prev => prev ? `${prev} ${mentionTag}` : mentionTag);
+                                        }
+                                        setTimeout(() => {
+                                          nestedQuillRef.current?.focus();
+                                        }, 100);
+                                      }}
+                                      className="hover:text-gray-800 font-medium"
+                                    >
+                                      Phản hồi
+                                    </button>
+                                    {user?.maND === reply.tacGia.maND && (
+                                      <button 
+                                        onClick={() => handleDeleteAnswer(reply.maCTL)} 
+                                        className="text-red-500 hover:text-red-600 font-medium"
+                                      >
+                                        Thu hồi
+                                      </button>
+                                    )}
+                                    {user?.maND !== reply.tacGia.maND && (
+                                      <button 
+                                        onClick={() => setReportModal({ isOpen: true, reportedUserId: reply.tacGia.maND, reportedUserName: reply.tacGia.hoTen, forumAnswerId: reply.maCTL })} 
+                                        className="text-gray-400 hover:text-red-500 font-medium transition"
+                                      >
+                                        Báo cáo
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -524,6 +712,30 @@ export default function ForumDetail() {
         )}
 
       </div>
+      <PolicyModal 
+        isOpen={showPolicy}
+        type="forum"
+        onAccept={handleAcceptPolicy}
+        onDecline={() => setShowPolicy(false)}
+      />
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.type === 'question' ? 'Xóa câu hỏi' : 'Thu hồi bình luận'}
+        message={confirmModal.type === 'question' 
+          ? 'Bạn có chắc chắn muốn xóa câu hỏi này không? Toàn bộ bình luận bên trong cũng sẽ bị xóa. Thao tác này không thể hoàn tác.'
+          : 'Bạn có chắc chắn muốn thu hồi bình luận này không? Các phản hồi bên trong bình luận này cũng sẽ bị xóa theo.'}
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        confirmText="Đồng ý xóa"
+      />
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ ...reportModal, isOpen: false })}
+        forumQuestionId={reportModal.forumQuestionId}
+        forumAnswerId={reportModal.forumAnswerId}
+        reportedUserId={reportModal.reportedUserId}
+        reportedUserName={reportModal.reportedUserName}
+      />
     </div>
   );
 }

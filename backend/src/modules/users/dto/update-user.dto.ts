@@ -18,4 +18,24 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   @IsString()
   soDienThoai?: string;
+
+  @IsOptional()
+  @IsString()
+  hoTen?: string;
+
+  @IsOptional()
+  @IsString()
+  anhDaiDien?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
 }
