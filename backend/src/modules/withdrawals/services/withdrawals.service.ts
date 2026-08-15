@@ -18,6 +18,7 @@ export type InstructorWithdrawalRequest = {
   createdAt: Date;
   processedAt: Date | null;
   rejectionReason: string | null;
+  transactionCode: string | null;
 };
 
 export type AdminWithdrawalRequest = InstructorWithdrawalRequest & {
@@ -158,7 +159,8 @@ export class WithdrawalsService {
       `SELECT MaYeuCauRut AS requestId, SoTien AS amount, TrangThai AS status,
               TenNganHang AS bankName, SoTaiKhoan AS accountNumber,
               NgayTao AS createdAt, NgayXuLy AS processedAt,
-              LyDoTuChoi AS rejectionReason
+              LyDoTuChoi AS rejectionReason,
+              MaGiaoDichNgoaiHeThong AS transactionCode
        FROM YeuCauRutTien
        WHERE MaND = ?
        ORDER BY NgayTao DESC, MaYeuCauRut DESC`,
@@ -169,6 +171,7 @@ export class WithdrawalsService {
       status: String(row.status), bankName: String(row.bankName), accountNumber: String(row.accountNumber),
       createdAt: row.createdAt as Date, processedAt: (row.processedAt as Date | null) ?? null,
       rejectionReason: (row.rejectionReason as string | null) ?? null,
+      transactionCode: (row.transactionCode as string | null) ?? null,
     }));
   }
 
@@ -211,10 +214,11 @@ export class WithdrawalsService {
     const rows = await this.dataSource.query(
       `SELECT ycrt.*, nd.HoTen AS instructorName, nd.Email AS instructorEmail,
               nd.SoDienThoai AS instructorPhone, v.SoDuKhaDung, v.SoDuDangRut,
-              v.TongDoanhThu, v.TongDaChi
+              v.TongDoanhThu, v.TongDaChi, admin.HoTen AS processedByName
        FROM YeuCauRutTien ycrt
        INNER JOIN NguoiDung nd ON nd.MaND = ycrt.MaND
        INNER JOIN ViGiangVien v ON v.MaVi = ycrt.MaVi
+       LEFT JOIN NguoiDung admin ON admin.MaND = ycrt.MaAdminXuLy
        WHERE ycrt.MaYeuCauRut = ? LIMIT 1`, [requestId]);
     if (!rows[0]) throw new BadRequestException('Không tìm thấy yêu cầu rút tiền.');
     return rows[0];

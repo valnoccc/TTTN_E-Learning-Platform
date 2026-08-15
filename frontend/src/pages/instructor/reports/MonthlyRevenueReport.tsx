@@ -50,6 +50,7 @@ type WithdrawalRequest = {
   bankName: string;
   accountNumber: string;
   createdAt: string;
+  transactionCode: string | null;
 };
 const withdrawalStatusLabel: Record<string, string> = {
   PENDING: "Chờ xử lý",
@@ -413,6 +414,7 @@ function MonthlyRevenueContent() {
               <tr>
                 <th className="px-6 py-4">Thời gian</th>
                 <th className="px-6 py-4">Tài khoản nhận</th>
+                <th className="px-6 py-4">Mã giao dịch</th>
                 <th className="px-6 py-4 text-right">Số tiền</th>
                 <th className="px-6 py-4 text-right">Trạng thái</th>
               </tr>
@@ -426,6 +428,9 @@ function MonthlyRevenueContent() {
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-800">
                       {item.bankName} · {item.accountNumber}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
+                      {item.transactionCode || "—"}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-slate-900">
                       {formatCurrency(item.amount)}
@@ -442,7 +447,7 @@ function MonthlyRevenueContent() {
               ) : (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-6 py-10 text-center text-slate-500"
                   >
                     Chưa có yêu cầu rút tiền nào.

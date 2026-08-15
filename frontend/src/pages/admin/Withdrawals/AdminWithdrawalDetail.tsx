@@ -21,6 +21,14 @@ const money = (v: any) =>
     maximumFractionDigits: 0,
   }).format(Number(v || 0));
 
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+};
+
 export default function AdminWithdrawalDetail() {
   const { id } = useParams();
   const [d, setD] = useState<any>(null);
@@ -208,6 +216,54 @@ export default function AdminWithdrawalDetail() {
                   </div>
                 </section>
               </div>
+
+              {(d.TrangThai === "COMPLETED" ||
+                d.TrangThai === "REJECTED") && (
+                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="mb-6 flex items-center gap-3 text-lg font-bold text-slate-800">
+                    <div className="rounded-full bg-slate-100 p-2 text-slate-600">
+                      <CheckCircle2 size={20} />
+                    </div>
+                    Thông tin xử lý
+                  </h2>
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Thời gian xử lý
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        {formatDateTime(d.NgayXuLy)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Người xử lý
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        {d.processedByName ||
+                          (d.MaAdminXuLy ? `Admin #${d.MaAdminXuLy}` : "—")}
+                      </p>
+                    </div>
+                    {d.TrangThai === "COMPLETED" ? (
+                      <div>
+                        <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Mã giao dịch ngân hàng
+                        </p>
+                        <p className="break-all font-mono font-semibold text-emerald-700">
+                          {d.MaGiaoDichNgoaiHeThong || "—"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Lý do từ chối
+                        </p>
+                        <p className="text-slate-700">{d.LyDoTuChoi || "—"}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* Wallet Status */}
               <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

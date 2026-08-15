@@ -107,4 +107,28 @@ describe('WithdrawalsService', () => {
     });
     expect(dataSource.query).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), ['PENDING', 20, 20]);
   });
+
+  it('returns the bank transaction code in an instructor payout history', async () => {
+    const dataSource = {
+      query: jest.fn().mockResolvedValueOnce([
+        {
+          requestId: '9',
+          amount: '500000',
+          status: 'COMPLETED',
+          bankName: 'Vietcombank',
+          accountNumber: '0123456789',
+          transactionCode: 'VCB-20260815-001',
+        },
+      ]),
+    };
+    const service = new WithdrawalsService(dataSource as any);
+
+    await expect(service.getMyRequests(42)).resolves.toEqual([
+      expect.objectContaining({
+        requestId: 9,
+        status: 'COMPLETED',
+        transactionCode: 'VCB-20260815-001',
+      }),
+    ]);
+  });
 });
