@@ -7,7 +7,7 @@ import {
   CalendarDays,
   MessageSquare,
   Star,
-  Users,
+  Receipt,
   House,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -90,12 +90,6 @@ export default function InstructorSidebar() {
           icon: <BarChart3 size={18} />,
           match: "exact",
         },
-        {
-          label: "Doanh thu theo tháng",
-          path: "/instructor/reports/monthly-revenue",
-          icon: <CalendarDays size={18} />,
-          match: "exact",
-        },
       ],
     },
     {
@@ -107,10 +101,21 @@ export default function InstructorSidebar() {
           icon: <BookOpen size={18} />,
           match: "prefix",
         },
+      ],
+    },
+    {
+      title: "Tài chính",
+      items: [
         {
-          label: "Danh sách học viên",
-          path: "/instructor/students",
-          icon: <Users size={18} />,
+          label: "Báo cáo doanh thu",
+          path: "/instructor/reports/monthly-revenue",
+          icon: <CalendarDays size={18} />,
+          match: "exact",
+        },
+        {
+          label: "Giao dịch mới",
+          path: "/instructor/transactions",
+          icon: <Receipt size={18} />,
           match: "exact",
         },
       ],

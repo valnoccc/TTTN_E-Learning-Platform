@@ -6,7 +6,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import { getRevenueShareConfig } from '../../../config/revenue-share.config';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { UpdateInstructorProfileDto } from '../dto/update-instructor-profile.dto';
@@ -19,11 +18,6 @@ export interface InstructorPrincipal {
   vaiTro?: UserRole;
 }
 
-export interface InstructorStudentFilters {
-  courseId?: number;
-  search?: string;
-}
-
 export interface InstructorCourseOption {
   courseId: number;
   courseName: string;
@@ -32,28 +26,30 @@ export interface InstructorCourseOption {
   createdAt: string;
 }
 
-export interface InstructorStudentCourse {
-  courseId: number;
-  courseName: string;
-  coursePrice: number;
-  purchasedAt: string;
+export interface InstructorTransactionFilters {
+  courseId?: number;
+  search?: string;
 }
 
-export interface InstructorStudentSummary {
+export interface InstructorTransaction {
+  invoiceId: number;
   studentId: number;
   studentName: string;
   studentEmail: string;
   courseId: number;
   courseName: string;
-  totalSpent: number;
+  transactionAmount: number;
+  instructorAmount: number;
+  paymentMethod: string | null;
   purchasedAt: string;
+  paymentStatus: string;
 }
 
-export interface InstructorStudentBoard {
-  totalStudents: number;
-  totalPurchases: number;
-  totalRevenue: number;
-  students: InstructorStudentSummary[];
+export interface InstructorTransactionBoard {
+  totalTransactions: number;
+  totalGrossRevenue: number;
+  totalInstructorRevenue: number;
+  transactions: InstructorTransaction[];
 }
 
 export type InstructorReportRange =
@@ -247,14 +243,18 @@ type RawTopRatedCourseRow = {
   imageUrl: string | null;
 };
 
-type RawStudentRow = {
+type RawTransactionRow = {
+  invoiceId: number | string;
   studentId: number | string;
   studentName: string;
   studentEmail: string;
   courseId: number | string;
   courseName: string;
-  coursePrice: number | string | null;
+  transactionAmount: number | string | null;
+  instructorAmount: number | string | null;
+  paymentMethod: string | null;
   purchasedAt: string;
+  paymentStatus: string;
 };
 
 type RawRevenueSeriesRow = {
@@ -424,75 +424,39 @@ export class InstructorsService {
     }
   }
 
-  async getMyStudents(
+  async getMyTransactions(
     principal: InstructorPrincipal,
-    filters: InstructorStudentFilters,
-  ): Promise<InstructorStudentBoard> {
+    filters: InstructorTransactionFilters,
+  ): Promise<InstructorTransactionBoard> {
     this.assertInstructor(principal);
     const instructorId = this.getInstructorId(principal);
-
-    let rows: RawStudentRow[] = [];
-
-    try {
-      const { sql, params } = this.buildStudentQuery(instructorId, filters);
-      rows = await this.dataSource.query(sql, params);
-    } catch (error) {
-      console.error('Loi khi tai danh sach hoc vien:', error);
-      return {
-        totalStudents: 0,
-        totalPurchases: 0,
-        totalRevenue: 0,
-        students: [],
-      };
-    }
-
-    const flatStudentsList = rows.map((row) => ({
-      studentId: Number(row.studentId),
-      studentName: row.studentName,
-      studentEmail: row.studentEmail,
-      courseId: Number(row.courseId),
-      courseName: row.courseName,
-      totalSpent: this.toNumber(row.coursePrice),
-      purchasedAt: row.purchasedAt,
-    }));
-
-    const uniqueStudentIds = new Set(flatStudentsList.map((s) => s.studentId));
-    const totalRevenue = flatStudentsList.reduce(
-      (sum, current) => sum + current.totalSpent,
-      0,
-    );
-
-    return {
-      totalStudents: uniqueStudentIds.size,
-      totalPurchases: flatStudentsList.length,
-      totalRevenue,
-      students: flatStudentsList,
-    };
-  }
-
-  private buildStudentQuery(
-    instructorId: number,
-    filters: InstructorStudentFilters,
-  ) {
-    const { instructorShare } = getRevenueShareConfig();
-    let sql = `
-        SELECT 
-            dk.MaND AS studentId,
-            nd.HoTen AS studentName,
-            nd.Email AS studentEmail,
-            dk.MaKH AS courseId,
-            kh.TenKhoaHoc AS courseName,
-            COALESCE(cthd.DoanhThuGiangVien, kh.GiaBan * ${instructorShare}) AS coursePrice,
-            dk.NgayDangKy AS purchasedAt
-        FROM DangKyKhoaHoc dk
-        JOIN NguoiDung nd ON dk.MaND = nd.MaND
-        JOIN KhoaHoc kh ON dk.MaKH = kh.MaKH
-        LEFT JOIN HoaDon hd ON dk.MaHD = hd.MaHD AND hd.TrangThaiThanhToan = 'PAID'
-        LEFT JOIN ChiTietHoaDon cthd ON cthd.MaHD = dk.MaHD AND cthd.MaKH = dk.MaKH
-        WHERE kh.MaND_GiangVien = ? AND dk.TrangThai = 'ACTIVE'
-    `;
-
     const params: Array<number | string> = [instructorId];
+    let sql = `
+      SELECT
+        hd.MaHD AS invoiceId,
+        nd.MaND AS studentId,
+        nd.HoTen AS studentName,
+        nd.Email AS studentEmail,
+        kh.MaKH AS courseId,
+        kh.TenKhoaHoc AS courseName,
+        CASE
+          WHEN cthd.DoanhThuGiangVien IS NOT NULL
+            AND cthd.TiLeGiangVien IS NOT NULL
+            AND cthd.TiLeGiangVien > 0
+            THEN cthd.DoanhThuGiangVien * 100 / cthd.TiLeGiangVien
+          ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
+        END AS transactionAmount,
+        COALESCE(cthd.DoanhThuGiangVien, 0) AS instructorAmount,
+        hd.PhuongThucThanhToan AS paymentMethod,
+        COALESCE(hd.NgayThanhToan, hd.NgayLap) AS purchasedAt,
+        hd.TrangThaiThanhToan AS paymentStatus
+      FROM HoaDon hd
+      INNER JOIN NguoiDung nd ON nd.MaND = hd.MaND
+      INNER JOIN ChiTietHoaDon cthd ON cthd.MaHD = hd.MaHD
+      INNER JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+      WHERE kh.MaND_GiangVien = ?
+        AND hd.TrangThaiThanhToan = 'PAID'
+    `;
 
     if (filters.courseId) {
       sql += ` AND kh.MaKH = ?`;
@@ -501,12 +465,45 @@ export class InstructorsService {
 
     if (filters.search) {
       sql += ` AND (nd.HoTen LIKE ? OR nd.Email LIKE ?)`;
-      params.push(`%${filters.search}%`, `%${filters.search}%`);
+      const search = `%${filters.search}%`;
+      params.push(search, search);
     }
 
-    sql += ` ORDER BY dk.NgayDangKy DESC`;
+    sql += ` ORDER BY COALESCE(hd.NgayThanhToan, hd.NgayLap) DESC, hd.MaHD DESC`;
 
-    return { sql, params };
+    let rows: RawTransactionRow[] = [];
+    try {
+      rows = await this.dataSource.query(sql, params);
+    } catch (error) {
+      console.error('Loi khi tai giao dich cua giang vien:', error);
+    }
+
+    const transactions = rows.map((row) => ({
+      invoiceId: Number(row.invoiceId),
+      studentId: Number(row.studentId),
+      studentName: row.studentName,
+      studentEmail: row.studentEmail,
+      courseId: Number(row.courseId),
+      courseName: row.courseName,
+      transactionAmount: this.toNumber(row.transactionAmount),
+      instructorAmount: this.toNumber(row.instructorAmount),
+      paymentMethod: row.paymentMethod,
+      purchasedAt: row.purchasedAt,
+      paymentStatus: row.paymentStatus,
+    }));
+
+    return {
+      totalTransactions: transactions.length,
+      totalGrossRevenue: transactions.reduce(
+        (total, transaction) => total + transaction.transactionAmount,
+        0,
+      ),
+      totalInstructorRevenue: transactions.reduce(
+        (total, transaction) => total + transaction.instructorAmount,
+        0,
+      ),
+      transactions,
+    };
   }
 
   private assertInstructor(principal: InstructorPrincipal) {

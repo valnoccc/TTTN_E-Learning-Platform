@@ -122,6 +122,23 @@ export class AdminDashboardService {
     `;
   }
 
+  private buildInstructorRevenueSql(
+    grossRevenueSql: string,
+    legacyInstructorShare: number,
+  ) {
+    return `COALESCE(
+      cthd.DoanhThuGiangVien,
+      (${grossRevenueSql}) * COALESCE(cthd.TiLeGiangVien, ${legacyInstructorShare * 100}) / 100
+    )`;
+  }
+
+  private buildAdminRevenueSql(
+    grossRevenueSql: string,
+    instructorRevenueSql: string,
+  ) {
+    return `(${grossRevenueSql}) - (${instructorRevenueSql})`;
+  }
+
   private calculateGrowth(
     currentMonth?: string | number,
     lastMonth?: string | number,
@@ -178,8 +195,16 @@ export class AdminDashboardService {
     days: number = 30,
     monthFilter?: { month: number; year: number },
   ): Promise<DashboardStatsDto> {
-    const { adminShare: ADMIN_REVENUE_SHARE, instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
+    const { instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
+    const instructorRevenueSql = this.buildInstructorRevenueSql(
+      lineNetRevenueSql,
+      INSTRUCTOR_REVENUE_SHARE,
+    );
+    const adminRevenueSql = this.buildAdminRevenueSql(
+      lineNetRevenueSql,
+      instructorRevenueSql,
+    );
     const currentMonthYear = this.getCurrentMonthYear();
     const storageQuotaLimitBytes = this.getStorageQuotaLimitBytes();
     const prevDays = days * 2;
@@ -194,12 +219,6 @@ export class AdminDashboardService {
     const hdDateParams = isMonthMode
       ? ([monthFilter.month, monthFilter.year] as unknown[])
       : ([days] as unknown[]);
-
-    // Flat HoaDon date WHERE (no alias)
-    const hdFlatDateWhere = isMonthMode
-      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
-      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
-    const hdFlatDateParams = hdDateParams;
 
     // Enrollment WHERE + params (current / prev period)
     const prevMonth = isMonthMode
@@ -229,15 +248,15 @@ export class AdminDashboardService {
 
     // Revenue WHERE + params
     const revCurWhere = isMonthMode
-      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
-      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+      ? `MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ? AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?`
+      : `COALESCE(hd.NgayThanhToan, hd.NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
     const revCurParams = isMonthMode
       ? ([monthFilter.month, monthFilter.year] as unknown[])
       : ([days] as unknown[]);
 
     const revPrevWhere = isMonthMode
-      ? `MONTH(COALESCE(NgayThanhToan, NgayLap)) = ? AND YEAR(COALESCE(NgayThanhToan, NgayLap)) = ?`
-      : `COALESCE(NgayThanhToan, NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND COALESCE(NgayThanhToan, NgayLap) < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
+      ? `MONTH(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ? AND YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?`
+      : `COALESCE(hd.NgayThanhToan, hd.NgayLap) >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY) AND COALESCE(hd.NgayThanhToan, hd.NgayLap) < DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)`;
     const revPrevParams = isMonthMode
       ? ([prevMonth, prevYear] as unknown[])
       : ([prevDays, days] as unknown[]);
@@ -313,14 +332,21 @@ export class AdminDashboardService {
       this.queryWithFallback<RevenueGrowthRow[]>(
         `
             SELECT 
-              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END), 0) as grossRevenue,
-              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
-              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
-              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as total,
-              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as currentMonth,
-              IFNULL(SUM(CASE WHEN ${revPrevWhere} THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as lastMonth
-            FROM HoaDon
-            WHERE TrangThaiThanhToan = 'PAID'
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN ${lineNetRevenueSql} ELSE 0 END), 0) as grossRevenue,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN ${adminRevenueSql} ELSE 0 END), 0) as adminRevenue,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN ${instructorRevenueSql} ELSE 0 END), 0) as instructorPayout,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN ${adminRevenueSql} ELSE 0 END), 0) as total,
+              IFNULL(SUM(CASE WHEN ${revCurWhere} THEN ${adminRevenueSql} ELSE 0 END), 0) as currentMonth,
+              IFNULL(SUM(CASE WHEN ${revPrevWhere} THEN ${adminRevenueSql} ELSE 0 END), 0) as lastMonth
+            FROM ChiTietHoaDon cthd
+            JOIN HoaDon hd ON hd.MaHD = cthd.MaHD AND hd.TrangThaiThanhToan = 'PAID'
+            JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+            LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+            JOIN (
+              SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+              FROM ChiTietHoaDon
+              GROUP BY MaHD
+            ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
           `,
         [
           {
@@ -401,15 +427,23 @@ export class AdminDashboardService {
       this.queryWithFallback<any[]>(
         `
           SELECT 
-            MONTH(NgayLap) as thang,
-            YEAR(NgayLap) as nam,
-            SUM(TongTien) * ${ADMIN_REVENUE_SHARE} as doanhThu,
-            SUM(TongTien) as grossRevenue,
-            SUM(TongTien) * ${ADMIN_REVENUE_SHARE} as adminRevenue,
-            SUM(TongTien) * ${INSTRUCTOR_REVENUE_SHARE} as instructorPayout
-          FROM HoaDon
-          WHERE TrangThaiThanhToan = 'PAID'
-          GROUP BY YEAR(NgayLap), MONTH(NgayLap)
+            MONTH(hd.NgayLap) as thang,
+            YEAR(hd.NgayLap) as nam,
+            SUM(${adminRevenueSql}) as doanhThu,
+            SUM(${lineNetRevenueSql}) as grossRevenue,
+            SUM(${adminRevenueSql}) as adminRevenue,
+            SUM(${instructorRevenueSql}) as instructorPayout
+          FROM ChiTietHoaDon cthd
+          JOIN HoaDon hd ON hd.MaHD = cthd.MaHD
+          JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+          WHERE hd.TrangThaiThanhToan = 'PAID'
+          GROUP BY YEAR(hd.NgayLap), MONTH(hd.NgayLap)
           ORDER BY nam DESC, thang DESC
           LIMIT 6
         `,
@@ -418,14 +452,22 @@ export class AdminDashboardService {
       this.queryWithFallback<OrdersOverviewRow[]>(
         `
           SELECT
-            COUNT(*) as totalOrders,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as totalEarnings,
+            COUNT(DISTINCT hd.MaHD) as totalOrders,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${lineNetRevenueSql} ELSE 0 END), 0) as grossRevenue,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${adminRevenueSql} ELSE 0 END), 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${instructorRevenueSql} ELSE 0 END), 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${adminRevenueSql} ELSE 0 END), 0) as totalEarnings,
             0 as totalRefunds
-          FROM HoaDon
-          WHERE ${hdFlatDateWhere}
+          FROM ChiTietHoaDon cthd
+          JOIN HoaDon hd ON hd.MaHD = cthd.MaHD
+          JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+          WHERE ${hdDateWhere}
         `,
         [
           {
@@ -437,22 +479,30 @@ export class AdminDashboardService {
             totalRefunds: '0',
           },
         ],
-        hdFlatDateParams,
+        hdDateParams,
       ),
       this.queryWithFallback<SalesChartRow[]>(
         `
           SELECT
-            MONTH(NgayLap) as month,
-            YEAR(NgayLap) as year,
-            COUNT(*) as orders,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END), 0) as grossRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as adminRevenue,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${INSTRUCTOR_REVENUE_SHARE}, 0) as instructorPayout,
-            IFNULL(SUM(CASE WHEN TrangThaiThanhToan = 'PAID' THEN TongTien ELSE 0 END) * ${ADMIN_REVENUE_SHARE}, 0) as earnings,
+            MONTH(hd.NgayLap) as month,
+            YEAR(hd.NgayLap) as year,
+            COUNT(DISTINCT hd.MaHD) as orders,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${lineNetRevenueSql} ELSE 0 END), 0) as grossRevenue,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${adminRevenueSql} ELSE 0 END), 0) as adminRevenue,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${instructorRevenueSql} ELSE 0 END), 0) as instructorPayout,
+            IFNULL(SUM(CASE WHEN hd.TrangThaiThanhToan = 'PAID' THEN ${adminRevenueSql} ELSE 0 END), 0) as earnings,
             0 as refunds
-          FROM HoaDon
-          WHERE NgayLap >= DATE_SUB(CURRENT_DATE(), INTERVAL 11 MONTH)
-          GROUP BY YEAR(NgayLap), MONTH(NgayLap)
+          FROM ChiTietHoaDon cthd
+          JOIN HoaDon hd ON hd.MaHD = cthd.MaHD
+          JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
+          LEFT JOIN MaGiamGia mg ON mg.MaCoupon = hd.MaCoupon
+          JOIN (
+            SELECT MaHD, COALESCE(SUM(GiaGhiNhan), 0) AS invoiceGross
+            FROM ChiTietHoaDon
+            GROUP BY MaHD
+          ) invoiceTotals ON invoiceTotals.MaHD = hd.MaHD
+          WHERE hd.NgayLap >= DATE_SUB(CURRENT_DATE(), INTERVAL 11 MONTH)
+          GROUP BY YEAR(hd.NgayLap), MONTH(hd.NgayLap)
           ORDER BY year ASC, month ASC
         `,
         [],
@@ -466,8 +516,8 @@ export class AdminDashboardService {
             kh.GiaBan as price,
             COUNT(*) as orders,
             SUM(${lineNetRevenueSql}) as revenue,
-            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
-            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as instructorRevenue,
+            SUM(${adminRevenueSql}) as adminRevenue,
+            SUM(${instructorRevenueSql}) as instructorRevenue,
             kh.HinhThuNho as image
           FROM ChiTietHoaDon cthd
           JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
@@ -495,14 +545,15 @@ export class AdminDashboardService {
             COALESCE(MAX(hsgv.ChuyenMon), MAX(dm.TenDM), 'Giang vien') as category,
             COUNT(DISTINCT hd.MaND) as students,
             SUM(${lineNetRevenueSql}) as grossRevenue,
-            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
-            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as revenue,
+            SUM(${adminRevenueSql}) as adminRevenue,
+            SUM(${instructorRevenueSql}) as revenue,
             ROUND(
               (
-                SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) /
+                SUM(${instructorRevenueSql}) /
                 NULLIF((
-                  SELECT IFNULL(SUM(hd2.TongTien) * ${INSTRUCTOR_REVENUE_SHARE}, 0)
-                  FROM HoaDon hd2
+                  SELECT IFNULL(SUM(COALESCE(cthd2.DoanhThuGiangVien, cthd2.GiaGhiNhan * COALESCE(cthd2.TiLeGiangVien, ${INSTRUCTOR_REVENUE_SHARE * 100}) / 100)), 0)
+                  FROM ChiTietHoaDon cthd2
+                  JOIN HoaDon hd2 ON hd2.MaHD = cthd2.MaHD
                   WHERE hd2.TrangThaiThanhToan = 'PAID'
                     AND ${hdDateWhere.replace(/hd\./g, 'hd2.')}
                 ), 0)
@@ -537,8 +588,8 @@ export class AdminDashboardService {
             COALESCE(dm.MaDM, 0) as id,
             COALESCE(dm.TenDM, 'Khác') as name,
             SUM(${lineNetRevenueSql}) as revenue,
-            SUM((${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE}) as adminRevenue,
-            SUM((${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE}) as instructorPayout
+            SUM(${adminRevenueSql}) as adminRevenue,
+            SUM(${instructorRevenueSql}) as instructorPayout
           FROM ChiTietHoaDon cthd
           JOIN HoaDon hd ON cthd.MaHD = hd.MaHD
           JOIN KhoaHoc kh ON cthd.MaKH = kh.MaKH
@@ -705,11 +756,19 @@ export class AdminDashboardService {
     month?: number,
     year?: number,
   ): Promise<AdminInstructorDebtBoardDto> {
-    const { adminShare: ADMIN_REVENUE_SHARE, instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
+    const { instructorShare: INSTRUCTOR_REVENUE_SHARE } = getRevenueShareConfig();
     const selectedMonth = this.normalizeMonth(month);
     const selectedYear = this.normalizeYear(year);
     const monthLabel = this.buildMonthLabel(selectedMonth, selectedYear);
     const lineNetRevenueSql = this.buildLineNetRevenueSql();
+    const instructorRevenueSql = this.buildInstructorRevenueSql(
+      lineNetRevenueSql,
+      INSTRUCTOR_REVENUE_SHARE,
+    );
+    const adminRevenueSql = this.buildAdminRevenueSql(
+      lineNetRevenueSql,
+      instructorRevenueSql,
+    );
 
     const rows = await this.dataSource.query(
       `
@@ -721,8 +780,8 @@ export class AdminDashboardService {
           COUNT(DISTINCT CASE WHEN hd.MaHD IS NOT NULL THEN kh.MaKH END) AS courseCount,
           COUNT(DISTINCT hd.MaHD) AS orderCount,
           COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${lineNetRevenueSql} ELSE 0 END), 0) AS grossRevenue,
-          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${ADMIN_REVENUE_SHARE} ELSE 0 END), 0) AS adminRevenue,
-          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN (${lineNetRevenueSql}) * ${INSTRUCTOR_REVENUE_SHARE} ELSE 0 END), 0) AS instructorPayout
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${adminRevenueSql} ELSE 0 END), 0) AS adminRevenue,
+          COALESCE(SUM(CASE WHEN hd.MaHD IS NOT NULL THEN ${instructorRevenueSql} ELSE 0 END), 0) AS instructorPayout
           ,COALESCE(MAX(v.SoDuKhaDung), 0) + COALESCE(MAX(v.SoDuDangRut), 0) AS outstandingDebt
         FROM NguoiDung nd
         LEFT JOIN KhoaHoc kh ON kh.MaND_GiangVien = nd.MaND

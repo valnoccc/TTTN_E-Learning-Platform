@@ -28,13 +28,13 @@ export class InstructorsController {
     return this.instructorsService.getMyCourses(req.user);
   }
 
-  @Get('me/students')
-  getMyStudents(
+  @Get('me/transactions')
+  getMyTransactions(
     @Req() req: any,
     @Query('courseId') courseId?: string,
     @Query('search') search?: string,
   ) {
-    return this.instructorsService.getMyStudents(req.user, {
+    return this.instructorsService.getMyTransactions(req.user, {
       courseId: courseId ? Number(courseId) : undefined,
       search: search?.trim() || undefined,
     });

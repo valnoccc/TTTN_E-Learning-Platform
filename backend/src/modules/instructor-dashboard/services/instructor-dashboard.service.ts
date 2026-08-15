@@ -138,6 +138,7 @@ type RawMonthlyRevenueRow = {
   courseName: string;
   purchases: number | string | null;
   grossRevenue: number | string | null;
+  instructorRevenue: number | string | null;
 };
 
 @Injectable()
@@ -204,6 +205,10 @@ export class InstructorDashboardService {
     const { instructorShare } = getRevenueShareConfig();
 
     const grossRevenueSql = this.buildLineNetRevenueSql();
+    const instructorRevenueSql = this.buildInstructorRevenueSql(
+      grossRevenueSql,
+      instructorShare,
+    );
     const paidRevenueJoins = this.buildPaidRevenueJoins();
 
     const rows = await this.dataSource.query(
@@ -212,9 +217,10 @@ export class InstructorDashboardService {
           DATE_FORMAT(dk.NgayDangKy, '%m/%Y') AS monthLabel,
           DATE_FORMAT(dk.NgayDangKy, '%Y-%m') AS monthSort,
           kh.MaKH AS courseId,
-          kh.TenKhoaHoc AS courseName,
-          COUNT(*) AS purchases,
-          COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue
+              kh.TenKhoaHoc AS courseName,
+              COUNT(*) AS purchases,
+              COALESCE(SUM(${grossRevenueSql}), 0) AS grossRevenue,
+              COALESCE(SUM(${instructorRevenueSql}), 0) AS instructorRevenue
         FROM DangKyKhoaHoc dk
         ${paidRevenueJoins}
         WHERE kh.MaND_GiangVien = ?
@@ -251,9 +257,7 @@ export class InstructorDashboardService {
       const monthEntry = monthMap.get(monthLabel)!;
       const purchases = this.toNumber(row.purchases);
       const grossRevenue = this.toNumber(row.grossRevenue);
-      const instructorRevenue = Number(
-        (grossRevenue * instructorShare).toFixed(0),
-      );
+      const instructorRevenue = this.toNumber(row.instructorRevenue);
       monthEntry.totalPurchases += purchases;
       monthEntry.totalGrossRevenue += grossRevenue;
       monthEntry.rows.push({
@@ -299,7 +303,7 @@ export class InstructorDashboardService {
     const instructorId = this.getInstructorId(principal);
     const range = filters.range ?? '30days';
     const courseId = filters.courseId;
-    const { instructorShare, adminShare } = getRevenueShareConfig();
+    const { instructorShare } = getRevenueShareConfig();
 
     const whereClause = this.buildReportWhereClause(
       instructorId,
@@ -313,8 +317,11 @@ export class InstructorDashboardService {
     );
     const paidRevenueJoins = this.buildPaidRevenueJoins();
     const grossRevenueSql = this.buildLineNetRevenueSql();
-    const instructorRevenueSql = `(${grossRevenueSql}) * ${instructorShare}`;
-    const adminRevenueSql = `(${grossRevenueSql}) * ${adminShare}`;
+    const instructorRevenueSql = this.buildInstructorRevenueSql(
+      grossRevenueSql,
+      instructorShare,
+    );
+    const adminRevenueSql = `(${grossRevenueSql}) - (${instructorRevenueSql})`;
 
     const reviewWhereClause = this.buildReviewReportWhereClause(
       instructorId,
@@ -860,6 +867,16 @@ export class InstructorDashboardService {
         ELSE COALESCE(cthd.GiaGhiNhan, kh.GiaBan, 0)
       END
     `;
+  }
+
+  private buildInstructorRevenueSql(
+    grossRevenueSql: string,
+    legacyInstructorShare: number,
+  ) {
+    return `COALESCE(
+      cthd.DoanhThuGiangVien,
+      (${grossRevenueSql}) * COALESCE(cthd.TiLeGiangVien, ${legacyInstructorShare * 100}) / 100
+    )`;
   }
 
   private buildReportWhereClause(

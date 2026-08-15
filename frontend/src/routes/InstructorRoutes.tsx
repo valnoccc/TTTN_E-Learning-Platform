@@ -14,7 +14,7 @@ import InstructorAccountSettings from '../pages/instructor/settings/InstructorAc
 import InstructorCourseReviewsPage from '../pages/instructor/reviews/CourseReviews';
 import InstructorReports from '../pages/instructor/reports/RevenueReports';
 import MonthlyRevenueReport from '../pages/instructor/reports/MonthlyRevenueReport';
-import InstructorStudents from '../pages/instructor/students/StudentEvaluations';
+import InstructorTransactions from '../pages/instructor/transactions/InstructorTransactions';
 
 export default function InstructorRoutes() {
   return (
@@ -33,7 +33,8 @@ export default function InstructorRoutes() {
       <Route path="settings" element={<InstructorAccountSettings />} />
       <Route path="courses/:id/lessons/new" element={<InstructorLessonCreate />} />
       <Route path="lessons/:lessonId/edit" element={<InstructorLessonEdit />} />
-      <Route path="students" element={<InstructorStudents />} />
+      <Route path="students" element={<Navigate to="transactions" replace />} />
+      <Route path="transactions" element={<InstructorTransactions />} />
       <Route path="discussions" element={<InstructorCourseDiscussionsPage />} />
       <Route path="reviews" element={<InstructorCourseReviewsPage />} />
       <Route path="reports" element={<InstructorReports />} />

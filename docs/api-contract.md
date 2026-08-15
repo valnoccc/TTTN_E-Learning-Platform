@@ -117,7 +117,7 @@ Admin (Kiem duyet)
 - `GET /instructors/me/courses` (Lay danh sach khoa hoc cua giang vien)
 - `GET /instructors/me/profile` (Lay ho so giang vien kem danh sach bang cap va kinh nghiem)
 - `PATCH /instructors/me/profile` (Cap nhat ho so va thay the danh sach `BangCaps[]`, `KinhNghiems[]` neu duoc gui)
-- `GET /instructors/me/students` (Lay danh sach hoc vien da dang ky khoa hoc cua giang vien; khong tra ve link GitHub/bai nop)
+- `GET /instructors/me/transactions` (Giang vien - Danh sach giao dich da thanh toan theo tung dong chi tiet hoa don; ho tro `courseId` va `search`, chi tra ve cac khoa hoc cua giang vien hien tai)
 - `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh theo ty le trong backend `.env`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
 - `GET /instructors/me/attention-summary` (Giang vien - Tra ve `unansweredQuestions` va `unrespondedReviews` de hien thi badge can xu ly tren sidebar)
 

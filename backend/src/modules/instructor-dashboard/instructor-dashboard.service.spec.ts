@@ -153,7 +153,7 @@ describe('InstructorDashboardService', () => {
     expect(result.topCoursesSource).toBe('database');
     expect(result.recentEnrollmentsSource).toBe('database');
     expect(result.overview.averageRating).toBe(4.6);
-    expect(result.overview.averageRatingLabel).toBe('Tu 12 luot danh gia that');
+    expect(result.overview.averageRatingLabel).toBe('Từ 12 lượt đánh giá thật');
     expect(result.overview.averageRatingSource).toBe('database');
     expect(result.learning.completionRate).toBe(60);
     expect(result.learning.repeatStudents).toBe(1);
@@ -185,8 +185,8 @@ describe('InstructorDashboardService', () => {
       reviewCount: 7,
     });
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
-    expect(queryCalls[0]?.[0]).toContain('* 0.2');
-    expect(queryCalls[0]?.[0]).toContain('* 0.8');
+    expect(queryCalls[0]?.[0]).toContain('cthd.DoanhThuGiangVien');
+    expect(queryCalls[0]?.[0]).not.toContain('* 0.2');
   });
 
   it('returns monthly revenue grouped by month and course', async () => {
@@ -245,6 +245,33 @@ describe('InstructorDashboardService', () => {
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
     expect(queryCalls[0]?.[0]).toContain("DATE_FORMAT(dk.NgayDangKy, '%m/%Y')");
     expect(queryCalls[0]?.[0]).toContain('YEAR(dk.NgayDangKy) = ?');
+  });
+
+  it('uses the stored instructor revenue snapshot instead of the active environment rate', async () => {
+    process.env.INSTRUCTOR_REVENUE_PERCENT = '50';
+    process.env.ADMIN_REVENUE_PERCENT = '50';
+    dataSource.query.mockResolvedValueOnce([
+      {
+        monthLabel: '08/2026',
+        monthSort: '2026-08',
+        courseId: '11',
+        courseName: 'Khóa học snapshot',
+        purchases: '1',
+        grossRevenue: '1000000',
+        instructorRevenue: '800000',
+      },
+    ]);
+
+    const result = await service.getMyMonthlyRevenue(
+      { maND: 7, vaiTro: UserRole.INSTRUCTOR },
+      2026,
+    );
+
+    const query = dataSource.query.mock.calls[0]?.[0] as string;
+    expect(query).toContain('cthd.DoanhThuGiangVien');
+    expect(query).toContain('cthd.TiLeGiangVien');
+    expect(query).not.toContain('SUM(' + 'cthd.DoanhThuGiangVien');
+    expect(result.months[0]?.rows[0]?.instructorRevenue).toBe(800000);
   });
 
   it('returns only unanswered discussions and unreplied reviews for the sidebar badges', async () => {

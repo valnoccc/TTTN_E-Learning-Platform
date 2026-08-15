@@ -50,86 +50,48 @@ describe('InstructorsService', () => {
     hoSoRepo.save.mockReset();
   });
 
-  it('returns purchased students by student and course for the instructor', async () => {
+  it('returns only this instructor transaction lines from a mixed-instructor invoice', async () => {
     dataSource.query.mockResolvedValue([
       {
+        invoiceId: 1001,
         studentId: 11,
         studentName: 'Nguyen Van A',
         studentEmail: 'a@example.com',
         courseId: 101,
         courseName: 'React Co Ban',
-        coursePrice: '200000.00',
+        transactionAmount: '600000.00',
+        instructorAmount: '480000.00',
+        paymentMethod: 'VNPAY',
         purchasedAt: '2026-05-01 10:00:00',
-      },
-      {
-        studentId: 11,
-        studentName: 'Nguyen Van A',
-        studentEmail: 'a@example.com',
-        courseId: 102,
-        courseName: 'NestJS Co Ban',
-        coursePrice: '360000.00',
-        purchasedAt: '2026-05-02 12:00:00',
-      },
-      {
-        studentId: 12,
-        studentName: 'Tran Thi B',
-        studentEmail: 'b@example.com',
-        courseId: 101,
-        courseName: 'React Co Ban',
-        coursePrice: '200000.00',
-        purchasedAt: '2026-05-03 08:00:00',
+        paymentStatus: 'PAID',
       },
     ]);
 
-    const result = await service.getMyStudents(
+    const result = await service.getMyTransactions(
       { maND: 7, vaiTro: UserRole.INSTRUCTOR },
       {},
     );
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('dk.MaND'),
+      expect.stringContaining('kh.MaND_GiangVien = ?'),
       [7],
     );
-    expect(result.totalStudents).toBe(2);
-    expect(result.totalPurchases).toBe(3);
-    expect(result.totalRevenue).toBe(760000);
-    expect(result.students[0]).toMatchObject({
-      studentId: 11,
-      studentName: 'Nguyen Van A',
-      courseId: 101,
-      courseName: 'React Co Ban',
-      totalSpent: 200000,
+    expect(result).toMatchObject({
+      totalTransactions: 1,
+      totalGrossRevenue: 600000,
+      totalInstructorRevenue: 480000,
     });
-  });
-
-  it('applies course and search filters when listing students', async () => {
-    dataSource.query.mockResolvedValue([]);
-
-    await service.getMyStudents(
-      { maND: 9, vaiTro: UserRole.INSTRUCTOR },
-      { courseId: 77, search: 'lan' },
-    );
-
-    expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('kh.MaKH = ?'),
-      [9, 77, '%lan%', '%lan%'],
-    );
-  });
-
-  it('uses JWT subject as instructor id when listing students', async () => {
-    dataSource.query.mockResolvedValue([]);
-
-    await service.getMyStudents({ sub: 5, vaiTro: UserRole.INSTRUCTOR }, {});
-
-    expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining('kh.MaND_GiangVien = ?'),
-      [5],
-    );
+    expect(result.transactions[0]).toMatchObject({
+      invoiceId: 1001,
+      courseId: 101,
+      transactionAmount: 600000,
+      instructorAmount: 480000,
+    });
   });
 
   it('rejects non instructor users', async () => {
     await expect(
-      service.getMyStudents({ maND: 1, vaiTro: UserRole.STUDENT }, {}),
+      service.getMyTransactions({ maND: 1, vaiTro: UserRole.STUDENT }, {}),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 

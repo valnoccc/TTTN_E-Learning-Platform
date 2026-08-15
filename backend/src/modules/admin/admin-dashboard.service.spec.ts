@@ -345,10 +345,10 @@ describe('AdminDashboardService', () => {
     });
 
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
-    expect(queryCalls[5]?.[0]).toContain('* 0.2');
-    expect(queryCalls[5]?.[0]).toContain('* 0.8');
-    expect(queryCalls[9]?.[0]).toContain('* 0.2');
-    expect(queryCalls[9]?.[0]).toContain('* 0.8');
+    expect(queryCalls[5]?.[0]).toContain('cthd.DoanhThuGiangVien');
+    expect(queryCalls[5]?.[0]).not.toContain('* 0.2');
+    expect(queryCalls[9]?.[0]).toContain('cthd.DoanhThuGiangVien');
+    expect(queryCalls[9]?.[0]).not.toContain('* 0.2');
   });
 
   it('returns instructor debt board for a selected month', async () => {
@@ -425,8 +425,21 @@ describe('AdminDashboardService', () => {
     const params = dataSource.query.mock.calls[0]?.[1] as Array<number>;
 
     expect(query).toContain('YEAR(COALESCE(hd.NgayThanhToan, hd.NgayLap)) = ?');
-    expect(query).toContain('* 0.2');
-    expect(query).toContain('* 0.8');
+    expect(query).toContain('cthd.DoanhThuGiangVien');
+    expect(query).not.toContain('* 0.2');
     expect(params).toEqual([2026, 6]);
+  });
+
+  it('uses invoice line snapshots for instructor debt reporting', async () => {
+    process.env.INSTRUCTOR_REVENUE_PERCENT = '50';
+    process.env.ADMIN_REVENUE_PERCENT = '50';
+    dataSource.query.mockResolvedValueOnce([]);
+
+    await service.getInstructorDebtBoard(6, 2026);
+
+    const query = dataSource.query.mock.calls[0]?.[0] as string;
+    expect(query).toContain('cthd.DoanhThuGiangVien');
+    expect(query).toContain('cthd.TiLeGiangVien');
+    expect(query).toContain('AS instructorPayout');
   });
 });
