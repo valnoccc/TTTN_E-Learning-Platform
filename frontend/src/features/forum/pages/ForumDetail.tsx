@@ -202,9 +202,10 @@ export default function ForumDetail() {
       toast.success('Gửi câu trả lời thành công');
       setReplyContent('');
       fetchQuestion(); // reload
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error posting reply:', error);
-      toast.error('Không thể gửi câu trả lời');
+      const errorMsg = error.response?.data?.message;
+      toast.error(Array.isArray(errorMsg) ? errorMsg[0] : (errorMsg || 'Không thể gửi câu trả lời'));
     } finally {
       setIsReplying(false);
     }
@@ -226,9 +227,10 @@ export default function ForumDetail() {
       setReplyingTo(null);
       setExpandedReplies(prev => ({ ...prev, [maCTL_Cha]: true }));
       fetchQuestion();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error posting nested reply:', error);
-      toast.error('Không thể gửi phản hồi');
+      const errorMsg = error.response?.data?.message;
+      toast.error(Array.isArray(errorMsg) ? errorMsg[0] : (errorMsg || 'Không thể gửi phản hồi'));
     } finally {
       setIsSubmittingNested(false);
     }
@@ -712,12 +714,12 @@ export default function ForumDetail() {
         )}
 
       </div>
-      <PolicyModal 
-        isOpen={showPolicy}
-        type="forum"
-        onAccept={handleAcceptPolicy}
-        onDecline={() => setShowPolicy(false)}
-      />
+        <PolicyModal 
+          isOpen={showPolicy}
+          type="forum"
+          onAccept={handleAcceptPolicy}
+          onDecline={() => navigate('/forum')}
+        />
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.type === 'question' ? 'Xóa câu hỏi' : 'Thu hồi bình luận'}

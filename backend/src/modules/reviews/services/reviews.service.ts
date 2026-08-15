@@ -11,6 +11,7 @@ import { CreateStudentReviewDto } from '../dto/create-student-review.dto';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
+import { containsProfanity } from '../../../utils/profanity-filter.util';
 
 @Injectable()
 export class ReviewsService {
@@ -86,6 +87,10 @@ export class ReviewsService {
     instructorId: number,
     payload: CreateReplyDto,
   ) {
+    if (containsProfanity(payload.noiDung)) {
+      throw new BadRequestException('Nội dung của bạn chứa từ ngữ thô tục/phản cảm. Vui lòng chỉnh sửa lại!');
+    }
+
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, maND_GiangVien: instructorId },
       relations: ['giangVien'],
@@ -312,6 +317,10 @@ export class ReviewsService {
     studentId: number,
     payload: CreateStudentReviewDto,
   ) {
+    if (payload.noiDung && containsProfanity(payload.noiDung)) {
+      throw new BadRequestException('Nội dung của bạn chứa từ ngữ thô tục/phản cảm. Vui lòng chỉnh sửa lại!');
+    }
+
     // Check if course exists and is published
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId, trangThai: 'PUBLISHED' },

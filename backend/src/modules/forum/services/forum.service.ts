@@ -13,6 +13,8 @@ import {
 } from '../dto/forum.dto';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
+import { BadRequestException } from '@nestjs/common';
+import { containsProfanity } from '../../../utils/profanity-filter.util';
 
 @Injectable()
 export class ForumService {
@@ -173,6 +175,10 @@ export class ForumService {
   }
 
   async taoCauHoi(maND: number, createDto: CreateQuestionDto) {
+    if (containsProfanity(createDto.tieuDe) || containsProfanity(createDto.noiDung)) {
+      throw new BadRequestException('Nội dung của bạn chứa từ ngữ thô tục/phản cảm. Vui lòng chỉnh sửa lại!');
+    }
+
     // Xử lý the tu (tags)
     const theTus: TheTuDienDan[] = [];
     if (createDto.tags && createDto.tags.length > 0) {
@@ -199,6 +205,10 @@ export class ForumService {
   }
 
   async taoTraLoi(maCH: number, maND: number, createDto: CreateAnswerDto) {
+    if (containsProfanity(createDto.noiDung)) {
+      throw new BadRequestException('Nội dung của bạn chứa từ ngữ thô tục/phản cảm. Vui lòng chỉnh sửa lại!');
+    }
+
     const cauHoi = await this.cauHoiRepository.findOne({ where: { maCH } });
     if (!cauHoi) {
       throw new Error('Câu hỏi không tồn tại');
