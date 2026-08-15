@@ -121,14 +121,13 @@ export default function AdminPostForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleImageUpload = async (file: File): Promise<string> => {
-    // Giả lập delay upload API
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Trả về một URL ảnh ngẫu nhiên hoặc ảnh mặc định từ picsum
-        const randomId = Math.floor(Math.random() * 1000);
-        resolve(`https://picsum.photos/seed/${randomId}/800/400`);
-      }, 1500);
-    });
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    const res: any = await axiosClient.post('/cloudinary/upload', uploadData);
+    if (res?.url) {
+      return res.url;
+    }
+    throw new Error('Không nhận được URL ảnh từ server');
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

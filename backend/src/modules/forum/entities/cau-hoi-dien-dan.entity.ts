@@ -40,6 +40,9 @@ export class CauHoiDienDan {
   @CreateDateColumn({ name: 'NgayTao', type: 'timestamp' })
   ngayTao!: Date;
 
+  @Column({ name: 'TrangThai', type: 'varchar', length: 20, default: 'ACTIVE' })
+  trangThai!: string;
+
   @UpdateDateColumn({ name: 'NgayCapNhat', type: 'timestamp' })
   ngayCapNhat!: Date;
 

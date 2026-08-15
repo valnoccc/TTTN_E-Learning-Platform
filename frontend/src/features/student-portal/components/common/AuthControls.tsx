@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, User, Heart, BookOpen } from 'lucide-react';
+import { ChevronDown, LogOut, User, Heart, BookOpen, LayoutDashboard } from 'lucide-react';
 import { normalizeRole } from '../../../../utils/roles';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../../store/store';
@@ -16,6 +16,8 @@ type StoredUser = {
   avatar?: string;
   photoUrl?: string;
   imageUrl?: string;
+  anhDaiDien?: string;
+  AnhDaiDien?: string;
   vaiTro?: string;
   role?: string;
 };
@@ -33,11 +35,25 @@ function getDisplayName(user: StoredUser | null) {
 }
 
 function getAvatarUrl(user: StoredUser | null) {
-  return user?.avatarUrl || user?.avatar || user?.photoUrl || user?.imageUrl || '';
+  if (!user) return '';
+  // Ưu tiên các trường avatar và anhDaiDien mới được update
+  const candidates = [user.avatar, user.anhDaiDien, user.AnhDaiDien, user.avatarUrl, user.photoUrl, user.imageUrl];
+  let userAvatar = '';
+  for (const c of candidates) {
+    if (c && typeof c === 'string' && c.trim() !== 'null' && c.trim() !== 'undefined' && c.trim() !== '') {
+      userAvatar = c.trim();
+      break;
+    }
+  }
+  if (!userAvatar) return '';
+  return userAvatar.startsWith('http') || userAvatar.startsWith('data:') || userAvatar.startsWith('blob:')
+    ? userAvatar
+    : `/assets/images/${userAvatar.startsWith('/') ? userAvatar.substring(1) : userAvatar}`;
 }
 
 export default function AuthControls() {
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +67,7 @@ export default function AuthControls() {
         try {
           const parsedUser = JSON.parse(userString) as StoredUser;
           setUser({ ...parsedUser, role: normalizeRole(parsedUser.role || parsedUser.vaiTro), vaiTro: normalizeRole(parsedUser.role || parsedUser.vaiTro) });
+          setImgError(false);
         } catch (error) {
           console.error('Lỗi khi parse user từ localStorage:', error);
           setUser(null);
@@ -132,10 +149,19 @@ export default function AuthControls() {
         aria-label="Account menu"
       >
         <span className="flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-full bg-sky-100 ring-1 ring-sky-200/70">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+          {avatarUrl && !imgError ? (
+            <img 
+              src={avatarUrl} 
+              alt={displayName} 
+              className="h-full w-full object-cover" 
+              onError={() => setImgError(true)} 
+            />
           ) : (
-            <span className="text-[13px] font-bold text-slate-900">{displayName.charAt(0).toUpperCase()}</span>
+            <img 
+              src="https://cdn-icons-png.flaticon.com/512/149/149071.png" 
+              alt="Default Avatar" 
+              className="h-full w-full object-cover opacity-80" 
+            />
           )}
         </span>
         <span className="max-w-[110px] truncate">{displayName}</span>
@@ -148,8 +174,17 @@ export default function AuthControls() {
           to={getDashboardPath(user.vaiTro)}
           className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 flex items-center"
         >
-          <User size={14} className="me-2" />
-          Hồ sơ cá nhân
+          {normalizeRole(user.vaiTro) === 'INSTRUCTOR' || normalizeRole(user.vaiTro) === 'ADMIN' ? (
+            <>
+              <LayoutDashboard size={14} className="me-2 text-indigo-500" />
+              Bảng điều khiển
+            </>
+          ) : (
+            <>
+              <User size={14} className="me-2" />
+              Hồ sơ cá nhân
+            </>
+          )}
         </Dropdown.Item>
         <Dropdown.Item
           as={Link}

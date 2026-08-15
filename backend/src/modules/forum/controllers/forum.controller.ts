@@ -155,4 +155,29 @@ export class ForumController {
       data: result,
     };
   }
+  @Delete('questions/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.forumService.xoaCauHoi(id, req.user.sub);
+    return {
+      message: 'Xóa câu hỏi thành công',
+      data: result,
+    };
+  }
+
+  @Delete('answers/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteAnswer(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { sub: number } },
+  ) {
+    const result = await this.forumService.xoaTraLoi(id, req.user.sub);
+    return {
+      message: 'Thu hồi câu trả lời thành công',
+      data: result,
+    };
+  }
 }

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Flag, AlertTriangle } from 'lucide-react';
-import axiosClient from '../../../../../api/axios';
+import axiosClient from '../../api/axios';
 import toast from 'react-hot-toast';
 
 // ─── Kiểu dữ liệu ────────────────────────────────────────────────────────────
 
 /** Các lý do vi phạm hỗ trợ */
-type ReportReason = 'SPAM' | 'HATE_SPEECH' | 'HARASSMENT' | 'FALSE_INFO' | 'OTHER';
+export type ReportReason = 'SPAM' | 'HATE_SPEECH' | 'HARASSMENT' | 'FALSE_INFO' | 'OTHER';
 
 interface ReportOption {
   value: ReportReason;
@@ -19,7 +19,11 @@ interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   /** Bình luận bị báo cáo */
-  discussionId: number;
+  discussionId?: number;
+  /** Câu hỏi diễn đàn bị báo cáo */
+  forumQuestionId?: number;
+  /** Câu trả lời diễn đàn bị báo cáo */
+  forumAnswerId?: number;
   /** Người viết bình luận bị báo cáo */
   reportedUserId: number;
   reportedUserName: string;
@@ -57,10 +61,12 @@ const REPORT_REASONS: ReportOption[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function ReportModal({
+export function ReportModal({
   isOpen,
   onClose,
   discussionId,
+  forumQuestionId,
+  forumAnswerId,
   reportedUserId,
   reportedUserName,
 }: ReportModalProps) {
@@ -85,6 +91,8 @@ export default function ReportModal({
     try {
       await axiosClient.post('/reports', {
         discussionId,
+        forumQuestionId,
+        forumAnswerId,
         reportedUserId,
         reason: selectedReason,
         details: details.trim() || undefined,

@@ -138,6 +138,7 @@ export class ForumService {
           .map((tl) => ({
             maCTL: tl.maCTL,
             noiDung: tl.noiDung,
+            trangThai: tl.trangThai,
             luotBinhChon: tl.luotBinhChon,
             laDapAnDung: tl.laDapAnDung,
             ngayTao: tl.ngayTao,
@@ -151,6 +152,7 @@ export class ForumService {
                 ?.map((ph) => ({
                   maCTL: ph.maCTL,
                   noiDung: ph.noiDung,
+                  trangThai: ph.trangThai,
                   luotBinhChon: ph.luotBinhChon,
                   ngayTao: ph.ngayTao,
                   tacGia: {
@@ -333,5 +335,39 @@ export class ForumService {
     }
 
     return { success: true, isLiked, luotBinhChon: cauTraLoi.luotBinhChon };
+  }
+
+  async xoaCauHoi(maCH: number, maND: number) {
+    const cauHoi = await this.cauHoiRepository.findOne({ where: { maCH } });
+    if (!cauHoi) {
+      throw new Error('Câu hỏi không tồn tại');
+    }
+    if (cauHoi.maND !== maND) {
+      throw new Error('Bạn không có quyền xóa câu hỏi này');
+    }
+
+    // Xóa tất cả câu trả lời của câu hỏi này
+    // (Lưu ý: Mặc dù onDelete: CASCADE có thể hoạt động, nhưng gọi delete tường minh an toàn hơn khi sync = false)
+    await this.cauTraLoiRepository.delete({ maCH });
+    
+    // Xóa câu hỏi
+    await this.cauHoiRepository.delete({ maCH });
+    
+    return { success: true };
+  }
+
+  async xoaTraLoi(maCTL: number, maND: number) {
+    const traLoi = await this.cauTraLoiRepository.findOne({ where: { maCTL } });
+    if (!traLoi) {
+      throw new Error('Câu trả lời không tồn tại');
+    }
+    if (traLoi.maND !== maND) {
+      throw new Error('Bạn không có quyền thu hồi câu trả lời này');
+    }
+
+    // Đổi trạng thái thành REVOKED (thu hồi)
+    await this.cauTraLoiRepository.update({ maCTL }, { trangThai: 'REVOKED' });
+
+    return { success: true };
   }
 }

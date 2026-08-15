@@ -123,10 +123,11 @@ export default function InstructorProfile() {
                                                     onError={() => setAvatarError(true)}
                                                 />
                                             ) : (
-                                                // Tăng font-size cho chữ cái đầu
-                                                <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-5xl font-bold text-emerald-700">
-                                                    {instructorInitial}
-                                                </div>
+                                                <img 
+                                                    src="https://cdn-icons-png.flaticon.com/512/149/149071.png" 
+                                                    alt="Default Avatar" 
+                                                    className="h-full w-full object-cover opacity-80" 
+                                                />
                                             )}
 
                                             {/* Phần phủ khi hover */}

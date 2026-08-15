@@ -26,7 +26,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import ReportModal from "./ReportModal";
+import { ReportModal } from "../../../../../components/common/ReportModal";
 
 // Helper component for avatar
 const UserAvatar = ({
