@@ -15,6 +15,10 @@ import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-vid
 
 const annotateVideoMock = jest.fn();
 const generateContentMock = jest.fn();
+const uploadGeminiFileMock = jest.fn();
+const getGeminiFileMock = jest.fn();
+const deleteGeminiFileMock = jest.fn();
+const downloadVideoForAiMock = jest.fn();
 
 jest.mock('@google-cloud/video-intelligence', () => ({
   VideoIntelligenceServiceClient: jest.fn().mockImplementation(() => ({
@@ -28,6 +32,19 @@ jest.mock('@google/generative-ai', () => ({
       generateContent: generateContentMock,
     }),
   })),
+}));
+
+jest.mock('@google/generative-ai/server', () => ({
+  GoogleAIFileManager: jest.fn().mockImplementation(() => ({
+    uploadFile: uploadGeminiFileMock,
+    getFile: getGeminiFileMock,
+    deleteFile: deleteGeminiFileMock,
+  })),
+  FileState: {
+    ACTIVE: 'ACTIVE',
+    PROCESSING: 'PROCESSING',
+    FAILED: 'FAILED',
+  },
 }));
 
 import { ConfigService } from '@nestjs/config';
@@ -79,6 +96,29 @@ describe('VideoIntelligenceService', () => {
   beforeEach(async () => {
     annotateVideoMock.mockReset();
     generateContentMock.mockReset();
+    uploadGeminiFileMock.mockReset();
+    getGeminiFileMock.mockReset();
+    deleteGeminiFileMock.mockReset();
+    uploadGeminiFileMock.mockResolvedValue({
+      file: {
+        name: 'files/lesson-video',
+        uri: 'https://generativelanguage.googleapis.com/v1beta/files/lesson-video',
+        mimeType: 'video/mp4',
+        state: 'ACTIVE',
+      },
+    });
+    getGeminiFileMock.mockResolvedValue({
+      name: 'files/lesson-video',
+      uri: 'https://generativelanguage.googleapis.com/v1beta/files/lesson-video',
+      mimeType: 'video/mp4',
+      state: 'ACTIVE',
+    });
+    deleteGeminiFileMock.mockResolvedValue(undefined);
+    downloadVideoForAiMock.mockReset();
+    downloadVideoForAiMock.mockResolvedValue({
+      buffer: Buffer.from('video-content'),
+      mimeType: 'video/mp4',
+    });
 
     lessonRepository = {
       update: jest.fn(),
@@ -117,7 +157,7 @@ describe('VideoIntelligenceService', () => {
         {
           provide: LessonVideoStorageService,
           useValue: {
-            getPlayableUrl: jest.fn().mockResolvedValue('https://signed.example.com/lesson.mp4'),
+            downloadVideoForAi: downloadVideoForAiMock,
           },
         },
       ],
@@ -133,6 +173,44 @@ describe('VideoIntelligenceService', () => {
       monthYear: '07-2026',
       usedSeconds: 0,
     });
+  });
+
+  it('uploads the GCS video through Gemini Files API and deletes it afterwards', async () => {
+    generateContentMock.mockResolvedValue({
+      response: {
+        text: () =>
+          JSON.stringify({
+            isApproved: true,
+            violationType: null,
+            reason: 'Nội dung an toàn',
+            confidenceScore: 0.95,
+          }),
+      },
+    });
+
+    const analysisService = service as unknown as {
+      analyzeVideoWithGemini: (videoUrl: string) => Promise<unknown>;
+    };
+
+    await analysisService.analyzeVideoWithGemini('gs://test-bucket/lesson.mp4');
+
+    expect(downloadVideoForAiMock).toHaveBeenCalledWith(
+      'gs://test-bucket/lesson.mp4',
+    );
+    expect(uploadGeminiFileMock).toHaveBeenCalledWith(
+      Buffer.from('video-content'),
+      expect.objectContaining({ mimeType: 'video/mp4' }),
+    );
+    expect(generateContentMock).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fileData: expect.objectContaining({
+            fileUri: expect.stringContaining('/files/lesson-video'),
+          }),
+        }),
+      ]),
+    );
+    expect(deleteGeminiFileMock).toHaveBeenCalledWith('files/lesson-video');
   });
 
   it('marks a video with a single likely frame as needs review', async () => {
@@ -239,7 +317,7 @@ describe('VideoIntelligenceService', () => {
     expect(courseRepository.update).not.toHaveBeenCalled();
   });
 
-  it('rejects only when the explicit signal is very strong', async () => {
+  it('runs semantic moderation even when visual moderation rejects a video', async () => {
     lessonRepository.findOne.mockImplementation(
       ({ where }: { where: { maBH?: number; maKH?: number } }) => {
         if ('maBH' in where) {
@@ -306,7 +384,7 @@ describe('VideoIntelligenceService', () => {
     const analysisService =
       service as unknown as TestableVideoIntelligenceService;
 
-    await analysisService.runAnalysis(
+    const result = await analysisService.runAnalysis(
       1,
       'https://cdn.example.com/lesson-1.mp4',
     );
@@ -317,7 +395,158 @@ describe('VideoIntelligenceService', () => {
         aiStatus: AiStatus.REJECTED,
       }),
     );
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
+    expect(result.labels).toContain('Gemini: Ngôn từ phù hợp');
     expect(courseRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('prioritizes sensitive labels before limiting labels stored for a lesson', async () => {
+    lessonRepository.findOne.mockImplementation(
+      ({ where }: { where: { maBH?: number; maKH?: number } }) => {
+        if ('maBH' in where) {
+          return {
+            maBH: where.maBH,
+            maKH: 10,
+            videoURL: 'https://cdn.example.com/lesson-1.mp4',
+            aiStatus: null,
+          };
+        }
+        if ('maKH' in where) {
+          return { maKH: where.maKH, trangThai: 'PENDING' };
+        }
+        return null;
+      },
+    );
+    lessonRepository.update.mockResolvedValue({ affected: 1 });
+    generateContentMock.mockResolvedValue({
+      response: {
+        text: () =>
+          JSON.stringify({
+            isApproved: true,
+            violationType: null,
+            reason: 'Nội dung an toàn',
+            confidenceScore: 0.95,
+          }),
+      },
+    });
+    annotateVideoMock.mockResolvedValue([
+      {
+        promise: jest.fn().mockResolvedValue([
+          {
+            annotationResults: [
+              {
+                segment: { endTimeOffset: { seconds: 95 } },
+                explicitAnnotation: { frames: [] },
+                shotLabelAnnotations: [
+                  { entity: { description: 'road' } },
+                  { entity: { description: 'parking' } },
+                  { entity: { description: 'car' } },
+                  { entity: { description: 'driving' } },
+                  { entity: { description: 'visual effects' } },
+                  { entity: { description: 'violence' } },
+                  { entity: { description: 'weapon' } },
+                ],
+                segmentLabelAnnotations: [],
+              },
+            ],
+          },
+        ]),
+      },
+    ]);
+
+    const analysisService =
+      service as unknown as TestableVideoIntelligenceService;
+
+    const result = await analysisService.runAnalysis(
+      1,
+      'https://cdn.example.com/lesson-1.mp4',
+    );
+
+    expect(result.status).toBe(AiStatus.REJECTED);
+    expect(result.labels).toEqual([
+      'violence',
+      'weapon',
+      'Gemini: Ngôn từ phù hợp',
+      'road',
+      'parking',
+    ]);
+    expect(lessonRepository.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        aiLabels: [
+          'violence',
+          'weapon',
+          'Gemini: Ngôn từ phù hợp',
+          'road',
+          'parking',
+        ],
+      }),
+    );
+  });
+
+  it('stores the Gemini violation type as the first moderation label', async () => {
+    lessonRepository.findOne.mockImplementation(
+      ({ where }: { where: { maBH?: number; maKH?: number } }) => {
+        if ('maBH' in where) {
+          return {
+            maBH: where.maBH,
+            maKH: 10,
+            videoURL: 'https://cdn.example.com/lesson-1.mp4',
+            aiStatus: null,
+          };
+        }
+        if ('maKH' in where) {
+          return { maKH: where.maKH, trangThai: 'PENDING' };
+        }
+        return null;
+      },
+    );
+    lessonRepository.update.mockResolvedValue({ affected: 1 });
+    generateContentMock.mockResolvedValue({
+      response: {
+        text: () =>
+          JSON.stringify({
+            isApproved: false,
+            violationType: 'Bạo lực',
+            reason: 'Video mô tả hành vi bạo lực.',
+            confidenceScore: 0.96,
+          }),
+      },
+    });
+    annotateVideoMock.mockResolvedValue([
+      {
+        promise: jest.fn().mockResolvedValue([
+          {
+            annotationResults: [
+              {
+                segment: { endTimeOffset: { seconds: 95 } },
+                explicitAnnotation: { frames: [] },
+                shotLabelAnnotations: [
+                  { entity: { description: 'classroom' } },
+                  { entity: { description: 'conversation' } },
+                ],
+                segmentLabelAnnotations: [],
+              },
+            ],
+          },
+        ]),
+      },
+    ]);
+
+    const analysisService =
+      service as unknown as TestableVideoIntelligenceService;
+
+    const result = await analysisService.runAnalysis(
+      1,
+      'https://cdn.example.com/lesson-1.mp4',
+    );
+
+    expect(result.status).toBe(AiStatus.REJECTED);
+    expect(result.labels).toEqual([
+      'Vi phạm Gemini: Bạo lực',
+      'classroom',
+      'conversation',
+    ]);
   });
 
   it('marks the lesson as needs review when the AI provider fails', async () => {

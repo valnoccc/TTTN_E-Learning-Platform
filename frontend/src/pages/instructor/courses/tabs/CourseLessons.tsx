@@ -27,24 +27,6 @@ import {
 import type { LessonData } from "../types/curriculum";
 
 // ─── Tooltip wrapper ─────────────────────────────────────────────────────────
-function Tooltip({
-  text,
-  children,
-}: {
-  text: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="group relative inline-flex">
-      {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 w-max max-w-[200px] -translate-x-1/2 rounded-md bg-slate-800 px-2.5 py-1.5 text-center text-[11px] font-medium leading-tight text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-        {text}
-        <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
-      </span>
-    </span>
-  );
-}
-
 // ─── Lesson item icon helper ──────────────────────────────────────────────────
 function LessonIcon({ lesson }: { lesson: LessonData }) {
   if (lesson.videoSourceType === "YOUTUBE") {
@@ -54,6 +36,14 @@ function LessonIcon({ lesson }: { lesson: LessonData }) {
     return <PlayCircle size={18} className="shrink-0 text-emerald-500" />;
   }
   return <FileText size={18} className="shrink-0 text-slate-400" />;
+}
+
+function getInstructorRejectMessage(reason: string) {
+  if (/profanity|hate speech|ngôn từ thô tục|chửi thề|xúc phạm/i.test(reason)) {
+    return "Video có phát ngôn không chuẩn mực, không phù hợp với tiêu chuẩn nội dung của nền tảng.";
+  }
+
+  return reason;
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -485,22 +475,18 @@ export default function InstructorCourseLessons() {
 
                                   {/* Warning icon nếu REJECTED */}
                                   {isRejected && (
-                                    <Tooltip text="Video vi phạm chính sách, cần chỉnh sửa">
-                                      <AlertTriangle
-                                        size={15}
-                                        className="shrink-0 text-rose-500"
-                                      />
-                                    </Tooltip>
+                                    <AlertTriangle
+                                      size={15}
+                                      className="shrink-0 text-rose-500"
+                                    />
                                   )}
 
                                   {/* Spinner AI đang kiểm duyệt */}
                                   {isProcessing && (
-                                    <Tooltip text="AI đang kiểm duyệt video...">
-                                      <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
-                                        <Loader2 size={10} className="animate-spin" />
-                                        Đang kiểm duyệt
-                                      </span>
-                                    </Tooltip>
+                                    <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                                      <Loader2 size={10} className="animate-spin" />
+                                      Đang kiểm duyệt
+                                    </span>
                                   )}
 
                                   {lesson.thoiLuong > 0 ? (
@@ -596,9 +582,9 @@ export default function InstructorCourseLessons() {
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
               {selectedLesson.aiStatus === "REJECTED" &&
               selectedLesson.aiRejectReason ? (
-                <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+                <div className="w-full border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700 lg:col-span-2">
                   <span className="font-bold">Lý do AI từ chối:</span>{" "}
-                  {selectedLesson.aiRejectReason}
+                  {getInstructorRejectMessage(selectedLesson.aiRejectReason)}
                 </div>
               ) : null}
 
@@ -758,7 +744,16 @@ export default function InstructorCourseLessons() {
                     {selectedLesson.aiLabels.map((label) => (
                       <span
                         key={label}
-                        className="inline-flex items-center rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700"
+                        className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                          label.startsWith("Vi phạm Gemini:")
+                            ? "border-rose-200 bg-rose-50 text-rose-700"
+                            : label.startsWith("Gemini: Không thể") ||
+                                label.startsWith("Gemini: Chưa được")
+                              ? "border-amber-200 bg-amber-50 text-amber-700"
+                              : label === "Gemini: Ngôn từ phù hợp"
+                                ? "border-sky-200 bg-sky-50 text-sky-700"
+                            : "border-emerald-200 bg-white text-emerald-700"
+                        }`}
                       >
                         {label}
                       </span>

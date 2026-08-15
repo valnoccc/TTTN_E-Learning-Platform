@@ -9,6 +9,8 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+import { PostCategory } from './post-category.entity';
+
 @Entity('BaiViet')
 export class BaiViet {
   @PrimaryGeneratedColumn({ name: 'MaBV' })
@@ -41,7 +43,17 @@ export class BaiViet {
   trangThai!: string;
 
   @Column({ name: 'MaND_TacGia', type: 'int' })
-  maND_TacGia!: number;
+  authorId!: number;
+
+  @Column({ name: 'MaDMBV', type: 'int', nullable: true })
+  maDMBV?: number;
+
+  @ManyToOne(() => PostCategory, category => category.posts)
+  @JoinColumn({ name: 'MaDMBV' })
+  category?: PostCategory;
+
+  @Column({ name: 'IsPinned', type: 'boolean', default: false })
+  isPinned!: boolean;
 
   @CreateDateColumn({ name: 'NgayTao', type: 'datetime' })
   ngayTao!: Date;
@@ -49,7 +61,7 @@ export class BaiViet {
   @UpdateDateColumn({ name: 'NgayCapNhat', type: 'datetime' })
   ngayCapNhat!: Date;
 
-  @ManyToOne(() => User, { eager: false })
+  @ManyToOne(() => User, { eager: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'MaND_TacGia' })
   tacGia!: User;
 }

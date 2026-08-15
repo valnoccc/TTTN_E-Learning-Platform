@@ -33,6 +33,7 @@ export default function InstructorProfile() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [editingBangCap, setEditingBangCap] = useState<number | null>(null);
     const [editingKinhNghiem, setEditingKinhNghiem] = useState<number | null>(null);
+    const [avatarError, setAvatarError] = useState(false);
 
     const handleAddBangCap = () => {
         setEditingBangCap(formData.BangCaps.length);
@@ -51,7 +52,17 @@ export default function InstructorProfile() {
         }
     }, [initialUser]);
 
-    const avatarPreview = avatarUrl.trim();
+    const trimmedAvatar = avatarUrl.trim();
+    const avatarPreview = trimmedAvatar && trimmedAvatar !== 'null' && trimmedAvatar !== 'undefined'
+        ? (trimmedAvatar.startsWith('http') || trimmedAvatar.startsWith('blob:') || trimmedAvatar.startsWith('data:') 
+            ? trimmedAvatar 
+            : `/assets/images/${trimmedAvatar.startsWith('/') ? trimmedAvatar.substring(1) : trimmedAvatar}`) 
+        : '';
+        
+    useEffect(() => {
+        setAvatarError(false);
+    }, [avatarPreview]);
+    
     const instructorInitial = (currentName || 'G').charAt(0).toUpperCase();
 
     const handleUserFieldChange = (setter: React.Dispatch<React.SetStateAction<string>>) =>
@@ -104,11 +115,12 @@ export default function InstructorProfile() {
                                             // Thay h-28 w-28 thành h-40 w-40 (hoặc kích thước bạn muốn)
                                             className="group relative block h-40 w-40 overflow-hidden border-2 border-slate-300 bg-white text-left shadow-sm"
                                         >
-                                            {avatarPreview ? (
+                                            {avatarPreview && !avatarError ? (
                                                 <img
                                                     src={avatarPreview}
                                                     alt="Ảnh đại diện giảng viên"
                                                     className="h-full w-full object-cover"
+                                                    onError={() => setAvatarError(true)}
                                                 />
                                             ) : (
                                                 // Tăng font-size cho chữ cái đầu

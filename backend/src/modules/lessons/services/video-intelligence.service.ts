@@ -15,10 +15,18 @@ import { NotificationType } from '../../notifications/entities/notification.enti
 import { NotificationsService } from '../../notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FileState, GoogleAIFileManager } from '@google/generative-ai/server';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 
 const QUOTA_LIMIT_SECONDS = 60_000;
 const QUOTA_WARNING_SECONDS = 54_000;
+const SENSITIVE_VIDEO_LABELS = new Set([
+  'violence',
+  'adult',
+  'nude',
+  'sexual',
+  'weapon',
+]);
 
 export interface VideoModerationResult {
   lessonId: number;
@@ -40,6 +48,7 @@ export class VideoIntelligenceService implements OnModuleInit {
   private moderationWorkerTimer: ReturnType<typeof setInterval> | null = null;
   private moderationWorkerBusy = false;
   private readonly genAI: GoogleGenerativeAI | null = null;
+  private readonly geminiFileManager: GoogleAIFileManager | null = null;
 
   constructor(
     @InjectRepository(Lesson)
@@ -55,6 +64,7 @@ export class VideoIntelligenceService implements OnModuleInit {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
+      this.geminiFileManager = new GoogleAIFileManager(apiKey);
     }
     this.logger.log('VideoIntelligenceService initialized');
   }
@@ -385,20 +395,43 @@ export class VideoIntelligenceService implements OnModuleInit {
       const decision = this.evaluateAnnotation(annotation);
       durationSeconds = decision.durationSeconds;
 
-      // Bước 2: Gemini phân tích nội dung video trực tiếp từ GCS (bóc băng + kiểm duyệt ngữ nghĩa)
-      if (this.genAI && decision.status !== AiStatus.REJECTED) {
+      // Bước 2: luôn dùng Gemini kiểm tra ngữ nghĩa/lời nói, kể cả khi
+      // kiểm duyệt khung hình đã phát hiện vi phạm.
+      const addGeminiLabel = (label: string) => {
+        const priorityLabels = decision.labels.filter(
+          (item) =>
+            SENSITIVE_VIDEO_LABELS.has(item.toLowerCase()) ||
+            item.startsWith('Vi phạm Gemini:'),
+        );
+        const regularLabels = decision.labels.filter(
+          (item) => !priorityLabels.includes(item),
+        );
+
+        decision.labels = [...priorityLabels, label, ...regularLabels].slice(
+          0,
+          5,
+        );
+      };
+
+      if (this.genAI) {
         try {
           this.logger.log(`[Lesson ${lessonId}] Bắt đầu phân tích video bằng Gemini...`);
           const llmDecision = await this.analyzeVideoWithGemini(videoUrl);
           if (!llmDecision.isApproved) {
+            const violationType = String(llmDecision.violationType ?? '').trim();
+            addGeminiLabel(
+              `Vi phạm Gemini: ${violationType || 'Không xác định'}`,
+            );
             decision.status = AiStatus.REJECTED;
-            decision.rejectReason = `Gemini từ chối (${llmDecision.violationType}): ${llmDecision.reason}`;
+            decision.rejectReason = `Gemini từ chối (${violationType || 'Không xác định'}): ${llmDecision.reason}`;
             this.logger.warn(`[Lesson ${lessonId}] Gemini từ chối: ${llmDecision.reason}`);
           } else {
+            addGeminiLabel('Gemini: Ngôn từ phù hợp');
             this.logger.log(`[Lesson ${lessonId}] Gemini duyệt: nội dung an toàn`);
           }
         } catch (error) {
           this.logger.error(`[Lesson ${lessonId}] Lỗi kiểm duyệt Gemini:`, error);
+          addGeminiLabel('Gemini: Không thể kiểm tra ngôn từ');
           if (decision.status === AiStatus.APPROVED) {
             decision.status = AiStatus.NEEDS_REVIEW;
             decision.rejectReason = 'Không thể gọi API Gemini để kiểm duyệt ngữ nghĩa';
@@ -406,6 +439,11 @@ export class VideoIntelligenceService implements OnModuleInit {
         }
       } else if (!this.genAI) {
         this.logger.warn(`[Lesson ${lessonId}] Chưa cấu hình GEMINI_API_KEY - bỏ qua kiểm duyệt ngữ nghĩa`);
+        addGeminiLabel('Gemini: Chưa được cấu hình kiểm tra ngôn từ');
+        if (decision.status === AiStatus.APPROVED) {
+          decision.status = AiStatus.NEEDS_REVIEW;
+          decision.rejectReason = 'Chưa cấu hình Gemini để kiểm duyệt ngữ nghĩa';
+        }
       }
 
       await this.lessonRepository.update(lessonId, {
@@ -473,10 +511,16 @@ export class VideoIntelligenceService implements OnModuleInit {
     reason: string;
     confidenceScore: number;
   }> {
-    if (!this.genAI) throw new Error('Missing Gemini API Key');
+    if (!this.genAI || !this.geminiFileManager) {
+      throw new Error('Missing Gemini API Key');
+    }
 
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
-
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-3.5-flash-lite',
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
+    });
     const prompt = `Bạn là một Chuyên gia Kiểm duyệt Nội dung (Content Moderator) cho nền tảng giáo dục trực tuyến Edumeo.
 Nhiệm vụ: Xem video bài giảng này và xác định xem nội dung âm thanh (lời nói) hoặc hình ảnh có vi phạm tiêu chuẩn cộng đồng hay không.
 
@@ -495,28 +539,69 @@ YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
   "confidenceScore": number
 }`;
 
-    this.logger.log(`[Gemini] Phân tích video từ GCS: ${gcsUri}`);
-
-    // Tạo signed URL 5 phút để Gemini có thể tải video từ GCS private bucket
-    const signedUrl = await this.lessonVideoStorageService.getPlayableUrl(gcsUri);
-    if (!signedUrl) {
-      throw new Error(`Không thể tạo signed URL cho video: ${gcsUri}`);
+    this.logger.log(`[Gemini] Đang tải video GCS để kiểm duyệt ngôn từ.`);
+    const videoSource =
+      await this.lessonVideoStorageService.downloadVideoForAi(gcsUri);
+    if (!videoSource) {
+      throw new Error('Không thể tải video từ GCS để gửi Gemini kiểm duyệt.');
     }
-    this.logger.log(`[Gemini] Đã tạo signed URL thành công`);
 
-    const result = await model.generateContent([
-      {
-        fileData: {
-          mimeType: 'video/mp4',
-          fileUri: signedUrl,
+    let uploadedFileName: string | null = null;
+    try {
+      const uploadResponse = await this.geminiFileManager.uploadFile(
+        videoSource.buffer,
+        {
+          displayName: `lesson-moderation-${Date.now()}`,
+          mimeType: videoSource.mimeType,
         },
-      },
-      { text: prompt },
-    ]);
+      );
+      uploadedFileName = uploadResponse.file.name;
+      const uploadedFile = await this.waitForGeminiFile(uploadResponse.file);
 
-    let text = result.response.text();
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(text);
+      const result = await model.generateContent([
+        {
+          fileData: {
+            mimeType: uploadedFile.mimeType,
+            fileUri: uploadedFile.uri,
+          },
+        },
+        { text: prompt },
+      ]);
+
+      let text = result.response.text();
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(text);
+    } finally {
+      if (uploadedFileName) {
+        await this.geminiFileManager.deleteFile(uploadedFileName).catch((error) => {
+          this.logger.warn('[Gemini] Không thể xoá file tạm sau kiểm duyệt.');
+          this.logger.debug(error);
+        });
+      }
+    }
+  }
+
+  private async waitForGeminiFile(file: {
+    name: string;
+    uri: string;
+    mimeType: string;
+    state: FileState;
+  }): Promise<{ name: string; uri: string; mimeType: string; state: FileState }> {
+    if (!this.geminiFileManager) {
+      throw new Error('Missing Gemini API Key');
+    }
+
+    let currentFile = file;
+    for (let attempt = 0; currentFile.state === FileState.PROCESSING && attempt < 30; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      currentFile = await this.geminiFileManager.getFile(currentFile.name);
+    }
+
+    if (currentFile.state !== FileState.ACTIVE) {
+      throw new Error('Gemini chưa thể xử lý file video để kiểm duyệt.');
+    }
+
+    return currentFile;
   }
 
   private evaluateAnnotation(annotation: any): VideoModerationDecision {
@@ -553,13 +638,21 @@ YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
       ...(annotation.segmentLabelAnnotations ?? []),
     ];
 
-    const labels: string[] = allLabels
+    const detectedLabels = [...new Set(
+      allLabels
       .map(
         (label: { entity?: { description?: string } }) =>
-          label.entity?.description ?? '',
+          label.entity?.description?.trim() ?? '',
       )
-      .filter(Boolean)
-      .slice(0, 5);
+      .filter(Boolean),
+    )];
+    const sensitiveLabels = detectedLabels.filter((label) =>
+      SENSITIVE_VIDEO_LABELS.has(label.toLowerCase()),
+    );
+    const regularLabels = detectedLabels.filter(
+      (label) => !SENSITIVE_VIDEO_LABELS.has(label.toLowerCase()),
+    );
+    const labels = [...sensitiveLabels, ...regularLabels].slice(0, 5);
 
     this.logger.log(
       `[Video AI] explicit=${sensitiveFrames.length}, risky=${riskyFrames.length}, likely=${likelyFrames.length}, labels=${JSON.stringify(labels)}`,
@@ -568,11 +661,7 @@ YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
     const hasStrongExplicitSignal =
       riskyFrames.length >= 1 ||
       likelyFrames.length >= 3 ||
-      labels.some((label) =>
-        ['violence', 'adult', 'nude', 'sexual', 'weapon'].includes(
-          label.toLowerCase(),
-        ),
-      );
+      sensitiveLabels.length > 0;
 
     if (hasStrongExplicitSignal) {
       return {
@@ -588,11 +677,7 @@ YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
 
     const needsReview =
       likelyFrames.length >= 1 ||
-      labels.some((label) =>
-        ['violence', 'adult', 'nude', 'sexual', 'weapon'].includes(
-          label.toLowerCase(),
-        ),
-      );
+      sensitiveLabels.length > 0;
 
     if (needsReview) {
       return {

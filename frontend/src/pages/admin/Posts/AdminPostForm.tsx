@@ -1,28 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, FileText, Image as ImageIcon, Eye } from 'lucide-react';
 import AdminLayout from '../../../layouts/AdminLayout';
 import axiosClient from '../../../api/axios';
 import toast from 'react-hot-toast';
-
-function generateSlug(text: string): string {
-  const from = 'àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ';
-  const to   = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiioooooooooooooooooouuuuuuuuuuuyyyyyd';
-
-  let slug = text.toLowerCase().trim();
-
-  for (let i = 0; i < from.length; i++) {
-    slug = slug.replace(new RegExp(from[i], 'g'), to[i]);
-  }
-
-  slug = slug
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return slug;
-}
+import { useForm, Controller } from 'react-hook-form';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import slugify from 'slugify';
 
 interface PostFormData {
   tieuDe: string;
@@ -31,41 +16,86 @@ interface PostFormData {
   noiDung: string;
   hinhAnh: string;
   trangThai: string;
+  maDMBV: number;
 }
+
+const QUILL_MODULES = {
+  toolbar: [
+    [{ header: [1, 2, 3, 4, 5, 6, false] }],
+    [{ font: [] }],
+    [{ size: [] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'image', 'video'],
+    ['clean'],
+  ],
+};
+
+const QUILL_FORMATS = [
+  'header',
+  'font',
+  'size',
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+  'color',
+  'background',
+  'list',
+  'bullet',
+  'link',
+  'image',
+  'video',
+];
 
 export default function AdminPostForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
-
-  const [formData, setFormData] = useState<PostFormData>({
-    tieuDe: '',
-    slug: '',
-    tomTat: '',
-    noiDung: '',
-    hinhAnh: '',
-    trangThai: 'DRAFT',
-  });
-  const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  
+  // Khởi tạo React Hook Form
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<PostFormData>({
+    defaultValues: {
+      tieuDe: '',
+      slug: '',
+      tomTat: '',
+      noiDung: '',
+      hinhAnh: '',
+      trangThai: 'DRAFT',
+      maDMBV: 1,
+    },
+  });
 
+  const watchHinhAnh = watch('hinhAnh');
+  const watchTieuDe = watch('tieuDe');
+
+  // Load data nếu đang ở chế độ Edit
   useEffect(() => {
     if (isEdit && id) {
       setIsFetching(true);
       axiosClient
         .get(`/admin/posts/${id}`)
         .then((res: any) => {
-          const post = res?.data;
+          const post = res?.data?.data || res?.data; // Tương thích 2 kiểu response
           if (post) {
-            setFormData({
-              tieuDe: post.tieuDe || '',
-              slug: post.slug || '',
-              tomTat: post.tomTat || '',
-              noiDung: post.noiDung || '',
-              hinhAnh: post.hinhAnh || '',
-              trangThai: post.trangThai || 'DRAFT',
-            });
+            setValue('tieuDe', post.tieuDe || '');
+            setValue('slug', post.slug || '');
+            setValue('tomTat', post.tomTat || '');
+            setValue('noiDung', post.noiDung || '');
+            setValue('hinhAnh', post.hinhAnh || '');
+            setValue('trangThai', post.trangThai || 'DRAFT');
+            setValue('maDMBV', post.maDMBV || 1);
             setSlugManuallyEdited(true);
           }
         })
@@ -76,55 +106,85 @@ export default function AdminPostForm() {
         })
         .finally(() => setIsFetching(false));
     }
-  }, [isEdit, id, navigate]);
+  }, [isEdit, id, navigate, setValue]);
 
-  const handleTitleChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tieuDe: value,
-      slug: slugManuallyEdited ? prev.slug : generateSlug(value),
-    }));
+  // Load categories
+  useEffect(() => {
+    axiosClient.get('/admin/post-categories').then((res: any) => {
+      setCategories(res?.data || []);
+    }).catch(() => {
+      toast.error('Không thể tải danh mục bài viết');
+    });
+  }, []);
+
+  // Giả lập hàm Upload Image
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleImageUpload = async (file: File): Promise<string> => {
+    // Giả lập delay upload API
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Trả về một URL ảnh ngẫu nhiên hoặc ảnh mặc định từ picsum
+        const randomId = Math.floor(Math.random() * 1000);
+        resolve(`https://picsum.photos/seed/${randomId}/800/400`);
+      }, 1500);
+    });
   };
 
-  const handleSlugChange = (value: string) => {
-    setSlugManuallyEdited(true);
-    setFormData((prev) => ({ ...prev, slug: value }));
-  };
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.tieuDe.trim()) {
-      toast.error('Tiêu đề không được để trống!');
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file định dạng hình ảnh!');
       return;
     }
-    if (!formData.slug.trim()) {
-      toast.error('Slug không được để trống!');
-      return;
-    }
 
-    setIsLoading(true);
+    const toastId = toast.loading('Đang tải ảnh lên...');
     try {
+      // Tích hợp API upload Cloudinary ở đây sau
+      const url = await handleImageUpload(file);
+      setValue('hinhAnh', url, { shouldValidate: true });
+      toast.success('Tải ảnh thành công!', { id: toastId });
+    } catch (error) {
+      toast.error('Lỗi khi tải ảnh!', { id: toastId });
+    } finally {
+      // Reset input file để có thể chọn lại cùng 1 file nếu cần
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Submit Handler
+  const onSubmit = async (data: PostFormData, actionType: 'DRAFT' | 'PREVIEW' | 'PUBLISH') => {
+    try {
+      const payload = {
+        ...data,
+        trangThai: actionType === 'PUBLISH' ? 'PUBLISHED' : 'DRAFT',
+      };
+
+      let postId = id;
+
       if (isEdit && id) {
-        await axiosClient.put(`/admin/posts/${id}`, formData);
+        await axiosClient.put(`/admin/posts/${id}`, payload);
         toast.success('Cập nhật bài viết thành công!');
       } else {
-        await axiosClient.post('/admin/posts', formData);
+        const res: any = await axiosClient.post('/admin/posts', payload);
+        // Lấy ID bài viết vừa tạo
+        postId = res?.data?.data?.maBV || res?.data?.maBV;
         toast.success('Tạo bài viết mới thành công!');
       }
-      navigate('/admin/posts');
+
+      // Điều hướng dựa vào action
+      if (actionType === 'PREVIEW') {
+        navigate(`/admin/posts/preview/${postId}`);
+      } else {
+        navigate('/admin/posts');
+      }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Đã xảy ra lỗi khi lưu bài viết';
       toast.error(msg);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -138,9 +198,14 @@ export default function AdminPostForm() {
     );
   }
 
+  // Tách onChange của react-hook-form để thêm logic tự sinh slug
+  const { onChange: onTitleChange, ...titleRest } = register('tieuDe', { 
+    required: 'Tiêu đề không được để trống' 
+  });
+
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
@@ -160,173 +225,241 @@ export default function AdminPostForm() {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-5">
-            {/* Tiêu đề */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Tiêu đề bài viết <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.tieuDe}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="Nhập tiêu đề bài viết..."
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
-              />
-            </div>
-
-            {/* Slug */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Slug (URL thân thiện) <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-400 shrink-0">/blog/</span>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  placeholder="tieu-de-bai-viet"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
-                />
-              </div>
-              {!slugManuallyEdited && formData.tieuDe && (
-                <p className="text-xs text-slate-400 mt-1">
-                  Slug tự động tạo từ tiêu đề. Bạn có thể sửa thủ công.
-                </p>
-              )}
-            </div>
-
-            {/* Tóm tắt */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tóm tắt</label>
-              <textarea
-                name="tomTat"
-                value={formData.tomTat}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Nội dung tóm tắt hiển thị ngoài danh sách..."
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition resize-none"
-              />
-            </div>
-
-            {/* Link ảnh */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Link ảnh đại diện
-              </label>
-              <input
-                type="text"
-                name="hinhAnh"
-                value={formData.hinhAnh}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg hoặc /assets/images/blog-1.jpg"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
-              />
-              {formData.hinhAnh && (
-                <div className="mt-2 h-32 w-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                  <img
-                    src={formData.hinhAnh}
-                    alt="Preview"
-                    className="h-full w-full object-cover"
-                    onError={(e: any) => {
-                      e.target.style.display = 'none';
+        {/* Form Grid */}
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Cột chính: Thông tin cơ bản & Nội dung */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Tiêu đề, Slug, Tóm tắt */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                    Tiêu đề bài viết <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...titleRest}
+                    onChange={(e) => {
+                      onTitleChange(e);
+                      if (!slugManuallyEdited) {
+                        setValue(
+                          'slug', 
+                          slugify(e.target.value, { lower: true, strict: true, locale: 'vi' }), 
+                          { shouldValidate: true }
+                        );
+                      }
                     }}
+                    placeholder="Nhập tiêu đề bài viết..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
+                  />
+                  {errors.tieuDe && <p className="text-red-500 text-xs mt-1">{errors.tieuDe.message}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                    Đường dẫn bài viết <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      {...register('slug', { 
+                        required: 'Đường dẫn không được để trống',
+                        onChange: () => setSlugManuallyEdited(true)
+                      })}
+                      placeholder="tieu-de-bai-viet"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition"
+                    />
+                  </div>
+                  {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug.message}</p>}
+                  {!slugManuallyEdited && watchTieuDe && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      Đường dẫn được tự động tạo từ tiêu đề. Bạn có thể chỉnh sửa thủ công nếu muốn.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                    Tóm tắt <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    {...register('tomTat', { required: 'Tóm tắt không được để trống', maxLength: { value: 500, message: 'Tóm tắt tối đa 500 ký tự' } })}
+                    rows={3}
+                    placeholder="Nội dung tóm tắt hiển thị ngoài danh sách..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition resize-none"
+                  />
+                  {errors.tomTat && <p className="text-red-500 text-xs mt-1">{errors.tomTat.message}</p>}
+                </div>
+              </div>
+
+              {/* Rich Text Editor */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  Nội dung bài viết <span className="text-red-500">*</span>
+                </label>
+                {/* 
+                  Wrapper div để overide css của react-quill nếu cần, 
+                  đảm bảo editor không bị lùn đi khi thêm content 
+                */}
+                <div className="prose-quill-wrapper">
+                  <Controller
+                    name="noiDung"
+                    control={control}
+                    rules={{ required: 'Nội dung không được để trống' }}
+                    render={({ field }) => (
+                      <ReactQuill
+                        theme="snow"
+                        value={field.value}
+                        onChange={field.onChange}
+                        modules={QUILL_MODULES}
+                        formats={QUILL_FORMATS}
+                        className="h-[400px] mb-12 rounded-xl"
+                        placeholder="Viết nội dung bài viết của bạn ở đây. Có thể dán trực tiếp ảnh từ clipboard..."
+                      />
+                    )}
                   />
                 </div>
-              )}
+                {errors.noiDung && <p className="text-red-500 text-xs mt-1">{errors.noiDung.message}</p>}
+              </div>
+
             </div>
 
-            {/* Trạng thái */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Trạng thái
-              </label>
-              <select
-                name="trangThai"
-                value={formData.trangThai}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition bg-white"
-              >
-                <option value="DRAFT">Bản nháp (DRAFT)</option>
-                <option value="PUBLISHED">Xuất bản (PUBLISHED)</option>
-              </select>
+            {/* Cột phụ: Cài đặt ảnh & Trạng thái */}
+            <div className="space-y-6">
+              
+              {/* Ảnh đại diện */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  Ảnh đại diện (Thumbnail) <span className="text-red-500">*</span>
+                </label>
+                <div 
+                  className={`relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${watchHinhAnh ? 'border-transparent' : 'border-slate-300 hover:bg-slate-50 hover:border-emerald-400'}`}
+                  onClick={() => !watchHinhAnh && fileInputRef.current?.click()}
+                >
+                  {watchHinhAnh ? (
+                    <div className="relative w-full h-full group">
+                      <img src={watchHinhAnh} alt="Thumbnail Preview" className="w-full h-full object-cover rounded-xl" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 shadow-sm"
+                        >
+                          Thay đổi ảnh
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                        <ImageIcon className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <p className="mb-1 text-sm text-slate-600"><span className="font-semibold text-emerald-600">Bấm vào đây</span> để tải ảnh lên</p>
+                      <p className="text-xs text-slate-400">Hỗ trợ định dạng: SVG, PNG, JPG, GIF</p>
+                    </div>
+                  )}
+                  {/* File input ẩn đi */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={onFileChange}
+                    className="hidden"
+                  />
+                </div>
+                {/* Ẩn input lưu URL thực tế (kết nối với react-hook-form) */}
+                <input type="hidden" {...register('hinhAnh', { required: 'Vui lòng tải lên ảnh đại diện' })} />
+                {errors.hinhAnh && <p className="text-red-500 text-xs mt-2">{errors.hinhAnh.message}</p>}
+              </div>
+
+              {/* Danh mục bài viết */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Danh mục bài viết
+                </label>
+                <select
+                  {...register('maDMBV', { valueAsNumber: true })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition bg-white"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.maDMBV} value={cat.maDMBV}>
+                      {cat.tenDMBV}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Cài đặt trạng thái */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Cài đặt trạng thái
+                </label>
+                <select
+                  {...register('trangThai')}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition bg-white"
+                >
+                  <option value="DRAFT">Bản nháp (DRAFT)</option>
+                  <option value="PUBLISHED">Xuất bản (PUBLISHED)</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-2">
+                  Trạng thái này sẽ bị ghi đè nếu bạn dùng nút Lưu nháp hoặc Xuất bản.
+                </p>
+              </div>
+
+              {/* Action Buttons (Đưa lên sidebar) */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
+                 <label className="block text-sm font-semibold text-slate-700 mb-4">
+                  Thao tác
+                </label>
+                
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSubmit((data) => onSubmit(data, 'PUBLISH'))}
+                  className="w-full inline-flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-70 shadow-md shadow-emerald-600/20"
+                >
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Xuất bản bài viết
+                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleSubmit((data) => onSubmit(data, 'DRAFT'))}
+                    className="inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-70 shadow-sm"
+                  >
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={14} className="text-slate-500" />}
+                    Lưu nháp
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleSubmit((data) => onSubmit(data, 'PREVIEW'))}
+                    className="inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-70 shadow-sm"
+                  >
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Eye size={14} className="text-slate-500" />}
+                    Xem trước
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/posts')}
+                    className="w-full inline-flex justify-center items-center px-4 py-2 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    Hủy bỏ
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* Nội dung HTML */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Nội dung bài viết (HTML)
-            </label>
-            <p className="text-xs text-slate-400 mb-3">
-              Bạn có thể viết hoặc dán mã HTML bài viết vào đây. Hỗ trợ các thẻ: h2, h3, p, ul,
-              li, strong, em, a, img, pre, code...
-            </p>
-            <textarea
-              name="noiDung"
-              value={formData.noiDung}
-              onChange={handleChange}
-              rows={15}
-              placeholder="<h2>Tiêu đề phần 1</h2>
-<p>Nội dung đoạn văn...</p>
-<ul>
-  <li>Mục 1</li>
-  <li>Mục 2</li>
-</ul>"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 font-mono text-sm leading-relaxed focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] outline-none transition resize-y bg-slate-50"
-            />
-          </div>
-
-          {/* Preview */}
-          {formData.noiDung && (
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                Xem trước nội dung
-              </h3>
-              <div
-                className="prose prose-slate prose-sm max-w-none
-                  prose-headings:text-slate-800
-                  prose-p:text-slate-600
-                  prose-a:text-emerald-600
-                  prose-strong:text-slate-800
-                  prose-pre:bg-slate-900 prose-pre:rounded-xl
-                  prose-code:text-emerald-600 prose-code:bg-emerald-50 prose-code:px-1 prose-code:rounded prose-code:before:content-none prose-code:after:content-none"
-                dangerouslySetInnerHTML={{ __html: formData.noiDung }}
-              />
-            </div>
-          )}
-
-          {/* Submit buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => navigate('/admin/posts')}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1dbf73] text-sm font-semibold text-white hover:bg-[#18a864] transition-colors disabled:opacity-70 shadow-sm"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  {isEdit ? 'Cập nhật bài viết' : 'Tạo bài viết'}
-                </>
-              )}
-            </button>
-          </div>
         </form>
       </div>
     </AdminLayout>

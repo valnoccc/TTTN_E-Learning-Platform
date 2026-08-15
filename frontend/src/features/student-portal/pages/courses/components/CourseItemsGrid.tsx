@@ -142,9 +142,12 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
         }
         const categoryName = data.danhMuc?.tenDM || "General";
         const rawImage = data.hinhThuNho;
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://tttn-e--platform.onrender.com';
         const courseImage = rawImage
           ? rawImage.startsWith("http")
             ? rawImage
+            : rawImage.includes("/")
+            ? `${apiUrl}/${rawImage.startsWith('/') ? rawImage.slice(1) : rawImage}`
             : `/assets/images/${rawImage}`
           : "/assets/images/course-1.jpg";
         const courseUrl = `/course-details/${data.maKH}`;
@@ -182,15 +185,16 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                   <ul className="mb-6 space-y-2 text-sm text-gray-600">
                     <li className="flex items-start">
                       <i className="las la-check text-emerald-500 mr-2 mt-0.5"></i>{" "}
-                      Video bài giảng chất lượng cao
+                      {Number(data.totalLessons ?? data.lessonCount ?? 0)} bài học &amp;{" "}
+                      {Number(data.totalQuestions ?? 0)} câu hỏi trắc nghiệm
                     </li>
                     <li className="flex items-start">
                       <i className="las la-check text-emerald-500 mr-2 mt-0.5"></i>{" "}
-                      Tài liệu tải xuống miễn phí
+                      Hỗ trợ giải đáp code trực tiếp (Q&amp;A)
                     </li>
                     <li className="flex items-start">
                       <i className="las la-check text-emerald-500 mr-2 mt-0.5"></i>{" "}
-                      Chứng chỉ hoàn thành
+                      Sở hữu trọn đời, cập nhật miễn phí
                     </li>
                   </ul>
                   <div className="flex gap-2">
@@ -300,12 +304,16 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                     src={courseImage}
                     alt={data.tenKhoaHoc}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/assets/images/course-1.jpg";
+                    }}
                   />
                 </div>
               </Link>
 
               <div className="p-5">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex items-center">
                   <div className="flex items-center space-x-1 text-amber-400">
                     {[1, 2, 3, 4, 5].map((star) => {
                       const rating = parseFloat(data.averageRating || "0");
@@ -319,11 +327,6 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                     })}
                     <span className="ml-1 text-sm text-gray-500">
                       ({data.averageRating || "0.0"})
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-lg font-bold text-emerald-500">
-                      {formatPrice(data.giaBan)}
                     </span>
                   </div>
                 </div>
@@ -349,6 +352,11 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                     />
                     <span className="text-sm font-medium text-gray-600">
                       {instructorName}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-bold text-emerald-500">
+                      {formatPrice(data.giaBan)}
                     </span>
                   </div>
                 </div>

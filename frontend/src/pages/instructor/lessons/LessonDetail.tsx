@@ -115,6 +115,14 @@ function VideoUploadProgress({
 }
 
 // ─── Sub-component: AI Rejection Alert Box ───────────────────────────────────
+function getInstructorRejectMessage(reason: string) {
+    if (/profanity|hate speech|ngôn từ thô tục|chửi thề|xúc phạm/i.test(reason)) {
+        return 'Video có phát ngôn không chuẩn mực, không phù hợp với tiêu chuẩn nội dung của nền tảng.';
+    }
+
+    return reason;
+}
+
 function AiRejectionAlert({ reason }: { reason: string }) {
     return (
         <div className="rounded-lg border border-rose-300 bg-rose-50 p-4">
@@ -128,7 +136,9 @@ function AiRejectionAlert({ reason }: { reason: string }) {
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-rose-400">
                     Lý do từ chối:
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-rose-700">{reason}</p>
+                <p className="mt-1 text-sm leading-relaxed text-rose-700">
+                    {getInstructorRejectMessage(reason)}
+                </p>
             </div>
             <p className="ml-7 mt-3 text-[11px] text-rose-500">
                 Vui lòng tải lên video mới phù hợp với chính sách nội dung của nền tảng.

@@ -13,7 +13,7 @@ const CourseSearch = ({ filters, setFilters }: { filters: any, setFilters: any }
         <Styles>
             {/* Course Search */}
             <div className="course-search">
-                <h5>Tìm kiếm khóa học</h5>
+                <h5 className="whitespace-nowrap">Tìm kiếm khóa học</h5>
                 <form onSubmit={handleSearch}>
                     <input 
                         type="text" 

@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { PostsService } from '../posts.service';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @Controller('posts')
 export class PublicPostsController {
@@ -10,6 +11,8 @@ export class PublicPostsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('maDMBV') maDMBV?: string,
+    @Query('sortBy') sortBy?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
     const limitNum = Math.min(
@@ -21,6 +24,8 @@ export class PublicPostsController {
       pageNum,
       limitNum,
       search,
+      maDMBV ? Number(maDMBV) : undefined,
+      sortBy,
     );
 
     return {
@@ -36,6 +41,19 @@ export class PublicPostsController {
     return {
       message: 'Lấy chi tiết bài viết thành công',
       data: post,
+    };
+  }
+
+  @Post(':id/notify-save')
+  @UseGuards(JwtAuthGuard)
+  async notifySave(
+    @Param('id') id: string,
+    @Body('isSaving') isSaving: boolean,
+    @Req() req: any,
+  ) {
+    await this.postsService.notifySave(Number(id), req.user.maND, isSaving);
+    return {
+      message: 'Đã gửi thông báo',
     };
   }
 }

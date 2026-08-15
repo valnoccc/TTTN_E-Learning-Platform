@@ -8,12 +8,15 @@ import { Repository, Like } from 'typeorm';
 import { BaiViet } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(BaiViet)
     private readonly postRepository: Repository<BaiViet>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -24,6 +27,8 @@ export class PostsService {
     page: number = 1,
     limit: number = 10,
     search?: string,
+    maDMBV?: number,
+    sortBy?: string,
   ): Promise<{ data: BaiViet[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit;
 
@@ -31,11 +36,25 @@ export class PostsService {
     if (search) {
       whereCondition.tieuDe = Like(`%${search}%`);
     }
+    if (maDMBV) {
+      whereCondition.maDMBV = maDMBV;
+    }
+
+    let orderCondition: any = { isPinned: 'DESC', ngayTao: 'DESC' };
+    if (sortBy === 'oldest') {
+      orderCondition = { isPinned: 'DESC', ngayTao: 'ASC' };
+    } else if (sortBy === 'views') {
+      orderCondition = { isPinned: 'DESC', luotXem: 'DESC' };
+    } else if (sortBy === 'a-z') {
+      orderCondition = { isPinned: 'DESC', tieuDe: 'ASC' };
+    } else if (sortBy === 'z-a') {
+      orderCondition = { isPinned: 'DESC', tieuDe: 'DESC' };
+    }
 
     const [data, total] = await this.postRepository.findAndCount({
       where: whereCondition,
-      relations: ['tacGia'],
-      order: { ngayTao: 'DESC' },
+      relations: ['tacGia', 'category'],
+      order: orderCondition,
       skip,
       take: limit,
       select: {
@@ -48,7 +67,14 @@ export class PostsService {
         trangThai: true,
         ngayTao: true,
         ngayCapNhat: true,
-        maND_TacGia: true,
+        authorId: true,
+        maDMBV: true,
+        category: {
+          maDMBV: true,
+          tenDMBV: true,
+          slug: true,
+        },
+        isPinned: true,
         tacGia: {
           maND: true,
           hoTen: true,
@@ -60,14 +86,16 @@ export class PostsService {
     return { data, total, page, limit };
   }
 
+  private viewCache = new Map<string, number>();
+
   /**
    * Lấy chi tiết bài viết theo Slug (Public API)
-   * Tự động tăng LuotXem thêm 1
+   * Tự động tăng LuotXem thêm 1 (có debounce 2 giây)
    */
   async findBySlug(slug: string): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
       where: { slug, trangThai: 'PUBLISHED' },
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
     });
 
     if (!post) {
@@ -75,9 +103,16 @@ export class PostsService {
         `Không tìm thấy bài viết với slug: "${slug}"`,
       );
     }
-
-    await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
-    post.luotXem += 1;
+    
+    const now = Date.now();
+    const lastView = this.viewCache.get(slug) || 0;
+    
+    // Chỉ tăng lượt xem nếu cách lần cuối cùng >= 2 giây (Chống spam/React StrictMode)
+    if (now - lastView > 2000) {
+      this.viewCache.set(slug, now);
+      await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
+      post.luotXem += 1;
+    }
 
     return post;
   }
@@ -87,8 +122,8 @@ export class PostsService {
    */
   async findAll(): Promise<BaiViet[]> {
     return this.postRepository.find({
-      relations: ['tacGia'],
-      order: { ngayTao: 'DESC' },
+      relations: ['tacGia', 'category'],
+      order: { isPinned: 'DESC', ngayTao: 'DESC' },
       select: {
         maBV: true,
         tieuDe: true,
@@ -99,7 +134,14 @@ export class PostsService {
         trangThai: true,
         ngayTao: true,
         ngayCapNhat: true,
-        maND_TacGia: true,
+        authorId: true,
+        maDMBV: true,
+        category: {
+          maDMBV: true,
+          tenDMBV: true,
+          slug: true,
+        },
+        isPinned: true,
         tacGia: {
           maND: true,
           hoTen: true,
@@ -115,13 +157,28 @@ export class PostsService {
   async findOneById(id: number): Promise<BaiViet> {
     const post = await this.postRepository.findOne({
       where: { maBV: id },
-      relations: ['tacGia'],
+      relations: ['tacGia', 'category'],
     });
 
     if (!post) {
       throw new NotFoundException(`Không tìm thấy bài viết với ID: ${id}`);
     }
 
+    return post;
+  }
+
+  async findPublishedById(id: number): Promise<BaiViet> {
+    const post = await this.postRepository.findOne({
+      where: { maBV: id, trangThai: 'PUBLISHED' },
+      relations: ['tacGia', 'category'],
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Không tìm thấy bài viết với ID: ${id}`);
+    }
+
+    await this.postRepository.increment({ maBV: post.maBV }, 'luotXem', 1);
+    post.luotXem += 1;
     return post;
   }
 
@@ -146,7 +203,9 @@ export class PostsService {
       noiDung: dto.noiDung,
       hinhAnh: dto.hinhAnh,
       trangThai: dto.trangThai || 'DRAFT',
-      maND_TacGia: authorId,
+      authorId,
+      maDMBV: dto.maDMBV ?? 1,
+      isPinned: dto.isPinned ?? false,
     });
 
     return this.postRepository.save(post);
@@ -176,6 +235,8 @@ export class PostsService {
       ...(dto.noiDung !== undefined && { noiDung: dto.noiDung }),
       ...(dto.hinhAnh !== undefined && { hinhAnh: dto.hinhAnh }),
       ...(dto.trangThai !== undefined && { trangThai: dto.trangThai }),
+      ...(dto.maDMBV !== undefined && { maDMBV: dto.maDMBV }),
+      ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
     });
 
     return this.postRepository.save(post);
@@ -187,5 +248,23 @@ export class PostsService {
   async remove(id: number): Promise<void> {
     const post = await this.findOneById(id);
     await this.postRepository.remove(post);
+  }
+
+  async notifySave(postId: number, userId: number, isSaving: boolean) {
+    if (!isSaving) return; 
+    
+    const post = await this.postRepository.findOne({ where: { maBV: postId } });
+    if (!post) return;
+
+    let previewContent = post.tieuDe.substring(0, 50);
+    if (post.tieuDe.length > 50) previewContent += '...';
+
+    await this.notificationsService.createNotification({
+      maND: userId, // Gửi cho chính người vừa lưu
+      maNguoiGui: null,
+      loaiThongBao: NotificationType.INTERACTION,
+      tieuDe: `Bạn đã lưu bài viết: ${previewContent}`,
+      noiDung: `Bài viết "${post.tieuDe}" đã được thêm vào danh sách đã lưu của bạn.|||/blog/${post.slug}`,
+    });
   }
 }

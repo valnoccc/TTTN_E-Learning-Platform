@@ -8,6 +8,8 @@ import { DataSource, Repository } from 'typeorm';
 
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
 export class DiscussionsService {
@@ -15,6 +17,7 @@ export class DiscussionsService {
     @InjectRepository(KhoaHoc)
     private readonly khoaHocRepository: Repository<KhoaHoc>,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getInstructorDiscussions(instructorId: number) {
@@ -210,6 +213,35 @@ export class DiscussionsService {
         [discussionId, userId],
       );
       isLiked = true;
+
+      // Gửi thông báo cho tác giả của bài thảo luận
+      try {
+        const discussion = await this.dataSource.query(
+          `SELECT MaND, NoiDung FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ?`,
+          [discussionId],
+        );
+        const userAction = await this.dataSource.query(
+          `SELECT HoTen FROM NguoiDung WHERE MaND = ?`,
+          [userId],
+        );
+        
+        if (discussion.length > 0 && discussion[0].MaND !== userId) {
+          const authorId = discussion[0].MaND;
+          const actorName = userAction[0]?.HoTen || 'Ai đó';
+          let previewContent = discussion[0].NoiDung.substring(0, 50);
+          if (discussion[0].NoiDung.length > 50) previewContent += '...';
+
+          await this.notificationsService.createNotification({
+            maND: authorId,
+            maNguoiGui: userId,
+            loaiThongBao: NotificationType.INTERACTION,
+            tieuDe: `${actorName} đã thả tim bình luận của bạn`,
+            noiDung: `"${previewContent}"`,
+          });
+        }
+      } catch (err) {
+        console.error('Error sending like notification:', err);
+      }
     }
 
     const countRes = await this.dataSource.query(
@@ -251,6 +283,33 @@ export class DiscussionsService {
       `SELECT HoTen, AnhDaiDien, VaiTro FROM NguoiDung WHERE MaND = ?`,
       [userId],
     );
+    
+    // Gửi thông báo nếu đây là một câu trả lời (Reply)
+    if (parentId) {
+      try {
+        const parentDiscussion = await this.dataSource.query(
+          `SELECT MaND, NoiDung FROM ThaoLuanKhoaHoc WHERE MaThaoLuan = ?`,
+          [parentId],
+        );
+        
+        if (parentDiscussion.length > 0 && parentDiscussion[0].MaND !== userId) {
+          const parentAuthorId = parentDiscussion[0].MaND;
+          const actorName = user[0]?.HoTen || 'Học viên';
+          let previewContent = noiDung.substring(0, 50);
+          if (noiDung.length > 50) previewContent += '...';
+
+          await this.notificationsService.createNotification({
+            maND: parentAuthorId,
+            maNguoiGui: userId,
+            loaiThongBao: NotificationType.INTERACTION,
+            tieuDe: `${actorName} đã phản hồi bình luận của bạn`,
+            noiDung: `"${previewContent}"`,
+          });
+        }
+      } catch (err) {
+        console.error('Error sending reply notification:', err);
+      }
+    }
 
     return {
       discussionId: result.insertId,

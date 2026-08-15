@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
 
 export class CreatePostDto {
   @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
@@ -9,21 +9,29 @@ export class CreatePostDto {
   @IsString()
   slug!: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Tóm tắt không được để trống' })
   @IsString()
-  tomTat?: string;
+  tomTat!: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Nội dung không được để trống' })
   @IsString()
-  noiDung?: string;
+  noiDung!: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Hình ảnh không được để trống' })
   @IsString()
-  hinhAnh?: string;
+  hinhAnh!: string;
 
   @IsOptional()
   @IsEnum(['DRAFT', 'PUBLISHED'], {
     message: 'Trạng thái phải là DRAFT hoặc PUBLISHED',
   })
   trangThai?: string;
+
+  @IsNotEmpty({ message: 'Danh mục bài viết không được để trống' })
+  @IsNumber()
+  maDMBV!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }

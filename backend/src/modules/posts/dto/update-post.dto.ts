@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -26,4 +26,12 @@ export class UpdatePostDto {
     message: 'Trạng thái phải là DRAFT hoặc PUBLISHED',
   })
   trangThai?: string;
+
+  @IsOptional()
+  @IsNumber()
+  maDMBV?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }

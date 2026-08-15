@@ -10,7 +10,7 @@ const CourseTag = () => {
         <Styles>
             {/* Course Tag */}
             <div className="course-tag">
-                <h5>Thẻ khóa học</h5>
+                <h5 className="whitespace-nowrap">Thẻ khóa học</h5>
                 <div className="tag-box">
                     {categories.map((cat: any) => (
                         <Link 

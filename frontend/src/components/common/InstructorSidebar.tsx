@@ -34,6 +34,7 @@ export default function InstructorSidebar() {
   const [user, setUser] = useState(() =>
     JSON.parse(localStorage.getItem("user") || "null"),
   );
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     const syncProfileWithDB = async () => {
@@ -201,11 +202,12 @@ export default function InstructorSidebar() {
           >
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-[2px] bg-[#1dbf73] text-[14px] font-bold text-white">
-                {user?.avatar ? (
+                {user?.avatar && user.avatar !== 'null' && user.avatar !== 'undefined' && !avatarError ? (
                   <img
-                    src={user.avatar}
+                    src={user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `/assets/images/${user.avatar.startsWith('/') ? user.avatar.substring(1) : user.avatar}`}
                     alt="Avatar"
                     className="h-full w-full object-cover"
+                    onError={() => setAvatarError(true)}
                   />
                 ) : (
                   (user?.fullName || "A").charAt(0).toUpperCase()

@@ -16,6 +16,7 @@ export interface PublicCourseFilters {
 type PublishedCourseRow = {
   averageRating?: string | number | null;
   totalLessons?: string | number | null;
+  totalQuestions?: string | number | null;
   totalDurationSeconds?: string | number | null;
 };
 
@@ -57,8 +58,24 @@ export class CourseStudentService {
         'lessonStats',
         'lessonStats.maKH = khoaHoc.maKH',
       )
+      .leftJoin(
+        (qb) =>
+          qb
+            .from('CauHoiTracNghiem', 'cauHoi')
+            .innerJoin(
+              'ChuongHoc',
+              'chuongHoc',
+              'cauHoi.MaChuong = chuongHoc.MaChuong',
+            )
+            .select('chuongHoc.MaKH', 'maKH')
+            .addSelect('COUNT(*)', 'questionCount')
+            .groupBy('chuongHoc.MaKH'),
+        'questionStats',
+        'questionStats.maKH = khoaHoc.maKH',
+      )
       .addSelect('ratings.avgRating', 'averageRating')
       .addSelect('lessonStats.lessonCount', 'totalLessons')
+      .addSelect('questionStats.questionCount', 'totalQuestions')
       .addSelect('lessonStats.totalDurationSeconds', 'totalDurationSeconds')
       .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
@@ -124,6 +141,9 @@ export class CourseStudentService {
           ? Number(stats.averageRating).toFixed(1)
           : '0.0',
         totalLessons: stats?.totalLessons ? Number(stats.totalLessons) : 0,
+        totalQuestions: stats?.totalQuestions
+          ? Number(stats.totalQuestions)
+          : 0,
         totalDurationSeconds: stats?.totalDurationSeconds
           ? Number(stats.totalDurationSeconds)
           : 0,

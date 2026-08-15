@@ -24,6 +24,11 @@ export interface LessonVideoUploadResult {
   gcsUri: string;
 }
 
+export interface LessonVideoAiUploadSource {
+  buffer: Buffer;
+  mimeType: string;
+}
+
 @Injectable()
 export class LessonVideoStorageService implements OnModuleInit {
   private readonly logger = new Logger(LessonVideoStorageService.name);
@@ -157,6 +162,34 @@ export class LessonVideoStorageService implements OnModuleInit {
     }
   }
 
+  async downloadVideoForAi(
+    videoUrl: string | null | undefined,
+  ): Promise<LessonVideoAiUploadSource | null> {
+    const objectName = this.extractObjectName(videoUrl);
+    if (!objectName) {
+      this.logger.warn(
+        'Khong the tai video cho AI vi URL khong thuoc GCS bucket da cau hinh.',
+      );
+      return null;
+    }
+
+    try {
+      const [buffer] = await this.storage
+        .bucket(this.bucketName)
+        .file(objectName)
+        .download();
+
+      return {
+        buffer,
+        mimeType: this.resolveMimeType(objectName),
+      };
+    } catch (error) {
+      this.logger.warn(`Khong the tai video GCS cho AI: ${objectName}`);
+      this.logger.debug(error);
+      return null;
+    }
+  }
+
   extractObjectName(videoUrl: string | null | undefined): string | null {
     if (!videoUrl) {
       return null;
@@ -239,6 +272,21 @@ export class LessonVideoStorageService implements OnModuleInit {
     if (mimeType.includes('x-matroska')) return '.mkv';
 
     return '.mp4';
+  }
+
+  private resolveMimeType(fileName: string): string {
+    switch (extname(fileName).toLowerCase()) {
+      case '.webm':
+        return 'video/webm';
+      case '.mov':
+        return 'video/quicktime';
+      case '.mkv':
+        return 'video/x-matroska';
+      case '.avi':
+        return 'video/x-msvideo';
+      default:
+        return 'video/mp4';
+    }
   }
 
   private buildPublicUrl(objectName: string): string {

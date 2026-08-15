@@ -19,7 +19,7 @@ const CourseCategory = ({ filters, setFilters }: { filters: any, setFilters: any
             {/* Course Category */}
             <div className="course-category">
                 <h5 
-                    className="cursor-pointer flex items-center justify-between hover:text-emerald-500 transition-colors"
+                    className="cursor-pointer flex items-center justify-between hover:text-emerald-500 transition-colors whitespace-nowrap"
                     // onClick={() => setIsOpen(!isOpen)}
                     style={{ cursor: 'pointer', marginBottom: isOpen ? '20px' : '0' }}
                 >

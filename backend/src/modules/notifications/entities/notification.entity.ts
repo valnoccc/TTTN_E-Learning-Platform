@@ -11,6 +11,7 @@ export enum NotificationType {
   CERTIFICATE = 'CERTIFICATE',
   SYSTEM = 'SYSTEM',
   FORUM = 'FORUM',
+  INTERACTION = 'INTERACTION',
 }
 
 @Entity('ThongBao')

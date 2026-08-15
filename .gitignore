@@ -38,6 +38,7 @@ backend/dist/
 database/
 draft/
 docs/
+ppt/
 
 # =========================================
 # AI TOOLS & CACHE (Công cụ AI)
@@ -66,7 +67,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # =========================================
-# 🧪 TESTING & COVERAGE (Báo cáo kiểm thử)
+# TESTING & COVERAGE (Báo cáo kiểm thử)
 # =========================================
 coverage/
 .nyc_output/
@@ -74,7 +75,7 @@ cypress/videos/
 cypress/screenshots/
 
 # =========================================
-# 💻 IDEs & EDITORS (Cấu hình trình soạn thảo)
+# IDEs & EDITORS (Cấu hình trình soạn thảo)
 # =========================================
 .vscode/*
 !.vscode/extensions.json
@@ -89,7 +90,7 @@ cypress/screenshots/
 *.sw?
 
 # =========================================
-# 🍎 OS & SYSTEM FILES (File hệ thống)
+# OS & SYSTEM FILES (File hệ thống)
 # =========================================
 .DS_Store
 .DS_Store?
@@ -100,7 +101,7 @@ ehthumbs.db
 Thumbs.db
 
 # =========================================
-# 🧹 LINT & CACHE (Bộ nhớ tạm của công cụ)
+# LINT & CACHE (Bộ nhớ tạm của công cụ)
 # =========================================
 .eslintcache
 .stylelintcache

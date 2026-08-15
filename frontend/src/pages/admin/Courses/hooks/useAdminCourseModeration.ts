@@ -30,7 +30,7 @@ export interface AdminModerationLesson {
     noiDung: string;
     videoURL: string | null;
     trangThai: string;
-    aiStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    aiStatus: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' | null;
     aiLabels: string[];
     aiRejectReason: string | null;
 }

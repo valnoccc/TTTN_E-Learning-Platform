@@ -7,7 +7,7 @@ export const CourseCategoryDropdown = () => {
 
     return (
         <li className="nav-item dropdown">
-            <Link className="nav-link dropdown-toggle" to={"/"} data-toggle="dropdown">Khóa học <i className="las la-angle-down"></i></Link>
+            <Link className="nav-link dropdown-toggle" to={"/course-grid"} data-toggle="dropdown">Khóa học <i className="las la-angle-down"></i></Link>
             <ul className="dropdown list-unstyled">
                 <li className="nav-item">
                     <Link className="nav-link" to={"/course-grid"}>Tất cả khóa học</Link>

@@ -126,6 +126,14 @@ Admin (Kiem duyet)
 - `PATCH /notifications/:id/read` (Danh dau mot thong bao la da doc)
 - `PATCH /notifications/read-all` (Danh dau tat ca thong bao la da doc)
 
+## Articles / Blog (Bai viet)
+- `GET /articles` (Public - Danh sach bai viet da xuat ban, uu tien bai `isPinned`; ho tro `page`, `limit`, `search`, `category=ANNOUNCEMENT|SYSTEM_UPDATE|PROMOTION|NEWS`)
+- `GET /articles/:id` (Public - Chi tiet bai viet da xuat ban theo ID)
+- `POST /articles` (Admin - Tao thong bao/tin tuc; tac gia lay tu JWT)
+- `PUT /articles/:id` (Admin - Cap nhat moi bai viet, bao gom `isPinned`)
+- `DELETE /articles/:id` (Admin - Xoa bai viet)
+- Tuong thich UI cu: `GET /posts` va `GET /posts/:slug` van duoc duy tri; `GET /posts` cung ho tro filter `category`.
+
 ## Rules
 - Protected endpoints require `Bearer token` (JWT).
 - Admin endpoints require `ADMIN` role.

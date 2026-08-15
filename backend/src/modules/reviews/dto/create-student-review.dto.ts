@@ -1,11 +1,11 @@
 import {
   IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   Max,
   Min,
 } from 'class-validator';
+import { IsNoProfanity } from '../../../common/validators/is-no-profanity.validator';
 
 export class CreateStudentReviewDto {
   @IsInt()
@@ -15,5 +15,6 @@ export class CreateStudentReviewDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Nội dung đánh giá không được để trống' })
+  @IsNoProfanity()
   noiDung: string;
 }
