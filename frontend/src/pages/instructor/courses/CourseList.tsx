@@ -11,9 +11,26 @@ import {
 
 import InstructorLayout from '../../../layouts/InstructorLayout';
 import { useCourseList } from './hooks/useCourseList';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
+import { useState } from 'react';
 
 export default function InstructorCourses() {
     const { courses, loading, handleDelete, handleToggleStatus } = useCourseList();
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        type: 'toggle' | 'delete' | null;
+        courseId: number | string | null;
+        currentStatus?: string;
+    }>({ isOpen: false, type: null, courseId: null });
+
+    const handleConfirm = () => {
+        if (confirmModal.type === 'toggle' && confirmModal.courseId && confirmModal.currentStatus) {
+            void handleToggleStatus(confirmModal.courseId, confirmModal.currentStatus);
+        } else if (confirmModal.type === 'delete' && confirmModal.courseId) {
+            void handleDelete(confirmModal.courseId);
+        }
+        setConfirmModal({ isOpen: false, type: null, courseId: null });
+    };
 
     return (
         <InstructorLayout>
@@ -92,7 +109,7 @@ export default function InstructorCourses() {
                                                     </Link>
 
                                                     <button
-                                                        onClick={() => void handleToggleStatus(course.id, course.trang_thai)}
+                                                        onClick={() => setConfirmModal({ isOpen: true, type: 'toggle', courseId: course.id, currentStatus: course.trang_thai })}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
                                                     >
                                                         {course.trang_thai === 'HIDDEN' ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -100,7 +117,7 @@ export default function InstructorCourses() {
                                                     </button>
 
                                                     <button
-                                                        onClick={() => void handleDelete(course.id)}
+                                                        onClick={() => setConfirmModal({ isOpen: true, type: 'delete', courseId: course.id })}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                                     >
                                                         <Trash2 size={14} /> Xóa
@@ -136,6 +153,20 @@ export default function InstructorCourses() {
                     )}
                 </div>
             </div>
+            
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.type === 'delete' ? 'Xóa khóa học' : (confirmModal.currentStatus === 'HIDDEN' ? 'Hiển thị khóa học' : 'Ẩn khóa học')}
+                message={confirmModal.type === 'delete' 
+                    ? 'Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác.' 
+                    : (confirmModal.currentStatus === 'HIDDEN' 
+                        ? 'Khóa học sẽ hiển thị trở lại và học viên có thể tìm thấy trên hệ thống. Bạn có muốn tiếp tục?' 
+                        : 'Khóa học sẽ bị ẩn đi, học viên mới không thể nhìn thấy hay đăng ký nữa (học viên cũ vẫn có thể học bình thường). Bạn có chắc chắn muốn ẩn?')}
+                confirmText={confirmModal.type === 'delete' ? 'Xóa khóa học' : 'Xác nhận'}
+                isDestructive={confirmModal.type === 'delete' || confirmModal.currentStatus !== 'HIDDEN'}
+                onConfirm={handleConfirm}
+                onCancel={() => setConfirmModal({ isOpen: false, type: null, courseId: null })}
+            />
         </InstructorLayout>
     );
 }

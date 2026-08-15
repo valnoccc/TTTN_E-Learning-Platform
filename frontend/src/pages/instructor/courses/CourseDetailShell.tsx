@@ -23,6 +23,7 @@ import {
 import toast from "react-hot-toast";
 
 import { PolicyModal } from "../../../components/common/PolicyModal";
+import { ConfirmModal } from "../../../components/common/ConfirmModal";
 import InstructorLayout from "../../../layouts/InstructorLayout";
 import {
   useCourseDetail,
@@ -85,6 +86,10 @@ export default function InstructorCourseDetail({
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isPublishPolicyAgreed, setIsPublishPolicyAgreed] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [confirmStatusModal, setConfirmStatusModal] = useState<{
+    isOpen: boolean;
+    actionText: string;
+  } | null>(null);
 
   // ─── State cho Appeal Modal ────────────────────────────────────────────────
   const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
@@ -306,7 +311,17 @@ export default function InstructorCourseDetail({
                   {!isNewCourse && (
                     <StatusActions
                       status={formData.trang_thai}
-                      onAction={() => void handleStatusChange("DRAFT")}
+                      onAction={() =>
+                        setConfirmStatusModal({
+                          isOpen: true,
+                          actionText:
+                            formData.trang_thai === "PUBLISHED"
+                              ? "tạm ẩn khóa học"
+                              : formData.trang_thai === "PENDING"
+                                ? "hủy yêu cầu duyệt"
+                                : "hủy kháng cáo",
+                        })
+                      }
                     />
                   )}
 
@@ -409,41 +424,29 @@ export default function InstructorCourseDetail({
         </div>
       </InstructorCourseContext.Provider>
 
-      {/* ─── Modal Xóa Khóa Học ──────────────────────────────────────────────── */}
-      {isDeleteModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4">
-          <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Xóa khóa học
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Bạn có chắc chắn muốn xóa khóa học này không? Hành động này
-                  không thể hoàn tác.
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => void confirmDelete()}
-                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-              >
-                Xác nhận xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ─── Modals Xác Nhận ──────────────────────────────────────────────── */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Xóa khóa học"
+        message="Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác."
+        confirmText="Xác nhận xóa"
+        isDestructive={true}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmStatusModal?.isOpen}
+        title="Xác nhận"
+        message={`Bạn có chắc chắn muốn ${confirmStatusModal?.actionText} này?`}
+        confirmText="Xác nhận"
+        isDestructive={true}
+        onConfirm={() => {
+          void handleStatusChange("DRAFT");
+          setConfirmStatusModal(null);
+        }}
+        onCancel={() => setConfirmStatusModal(null)}
+      />
 
       {/* ─── Modal Xác Nhận Gửi Duyệt (Thông thường) ────────────────────────── */}
       {isPublishModalOpen ? (

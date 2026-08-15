@@ -39,12 +39,7 @@ export function useCourseList() {
         void fetchMyCourses();
     }, []);
 
-    const handleDelete = async (courseId: string | number) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
-            return;
-        }
-
-        try {
+    const handleDelete = async (courseId: string | number) => {        try {
             await axiosClient.delete(`/courses/${courseId}`);
             setCourses((current) => current.filter((course) => course.id !== courseId));
             toast.success('Đã xử lý thành công!');
@@ -55,14 +50,6 @@ export function useCourseList() {
 
     const handleToggleStatus = async (courseId: string | number, currentStatus: string) => {
         const nextStatus = currentStatus === 'HIDDEN' ? 'DRAFT' : 'HIDDEN';
-        const confirmMessage =
-            nextStatus === 'HIDDEN'
-                ? 'Ẩn khóa học này khỏi giao diện học viên?'
-                : 'Hiển thị lại khóa học trong danh sách quản lý?';
-
-        if (!window.confirm(confirmMessage)) {
-            return;
-        }
 
         try {
             await axiosClient.patch(`/courses/${courseId}/status`, { trang_thai: nextStatus });
