@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 import axiosClient from '../../../../api/axios';
+import { notifyInstructorAttentionSummaryChanged } from '../../../../features/instructor-attention/attention-events';
 
 export interface InstructorCourseDiscussion {
     discussionId: number;
@@ -302,6 +303,7 @@ export function useInstructorCourseDiscussions() {
             setReplyingTo(null);
             setReplyContent('');
             setExpandedReplies((current) => ({ ...current, [discussion.discussionId]: true }));
+            notifyInstructorAttentionSummaryChanged();
             toast.success('Đã gửi phản hồi hỏi đáp');
         } catch {
             toast.error('Lỗi khi gửi phản hồi hỏi đáp');
@@ -320,6 +322,7 @@ export function useInstructorCourseDiscussions() {
             setDiscussions((current) =>
                 current.filter((discussion) => discussion.discussionId !== discussionId),
             );
+            notifyInstructorAttentionSummaryChanged();
             toast.success('Đã xóa bình luận');
         } catch {
             toast.error('Không thể xóa bình luận này');

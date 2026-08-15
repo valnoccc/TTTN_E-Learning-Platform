@@ -14,12 +14,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import UserDropdown from "../instructor/UserDropdown";
 import axiosClient from "../../api/axios";
+import { useInstructorAttentionSummary } from "../../features/instructor-attention/hooks/useInstructorAttentionSummary";
 
 type SidebarItem = {
   label: string;
   path: string;
   icon: ReactNode;
   match?: "exact" | "prefix";
+  badge?: number;
 };
 
 type SidebarSection = {
@@ -36,6 +38,7 @@ export default function InstructorSidebar() {
     JSON.parse(localStorage.getItem("user") || "null"),
   );
   const [avatarError, setAvatarError] = useState(false);
+  const attentionSummary = useInstructorAttentionSummary();
 
   useEffect(() => {
     const syncProfileWithDB = async () => {
@@ -120,12 +123,14 @@ export default function InstructorSidebar() {
           path: "/instructor/discussions",
           icon: <MessageSquare size={18} />,
           match: "exact",
+          badge: attentionSummary.unansweredQuestions,
         },
         {
           label: "Đánh giá khóa học",
           path: "/instructor/reviews",
           icon: <Star size={18} />,
           match: "exact",
+          badge: attentionSummary.unrespondedReviews,
         },
       ],
     },
@@ -191,6 +196,11 @@ export default function InstructorSidebar() {
                           {item.icon}
                         </span>
                         <span>{item.label}</span>
+                        {item.badge && item.badge > 0 ? (
+                          <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">
+                            {item.badge > 99 ? "99+" : item.badge}
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   );

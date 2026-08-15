@@ -17,6 +17,11 @@ export class InstructorDashboardController {
     private readonly instructorDashboardService: InstructorDashboardService,
   ) {}
 
+  @Get('me/attention-summary')
+  getAttentionSummary(@Req() req: { user: InstructorPrincipal }) {
+    return this.instructorDashboardService.getAttentionSummary(req.user);
+  }
+
   @Get('me/reports')
   getMyReports(
     @Req() req: { user: InstructorPrincipal },

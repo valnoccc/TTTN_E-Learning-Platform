@@ -35,6 +35,11 @@ export interface InstructorMonthlyRevenueBoard {
   months: InstructorMonthlyRevenueMonth[];
 }
 
+export interface InstructorAttentionSummary {
+  unansweredQuestions: number;
+  unrespondedReviews: number;
+}
+
 type RawCourseStatusRow = {
   activeCourses: number | string | null;
   pendingCourses: number | string | null;
@@ -138,6 +143,54 @@ type RawMonthlyRevenueRow = {
 @Injectable()
 export class InstructorDashboardService {
   constructor(private readonly dataSource: DataSource) {}
+
+  async getAttentionSummary(
+    principal: InstructorPrincipal,
+  ): Promise<InstructorAttentionSummary> {
+    this.assertInstructor(principal);
+    const instructorId = this.getInstructorId(principal);
+
+    const [discussionRows, reviewRows] = await Promise.all([
+      this.dataSource.query(
+        `
+          SELECT COUNT(*) AS unansweredQuestions
+          FROM ThaoLuanKhoaHoc tl
+          INNER JOIN KhoaHoc kh ON tl.MaKH = kh.MaKH
+          WHERE kh.MaND_GiangVien = ?
+            AND tl.MaThaoLuanCha IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ThaoLuanKhoaHoc reply
+              WHERE reply.MaThaoLuanCha = tl.MaThaoLuan
+            )
+        `,
+        [instructorId],
+      ),
+      this.dataSource.query(
+        `
+          SELECT COUNT(*) AS unrespondedReviews
+          FROM DanhGiaKhoaHoc dg
+          INNER JOIN KhoaHoc kh ON dg.MaKH = kh.MaKH
+          WHERE kh.MaND_GiangVien = ?
+            AND dg.MaDanhGiaCha IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM DanhGiaKhoaHoc reply
+              WHERE reply.MaDanhGiaCha = dg.MaDanhGia
+            )
+        `,
+        [instructorId],
+      ),
+    ]);
+
+    const discussion = (discussionRows as RawDiscussionSummaryRow[])[0];
+    const review = (reviewRows as RawUnrespondedReviewRow[])[0];
+
+    return {
+      unansweredQuestions: this.toNumber(discussion?.unansweredQuestions),
+      unrespondedReviews: this.toNumber(review?.unrespondedReviews),
+    };
+  }
 
   async getMyMonthlyRevenue(
     principal: InstructorPrincipal,

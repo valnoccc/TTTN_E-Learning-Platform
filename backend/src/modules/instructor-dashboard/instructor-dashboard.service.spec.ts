@@ -8,6 +8,11 @@ describe('InstructorDashboardService', () => {
 
   const service = new InstructorDashboardService(dataSource as never);
 
+  beforeAll(() => {
+    process.env.INSTRUCTOR_REVENUE_PERCENT = '80';
+    process.env.ADMIN_REVENUE_PERCENT = '20';
+  });
+
   beforeEach(() => {
     dataSource.query.mockReset();
   });
@@ -240,5 +245,31 @@ describe('InstructorDashboardService', () => {
     const queryCalls = dataSource.query.mock.calls as Array<[string]>;
     expect(queryCalls[0]?.[0]).toContain("DATE_FORMAT(dk.NgayDangKy, '%m/%Y')");
     expect(queryCalls[0]?.[0]).toContain('YEAR(dk.NgayDangKy) = ?');
+  });
+
+  it('returns only unanswered discussions and unreplied reviews for the sidebar badges', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([{ unansweredQuestions: '4' }])
+      .mockResolvedValueOnce([{ unrespondedReviews: '12' }]);
+
+    await expect(
+      service.getAttentionSummary({
+        maND: 7,
+        vaiTro: UserRole.INSTRUCTOR,
+      }),
+    ).resolves.toEqual({
+      unansweredQuestions: 4,
+      unrespondedReviews: 12,
+    });
+
+    const queryCalls = dataSource.query.mock.calls as Array<[string, number[]]>;
+    expect(queryCalls[0]).toEqual([
+      expect.stringContaining('MaThaoLuanCha IS NULL'),
+      [7],
+    ]);
+    expect(queryCalls[1]).toEqual([
+      expect.stringContaining('MaDanhGiaCha IS NULL'),
+      [7],
+    ]);
   });
 });

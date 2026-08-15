@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 import axiosClient from '../../../../api/axios';
+import { notifyInstructorAttentionSummaryChanged } from '../../../../features/instructor-attention/attention-events';
 
 export interface InstructorCourseReview {
     reviewId: number;
@@ -213,6 +214,7 @@ export function useInstructorCourseReviews() {
             setReplyingTo(null);
             setReplyContent('');
             setExpandedReplies((current) => ({ ...current, [review.reviewId]: true }));
+            notifyInstructorAttentionSummaryChanged();
             toast.success('Đã gửi phản hồi đánh giá');
         } catch {
             toast.error('Lỗi khi gửi phản hồi đánh giá');
@@ -231,6 +233,7 @@ export function useInstructorCourseReviews() {
             setReviews((current) =>
                 current.filter((review) => review.reviewId !== reviewId),
             );
+            notifyInstructorAttentionSummaryChanged();
             toast.success('Đã xóa phản hồi đánh giá');
         } catch {
             toast.error('Không thể xóa phản hồi này');
