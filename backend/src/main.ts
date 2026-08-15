@@ -36,12 +36,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port') ?? 3000;
 
-  await app.listen(port);
 
-  // ---> THÊM ĐOẠN NÀY VÀO CUỐI HÀM <---
-  console.log(`\n======================================================`);
-  console.log(`Backend running at: http://localhost:${port}`);
-  console.log(`======================================================\n`);
+  await app.listen(port);
 }
 bootstrap();
-// trigger restart

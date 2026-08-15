@@ -157,7 +157,7 @@ export class CoursesService implements OnModuleInit {
     });
 
     if (!course) {
-      throw new ForbiddenException('B?n kh?ng c? quy?n x?a kh?a h?c n?y');
+      throw new ForbiddenException('Bạn không có quyền xóa khóa học này');
     }
 
     const hasBuyers = await this.dataSource.query(
@@ -172,7 +172,7 @@ export class CoursesService implements OnModuleInit {
       });
       return {
         message:
-          'Kh?a h?c ?? c? h?c vi?n mua, h? th?ng ?? chuy?n sang tr?ng th?i ?n.',
+          'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẩn.',
       };
     }
 
@@ -228,7 +228,7 @@ export class CoursesService implements OnModuleInit {
 
     // Delete the course last
     await this.khoaHocRepository.delete(courseId);
-    return { message: '?? x?a kh?a h?c th?nh c?ng.' };
+    return { message: 'Đã xóa khóa học thành công.' };
   }
 
   private async deleteStoredCourseAssets(
@@ -424,11 +424,11 @@ export class CoursesService implements OnModuleInit {
   }) {
     const { instructorId, courseName, reviewRatio, flaggedLessons, courseId } =
       input;
-    const safeCourseName = courseName?.trim() || `KhÃ³a há»c #${courseId}`;
+    const safeCourseName = courseName?.trim() || `Khóa học #${courseId}`;
     const lessonSummary = flaggedLessons
       .slice(0, 5)
       .map((lesson) => {
-        const lessonTitle = lesson.tenBaiHoc?.trim() || `BÃ i ${lesson.maBH}`;
+        const lessonTitle = lesson.tenBaiHoc?.trim() || `Bài ${lesson.maBH}`;
         const status = lesson.aiStatus || 'UNKNOWN';
         const reason = lesson.aiRejectReason?.trim();
         return `- ${lessonTitle} (${status})${reason ? `: ${reason}` : ''}`;
@@ -440,14 +440,14 @@ export class CoursesService implements OnModuleInit {
         maND: instructorId,
         maNguoiGui: null,
         loaiThongBao: NotificationType.COURSE,
-        tieuDe: 'KhÃ³a há»c bá» tá»« chá»i tá»± Äá»ng',
+        tieuDe: 'Khóa học bị từ chối tự động',
         noiDung: [
-          `${safeCourseName} ÄÃ£ bá» tá»« chá»i tá»± Äá»ng vÃ¬ tá»· lá» ná»i dung cáº§n Äiá»u chá»nh lÃ  ${Math.round(
+          `${safeCourseName} đã bị từ chối tự động vì tỷ lệ nội dung cần điều chỉnh là ${Math.round(
             reviewRatio * 100,
-          )}% vÃ  vÆ°á»£t ngÆ°á»¡ng cho phÃ©p.`,
-          'Vui lÃ²ng Äiá»u chá»nh láº¡i ná»i dung khÃ³a há»c cho phÃ¹ há»£p trÆ°á»c khi gá»­i duyá»t láº¡i.',
+          )}% và vượt ngưỡng cho phép.`,
+          'Vui lòng điều chỉnh lại nội dung khóa học cho phù hợp trước khi gửi duyệt lại.',
           lessonSummary
-            ? `CÃ¡c bÃ i há»c cáº§n xem láº¡i:\n${lessonSummary}`
+            ? `Các bài học cần xem lại:\n${lessonSummary}`
             : null,
         ]
           .filter(Boolean)
@@ -469,7 +469,7 @@ export class CoursesService implements OnModuleInit {
     totalVideoLessons: number;
   }) {
     const { instructorId, courseName, reviewRatio, totalVideoLessons } = input;
-    const safeCourseName = courseName?.trim() || 'Kh???a h???c c???a b???n';
+    const safeCourseName = courseName?.trim() || 'Khóa học của bạn';
     const percent = Math.round(reviewRatio * 100);
 
     try {
@@ -477,13 +477,13 @@ export class CoursesService implements OnModuleInit {
         maND: instructorId,
         maNguoiGui: null,
         loaiThongBao: NotificationType.COURSE,
-        tieuDe: 'Kh???a h???c ???? ???????c t??? duy???t',
-        noiDung: `${safeCourseName} ???? ???????c t??? duy???t v?? s???n s??ng public. T??? l??? n???i dung c???n ??i???u ch???nh l?? ${percent}% tr??n ${totalVideoLessons} b??i h???c c?? video.`,
+        tieuDe: 'Khóa học đã được tự duyệt',
+        noiDung: `${safeCourseName} đã được tự duyệt và sẵn sàng public. Tỷ lệ nội dung cần điều chỉnh là ${percent}% trên ${totalVideoLessons} bài học có video.`,
         daDoc: false,
       });
     } catch (error) {
       console.error(
-        'Kh??ng th??? g???i th??ng b??o t??? duy???t kh??a h???c:',
+        'Không thể gửi thông báo tự duyệt khóa học:',
         error,
       );
     }
@@ -496,7 +496,7 @@ export class CoursesService implements OnModuleInit {
 
     if (!course) {
       throw new ForbiddenException(
-        'Kh?ng t?m th?y kh?a h?c ho?c b?n kh?ng c? quy?n truy c?p',
+        'Không tìm thấy khóa học hoặc bạn không có quyền truy cập',
       );
     }
 
@@ -528,11 +528,29 @@ export class CoursesService implements OnModuleInit {
     });
 
     if (!course) {
-      throw new ForbiddenException('B?n kh?ng c? quy?n s?a kh?a h?c n?y');
+      throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
     }
 
     const previousThumbnail = course.hinhThuNho;
     const nextThumbnail = payload.hinhThuNho;
+
+    // Ràng buộc: Chuyển đổi giữa miễn phí và có phí khi đã có học viên
+    if (payload.giaBan !== undefined && Number(payload.giaBan) !== Number(course.giaBan)) {
+      const isFreeToPaid = Number(course.giaBan) === 0 && Number(payload.giaBan) > 0;
+      const isPaidToFree = Number(course.giaBan) > 0 && Number(payload.giaBan) === 0;
+
+      if (isFreeToPaid || isPaidToFree) {
+        const enrolledCount = await this.dataSource.query(
+          `SELECT COUNT(*) as count FROM DangKyKhoaHoc WHERE MaKH = ?`,
+          [courseId],
+        );
+        if (Number(enrolledCount[0].count) > 0) {
+          throw new BadRequestException(
+            'Không thể chuyển đổi trực tiếp giữa khóa học Miễn phí và Có phí vì đã có học viên đăng ký. Nếu cần thay đổi, vui lòng tạo khóa học mới để không ảnh hưởng quyền lợi học viên cũ.',
+          );
+        }
+      }
+    }
 
     Object.assign(course, payload, { ngayCapNhat: new Date() });
     const updatedCourse = await this.khoaHocRepository.save(course);

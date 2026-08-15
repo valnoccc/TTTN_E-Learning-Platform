@@ -940,11 +940,21 @@ function CourseDetails() {
                                                                 className="w-100 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
                                                                 style={{ height: '48px', borderRadius: '8px' }}
                                                                 onClick={() => {
-                                                                    const user = localStorage.getItem('user');
-                                                                    if (!user) {
+                                                                    const userStr = localStorage.getItem('user');
+                                                                    if (!userStr) {
                                                                         toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
                                                                         navigate('/login', { state: { from: `/checkout/${course.id}` } });
                                                                     } else {
+                                                                        try {
+                                                                            const u = JSON.parse(userStr);
+                                                                            const userId = u.id || u.maND || u.sub;
+                                                                            if (course?.giangVien?.maND === userId) {
+                                                                                toast.error('Giảng viên không thể mua khóa học của chính mình');
+                                                                                return;
+                                                                            }
+                                                                        } catch (e) {
+                                                                            console.error(e);
+                                                                        }
                                                                         navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } });
                                                                     }
                                                                 }}

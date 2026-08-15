@@ -235,8 +235,6 @@ export class CourseStudentService {
       return { recommendations: [], crossSellVoucher: null };
     }
 
-    const TOTAL_LIMIT = 4; // Tổng số gợi ý muốn trả về (khớp với UI 4 card)
-
     // ─── Build điều kiện loại trừ (khóa học trong giỏ + đã đăng ký) ─────────
     const excludePlaceholders = courseIds.map(() => '?').join(',');
     const excludeParams: any[] = [...courseIds];
@@ -260,6 +258,14 @@ export class CourseStudentService {
     const distinctMaDMs: number[] = categoryInfo
       .map((r) => Number(r.MaDM))
       .filter((id) => id > 0);
+
+    // Tính toán TOTAL_LIMIT để chia đều danh mục
+    let TOTAL_LIMIT = 4; // Mặc định 4 card
+    if (distinctMaDMs.length === 3) {
+      TOTAL_LIMIT = 3; // 3 danh mục -> 3 card (mỗi danh mục 1)
+    } else if (distinctMaDMs.length >= 4) {
+      TOTAL_LIMIT = 4; // >= 4 danh mục -> 4 card (lấy 4 danh mục đầu tiên, mỗi danh mục 1)
+    }
 
     // ─── BƯỚC 1b: Lấy ứng viên theo từng danh mục trong 1 truy vấn duy nhất ─
     // Mỗi danh mục lấy tối đa `TOTAL_LIMIT` ứng viên để có đủ xoay vòng.

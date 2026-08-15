@@ -58,18 +58,18 @@ class Sidebar extends Component {
                         <div><a href={"/"} id="close-sidebar"><i className="las la-times"></i></a></div>
                     </div>
                     <div className="side-content">
-                        <h5>About Us</h5>
-                        <p>Lorem ipsum dolor sit amet, consecte adipisicing elit. Mollitia modi, nostru rem sapiente. Excepturi molestiae soluta quisquam officiis iure sunt.</p>
+                        <h5>Về EDUMEO</h5>
+                        <p>Nền tảng học tập trực tuyến hàng đầu, mang đến cho bạn những khóa học chất lượng cao từ các chuyên gia trong ngành. Học mọi lúc, mọi nơi và làm chủ tương lai của bạn.</p>
                     </div>
                     <div className="side-post">
-                        <h5>Recent Post</h5>
+                        <h5>Khóa Học Mới Nhất</h5>
                         <div className="post-box d-flex">
                             <div className="post-img">
                                 <img src={"/assets/images/post-01.jpg"} alt="" />
                             </div>
                             <div className="post-title">
-                                <p>Lorem ipsum dolor sit amet, consecte adipisicing elit.</p>
-                                <span>March 12, 2020</span>
+                                <p>Lập trình Frontend thực chiến với ReactJS</p>
+                                <span>15 Tháng 8, 2026</span>
                             </div>
                         </div>
                         <div className="post-box d-flex">
@@ -77,8 +77,8 @@ class Sidebar extends Component {
                                 <img src={"/assets/images/post-02.jpg"} alt="" />
                             </div>
                             <div className="post-title">
-                                <p>Lorem ipsum dolor sit amet, consecte adipisicing elit.</p>
-                                <span>March 12, 2020</span>
+                                <p>Làm chủ Backend với Node.js và NestJS</p>
+                                <span>10 Tháng 8, 2026</span>
                             </div>
                         </div>
                         <div className="post-box d-flex">
@@ -86,13 +86,13 @@ class Sidebar extends Component {
                                 <img src={"/assets/images/post-03.jpg"} alt="" />
                             </div>
                             <div className="post-title">
-                                <p>Lorem ipsum dolor sit amet, consecte adipisicing elit.</p>
-                                <span>March 12, 2020</span>
+                                <p>Khóa học AI và Machine Learning cơ bản</p>
+                                <span>01 Tháng 8, 2026</span>
                             </div>
                         </div>
                     </div>
                     <div className="side-gallery">
-                        <h5>Gallery</h5>
+                        <h5>Thư Viện</h5>
                         <div className="gallery-grid">
                             <img src={"/assets/images/gallery-01.jpg"} alt="" />
                             <img src={"/assets/images/gallery-02.jpg"} alt="" />
@@ -103,11 +103,11 @@ class Sidebar extends Component {
                         </div>
                     </div>
                     <div className="side-contact">
-                        <h5>Contact Us</h5>
+                        <h5>Liên Hệ</h5>
                         <ul className="list-unstyled">
-                            <li><i className="las la-map-marker"></i>795 South Park Avenue, New York, NY USA 94107</li>
-                            <li><i className="las la-phone"></i>+1 (396) 486 4709</li>
-                            <li><i className="las la-envelope"></i>enquery@edulyb.com</li>
+                            <li><i className="las la-map-marker"></i>Tòa nhà Edumeo, Quận 1, TP.HCM</li>
+                            <li><i className="las la-phone"></i>028 7300 8888</li>
+                            <li><i className="las la-envelope"></i>lienhe@edumeo.vn</li>
                         </ul>
                     </div>
                     <div className="side-social">

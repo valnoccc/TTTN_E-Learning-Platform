@@ -34,5 +34,6 @@ import { UsersModule } from '../users/users.module';
     CourseAdminService,
     CourseStudentService,
   ],
+  exports: [CourseStudentService],
 })
 export class CoursesModule {}

@@ -17,6 +17,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -131,7 +132,7 @@ export default function RegisterPage() {
                       />
                     </p>
 
-                    <p className="form-control">
+                    <p className="form-control" style={{ position: "relative" }}>
                       <label style={{ display: "block", marginBottom: "8px" }}>
                         Mật khẩu
                       </label>
@@ -157,12 +158,12 @@ export default function RegisterPage() {
                         }}
                       ></i>
                     </p>
-                    <p className="form-control">
+                    <p className="form-control" style={{ position: "relative" }}>
                       <label style={{ display: "block", marginBottom: "8px" }}>
                         Xác nhận mật khẩu
                       </label>
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="Nhập lại mật khẩu"
                         onChange={(e) =>
                           setFormData({
@@ -173,8 +174,8 @@ export default function RegisterPage() {
                         style={{ paddingRight: "45px" }}
                       />
                       <i
-                        className={`las ${showPassword ? "la-eye-slash" : "la-eye"}`}
-                        onClick={() => setShowPassword(!showPassword)}
+                        className={`las ${showConfirmPassword ? "la-eye-slash" : "la-eye"}`}
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         style={{
                           position: "absolute",
                           right: "15px",

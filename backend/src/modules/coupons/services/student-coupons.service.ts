@@ -11,6 +11,8 @@ import { Coupon } from '../entities/coupon.entity';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CouponsService } from './coupons.service';
 
+import { CourseStudentService } from '../../courses/services/course-student.service';
+
 @Injectable()
 export class StudentCouponsService extends CouponsService {
   constructor(
@@ -19,6 +21,7 @@ export class StudentCouponsService extends CouponsService {
     @InjectRepository(KhoaHoc)
     courseRepository: any,
     dataSource: DataSource,
+    private readonly courseStudentService: CourseStudentService,
   ) {
     super(couponRepository, courseRepository, dataSource);
   }
@@ -306,29 +309,14 @@ export class StudentCouponsService extends CouponsService {
     if (lastInvoices.length > 0) {
       const invoiceId = lastInvoices[0].MaHD;
       const details = await this.dataSource.query(
-        `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
+        `SELECT cthd.MaKH FROM ChiTietHoaDon cthd WHERE cthd.MaHD = ?`,
         [invoiceId],
       );
 
       if (details.length > 0) {
-        const oldCourseId = details[0].MaKH;
-        const maDM = details[0].MaDM || 0;
-        let excludeCondition = `k.MaKH != ?`;
-        const params: any[] = [oldCourseId];
-
-        excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-        params.push(userId);
-
-        const recommendations = await this.dataSource.query(
-          `SELECT k.MaKH as maKH
-           FROM KhoaHoc k
-           WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED'
-           ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
-          [...params, maDM],
-        );
-        validCrossSellCourseIds = recommendations.map((r: any) =>
-          Number(r.maKH),
-        );
+        const oldCourseIds = details.map((d: any) => Number(d.MaKH));
+        const recommendationsData = await this.courseStudentService.getCourseRecommendations(oldCourseIds, userId ? String(userId) : undefined);
+        validCrossSellCourseIds = recommendationsData.recommendations.map((r: any) => Number(r.maKH));
       }
     }
 

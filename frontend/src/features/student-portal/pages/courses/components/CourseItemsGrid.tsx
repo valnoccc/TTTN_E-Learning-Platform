@@ -241,11 +241,24 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
                                 level: "Mọi cấp độ",
                                 category: categoryName,
                               }) as any,
+                            ).unwrap()
+                            .then(() => toast.success("🎉 Đã thêm khóa học vào giỏ hàng thành công!"))
+                            .catch((err: any) => toast.error(err.response?.data?.message || err.message || "Lỗi"));
+                          } else {
+                            dispatch(
+                              addToCart({
+                                id: data.maKH,
+                                courseName: data.tenKhoaHoc,
+                                thumbnail: courseImage,
+                                instructor: instructorName,
+                                price: parseFloat(data.giaBan || "0"),
+                                duration: courseDurationText,
+                                level: "Mọi cấp độ",
+                                category: categoryName,
+                              }),
                             );
+                            toast.success("🎉 Đã thêm khóa học vào giỏ hàng thành công!");
                           }
-                          toast.success(
-                            "🎉 Đã thêm khóa học vào giỏ hàng thành công!",
-                          );
                         }}
                       >
                         <i className="las la-shopping-cart text-xl"></i>
