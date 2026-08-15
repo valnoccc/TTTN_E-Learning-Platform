@@ -481,14 +481,6 @@ export default function InstructorCourseLessons() {
                                     />
                                   )}
 
-                                  {/* Spinner AI đang kiểm duyệt */}
-                                  {isProcessing && (
-                                    <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
-                                      <Loader2 size={10} className="animate-spin" />
-                                      Đang kiểm duyệt
-                                    </span>
-                                  )}
-
                                   {lesson.thoiLuong > 0 ? (
                                     <span className="ml-auto shrink-0 rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
                                       {Math.round(lesson.thoiLuong / 60)} phút

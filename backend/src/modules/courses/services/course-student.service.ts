@@ -151,13 +151,13 @@ export class CourseStudentService {
     });
   }
 
-  async getPublishedCourseById(courseId: number) {
+  async getPublishedCourseById(courseId: number, viewerId?: number) {
     const course = await this.khoaHocRepository.findOne({
-      where: { maKH: courseId, trangThai: 'PUBLISHED' },
+      where: { maKH: courseId },
       relations: ['giangVien', 'danhMuc', 'baiHocs'],
     });
 
-    if (!course) {
+    if (!course || !(await this.canViewerAccessCourse(course, viewerId))) {
       throw new NotFoundException(
         'Khóa học không tồn tại hoặc chưa được kích hoạt',
       );
@@ -398,13 +398,13 @@ export class CourseStudentService {
     };
   }
 
-  async getCourseCurriculum(courseId: number) {
+  async getCourseCurriculum(courseId: number, viewerId?: number) {
     const course = await this.khoaHocRepository.findOne({
       where: { maKH: courseId },
       select: ['maKH', 'trangThai'],
     });
 
-    if (!course || course.trangThai !== 'PUBLISHED') {
+    if (!course || !(await this.canViewerAccessCourse(course, viewerId))) {
       throw new NotFoundException(
         'Khóa học không tồn tại hoặc chưa được kích hoạt',
       );
@@ -453,5 +453,28 @@ export class CourseStudentService {
     );
 
     return lessonsByChapter;
+  }
+
+  private async canViewerAccessCourse(
+    course: { maKH: number; trangThai: string },
+    viewerId?: number,
+  ) {
+    if (course.trangThai === 'PUBLISHED') {
+      return true;
+    }
+
+    if (!viewerId) {
+      return false;
+    }
+
+    const enrollments = await this.dataSource.query(
+      `SELECT 1
+         FROM DangKyKhoaHoc
+        WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'
+        LIMIT 1`,
+      [viewerId, course.maKH],
+    );
+
+    return enrollments.length > 0;
   }
 }

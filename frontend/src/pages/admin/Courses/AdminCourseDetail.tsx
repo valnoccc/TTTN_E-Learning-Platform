@@ -145,6 +145,9 @@ export default function AdminCourseDetail() {
     toggleReplies,
   } = useAdminCourseDetail(courseId);
 
+  const isPendingReview =
+    course?.trangThai === "PENDING" || course?.trangThai === "PENDING_APPEAL";
+
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
@@ -238,6 +241,12 @@ export default function AdminCourseDetail() {
                       {course.tenKhoaHoc}
                     </h2>
                     <StatusBadge status={course.trangThai} />
+                    {isPendingReview ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-700">
+                        <FileText size={13} />
+                        Bản gửi duyệt mới nhất
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-3 text-[14px] leading-7 text-slate-600">
                     {course.moTa || "Chưa có mô tả khóa học."}
@@ -455,6 +464,19 @@ export default function AdminCourseDetail() {
                                             Bài {lesson.thuTu}:{" "}
                                             {lesson.tenBaiHoc}
                                           </p>
+                                          {lesson.changeType ? (
+                                            <span
+                                              className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                                lesson.changeType === "NEW"
+                                                  ? "bg-sky-100 text-sky-700"
+                                                  : "bg-amber-100 text-amber-700"
+                                              }`}
+                                            >
+                                              {lesson.changeType === "NEW"
+                                                ? "Bài học mới"
+                                                : "Đã thay đổi"}
+                                            </span>
+                                          ) : null}
                                         </div>
                                         <p className="mt-1 line-clamp-2 text-[12px] text-slate-500">
                                           {lesson.noiDung ||

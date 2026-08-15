@@ -261,4 +261,35 @@ describe('CourseStudentService', () => {
       'https://example.com/video.mp4',
     );
   });
+
+  it('allows an enrolled learner to load curriculum of a temporarily hidden course', async () => {
+    khoaHocRepository.findOne.mockResolvedValue({
+      maKH: 11,
+      trangThai: 'DRAFT',
+    });
+    dataSource.query
+      .mockResolvedValueOnce([{ ok: 1 }])
+      .mockResolvedValueOnce([
+        { maChuong: 1, maKH: 11, tenChuong: 'Chuong 1', thuTu: 1 },
+      ])
+      .mockResolvedValueOnce([
+        {
+          maBH: 10,
+          maChuong: 1,
+          tenBaiHoc: 'Bai 1',
+          videoUrl: 'https://example.com/video.mp4',
+          noiDung: 'Noi dung',
+          thuTu: 1,
+          thoiLuong: 120,
+          choPhepXemTruoc: true,
+        },
+      ]);
+
+    await expect(service.getCourseCurriculum(11, 7)).resolves.toHaveLength(1);
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('FROM DangKyKhoaHoc'),
+      [7, 11],
+    );
+  });
 });

@@ -5,7 +5,11 @@ import {
   Param,
   ParseIntPipe,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 import {
   CourseStudentService,
@@ -70,6 +74,50 @@ export class PublicCoursesController {
 
     return {
       message: 'Lấy chi tiết khóa học thành công',
+      data,
+    };
+  }
+
+  @Get(':id/learning')
+  @UseGuards(JwtAuthGuard)
+  async getLearningCourse(
+    @Param('id') id: string,
+    @Req() req: { user: { sub: number } },
+  ) {
+    const courseId = Number.parseInt(id, 10);
+    if (Number.isNaN(courseId)) {
+      throw new BadRequestException('Mã khóa học không hợp lệ');
+    }
+
+    const data = await this.courseStudentService.getPublishedCourseById(
+      courseId,
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy khóa học đang học thành công',
+      data,
+    };
+  }
+
+  @Get(':id/learning/curriculum')
+  @UseGuards(JwtAuthGuard)
+  async getLearningCurriculum(
+    @Param('id') id: string,
+    @Req() req: { user: { sub: number } },
+  ) {
+    const courseId = Number.parseInt(id, 10);
+    if (Number.isNaN(courseId)) {
+      throw new BadRequestException('Mã khóa học không hợp lệ');
+    }
+
+    const data = await this.courseStudentService.getCourseCurriculum(
+      courseId,
+      req.user.sub,
+    );
+
+    return {
+      message: 'Lấy chương trình học đang học thành công',
       data,
     };
   }

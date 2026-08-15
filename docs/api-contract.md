@@ -70,6 +70,13 @@ Admin (Kiem duyet)
 - `PATCH /lessons/:id` (Instructor - Sua noi dung bai hoc, ho tro `choPhepXemTruoc`)
 - `DELETE /lessons/:id` (Instructor - Xoa bai hoc)
 
+Video upload uses immutable GCS objects. A replacement is stored as `DRAFT`
+in `VideoBaiHoc` and becomes `PUBLIC` only after course approval; the previous
+public object becomes `ARCHIVED`. `BaiHoc.VideoURL` remains the compatibility
+pointer to the current public object. Existing data can be initialized with
+`draft/db/sql/versioned-gcs-video-tidb.sql` followed by
+`draft/db/sql/backfill-versioned-gcs-video-tidb.sql`.
+
 ## Quiz Questions (Ngan hang cau hoi trac nghiem)
 - Database prerequisite: run `draft/db/sql/quiz-module-tidb.sql` once on the TiDB application schema before using these endpoints.
 - `GET /courses/chapters/:chapterId/questions` (Instructor - Xem danh sach cau hoi cua chuong)

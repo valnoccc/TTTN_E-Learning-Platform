@@ -174,12 +174,19 @@ export class LessonsController {
         thoiLuong: computedDuration,
         durationSeconds: computedDuration,
         resolution: videoMetadataResolution,
-        aiStatus:
-          videoSourceType === VideoSourceType.UPLOAD && uploadedVideo
-            ? 'PROCESSING'
-            : null,
+        aiStatus: null,
         aiLabels: null,
         aiRejectReason: null,
+        videoDraft: uploadedVideo
+          ? {
+              objectName: uploadedVideo.objectName,
+              videoUrl: uploadedVideo.gcsUri,
+              videoSourceType: VideoSourceType.UPLOAD,
+              durationSeconds: computedDuration,
+              resolution: videoMetadataResolution,
+              aiStatus: 'PROCESSING',
+            }
+          : undefined,
       };
 
       const newLesson = await this.lessonsService.create(payload);
@@ -315,6 +322,7 @@ export class LessonsController {
       updateData.aiStatus = null;
       updateData.aiLabels = null;
       updateData.aiRejectReason = null;
+      updateData.videoDraft = undefined;
     } else if (file) {
       // ── Đọc & validate metadata ──
       const metadata = await extractVideoMetadata(
@@ -348,6 +356,14 @@ export class LessonsController {
       updateData.aiStatus = 'PROCESSING';
       updateData.aiLabels = null;
       updateData.aiRejectReason = null;
+      updateData.videoDraft = {
+        objectName: uploadResult.objectName,
+        videoUrl: uploadResult.gcsUri,
+        videoSourceType: VideoSourceType.UPLOAD,
+        durationSeconds: updateData.durationSeconds ?? 0,
+        resolution: updateData.resolution ?? null,
+        aiStatus: 'PROCESSING',
+      };
     }
 
     const lesson = await this.lessonsService.update(id, updateData);

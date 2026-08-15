@@ -9,6 +9,7 @@ import { Lesson } from './entities/lesson.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { LessonVideoStorageService } from '../lesson-video-storage/lesson-video-storage.service';
 import { LessonsService } from './services/lessons.service';
+import { LessonVideoVersionService } from './services/lesson-video-version.service';
 
 describe('LessonsService', () => {
   let service: LessonsService;
@@ -21,6 +22,7 @@ describe('LessonsService', () => {
   };
   let courseRepository: {
     update: jest.Mock;
+    findOne: jest.Mock;
   };
   let cloudinaryService: {
     extractPublicId: jest.Mock;
@@ -40,6 +42,7 @@ describe('LessonsService', () => {
     };
     courseRepository = {
       update: jest.fn(),
+      findOne: jest.fn().mockResolvedValue(null),
     };
     cloudinaryService = {
       extractPublicId: jest.fn(),
@@ -58,6 +61,10 @@ describe('LessonsService', () => {
         {
           provide: LessonVideoStorageService,
           useValue: lessonVideoStorageService,
+        },
+        {
+          provide: LessonVideoVersionService,
+          useValue: { createDraft: jest.fn() },
         },
       ],
     }).compile();

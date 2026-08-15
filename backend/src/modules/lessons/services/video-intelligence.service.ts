@@ -107,6 +107,7 @@ export class VideoIntelligenceService implements OnModuleInit {
     try {
       const queuedLessons: Array<{
         maBH?: number | string;
+        maVideo?: number | string | null;
         maKH?: number | string;
         tenBaiHoc?: string | null;
         videoURL?: string | null;
@@ -128,12 +129,59 @@ export class VideoIntelligenceService implements OnModuleInit {
           WHERE bh.AiStatus IN ('PROCESSING', 'PENDING')
             AND bh.VideoURL IS NOT NULL
             AND bh.VideoURL <> ''
+            AND NOT EXISTS (
+              SELECT 1
+                FROM VideoBaiHoc draft
+               WHERE draft.MaBH = bh.MaBH
+                 AND draft.TrangThai = 'DRAFT'
+            )
           ORDER BY bh.ThuTu ASC, bh.MaBH ASC
           LIMIT 10
         `,
       );
 
-      for (const lesson of queuedLessons) {
+      let queuedDraftVideos: Array<{
+        maBH?: number | string;
+        maVideo?: number | string | null;
+        maKH?: number | string;
+        tenBaiHoc?: string | null;
+        videoURL?: string | null;
+        thoiLuong?: number | string | null;
+        tenKhoaHoc?: string | null;
+        maND_GiangVien?: number | string;
+      }> = [];
+      try {
+        queuedDraftVideos = await this.dataSource.query(
+          `
+          SELECT v.MaVideo AS maVideo, bh.MaBH AS maBH, bh.MaKH AS maKH,
+                 bh.TenBaiHoc AS tenBaiHoc, v.VideoURL AS videoURL,
+                 v.DurationSeconds AS thoiLuong, kh.TenKhoaHoc AS tenKhoaHoc,
+                 kh.MaND_GiangVien AS maND_GiangVien
+            FROM VideoBaiHoc v
+            INNER JOIN BaiHoc bh ON bh.MaBH = v.MaBH
+            INNER JOIN KhoaHoc kh ON kh.MaKH = bh.MaKH
+           WHERE v.TrangThai = 'DRAFT'
+             AND v.AiStatus IN ('PROCESSING', 'PENDING')
+             AND v.VideoURL IS NOT NULL AND v.VideoURL <> ''
+             AND NOT EXISTS (
+               SELECT 1
+                 FROM VideoBaiHoc newer
+                WHERE newer.MaBH = v.MaBH
+                  AND newer.TrangThai = 'DRAFT'
+                  AND newer.MaVideo > v.MaVideo
+             )
+           ORDER BY v.MaVideo ASC
+           LIMIT 10
+          `,
+        );
+      } catch (error) {
+        this.logger.warn(
+          'Không thể đọc hàng đợi VideoBaiHoc. Hãy chạy SQL versioned-gcs-video-tidb.sql trước khi dùng phiên bản video mới.',
+        );
+        this.logger.debug(error);
+      }
+
+      for (const lesson of [...queuedLessons, ...queuedDraftVideos]) {
         await this.processQueuedLesson(lesson);
       }
     } catch (error) {
@@ -222,6 +270,7 @@ export class VideoIntelligenceService implements OnModuleInit {
 
   private async processQueuedLesson(lesson: {
     maBH?: number | string;
+    maVideo?: number | string | null;
     maKH?: number | string;
     tenBaiHoc?: string | null;
     videoURL?: string | null;
@@ -242,8 +291,10 @@ export class VideoIntelligenceService implements OnModuleInit {
       videoURL?: string | null;
       aiStatus?: string | null;
     }> = await this.dataSource.query(
-      `SELECT VideoURL AS videoURL, AiStatus AS aiStatus FROM BaiHoc WHERE MaBH = ? LIMIT 1`,
-      [lessonId],
+      lesson.maVideo
+        ? `SELECT VideoURL AS videoURL, AiStatus AS aiStatus FROM VideoBaiHoc WHERE MaVideo = ? AND TrangThai = 'DRAFT' LIMIT 1`
+        : `SELECT VideoURL AS videoURL, AiStatus AS aiStatus FROM BaiHoc WHERE MaBH = ? LIMIT 1`,
+      [lesson.maVideo ? Number(lesson.maVideo) : lessonId],
     );
     const currentLesson = currentLessonRows[0];
 
@@ -270,6 +321,7 @@ export class VideoIntelligenceService implements OnModuleInit {
       lessonId,
       videoUrl,
       durationSeconds,
+      lesson.maVideo ? Number(lesson.maVideo) : undefined,
     );
 
     await this.sendModerationNotification({
@@ -327,6 +379,7 @@ export class VideoIntelligenceService implements OnModuleInit {
     lessonId: number,
     videoUrl: string,
     durationSeconds = 0,
+    videoVersionId?: number,
   ): Promise<VideoModerationResult> {
     if (durationSeconds > 0) {
       try {
@@ -335,7 +388,7 @@ export class VideoIntelligenceService implements OnModuleInit {
         const message = error instanceof Error ? error.message : String(error);
         const reviewReason = `Lỗi kỹ thuật khi phân tích: ${message}`;
 
-        await this.lessonRepository.update(lessonId, {
+        await this.updateModerationTarget(lessonId, videoVersionId, {
           aiStatus: AiStatus.NEEDS_REVIEW,
           aiLabels: null,
           aiRejectReason: reviewReason,
@@ -353,18 +406,19 @@ export class VideoIntelligenceService implements OnModuleInit {
       }
     }
 
-    return this.runAnalysis(lessonId, videoUrl);
+    return this.runAnalysis(lessonId, videoUrl, videoVersionId);
   }
 
   private async runAnalysis(
     lessonId: number,
     videoUrl: string,
+    videoVersionId?: number,
   ): Promise<VideoModerationResult> {
     this.logger.log(
       `[Lesson ${lessonId}] Bắt đầu phân tích video: ${videoUrl}`,
     );
 
-    await this.lessonRepository.update(lessonId, {
+    await this.updateModerationTarget(lessonId, videoVersionId, {
       aiStatus: AiStatus.PROCESSING,
       aiLabels: null,
       aiRejectReason: null,
@@ -446,13 +500,17 @@ export class VideoIntelligenceService implements OnModuleInit {
         }
       }
 
-      await this.lessonRepository.update(lessonId, {
+      await this.updateModerationTarget(lessonId, videoVersionId, {
         aiStatus: decision.status,
         aiLabels: decision.labels,
         aiRejectReason: decision.rejectReason,
-        thoiLuong: durationSeconds,
         durationSeconds,
       });
+      if (!videoVersionId) {
+        await this.lessonRepository.update(lessonId, {
+          thoiLuong: durationSeconds,
+        });
+      }
 
       if (decision.status === AiStatus.REJECTED) {
         this.logger.warn(
@@ -480,7 +538,7 @@ export class VideoIntelligenceService implements OnModuleInit {
         `[Lesson ${lessonId}] Lỗi phân tích: ${message} | videoUrl=${videoUrl}`,
       );
 
-      await this.lessonRepository.update(lessonId, {
+      await this.updateModerationTarget(lessonId, videoVersionId, {
         aiStatus: AiStatus.NEEDS_REVIEW,
         aiLabels: null,
         aiRejectReason: reviewReason,
@@ -503,6 +561,35 @@ export class VideoIntelligenceService implements OnModuleInit {
         );
       }
     }
+  }
+
+  private async updateModerationTarget(
+    lessonId: number,
+    videoVersionId: number | undefined,
+    values: {
+      aiStatus: AiStatus;
+      aiLabels: string[] | null;
+      aiRejectReason: string | null;
+      durationSeconds?: number;
+    },
+  ) {
+    if (videoVersionId) {
+      await this.dataSource.query(
+        `UPDATE VideoBaiHoc
+            SET AiStatus = ?, AiLabels = ?, AiRejectReason = ?, DurationSeconds = ?
+          WHERE MaVideo = ? AND TrangThai = 'DRAFT'`,
+        [
+          values.aiStatus,
+          values.aiLabels ? JSON.stringify(values.aiLabels) : null,
+          values.aiRejectReason,
+          Number(values.durationSeconds ?? 0),
+          videoVersionId,
+        ],
+      );
+      return;
+    }
+
+    await this.lessonRepository.update(lessonId, values);
   }
 
   private async analyzeVideoWithGemini(gcsUri: string): Promise<{

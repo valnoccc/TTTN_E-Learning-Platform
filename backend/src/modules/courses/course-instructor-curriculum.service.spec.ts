@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { KhoaHoc } from './entities/course.entity';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { LessonVideoStorageService } from '../lesson-video-storage/lesson-video-storage.service';
 import { CourseInstructorCurriculumService } from './services/course-instructor-curriculum.service';
 
@@ -41,6 +42,7 @@ describe('CourseInstructorCurriculumService', () => {
         CourseInstructorCurriculumService,
         { provide: getRepositoryToken(KhoaHoc), useValue: khoaHocRepository },
         { provide: DataSource, useValue: dataSource },
+        { provide: CloudinaryService, useValue: {} },
         {
           provide: LessonVideoStorageService,
           useValue: lessonVideoStorageService,
@@ -96,6 +98,10 @@ describe('CourseInstructorCurriculumService', () => {
     });
 
     expect(lessonVideoStorageService.getPlayableUrl).toHaveBeenCalledTimes(2);
+    expect(dataSource.query.mock.calls[2][0]).toContain('GROUP BY MaBH');
+    expect(dataSource.query.mock.calls[2][0]).not.toContain(
+      'MaVideo = (SELECT MAX',
+    );
   });
 
   it('throws when deleting a chapter outside the instructor ownership', async () => {
@@ -111,18 +117,19 @@ describe('CourseInstructorCurriculumService', () => {
       .mockResolvedValueOnce([
         { maChuong: 5, maKH: 10, tenChuong: 'Chuong 1', thuTu: 1 },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined);
 
     await expect((service as any).deleteChapter(5, 7)).resolves.toBeUndefined();
 
     expect(dataSource.query).toHaveBeenNthCalledWith(
-      2,
+      3,
       expect.stringContaining('DELETE FROM BaiHoc'),
       [5],
     );
     expect(dataSource.query).toHaveBeenNthCalledWith(
-      3,
+      4,
       expect.stringContaining('DELETE FROM ChuongHoc'),
       [5],
     );

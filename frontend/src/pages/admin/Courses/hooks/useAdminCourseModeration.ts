@@ -33,6 +33,7 @@ export interface AdminModerationLesson {
     aiStatus: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' | null;
     aiLabels: string[];
     aiRejectReason: string | null;
+    changeType?: 'NEW' | 'UPDATED';
 }
 
 export interface AdminModerationChapter {

@@ -297,10 +297,26 @@ export class CoursesService implements OnModuleInit {
 
     if (trangThai === 'PENDING') {
       const lessons: CourseLessonRow[] = await this.dataSource.query(
-        `SELECT MaBH AS maBH, TenBaiHoc AS tenBaiHoc, VideoURL AS videoURL, ThuTu AS thuTu, AiStatus AS aiStatus, AiRejectReason AS aiRejectReason
-         FROM BaiHoc
-         WHERE MaKH = ? AND VideoURL IS NOT NULL AND VideoURL <> ''
-         ORDER BY ThuTu ASC, MaBH ASC`,
+        `SELECT bh.MaBH AS maBH, bh.TenBaiHoc AS tenBaiHoc,
+                COALESCE(vd.VideoURL, bh.VideoURL) AS videoURL,
+                bh.ThuTu AS thuTu,
+                COALESCE(vd.AiStatus, bh.AiStatus) AS aiStatus,
+                COALESCE(vd.AiRejectReason, bh.AiRejectReason) AS aiRejectReason
+         FROM BaiHoc bh
+         LEFT JOIN (
+           SELECT vd1.*
+           FROM VideoBaiHoc vd1
+           INNER JOIN (
+             SELECT MaBH, MAX(MaVideo) AS MaVideo
+             FROM VideoBaiHoc
+             WHERE TrangThai = 'DRAFT'
+             GROUP BY MaBH
+           ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
+           WHERE vd1.TrangThai = 'DRAFT'
+         ) vd ON vd.MaBH = bh.MaBH
+         WHERE bh.MaKH = ? AND COALESCE(vd.VideoURL, bh.VideoURL) IS NOT NULL
+           AND COALESCE(vd.VideoURL, bh.VideoURL) <> ''
+         ORDER BY bh.ThuTu ASC, bh.MaBH ASC`,
         [courseId],
       );
 

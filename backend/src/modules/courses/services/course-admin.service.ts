@@ -13,6 +13,7 @@ import {
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
+import { LessonVideoVersionService } from '../../lessons/services/lesson-video-version.service';
 
 type AdminCourseRow = {
   id?: string | number;
@@ -49,6 +50,7 @@ type CurriculumRow = {
   aiStatus?: string | null;
   aiLabels?: string | null;
   aiRejectReason?: string | null;
+  changeType?: 'NEW' | 'UPDATED' | null;
 };
 type ModerationHistoryRow = {
   maLSKD?: string | number;
@@ -85,6 +87,7 @@ export class CourseAdminService {
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
     private readonly lessonVideoStorageService: LessonVideoStorageService,
+    private readonly lessonVideoVersionService: LessonVideoVersionService,
   ) {}
 
   async getCourses(filters: AdminCourseFilters) {
@@ -186,13 +189,34 @@ export class CourseAdminService {
           bh.TenBaiHoc as tenBaiHoc,
           bh.ThuTu as thuTuBaiHoc,
           bh.NoiDung as noiDungBaiHoc,
-          bh.VideoURL as videoURL,
+          COALESCE(vd.VideoURL, bh.VideoURL) as videoURL,
           bh.TrangThai as trangThaiBaiHoc,
-          bh.AiStatus as aiStatus,
-          bh.AiLabels as aiLabels,
-          bh.AiRejectReason as aiRejectReason
+          COALESCE(vd.AiStatus, bh.AiStatus) as aiStatus,
+          COALESCE(vd.AiLabels, bh.AiLabels) as aiLabels,
+          COALESCE(vd.AiRejectReason, bh.AiRejectReason) as aiRejectReason,
+          CASE
+            WHEN vd.MaVideo IS NULL THEN NULL
+            WHEN vp.MaBH IS NULL THEN 'NEW'
+            ELSE 'UPDATED'
+          END as changeType
         FROM ChuongHoc ch
         LEFT JOIN BaiHoc bh ON bh.MaChuong = ch.MaChuong
+        LEFT JOIN (
+          SELECT vd1.*
+          FROM VideoBaiHoc vd1
+          INNER JOIN (
+            SELECT MaBH, MAX(MaVideo) AS MaVideo
+            FROM VideoBaiHoc
+            WHERE TrangThai = 'DRAFT'
+            GROUP BY MaBH
+          ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
+          WHERE vd1.TrangThai = 'DRAFT'
+        ) vd ON vd.MaBH = bh.MaBH
+        LEFT JOIN (
+          SELECT DISTINCT MaBH
+          FROM VideoBaiHoc
+          WHERE TrangThai = 'PUBLIC'
+        ) vp ON vp.MaBH = bh.MaBH
         WHERE ch.MaKH = ?
         ORDER BY ch.ThuTu ASC, bh.ThuTu ASC, bh.MaBH ASC
       `,
@@ -296,6 +320,8 @@ export class CourseAdminService {
         'Chỉ khóa học đang chờ duyệt mới có thể phê duyệt.',
       );
     }
+
+    await this.lessonVideoVersionService.publishCourseVideos(courseId, adminId);
 
     course.trangThai = 'PUBLISHED';
     course.isAppealing = false;
@@ -564,6 +590,7 @@ export class CourseAdminService {
           aiStatus: string | null;
           aiLabels: string[];
           aiRejectReason: string | null;
+          changeType?: 'NEW' | 'UPDATED';
         }>;
       }
     >();
@@ -600,6 +627,10 @@ export class CourseAdminService {
             ? JSON.parse(row.aiLabels)
             : (row.aiLabels ?? []),
         aiRejectReason: row.aiRejectReason ?? null,
+        changeType:
+          row.changeType === 'NEW' || row.changeType === 'UPDATED'
+            ? row.changeType
+            : undefined,
       });
     }
 

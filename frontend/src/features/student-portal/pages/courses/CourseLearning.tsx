@@ -138,11 +138,13 @@ export default function CourseLearning() {
         // Thêm .catch() vào từng Promise để nếu 1 API lỗi (VD: 404, 401) thì các API khác vẫn load được
         const [courseRes, curriculumRes, progressRes, completedLessonsRes] =
           await Promise.all([
-            axiosClient.get(`/public/courses/${id}`).catch((e) => {
+            axiosClient.get(`/public/courses/${id}/learning`).catch((e) => {
               console.error(">>> [API Error] Lỗi tải khóa học:", e);
               return null;
             }),
-            axiosClient.get(`/public/courses/${id}/curriculum`).catch((e) => {
+            axiosClient
+              .get(`/public/courses/${id}/learning/curriculum`)
+              .catch((e) => {
               console.error(">>> [API Error] Lỗi tải chương mục:", e);
               return null;
             }),

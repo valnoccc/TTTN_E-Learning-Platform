@@ -5,6 +5,7 @@ jest.mock('../../lesson-video-storage/lesson-video-storage.service', () => ({
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CourseAdminService } from './course-admin.service';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
+import { LessonVideoVersionService } from '../../lessons/services/lesson-video-version.service';
 
 describe('CourseAdminService', () => {
   const resolveValue = <T>(value: T) => Promise.resolve(value);
@@ -26,6 +27,10 @@ describe('CourseAdminService', () => {
     getPlayableUrl: jest.fn(async (url) => url),
   };
 
+  const lessonVideoVersionService = {
+    publishCourseVideos: jest.fn().mockResolvedValue({ publishedCount: 0 }),
+  };
+
   const moderationHistoryRepository = {
     create: jest.fn(),
     save: jest.fn(),
@@ -37,6 +42,7 @@ describe('CourseAdminService', () => {
     notificationsService as never,
     dataSource as never,
     lessonVideoStorageService as never,
+    lessonVideoVersionService as never,
   );
 
   beforeEach(() => {
@@ -46,6 +52,10 @@ describe('CourseAdminService', () => {
     moderationHistoryRepository.create.mockReset();
     moderationHistoryRepository.save.mockReset();
     notificationsService.createNotification.mockReset();
+    lessonVideoVersionService.publishCourseVideos.mockReset();
+    lessonVideoVersionService.publishCourseVideos.mockResolvedValue({
+      publishedCount: 0,
+    });
   });
 
   it('returns admin course management rows', async () => {
@@ -86,6 +96,9 @@ describe('CourseAdminService', () => {
         categoryName: 'Frontend',
         lessonCount: 12,
         orderCount: 20,
+        lyDoKhangCao: null,
+        appealReason: null,
+        isAppealing: false,
       },
     ]);
   });
@@ -151,6 +164,9 @@ describe('CourseAdminService', () => {
       ngayCapNhat: '2026-06-10T09:00:00.000Z',
       maDM: 4,
       instructorId: 7,
+      lyDoKhangCao: null,
+      appealReason: null,
+      isAppealing: false,
       mucTieu: ['Nham vung React co ban'],
       yeuCau: ['Biet JavaScript co ban'],
       curriculum: [

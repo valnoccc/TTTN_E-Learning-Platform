@@ -33,6 +33,7 @@ describe('LessonsController', () => {
       uploadVideo: jest.fn(),
       deleteVideo: jest.fn(),
       getPlayableUrl: jest.fn(async (url) => url),
+      recordMonthlyUsage: jest.fn(),
     };
     videoIntelligenceService = {
       checkQuota: jest.fn().mockResolvedValue(undefined),
@@ -113,7 +114,7 @@ describe('LessonsController', () => {
     );
   });
 
-  it('uses the GCS URI for AI analysis after uploading a lesson video', async () => {
+  it('stores an uploaded video as a draft version for background moderation', async () => {
     lessonVideoStorageService.uploadVideo.mockResolvedValue({
       bucketName: 'video-storage-lvtn',
       objectName: 'lessons-videos/course-10/lesson-1/test.mp4',
@@ -141,12 +142,17 @@ describe('LessonsController', () => {
       } as any,
     );
 
-    expect(videoIntelligenceService.checkQuota).toHaveBeenCalledWith(120);
-    expect(
-      videoIntelligenceService.analyzeVideoBackground,
-    ).toHaveBeenCalledWith(
-      123,
-      'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
+    expect(lessonsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        videoURL:
+          'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
+        videoDraft: expect.objectContaining({
+          objectName: 'lessons-videos/course-10/lesson-1/test.mp4',
+          videoUrl:
+            'gs://video-storage-lvtn/lessons-videos/course-10/lesson-1/test.mp4',
+          aiStatus: 'PROCESSING',
+        }),
+      }),
     );
   });
 });

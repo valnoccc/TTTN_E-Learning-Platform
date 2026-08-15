@@ -14,6 +14,7 @@ import { CoursesService } from './services/course-instructor.service';
 import { CourseAdminService } from './services/course-admin.service';
 import { CourseStudentService } from './services/course-student.service';
 import { UsersModule } from '../users/users.module';
+import { LessonsModule } from '../lessons/lessons.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UsersModule } from '../users/users.module';
     LessonVideoStorageModule,
     NotificationsModule,
     UsersModule,
+    LessonsModule,
   ],
   controllers: [
     CoursesController,

@@ -10,6 +10,7 @@ import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 import { Lesson } from '../entities/lesson.entity';
+import { LessonVideoVersionService } from './lesson-video-version.service';
 
 @Injectable()
 export class LessonsService {
@@ -20,6 +21,7 @@ export class LessonsService {
     private readonly courseRepository: Repository<KhoaHoc>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly lessonVideoStorageService: LessonVideoStorageService,
+    private readonly lessonVideoVersionService: LessonVideoVersionService,
   ) {}
 
   private async touchCourse(courseId: number) {
@@ -30,7 +32,14 @@ export class LessonsService {
 
   async create(payload: any): Promise<Lesson> {
     try {
-      const result = await this.lessonRepository.save(payload);
+      const { videoDraft, ...lessonPayload } = payload;
+      const result = await this.lessonRepository.save(lessonPayload);
+      if (videoDraft && result?.maBH) {
+        await this.lessonVideoVersionService.createDraft({
+          lessonId: Number(result.maBH),
+          ...videoDraft,
+        });
+      }
       if (result?.maKH) {
         await this.touchCourse(Number(result.maKH));
       }
@@ -67,12 +76,28 @@ export class LessonsService {
       throw new NotFoundException(`Không tìm thấy bài học có ID #${id}`);
     }
 
+    const { videoDraft, ...lessonPayload } = payload;
     const previousVideoUrl = existingLesson.videoURL;
-    const nextVideoUrl = payload.videoURL;
+    const course = await this.courseRepository.findOne({
+      where: { maKH: existingLesson.maKH },
+    });
+    const keepPublicVideo = course?.trangThai === 'PUBLISHED' && Boolean(videoDraft);
+    const nextVideoUrl = keepPublicVideo ? undefined : lessonPayload.videoURL;
+
+    if (keepPublicVideo) {
+      delete lessonPayload.videoURL;
+      delete lessonPayload.videoSourceType;
+      delete lessonPayload.aiStatus;
+      delete lessonPayload.aiLabels;
+      delete lessonPayload.aiRejectReason;
+      delete lessonPayload.thoiLuong;
+      delete lessonPayload.durationSeconds;
+      delete lessonPayload.resolution;
+    }
 
     const lesson = await this.lessonRepository.preload({
       maBH: id,
-      ...payload,
+      ...lessonPayload,
     });
 
     if (!lesson) {
@@ -81,11 +106,18 @@ export class LessonsService {
 
     try {
       const updatedLesson = await this.lessonRepository.save(lesson);
+      if (videoDraft) {
+        await this.lessonVideoVersionService.createDraft({
+          lessonId: id,
+          ...videoDraft,
+        });
+      }
       if (updatedLesson?.maKH) {
         await this.touchCourse(Number(updatedLesson.maKH));
       }
 
       if (
+        !videoDraft &&
         previousVideoUrl &&
         nextVideoUrl &&
         previousVideoUrl !== nextVideoUrl

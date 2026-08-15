@@ -85,12 +85,25 @@ export class CourseInstructorCurriculumService {
     const placeholders = chapterIds.map(() => '?').join(',');
 
     const lessons = await this.dataSource.query(
-      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc, 
-              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc,
-              AiStatus AS aiStatus, AiLabels AS aiLabels, VideoSourceType AS videoSourceType, AiRejectReason AS aiRejectReason
-       FROM BaiHoc
-       WHERE MaChuong IN (${placeholders}) AND TrangThai = 'ACTIVE'
-       ORDER BY ThuTu ASC`,
+      `SELECT bh.MaBH AS maBH, bh.MaChuong AS maChuong, bh.TenBaiHoc AS tenBaiHoc,
+              COALESCE(vd.VideoURL, bh.VideoURL) AS videoUrl, bh.NoiDung AS noiDung, bh.ThuTu AS thuTu, bh.ThoiLuong AS thoiLuong, bh.choPhepXemTruoc,
+              COALESCE(vd.AiStatus, bh.AiStatus) AS aiStatus, COALESCE(vd.AiLabels, bh.AiLabels) AS aiLabels,
+              COALESCE(vd.VideoSourceType, bh.VideoSourceType) AS videoSourceType,
+              COALESCE(vd.AiRejectReason, bh.AiRejectReason) AS aiRejectReason
+       FROM BaiHoc bh
+       LEFT JOIN (
+         SELECT vd1.*
+         FROM VideoBaiHoc vd1
+         INNER JOIN (
+           SELECT MaBH, MAX(MaVideo) AS MaVideo
+           FROM VideoBaiHoc
+           WHERE TrangThai = 'DRAFT'
+           GROUP BY MaBH
+         ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
+         WHERE vd1.TrangThai = 'DRAFT'
+       ) vd ON vd.MaBH = bh.MaBH
+       WHERE bh.MaChuong IN (${placeholders}) AND bh.TrangThai = 'ACTIVE'
+       ORDER BY bh.ThuTu ASC`,
       [...chapterIds],
     );
 
@@ -186,12 +199,25 @@ export class CourseInstructorCurriculumService {
     );
 
     const lessons = await this.dataSource.query(
-      `SELECT MaBH AS maBH, MaChuong AS maChuong, TenBaiHoc AS tenBaiHoc,
-              VideoURL AS videoUrl, NoiDung AS noiDung, ThuTu AS thuTu, ThoiLuong AS thoiLuong, choPhepXemTruoc,
-              AiStatus AS aiStatus, AiLabels AS aiLabels, VideoSourceType AS videoSourceType, AiRejectReason AS aiRejectReason
-       FROM BaiHoc
-       WHERE MaChuong = ? AND TrangThai = 'ACTIVE'
-       ORDER BY ThuTu ASC`,
+      `SELECT bh.MaBH AS maBH, bh.MaChuong AS maChuong, bh.TenBaiHoc AS tenBaiHoc,
+              COALESCE(vd.VideoURL, bh.VideoURL) AS videoUrl, bh.NoiDung AS noiDung, bh.ThuTu AS thuTu, bh.ThoiLuong AS thoiLuong, bh.choPhepXemTruoc,
+              COALESCE(vd.AiStatus, bh.AiStatus) AS aiStatus, COALESCE(vd.AiLabels, bh.AiLabels) AS aiLabels,
+              COALESCE(vd.VideoSourceType, bh.VideoSourceType) AS videoSourceType,
+              COALESCE(vd.AiRejectReason, bh.AiRejectReason) AS aiRejectReason
+       FROM BaiHoc bh
+       LEFT JOIN (
+         SELECT vd1.*
+         FROM VideoBaiHoc vd1
+         INNER JOIN (
+           SELECT MaBH, MAX(MaVideo) AS MaVideo
+           FROM VideoBaiHoc
+           WHERE TrangThai = 'DRAFT'
+           GROUP BY MaBH
+         ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
+         WHERE vd1.TrangThai = 'DRAFT'
+       ) vd ON vd.MaBH = bh.MaBH
+       WHERE bh.MaChuong = ? AND bh.TrangThai = 'ACTIVE'
+       ORDER BY bh.ThuTu ASC`,
       [chapterId],
     );
 
