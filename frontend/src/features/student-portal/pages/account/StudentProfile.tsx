@@ -124,14 +124,12 @@ export default function StudentProfile() {
       const userId = user.id || user.maND;
       
       const payload: any = { 
-        name: formData.name,
-        soDienThoai: formData.phone // Gán chính xác key khớp với Backend DTO
+        hoTen: formData.name,
+        soDienThoai: formData.phone,
       };
       if (formData.avatarUrl && !formData.avatarUrl.startsWith('blob:')) {
-        payload.avatarUrl = formData.avatarUrl;
+        payload.anhDaiDien = formData.avatarUrl;
       }
-
-      console.log('Payload gửi từ Frontend (StudentProfile):', payload);
 
       // Gửi yêu cầu cập nhật lên backend
       await axiosClient.patch(`/users/${userId}`, payload);

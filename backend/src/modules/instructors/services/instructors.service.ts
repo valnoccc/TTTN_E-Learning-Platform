@@ -550,9 +550,17 @@ export class InstructorsService {
 
   async getAllPublicInstructors() {
     const instructors = await this.userRepo
-      .createQueryBuilder('user')
-      .where('user.vaiTro = :role', { role: UserRole.INSTRUCTOR })
-      .getMany();
+  .createQueryBuilder('user')
+  .where('user.vaiTro = :role', { role: UserRole.INSTRUCTOR })
+  .andWhere(`
+    EXISTS (
+      SELECT 1
+      FROM KhoaHoc kh
+      WHERE kh.MaND_GiangVien = user.maND
+        AND kh.TrangThai = :publishedStatus
+    )
+  `, { publishedStatus: 'PUBLISHED' })
+  .getMany();
 
     const profiles = await this.hoSoRepo.find();
 

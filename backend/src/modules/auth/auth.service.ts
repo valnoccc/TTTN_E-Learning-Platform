@@ -133,7 +133,7 @@ export class AuthService {
     });
 
     await this.userRepository.save(newUser);
-    return { message: 'Đăng ký thành công! Bạn có thể đăng nhập.' };
+    return this.buildAuthResponse(newUser);
   }
 
   async changePassword(userId: number, oldPass: string, newPass: string) {
