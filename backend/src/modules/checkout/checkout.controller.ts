@@ -62,6 +62,16 @@ export class CheckoutController {
     return this.checkoutService.createVnpayPayment(userId, payload);
   }
 
+  @Post('payment/cancel')
+  @UseGuards(JwtAuthGuard)
+  async cancelPendingPayment(
+    @Body('invoiceId') invoiceId: number,
+    @Request() req,
+  ) {
+    const userId = req.user.sub || req.user.maND;
+    return this.checkoutService.cancelPendingPayment(Number(invoiceId), userId);
+  }
+
   // ─── VNPay Return URL (PUBLIC - VNPay redirect về sau khi thanh toán) ─────────
   @Get('vnpay/return')
   @HttpCode(HttpStatus.OK)

@@ -23,6 +23,7 @@ export default function VnpayReturn() {
     let cancelled = false;
     const processReturn = async () => {
       try {
+        localStorage.removeItem("edumeo_pending_vnpay_invoice");
         const queryParams: Record<string, string> = {};
         searchParams.forEach((value, key) => {
           queryParams[key] = value;

@@ -108,6 +108,10 @@ export default function CheckoutSuccess() {
   );
 
   useEffect(() => {
+    localStorage.removeItem("edumeo_pending_vnpay_invoice");
+  }, []);
+
+  useEffect(() => {
     let extractedCourseIds: number[] = [];
     let extractedUserId: number | null = null;
 

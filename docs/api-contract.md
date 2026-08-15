@@ -121,6 +121,11 @@ Admin (Kiem duyet)
 - `GET /instructors/me/reports` (Lay du lieu trang bao cao giang vien; ho tro `courseId` va `range=30days|this_month|last_month|this_year|all_time`; doanh thu tinh theo ty le trong backend `.env`, `grossRevenue = 100%`; mot so khoi UI duoc danh dau `MOCKDATA` neu backend chua co du lieu that)
 - `GET /instructors/me/attention-summary` (Giang vien - Tra ve `unansweredQuestions` va `unrespondedReviews` de hien thi badge can xu ly tren sidebar)
 
+## Checkout / VNPay
+- `POST /checkout/vnpay/create-payment` (Student - Tao hoa don `PENDING` va URL thanh toan VNPay)
+- `POST /checkout/payment/cancel` (Student - Huy hoa don `PENDING` cua chinh minh cho VNPAY/MOMO khi quay lai bo thanh toan)
+- `GET /checkout/vnpay/return` (VNPay - Xac nhan ket qua redirect; thanh cong chuyen `PENDING` thanh `PAID`)
+
 ## Notifications (Thong bao)
 - `GET /notifications` (Lay danh sach thong bao cua toi, ho tro `limit`)
 - `GET /notifications/unread-count` (Dem thong bao chua doc)

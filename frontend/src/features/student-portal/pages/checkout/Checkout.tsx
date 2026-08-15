@@ -14,6 +14,7 @@ import {
   validateCoupon,
   createMomoPayment,
   createVnpayPayment,
+  cancelPendingPayment,
   getAvailableCoupons,
   AvailableCoupon,
 } from '../../../../api/checkout';
@@ -45,6 +46,8 @@ const getStoredCheckoutUser = () => {
   }
 };
 
+const VNPAY_PENDING_INVOICE_KEY = "edumeo_pending_vnpay_invoice";
+
 export default function Checkout() {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -74,6 +77,25 @@ export default function Checkout() {
     cardName: "",
     issueDate: "",
   });
+
+  useEffect(() => {
+    const cancelPendingVnpayInvoice = () => {
+      const storedInvoice = localStorage.getItem(VNPAY_PENDING_INVOICE_KEY);
+      if (!storedInvoice) return;
+
+      localStorage.removeItem(VNPAY_PENDING_INVOICE_KEY);
+      const invoiceId = Number(storedInvoice);
+      if (!Number.isInteger(invoiceId) || invoiceId <= 0) return;
+
+      void cancelPendingPayment(invoiceId).catch(() => {
+        // Callback/IPN may have completed the payment before this request.
+      });
+    };
+
+    cancelPendingVnpayInvoice();
+    window.addEventListener("pageshow", cancelPendingVnpayInvoice);
+    return () => window.removeEventListener("pageshow", cancelPendingVnpayInvoice);
+  }, []);
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -274,6 +296,10 @@ export default function Checkout() {
         toast.dismiss("momo-loading");
         if (res.payUrl) {
           toast.success("Đang chuyển đến MoMo...");
+          localStorage.setItem(
+            VNPAY_PENDING_INVOICE_KEY,
+            String(res.invoiceId),
+          );
           // Xóa gợi ý cross-sell cũ
           localStorage.removeItem("edumeo_cross_sell");
           window.dispatchEvent(new Event("edumeo_cross_sell_updated"));
@@ -295,6 +321,10 @@ export default function Checkout() {
         toast.dismiss('vnpay-loading');
         if (res.payUrl) {
           toast.success('Đang chuyển đến VNPay...');
+          localStorage.setItem(
+            VNPAY_PENDING_INVOICE_KEY,
+            String(res.invoiceId),
+          );
           localStorage.removeItem('edumeo_cross_sell');
           window.dispatchEvent(new Event('edumeo_cross_sell_updated'));
           window.location.href = res.payUrl;

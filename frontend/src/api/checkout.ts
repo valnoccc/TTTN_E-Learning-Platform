@@ -232,6 +232,13 @@ export const createVnpayPayment = async (
   }
 };
 
+export const cancelPendingPayment = async (invoiceId: number) => {
+  const response: any = await axiosClient.post('/checkout/payment/cancel', {
+    invoiceId,
+  });
+  return response?.data ?? response;
+};
+
 export const syncVnpayReturn = async (
   queryParams: Record<string, string>,
 ): Promise<VnpayReturnResponse> => {

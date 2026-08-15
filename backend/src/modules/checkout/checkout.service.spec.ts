@@ -151,6 +151,18 @@ describe('CheckoutService', () => {
     );
   });
 
+  it('cancels only the current user pending VNPAY or MOMO invoice', async () => {
+    dataSource.query.mockResolvedValue({ affectedRows: 1 });
+
+    const result = await service.cancelPendingPayment(123, 7);
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining("PhuongThucThanhToan IN ('VNPAY', 'MOMO')"),
+      [123, 7],
+    );
+    expect(result).toEqual({ success: true, invoiceId: 123, cancelled: true });
+  });
+
   it('does not consume coupon usage when creating a pending MoMo payment', async () => {
     couponsService.validateCoupon.mockResolvedValueOnce({
       couponId: 12,

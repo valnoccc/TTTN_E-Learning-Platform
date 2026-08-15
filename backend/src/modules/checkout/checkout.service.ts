@@ -1021,6 +1021,24 @@ export class CheckoutService {
     }
   }
 
+  async cancelPendingPayment(invoiceId: number, userId: number) {
+    const result = await this.dataSource.query(
+      `UPDATE HoaDon
+       SET TrangThaiThanhToan = 'CANCELLED'
+       WHERE MaHD = ?
+         AND MaND = ?
+         AND PhuongThucThanhToan IN ('VNPAY', 'MOMO')
+         AND TrangThaiThanhToan = 'PENDING'`,
+      [invoiceId, userId],
+    );
+
+    return {
+      success: true,
+      invoiceId,
+      cancelled: this.toAffectedRows(result) > 0,
+    };
+  }
+
   // ────────────────────────────────────────────────────────────────────────────────
   // VNPAY: Xác thực Return URL (Redirect từ VNPay về)
   // ────────────────────────────────────────────────────────────────────────────────
