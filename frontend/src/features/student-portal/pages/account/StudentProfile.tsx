@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LayoutDashboard, User, BookOpen, CreditCard, Save, Camera, Lock, Award } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { BreadcrumbBox } from '../../components/common/Breadcrumb';
-import axiosClient from '../../../../api/axios';
-import StudentCertificates from './StudentCertificates';
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  LayoutDashboard,
+  User,
+  BookOpen,
+  CreditCard,
+  Save,
+  Camera,
+  Lock,
+  Award,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { BreadcrumbBox } from "../../components/common/Breadcrumb";
+import axiosClient from "../../../../api/axios";
+import StudentCertificates from "./StudentCertificates";
 
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button } from "react-bootstrap";
 
 type StoredUser = {
   id?: number | string;
@@ -26,16 +35,32 @@ export default function StudentProfile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  
-  const initialTab = (tabParam === 'profile' || tabParam === 'courses' || tabParam === 'payments' || tabParam === 'password' || tabParam === 'certificates') 
-    ? tabParam 
-    : 'profile';
+  const tabParam = searchParams.get("tab");
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'payments' | 'password' | 'certificates'>(initialTab);
+  const initialTab =
+    tabParam === "profile" ||
+    tabParam === "courses" ||
+    tabParam === "payments" ||
+    tabParam === "password" ||
+    tabParam === "certificates"
+      ? tabParam
+      : "profile";
+
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "courses" | "payments" | "password" | "certificates"
+  >(initialTab);
   const [user, setUser] = useState<StoredUser | null>(null);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', avatarUrl: '' });
-  const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    avatarUrl: "",
+  });
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [myCourses, setMyCourses] = useState<any[]>([]);
@@ -45,14 +70,22 @@ export default function StudentProfile() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [invoiceDetails, setInvoiceDetails] = useState<any[]>([]);
   const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
-  const normalizePaymentStatus = (status: unknown) => String(status || '').toUpperCase();
+  const normalizePaymentStatus = (status: unknown) =>
+    String(status || "").toUpperCase();
 
   const handleViewInvoice = async (invoiceId: number) => {
     if (!invoiceId || isNaN(invoiceId)) {
-      console.error('>>> LỖI: ID hóa đơn không hợp lệ, không thể gọi API!', invoiceId);
+      console.error(
+        ">>> LỖI: ID hóa đơn không hợp lệ, không thể gọi API!",
+        invoiceId,
+      );
       return;
     }
-    console.log('>>> ID Hóa đơn truyền từ giao diện xuống:', invoiceId, typeof invoiceId);
+    console.log(
+      ">>> ID Hóa đơn truyền từ giao diện xuống:",
+      invoiceId,
+      typeof invoiceId,
+    );
     try {
       setIsInvoiceLoading(true);
       setIsInvoiceModalOpen(true);
@@ -60,8 +93,11 @@ export default function StudentProfile() {
       setSelectedInvoice(res?.invoice || res?.data?.invoice || null);
       setInvoiceDetails(res?.details || res?.data?.details || []);
     } catch (err: any) {
-      console.error('>>> Chi tiết lỗi API Invoice thật từ NestJS:', err.response?.data || err.message);
-      toast.error('Lỗi khi lấy chi tiết hóa đơn');
+      console.error(
+        ">>> Chi tiết lỗi API Invoice thật từ NestJS:",
+        err.response?.data || err.message,
+      );
+      toast.error("Lỗi khi lấy chi tiết hóa đơn");
       setIsInvoiceModalOpen(false);
     } finally {
       setIsInvoiceLoading(false);
@@ -70,16 +106,21 @@ export default function StudentProfile() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userString = localStorage.getItem('user');
+      const userString = localStorage.getItem("user");
       if (userString) {
         try {
           const parsedUser = JSON.parse(userString);
           setUser(parsedUser);
           setFormData({
-            name: parsedUser.fullName || parsedUser.name || '',
-            email: parsedUser.email || '',
-            phone: parsedUser.phone || '',
-            avatarUrl: parsedUser.avatarUrl || parsedUser.avatar || parsedUser.photoUrl || parsedUser.imageUrl || ''
+            name: parsedUser.fullName || parsedUser.name || "",
+            email: parsedUser.email || "",
+            phone: parsedUser.phone || "",
+            avatarUrl:
+              parsedUser.avatarUrl ||
+              parsedUser.avatar ||
+              parsedUser.photoUrl ||
+              parsedUser.imageUrl ||
+              "",
           });
 
           const userId = parsedUser.id || parsedUser.maND || parsedUser.sub;
@@ -92,7 +133,7 @@ export default function StudentProfile() {
             setPaymentHistory(paymentsRes?.data ?? paymentsRes ?? []);
           }
         } catch (e) {
-          console.error('Lỗi khi tải dữ liệu học viên', e);
+          console.error("Lỗi khi tải dữ liệu học viên", e);
         }
       }
     };
@@ -101,12 +142,19 @@ export default function StudentProfile() {
   }, []);
 
   useEffect(() => {
-    if (tabParam && ['profile', 'courses', 'payments', 'password', 'certificates'].includes(tabParam)) {
+    if (
+      tabParam &&
+      ["profile", "courses", "payments", "password", "certificates"].includes(
+        tabParam,
+      )
+    ) {
       setActiveTab(tabParam as any);
     }
   }, [tabParam]);
 
-  const handleTabChange = (tab: 'profile' | 'courses' | 'payments' | 'password' | 'certificates') => {
+  const handleTabChange = (
+    tab: "profile" | "courses" | "payments" | "password" | "certificates",
+  ) => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -114,7 +162,14 @@ export default function StudentProfile() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id && !user?.maND) {
-      toast.error('Không tìm thấy ID người dùng!');
+      toast.error("Không tìm thấy ID người dùng!");
+      return;
+    }
+
+    const notRegex = /[!@#$%^&*(),.?":{}|<>]/;
+
+    if (notRegex.test(formData.name)) {
+      toast.error("Tên không được chứa ký tự đặc biệt!");
       return;
     }
 
@@ -122,12 +177,12 @@ export default function StudentProfile() {
 
     try {
       const userId = user.id || user.maND;
-      
-      const payload: any = { 
+
+      const payload: any = {
         hoTen: formData.name,
         soDienThoai: formData.phone,
       };
-      if (formData.avatarUrl && !formData.avatarUrl.startsWith('blob:')) {
+      if (formData.avatarUrl && !formData.avatarUrl.startsWith("blob:")) {
         payload.anhDaiDien = formData.avatarUrl;
       }
 
@@ -143,13 +198,16 @@ export default function StudentProfile() {
         avatarUrl: formData.avatarUrl,
       };
 
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      window.dispatchEvent(new Event('auth-change'));
-      
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("auth-change"));
+
       setUser(updatedUser);
-      toast.success(t('Update Profile') + ' ' + t('Success'));
+      toast.success(t("Update Profile") + " " + t("Success"));
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Lỗi khi cập nhật hồ sơ';
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Lỗi khi cập nhật hồ sơ";
       toast.error(`Lỗi: ${errorMessage}`);
       console.error(error);
     } finally {
@@ -166,132 +224,170 @@ export default function StudentProfile() {
     if (file) {
       // Hiển thị preview cục bộ
       const previewUrl = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, avatarUrl: previewUrl }));
-      
+      setFormData((prev) => ({ ...prev, avatarUrl: previewUrl }));
+
       try {
-        toast.loading('Đang xử lý ảnh đại diện...', { id: 'upload-avatar' });
+        toast.loading("Đang xử lý ảnh đại diện...", { id: "upload-avatar" });
         const uploadData = new FormData();
-        uploadData.append('file', file);
-        
-        const res: any = await axiosClient.post('/cloudinary/upload', uploadData);
+        uploadData.append("file", file);
+
+        const res: any = await axiosClient.post(
+          "/cloudinary/upload",
+          uploadData,
+        );
         if (res?.url) {
-          setFormData(prev => ({ ...prev, avatarUrl: res.url }));
-          
+          setFormData((prev) => ({ ...prev, avatarUrl: res.url }));
+
           if (user?.id || user?.maND) {
             const userId = user.id || user.maND;
-            await axiosClient.patch(`/users/${userId}`, { avatarUrl: res.url });
-            
-            const updatedUser = { ...user, avatarUrl: res.url, avatar: res.url };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            await axiosClient.patch(`/users/${userId}`, {
+              anhDaiDien: res.url,
+            });
+
+            const updatedUser = {
+              ...user,
+              avatarUrl: res.url,
+              avatar: res.url,
+            };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
             setUser(updatedUser);
-            window.dispatchEvent(new Event('auth-change'));
+            window.dispatchEvent(new Event("auth-change"));
           }
 
-          toast.success('Tải ảnh thành công!', { id: 'upload-avatar' });
+          toast.success("Tải ảnh thành công!", { id: "upload-avatar" });
         }
       } catch (err: any) {
-        const originalAvatar = user?.avatarUrl || user?.avatar || '';
-        setFormData(prev => ({ 
-          ...prev, 
-          avatarUrl: originalAvatar.startsWith('blob:') ? '' : originalAvatar 
+        const originalAvatar = user?.avatarUrl || user?.avatar || "";
+        setFormData((prev) => ({
+          ...prev,
+          avatarUrl: originalAvatar.startsWith("blob:") ? "" : originalAvatar,
         }));
-        
-        const msg = err.response?.data?.message || err.message || 'Lỗi tải ảnh';
-        toast.error(`Lỗi: ${msg}`, { id: 'upload-avatar' });
-        console.error('Chi tiết lỗi upload:', err.response?.data || err);
+
+        const msg = err.response?.data?.message || err.message || "Lỗi tải ảnh";
+        toast.error(`Lỗi: ${msg}`, { id: "upload-avatar" });
+        console.error("Chi tiết lỗi upload:", err.response?.data || err);
       }
     }
   };
-  const [searchTerm, setSearchTerm] = useState('');
-  const [courseFilter, setCourseFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
-  const [sortOption, setSortOption] = useState<'az' | 'za' | 'progress-desc' | 'progress-asc'>('az');
-  
-  const filteredCourses = myCourses.filter((course) => {
-    const matchSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    if (!matchSearch) return false;
-    
-    if (courseFilter === 'in-progress') {
-      return course.progress > 0 && course.progress < 100;
-    }
-    if (courseFilter === 'completed') {
-      return course.progress >= 100;
-    }
-    return true;
-  }).sort((a, b) => {
-    if (sortOption === 'az') return (a.title || '').localeCompare(b.title || '');
-    if (sortOption === 'za') return (b.title || '').localeCompare(a.title || '');
-    if (sortOption === 'progress-desc') return b.progress - a.progress;
-    if (sortOption === 'progress-asc') return a.progress - b.progress;
-    return 0;
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [courseFilter, setCourseFilter] = useState<
+    "all" | "in-progress" | "completed"
+  >("all");
+  const [sortOption, setSortOption] = useState<
+    "az" | "za" | "progress-desc" | "progress-asc"
+  >("az");
+
+  const filteredCourses = myCourses
+    .filter((course) => {
+      const matchSearch = course.title
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      if (!matchSearch) return false;
+
+      if (courseFilter === "in-progress") {
+        return course.progress > 0 && course.progress < 100;
+      }
+      if (courseFilter === "completed") {
+        return course.progress >= 100;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOption === "az")
+        return (a.title || "").localeCompare(b.title || "");
+      if (sortOption === "za")
+        return (b.title || "").localeCompare(a.title || "");
+      if (sortOption === "progress-desc") return b.progress - a.progress;
+      if (sortOption === "progress-asc") return a.progress - b.progress;
+      return 0;
+    });
   const completedCount = myCourses.filter((c) => c.progress >= 100).length;
-  const inProgressCount = myCourses.filter((c) => c.progress > 0 && c.progress < 100).length;
+  const inProgressCount = myCourses.filter(
+    (c) => c.progress > 0 && c.progress < 100,
+  ).length;
 
   return (
     <div className="profile-page bg-slate-50 min-h-screen pb-16">
-      <BreadcrumbBox title={t('Student Profile')} />
+      <BreadcrumbBox title={t("Student Profile")} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         <div className="flex flex-col lg:flex-row gap-8">
-          
           {/* Sidebar */}
           <div className="lg:w-1/4">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sticky top-24">
               <div className="flex items-center gap-4 p-4 mb-6 border-b border-slate-100">
                 <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xl overflow-hidden">
                   {user?.avatarUrl || user?.avatar ? (
-                    <img src={user.avatarUrl || user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={user.avatarUrl || user.avatar}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    (user?.fullName || user?.name || user?.hoTen || 'U').charAt(0).toUpperCase()
+                    (user?.fullName || user?.name || user?.hoTen || "U")
+                      .charAt(0)
+                      .toUpperCase()
                   )}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-800">{user?.fullName || user?.name || user?.hoTen || 'User'}</h4>
+                  <h4 className="font-semibold text-slate-800">
+                    {user?.fullName || user?.name || user?.hoTen || "User"}
+                  </h4>
                   <p className="text-sm text-slate-500">Học viên</p>
                 </div>
               </div>
 
               <nav className="space-y-2">
                 <button
-                  onClick={() => handleTabChange('profile')}
+                  onClick={() => handleTabChange("profile")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeTab === 'profile' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                    activeTab === "profile"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <User size={20} />
-                  {t('Personal Info')}
+                  {t("Personal Info")}
                 </button>
                 <button
-                  onClick={() => handleTabChange('courses')}
+                  onClick={() => handleTabChange("courses")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeTab === 'courses' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                    activeTab === "courses"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <BookOpen size={20} />
-                  {t('My Courses')}
+                  {t("My Courses")}
                 </button>
                 <button
-                  onClick={() => handleTabChange('certificates')}
+                  onClick={() => handleTabChange("certificates")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeTab === 'certificates' ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                    activeTab === "certificates"
+                      ? "bg-purple-50 text-purple-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <Award size={20} />
                   Chứng chỉ của tôi
                 </button>
                 <button
-                  onClick={() => handleTabChange('payments')}
+                  onClick={() => handleTabChange("payments")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeTab === 'payments' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                    activeTab === "payments"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <CreditCard size={20} />
-                  {t('Payment History')}
+                  {t("Payment History")}
                 </button>
                 <button
-                  onClick={() => handleTabChange('password')}
+                  onClick={() => handleTabChange("password")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeTab === 'password' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
+                    activeTab === "password"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <Lock size={20} />
@@ -304,35 +400,51 @@ export default function StudentProfile() {
           {/* Main Content */}
           <div className="lg:w-3/4">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-              
               {/* Profile Tab */}
-              {activeTab === 'profile' && (
+              {activeTab === "profile" && (
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-6">{t('Personal Info')}</h3>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6">
+                    {t("Personal Info")}
+                  </h3>
                   <form onSubmit={handleUpdateProfile} className="space-y-6">
                     {/* Avatar Upload */}
                     <div className="flex items-center gap-6 mb-8">
                       <div className="relative">
                         <div className="w-24 h-24 rounded-full bg-emerald-100 border-4 border-white shadow-md flex items-center justify-center font-bold text-3xl overflow-hidden text-emerald-600">
                           {formData.avatarUrl ? (
-                            <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            <img
+                              src={formData.avatarUrl}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            user?.name?.charAt(0).toUpperCase() || 'U'
+                            user?.name?.charAt(0).toUpperCase() || "U"
                           )}
                         </div>
                         <label className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md border border-slate-100 flex items-center justify-center text-slate-600 cursor-pointer hover:text-emerald-600 hover:border-emerald-200 transition-colors">
                           <Camera size={16} />
-                          <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarChange}
+                          />
                         </label>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-slate-800">Ảnh đại diện</h4>
-                        <p className="text-sm text-slate-500">Định dạng JPG, PNG. Nhấp vào icon Camera để thay đổi.</p>
+                        <h4 className="font-semibold text-slate-800">
+                          Ảnh đại diện
+                        </h4>
+                        <p className="text-sm text-slate-500">
+                          Định dạng JPG, PNG. Nhấp vào icon Camera để thay đổi.
+                        </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">{t('Name')}</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t("Name")}
+                        </label>
                         <input
                           type="text"
                           name="name"
@@ -343,7 +455,9 @@ export default function StudentProfile() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">{t('Email')}</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t("Email")}
+                        </label>
                         <input
                           type="email"
                           name="email"
@@ -355,7 +469,9 @@ export default function StudentProfile() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">{t('Phone')}</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t("Phone")}
+                        </label>
                         <input
                           type="text"
                           name="phone"
@@ -376,7 +492,7 @@ export default function StudentProfile() {
                         ) : (
                           <Save size={20} />
                         )}
-                        {t('Update Profile')}
+                        {t("Update Profile")}
                       </button>
                     </div>
                   </form>
@@ -384,48 +500,105 @@ export default function StudentProfile() {
               )}
 
               {/* My Courses Tab */}
-              {activeTab === 'courses' && (
+              {activeTab === "courses" && (
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-6">{t('My Courses')}</h3>
-                  
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6">
+                    {t("My Courses")}
+                  </h3>
+
                   {/* Stats Cards as Filters */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <div 
-                      onClick={() => setCourseFilter('all')}
-                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'all' ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-blue-100'}`}
+                    <div
+                      onClick={() => setCourseFilter("all")}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === "all" ? "bg-blue-50 border-blue-200 ring-1 ring-blue-500" : "bg-white border-slate-100 hover:bg-slate-50 hover:border-blue-100"}`}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'all' ? 'bg-blue-100' : 'bg-blue-50'}`}>
-                        <BookOpen size={22} className={courseFilter === 'all' ? 'text-blue-600' : 'text-blue-500'} />
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === "all" ? "bg-blue-100" : "bg-blue-50"}`}
+                      >
+                        <BookOpen
+                          size={22}
+                          className={
+                            courseFilter === "all"
+                              ? "text-blue-600"
+                              : "text-blue-500"
+                          }
+                        />
                       </div>
                       <div>
-                        <p className={`text-sm ${courseFilter === 'all' ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>Tổng khóa học</p>
-                        <p className="text-2xl font-bold text-slate-800">{myCourses.length}</p>
+                        <p
+                          className={`text-sm ${courseFilter === "all" ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                        >
+                          Tổng khóa học
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {myCourses.length}
+                        </p>
                       </div>
                     </div>
-                    
-                    <div 
-                      onClick={() => setCourseFilter('in-progress')}
-                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'in-progress' ? 'bg-amber-50 border-amber-200 ring-1 ring-amber-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-amber-100'}`}
+
+                    <div
+                      onClick={() => setCourseFilter("in-progress")}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === "in-progress" ? "bg-amber-50 border-amber-200 ring-1 ring-amber-500" : "bg-white border-slate-100 hover:bg-slate-50 hover:border-amber-100"}`}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'in-progress' ? 'bg-amber-100' : 'bg-amber-50'}`}>
-                        <svg className={`${courseFilter === 'in-progress' ? 'text-amber-600' : 'text-amber-500'} w-5 h-5`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === "in-progress" ? "bg-amber-100" : "bg-amber-50"}`}
+                      >
+                        <svg
+                          className={`${courseFilter === "in-progress" ? "text-amber-600" : "text-amber-500"} w-5 h-5`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
                       </div>
                       <div>
-                        <p className={`text-sm ${courseFilter === 'in-progress' ? 'text-amber-700 font-medium' : 'text-slate-500'}`}>Đang học</p>
-                        <p className="text-2xl font-bold text-slate-800">{inProgressCount}</p>
+                        <p
+                          className={`text-sm ${courseFilter === "in-progress" ? "text-amber-700 font-medium" : "text-slate-500"}`}
+                        >
+                          Đang học
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {inProgressCount}
+                        </p>
                       </div>
                     </div>
-                    
-                    <div 
-                      onClick={() => setCourseFilter('completed')}
-                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === 'completed' ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-500' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-emerald-100'}`}
+
+                    <div
+                      onClick={() => setCourseFilter("completed")}
+                      className={`rounded-2xl p-5 border shadow-sm flex items-center gap-4 cursor-pointer transition-all ${courseFilter === "completed" ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-500" : "bg-white border-slate-100 hover:bg-slate-50 hover:border-emerald-100"}`}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === 'completed' ? 'bg-emerald-100' : 'bg-emerald-50'}`}>
-                        <svg className={`${courseFilter === 'completed' ? 'text-emerald-600' : 'text-emerald-500'} w-5 h-5`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${courseFilter === "completed" ? "bg-emerald-100" : "bg-emerald-50"}`}
+                      >
+                        <svg
+                          className={`${courseFilter === "completed" ? "text-emerald-600" : "text-emerald-500"} w-5 h-5`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
                       </div>
                       <div>
-                        <p className={`text-sm ${courseFilter === 'completed' ? 'text-emerald-700 font-medium' : 'text-slate-500'}`}>Hoàn thành</p>
-                        <p className="text-2xl font-bold text-slate-800">{completedCount}</p>
+                        <p
+                          className={`text-sm ${courseFilter === "completed" ? "text-emerald-700 font-medium" : "text-slate-500"}`}
+                        >
+                          Hoàn thành
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {completedCount}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -433,7 +606,19 @@ export default function StudentProfile() {
                   {/* Search and Sort Bar */}
                   <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <div className="relative flex-1">
-                      <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                      <svg
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
                       <input
                         type="text"
                         placeholder="Tìm kiếm khóa học..."
@@ -442,7 +627,7 @@ export default function StudentProfile() {
                         className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
                       />
                     </div>
-                    
+
                     <div className="w-full sm:w-56 relative">
                       <select
                         value={sortOption}
@@ -451,24 +636,45 @@ export default function StudentProfile() {
                       >
                         <option value="az">Tên khóa học: A-Z</option>
                         <option value="za">Tên khóa học: Z-A</option>
-                        <option value="progress-desc">Tiến độ: Cao đến thấp</option>
-                        <option value="progress-asc">Tiến độ: Thấp đến cao</option>
+                        <option value="progress-desc">
+                          Tiến độ: Cao đến thấp
+                        </option>
+                        <option value="progress-asc">
+                          Tiến độ: Thấp đến cao
+                        </option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
                       </div>
                     </div>
                   </div>
 
                   {filteredCourses.length === 0 ? (
                     <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      <BookOpen size={40} className="mx-auto text-slate-300 mb-3" />
+                      <BookOpen
+                        size={40}
+                        className="mx-auto text-slate-300 mb-3"
+                      />
                       <h3 className="text-lg font-semibold text-slate-600 mb-1">
-                        {searchTerm ? 'Không tìm thấy khóa học' : 'Chưa có khóa học nào'}
+                        {searchTerm
+                          ? "Không tìm thấy khóa học"
+                          : "Chưa có khóa học nào"}
                       </h3>
                       {!searchTerm && (
                         <button
-                          onClick={() => navigate('/course-grid')}
+                          onClick={() => navigate("/course-grid")}
                           className="mt-4 px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors"
                         >
                           Khám phá khóa học
@@ -481,20 +687,22 @@ export default function StudentProfile() {
                         <div
                           key={course.id}
                           className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
-                          onClick={() => navigate(`/student/learn/${course.id}`)}
+                          onClick={() =>
+                            navigate(`/student/learn/${course.id}`)
+                          }
                         >
                           <div className="h-40 bg-slate-200 overflow-hidden relative">
                             {course.image ? (
                               <img
                                 src={
-                                  course.image.startsWith('http')
+                                  course.image.startsWith("http")
                                     ? course.image
-                                    : `/assets/images/${course.image.replace(/^\/?\/?/, '')}`
+                                    : `/assets/images/${course.image.replace(/^\/?\/?/, "")}`
                                 }
                                 alt={course.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 onError={(e: any) => {
-                                  e.target.src = '/assets/images/course-1.jpg';
+                                  e.target.src = "/assets/images/course-1.jpg";
                                 }}
                               />
                             ) : (
@@ -506,17 +714,25 @@ export default function StudentProfile() {
                               <span
                                 className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full backdrop-blur-sm ${
                                   course.progress >= 100
-                                    ? 'bg-emerald-500/90 text-white'
+                                    ? "bg-emerald-500/90 text-white"
                                     : course.progress > 0
-                                      ? 'bg-amber-500/90 text-white'
-                                      : 'bg-slate-500/80 text-white'
+                                      ? "bg-amber-500/90 text-white"
+                                      : "bg-slate-500/80 text-white"
                                 }`}
                               >
-                                {course.progress >= 100 ? 'Hoàn thành' : course.progress > 0 ? 'Đang học' : 'Chưa bắt đầu'}
+                                {course.progress >= 100
+                                  ? "Hoàn thành"
+                                  : course.progress > 0
+                                    ? "Đang học"
+                                    : "Chưa bắt đầu"}
                               </span>
                             </div>
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                              <svg className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                              <svg
+                                className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path d="M8 5v14l11-7z" />
                               </svg>
                             </div>
@@ -530,7 +746,9 @@ export default function StudentProfile() {
                             <div className="mb-4">
                               <div className="flex justify-between text-sm mb-1.5">
                                 <span className="text-slate-500">Tiến độ</span>
-                                <span className="font-semibold text-emerald-600">{course.progress}%</span>
+                                <span className="font-semibold text-emerald-600">
+                                  {course.progress}%
+                                </span>
                               </div>
                               <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                                 <div
@@ -539,10 +757,10 @@ export default function StudentProfile() {
                                     width: `${course.progress}%`,
                                     background:
                                       course.progress >= 100
-                                        ? 'linear-gradient(90deg, #10b981, #059669)'
+                                        ? "linear-gradient(90deg, #10b981, #059669)"
                                         : course.progress > 0
-                                          ? 'linear-gradient(90deg, #f59e0b, #d97706)'
-                                          : '#cbd5e1',
+                                          ? "linear-gradient(90deg, #f59e0b, #d97706)"
+                                          : "#cbd5e1",
                                   }}
                                 ></div>
                               </div>
@@ -555,7 +773,11 @@ export default function StudentProfile() {
                               }}
                               className="w-full py-2.5 bg-emerald-50 text-emerald-700 font-medium rounded-xl hover:bg-emerald-600 hover:text-white transition-all duration-200 flex items-center justify-center gap-2"
                             >
-                              {course.progress >= 100 ? 'Ôn tập lại' : course.progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
+                              {course.progress >= 100
+                                ? "Ôn tập lại"
+                                : course.progress > 0
+                                  ? "Tiếp tục học"
+                                  : "Bắt đầu học"}
                             </button>
                           </div>
                         </div>
@@ -566,64 +788,87 @@ export default function StudentProfile() {
               )}
 
               {/* Certificates Tab */}
-              {activeTab === 'certificates' && (
-                <StudentCertificates />
-              )}
+              {activeTab === "certificates" && <StudentCertificates />}
 
               {/* Payment History Tab */}
-              {activeTab === 'payments' && (
+              {activeTab === "payments" && (
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-6">{t('Payment History')}</h3>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6">
+                    {t("Payment History")}
+                  </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm uppercase tracking-wider">
-                          <th className="p-4 font-semibold">{t('Date')}</th>
-                          <th className="p-4 font-semibold">{t('Invoice ID')}</th>
-                          <th className="p-4 font-semibold">{t('Amount')}</th>
-                          <th className="p-4 font-semibold text-right">{t('Status')}</th>
+                          <th className="p-4 font-semibold">{t("Date")}</th>
+                          <th className="p-4 font-semibold">
+                            {t("Invoice ID")}
+                          </th>
+                          <th className="p-4 font-semibold">{t("Amount")}</th>
+                          <th className="p-4 font-semibold text-right">
+                            {t("Status")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {paymentHistory.map((invoice) => (
-                          <tr key={invoice.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4 text-slate-600">{invoice.date}</td>
+                          <tr
+                            key={invoice.id}
+                            className="hover:bg-slate-50/50 transition-colors"
+                          >
+                            <td className="p-4 text-slate-600">
+                              {invoice.date}
+                            </td>
                             <td className="p-4 font-medium">
-                              <span 
-                                className="text-emerald-600 font-semibold" 
-                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                              <span
+                                className="text-emerald-600 font-semibold"
+                                style={{
+                                  cursor: "pointer",
+                                  textDecoration: "underline",
+                                }}
                                 onClick={() => {
-                                  const rawId = invoice.id || invoice.MaHD || invoice.maHD;
-                                  const cleanId = typeof rawId === 'string' ? rawId.replace(/\D/g, '') : rawId;
+                                  const rawId =
+                                    invoice.id || invoice.MaHD || invoice.maHD;
+                                  const cleanId =
+                                    typeof rawId === "string"
+                                      ? rawId.replace(/\D/g, "")
+                                      : rawId;
                                   handleViewInvoice(Number(cleanId));
                                 }}
                               >
                                 {invoice.id}
                               </span>
                             </td>
-                            <td className="p-4 font-semibold text-slate-700">{invoice.amount.toLocaleString('vi-VN')} đ</td>
+                            <td className="p-4 font-semibold text-slate-700">
+                              {invoice.amount.toLocaleString("vi-VN")} đ
+                            </td>
                             <td className="p-4 text-right">
                               {(() => {
-                                const normalizedStatus = normalizePaymentStatus(invoice.status);
-                                const isSuccess = normalizedStatus === 'SUCCESS';
+                                const normalizedStatus = normalizePaymentStatus(
+                                  invoice.status,
+                                );
+                                const isSuccess =
+                                  normalizedStatus === "SUCCESS";
                                 const isFailed =
-                                  normalizedStatus === 'FAILED' ||
-                                  normalizedStatus === 'CANCELED' ||
-                                  normalizedStatus === 'CANCELLED';
+                                  normalizedStatus === "FAILED" ||
+                                  normalizedStatus === "CANCELED" ||
+                                  normalizedStatus === "CANCELLED";
 
                                 return (
-                                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    isSuccess
-                                      ? 'bg-emerald-100 text-emerald-700'
-                                      : isFailed
-                                        ? 'bg-red-100 text-red-700'
-                                        : 'bg-amber-100 text-amber-700'
-                                  }`}>
+                                  <span
+                                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                      isSuccess
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : isFailed
+                                          ? "bg-red-100 text-red-700"
+                                          : "bg-amber-100 text-amber-700"
+                                    }`}
+                                  >
                                     {isSuccess
-                                      ? 'Thành công'
+                                      ? "Thành công"
                                       : isFailed
-                                        ? 'Lỗi'
-                                        : 'Chờ xử lý'}
+                                        ? "Lỗi"
+                                        : "Chờ xử lý"}
                                   </span>
                                 );
                               })()}
@@ -637,68 +882,110 @@ export default function StudentProfile() {
               )}
 
               {/* Password Tab */}
-              {activeTab === 'password' && (
+              {activeTab === "password" && (
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-6">Đổi mật khẩu</h3>
-                  <p className="text-slate-600 mb-6">Vui lòng nhập mật khẩu hiện tại và mật khẩu mới để thay đổi.</p>
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (passwordData.newPassword.length < 6) {
-                      toast.error('Mật khẩu mới phải có ít nhất 6 ký tự!');
-                      return;
-                    }
-                    if (passwordData.newPassword !== passwordData.confirmPassword) {
-                      toast.error('Mật khẩu xác nhận không khớp!');
-                      return;
-                    }
-                    if (!user?.id && !user?.maND) {
-                      toast.error('Lỗi: Không tìm thấy ID người dùng!');
-                      return;
-                    }
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6">
+                    Đổi mật khẩu
+                  </h3>
+                  <p className="text-slate-600 mb-6">
+                    Vui lòng nhập mật khẩu hiện tại và mật khẩu mới để thay đổi.
+                  </p>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (passwordData.newPassword.length < 6) {
+                        toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+                        return;
+                      }
+                      if (
+                        passwordData.newPassword !==
+                        passwordData.confirmPassword
+                      ) {
+                        toast.error("Mật khẩu xác nhận không khớp!");
+                        return;
+                      }
+                      if (!user?.id && !user?.maND) {
+                        toast.error("Lỗi: Không tìm thấy ID người dùng!");
+                        return;
+                      }
 
-                    setIsPasswordLoading(true);
-                    try {
-                      const userId = user.id || user.maND;
-                      const res: any = await axiosClient.post('/auth/change-password', {
-                        userId,
-                        oldPassword: passwordData.oldPassword,
-                        newPassword: passwordData.newPassword
-                      });
-                      toast.success(res?.message || 'Đổi mật khẩu thành công!');
-                      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-                    } catch (error: any) {
-                      const msg = error.response?.data?.message || 'Lỗi khi đổi mật khẩu';
-                      toast.error(`Lỗi: ${msg}`);
-                    } finally {
-                      setIsPasswordLoading(false);
-                    }
-                  }} className="space-y-6 max-w-md">
+                      setIsPasswordLoading(true);
+                      try {
+                        const userId = user.id || user.maND;
+                        const res: any = await axiosClient.post(
+                          "/auth/change-password",
+                          {
+                            userId,
+                            oldPassword: passwordData.oldPassword,
+                            newPassword: passwordData.newPassword,
+                          },
+                        );
+                        toast.success(
+                          res?.message || "Đổi mật khẩu thành công!",
+                        );
+                        setPasswordData({
+                          oldPassword: "",
+                          newPassword: "",
+                          confirmPassword: "",
+                        });
+                      } catch (error: any) {
+                        const msg =
+                          error.response?.data?.message ||
+                          "Lỗi khi đổi mật khẩu";
+                        toast.error(`Lỗi: ${msg}`);
+                      } finally {
+                        setIsPasswordLoading(false);
+                      }
+                    }}
+                    className="space-y-6 max-w-md"
+                  >
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Mật khẩu hiện tại</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Mật khẩu hiện tại
+                      </label>
                       <input
                         type="password"
                         value={passwordData.oldPassword}
-                        onChange={(e) => setPasswordData({...passwordData, oldPassword: e.target.value})}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            oldPassword: e.target.value,
+                          })
+                        }
                         required
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Mật khẩu mới</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Mật khẩu mới
+                      </label>
                       <input
                         type="password"
                         value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            newPassword: e.target.value,
+                          })
+                        }
                         required
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Xác nhận mật khẩu mới</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Xác nhận mật khẩu mới
+                      </label>
                       <input
                         type="password"
                         value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
                         required
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
                       />
@@ -718,14 +1005,17 @@ export default function StudentProfile() {
                   </form>
                 </div>
               )}
-
             </div>
           </div>
-
         </div>
       </div>
 
-      <Modal show={isInvoiceModalOpen} onHide={() => setIsInvoiceModalOpen(false)} size="lg" centered>
+      <Modal
+        show={isInvoiceModalOpen}
+        onHide={() => setIsInvoiceModalOpen(false)}
+        size="lg"
+        centered
+      >
         <Modal.Header closeButton className="border-b border-slate-100">
           <Modal.Title className="font-bold text-slate-800">
             Chi tiết hóa đơn {selectedInvoice && `#INV-${selectedInvoice.MaHD}`}
@@ -740,14 +1030,23 @@ export default function StudentProfile() {
             <div>
               <div className="space-y-4 mb-6">
                 {invoiceDetails.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl items-center">
+                  <div
+                    key={idx}
+                    className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl items-center"
+                  >
                     <div className="w-20 h-14 bg-slate-200 rounded-lg overflow-hidden shrink-0">
                       {item.HinhAnhDaiDien ? (
-                        <img 
-                          src={item.HinhAnhDaiDien.startsWith('http') ? item.HinhAnhDaiDien : `/assets/images/${item.HinhAnhDaiDien.startsWith('/') ? item.HinhAnhDaiDien.substring(1) : item.HinhAnhDaiDien}`}
+                        <img
+                          src={
+                            item.HinhAnhDaiDien.startsWith("http")
+                              ? item.HinhAnhDaiDien
+                              : `/assets/images/${item.HinhAnhDaiDien.startsWith("/") ? item.HinhAnhDaiDien.substring(1) : item.HinhAnhDaiDien}`
+                          }
                           alt={item.TenKhoaHoc}
                           className="w-full h-full object-cover"
-                          onError={(e: any) => { e.target.src = '/assets/images/course-1.jpg'; }}
+                          onError={(e: any) => {
+                            e.target.src = "/assets/images/course-1.jpg";
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -756,30 +1055,40 @@ export default function StudentProfile() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{item.TenKhoaHoc}</h4>
+                      <h4 className="font-bold text-slate-800 text-sm line-clamp-1">
+                        {item.TenKhoaHoc}
+                      </h4>
                     </div>
                     <div className="font-semibold text-emerald-600 whitespace-nowrap">
-                      {Number(item.GiaGhiNhan).toLocaleString('vi-VN')} đ
+                      {Number(item.GiaGhiNhan).toLocaleString("vi-VN")} đ
                     </div>
                   </div>
                 ))}
               </div>
               <div className="flex justify-between items-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                <span className="font-bold text-slate-700">Tổng thanh toán:</span>
+                <span className="font-bold text-slate-700">
+                  Tổng thanh toán:
+                </span>
                 <span className="font-bold text-xl text-emerald-600">
-                  {selectedInvoice ? Number(selectedInvoice.TongTien).toLocaleString('vi-VN') : 0} đ
+                  {selectedInvoice
+                    ? Number(selectedInvoice.TongTien).toLocaleString("vi-VN")
+                    : 0}{" "}
+                  đ
                 </span>
               </div>
             </div>
           )}
         </Modal.Body>
         <Modal.Footer className="border-t border-slate-100">
-          <Button variant="secondary" onClick={() => setIsInvoiceModalOpen(false)} className="bg-slate-200 text-slate-700 border-0 hover:bg-slate-300 font-medium px-5">
+          <Button
+            variant="secondary"
+            onClick={() => setIsInvoiceModalOpen(false)}
+            className="bg-slate-200 text-slate-700 border-0 hover:bg-slate-300 font-medium px-5"
+          >
             Đóng
           </Button>
         </Modal.Footer>
       </Modal>
-
     </div>
   );
 }

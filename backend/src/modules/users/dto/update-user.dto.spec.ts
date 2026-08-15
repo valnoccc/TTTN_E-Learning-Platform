@@ -8,6 +8,7 @@ describe('UpdateUserDto', () => {
     const dto = plainToInstance(UpdateUserDto, {
       hoTen: 'Nguyen Van A',
       anhDaiDien: 'https://example.com/avatar.png',
+      avatarUrl: 'https://example.com/avatar-alias.png',
       soDienThoai: '0900000000',
     });
 

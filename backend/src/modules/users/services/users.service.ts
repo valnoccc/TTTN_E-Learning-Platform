@@ -38,8 +38,6 @@ export class UsersService {
       updateData.soDienThoai = updateUserDto.soDienThoai;
     }
 
-    console.log('Update Data mapped in users.service.ts:', updateData);
-
     if (Object.keys(updateData).length > 0) {
       await this.userRepository.update(id, updateData);
     }
