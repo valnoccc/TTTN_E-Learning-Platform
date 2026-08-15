@@ -415,7 +415,7 @@ export class AdminDashboardService {
           JOIN NguoiDung nd ON hd.MaND = nd.MaND
           LEFT JOIN ChiTietHoaDon cthd ON cthd.MaHD = hd.MaHD
           LEFT JOIN KhoaHoc kh ON kh.MaKH = cthd.MaKH
-          WHERE hd.TrangThaiThanhToan IN ('PAID', 'PENDING', 'FAILED')
+          WHERE hd.TrangThaiThanhToan = 'PAID'
             AND ${hdDateWhere}
           GROUP BY hd.MaHD, nd.HoTen, hd.TongTien, hd.NgayThanhToan, hd.NgayLap, hd.PhuongThucThanhToan, hd.TrangThaiThanhToan
           ORDER BY COALESCE(hd.NgayThanhToan, hd.NgayLap) DESC

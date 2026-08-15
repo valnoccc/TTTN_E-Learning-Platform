@@ -349,6 +349,10 @@ describe('AdminDashboardService', () => {
     expect(queryCalls[5]?.[0]).not.toContain('* 0.2');
     expect(queryCalls[9]?.[0]).toContain('cthd.DoanhThuGiangVien');
     expect(queryCalls[9]?.[0]).not.toContain('* 0.2');
+    expect(queryCalls.some(([sql]) =>
+      sql.includes("WHERE hd.TrangThaiThanhToan = 'PAID'") &&
+      sql.includes('LIMIT 10'),
+    )).toBe(true);
   });
 
   it('returns instructor debt board for a selected month', async () => {
