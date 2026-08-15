@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Star,
   Users,
+  House,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -143,6 +144,17 @@ export default function InstructorSidebar() {
           <GraduationCap size={20} />
           <span>EDUMEO</span>
         </div>
+      </div>
+
+      <div className="border-b border-white/10 px-3 py-3">
+        <Link
+          to="/"
+          title="Về trang chủ"
+          className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5 text-[14px] font-semibold text-[#d0d6e2] transition hover:border-[#1dbf73]/50 hover:bg-[#1a324b] hover:text-white"
+        >
+          <House size={18} className="text-[#1dbf73]" />
+          <span>Về trang chủ</span>
+        </Link>
       </div>
 
       <nav className="scrollbar-none min-h-0 flex-1 overflow-y-auto py-3">
