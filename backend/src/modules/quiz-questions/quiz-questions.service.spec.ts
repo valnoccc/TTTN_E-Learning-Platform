@@ -2,10 +2,10 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 
-import { QuizQuestionsService } from './services/quiz-questions.service';
+import { InstructorQuizQuestionsService } from './services/instructor-quiz-questions.service';
 
-describe('QuizQuestionsService', () => {
-  let service: QuizQuestionsService;
+describe('InstructorQuizQuestionsService', () => {
+  let service: InstructorQuizQuestionsService;
   let dataSource: { query: jest.Mock };
 
   const payload = {
@@ -23,12 +23,12 @@ describe('QuizQuestionsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        QuizQuestionsService,
+        InstructorQuizQuestionsService,
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
 
-    service = module.get(QuizQuestionsService);
+    service = module.get(InstructorQuizQuestionsService);
   });
 
   it('lists questions for an owned chapter in order', async () => {

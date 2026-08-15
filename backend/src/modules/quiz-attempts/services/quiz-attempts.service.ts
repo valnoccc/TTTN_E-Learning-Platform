@@ -1,21 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { QuizAnswerDto } from '../dto/submit-quiz-attempt.dto';
-
-type QuizQuestionForStudent = {
-  maCauHoi: number;
-  maChuong: number;
-  noiDung: string;
-  dapAnA: string;
-  dapAnB: string;
-  dapAnC: string;
-  dapAnD: string;
-  thuTu: number;
-};
+import { StudentQuizQuestionsService } from '../../quiz-questions/services/student-quiz-questions.service';
 
 @Injectable()
 export class QuizAttemptsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @Optional() private readonly injectedStudentQuizQuestionsService?: StudentQuizQuestionsService,
+  ) {
+    this.studentQuizQuestionsService = injectedStudentQuizQuestionsService ?? new StudentQuizQuestionsService(dataSource);
+  }
+
+  private readonly studentQuizQuestionsService: StudentQuizQuestionsService;
 
   async startAttempt(studentId: number, chapterId: number) {
     const accessRows = await this.dataSource.query(
@@ -70,15 +67,7 @@ export class QuizAttemptsService {
       );
     }
 
-    const questions = (await this.dataSource.query(
-      `SELECT MaCauHoi AS maCauHoi, MaChuong AS maChuong, NoiDung AS noiDung,
-          DapAnA AS dapAnA, DapAnB AS dapAnB, DapAnC AS dapAnC, DapAnD AS dapAnD,
-          ThuTu AS thuTu, DapAnDung AS dapAnDung
-       FROM CauHoiTracNghiem
-       WHERE MaChuong = ?
-       ORDER BY ThuTu ASC, MaCauHoi ASC`,
-      [chapterId],
-    )) as Array<QuizQuestionForStudent & { dapAnDung: 'A' | 'B' | 'C' | 'D' }>;
+    const questions = await this.studentQuizQuestionsService.listForAttempt(chapterId);
 
     if (questions.length === 0) {
       throw new BadRequestException('Chương chưa có câu hỏi kiểm tra');

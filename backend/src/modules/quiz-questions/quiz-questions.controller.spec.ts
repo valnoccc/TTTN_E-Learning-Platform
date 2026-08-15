@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { QuizQuestionsController } from './controllers/quiz-questions.controller';
-import { QuizQuestionsService } from './services/quiz-questions.service';
+import { InstructorQuizQuestionsService } from './services/instructor-quiz-questions.service';
 
 describe('QuizQuestionsController', () => {
   let controller: QuizQuestionsController;
@@ -17,7 +17,7 @@ describe('QuizQuestionsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [QuizQuestionsController],
-      providers: [{ provide: QuizQuestionsService, useValue: service }],
+      providers: [{ provide: InstructorQuizQuestionsService, useValue: service }],
     }).compile();
 
     controller = module.get(QuizQuestionsController);

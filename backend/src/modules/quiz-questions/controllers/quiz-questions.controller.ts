@@ -15,13 +15,13 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateQuizQuestionDto } from '../dto/create-quiz-question.dto';
 import { UpdateQuizQuestionDto } from '../dto/update-quiz-question.dto';
-import { QuizQuestionsService } from '../services/quiz-questions.service';
+import { InstructorQuizQuestionsService } from '../services/instructor-quiz-questions.service';
 
 @Controller('courses/chapters')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('INSTRUCTOR')
 export class QuizQuestionsController {
-  constructor(private readonly quizQuestionsService: QuizQuestionsService) {}
+  constructor(private readonly quizQuestionsService: InstructorQuizQuestionsService) {}
 
   @Get(':chapterId/questions')
   async list(@Param('chapterId') chapterId: string, @Request() req) {
