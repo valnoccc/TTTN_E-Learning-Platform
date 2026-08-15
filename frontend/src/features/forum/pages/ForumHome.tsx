@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axiosClient from '../../../api/axios';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import Pagination from '../../../components/Pagination';
 
 function formatDistance(dateStr: string) {
   let d = new Date(dateStr);
@@ -59,11 +60,15 @@ export default function ForumHome() {
   const [tuKhoa, setTuKhoa] = useState('');
   const [searchInput, setSearchInput] = useState('');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const ITEMS_PER_PAGE = 15;
+
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
       try {
-        let url = `/forum/questions?sapXep=${sortBy}`;
+        let url = `/forum/questions?sapXep=${sortBy}&trang=${currentPage}&soLuong=${ITEMS_PER_PAGE}`;
         if (tuKhoa) {
           url += `&tuKhoa=${encodeURIComponent(tuKhoa)}`;
         }
@@ -71,6 +76,7 @@ export default function ForumHome() {
         if (data) {
           setQuestions(data.danhSach || []);
           setTotalCount(data.tongSo || 0);
+          setTotalPages(data.tongSoTrang || 1);
         }
       } catch (error) {
         console.error('Error fetching questions:', error);
@@ -80,11 +86,12 @@ export default function ForumHome() {
     };
 
     fetchQuestions();
-  }, [sortBy, tuKhoa]);
+  }, [sortBy, tuKhoa, currentPage]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setTuKhoa(searchInput);
+    setCurrentPage(1); // Reset page on search
   };
 
   return (
@@ -106,7 +113,7 @@ export default function ForumHome() {
             </div>
             
             <div className="flex flex-wrap items-center gap-4">
-              {/* <form onSubmit={handleSearch} className="flex items-center relative">
+              <form onSubmit={handleSearch} className="flex items-center relative">
                 <input 
                   type="text" 
                   placeholder="Tìm kiếm câu hỏi..." 
@@ -115,23 +122,23 @@ export default function ForumHome() {
                   className="pl-8 pr-3 py-1.5 border border-gray-400 rounded text-sm focus:outline-none focus:border-[#0a95ff] focus:ring-1 focus:ring-[#0a95ff]"
                 />
                 <svg className="w-4 h-4 absolute left-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </form> */}
+              </form>
 
               <div className="flex border border-gray-400 rounded overflow-hidden text-[13px]">
                 <button 
-                  onClick={() => setSortBy('MOI_NHAT')}
+                  onClick={() => { setSortBy('MOI_NHAT'); setCurrentPage(1); }}
                   className={`px-3 py-2 border-r border-gray-400 hover:bg-gray-50 transition ${sortBy === 'MOI_NHAT' ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600'}`}
                 >
                   Mới nhất
                 </button>
                 <button 
-                  onClick={() => setSortBy('NHIEU_VIEW_NHAT')}
+                  onClick={() => { setSortBy('NHIEU_VIEW_NHAT'); setCurrentPage(1); }}
                   className={`px-3 py-2 border-r border-gray-400 hover:bg-gray-50 transition ${sortBy === 'NHIEU_VIEW_NHAT' ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600'}`}
                 >
                   Nhiều View
                 </button>
                 <button 
-                  onClick={() => setSortBy('CHUA_TRA_LOI')}
+                  onClick={() => { setSortBy('CHUA_TRA_LOI'); setCurrentPage(1); }}
                   className={`px-3 py-2 hover:bg-gray-50 transition ${sortBy === 'CHUA_TRA_LOI' ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600'}`}
                 >
                   Chưa trả lời
@@ -206,6 +213,21 @@ export default function ForumHome() {
               ))
             )}
           </div>
+
+          {/* Pagination */}
+          {!loading && questions.length > 0 && (
+            <div className="mt-6 mb-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+                totalItems={totalCount}
+                indexOfFirst={(currentPage - 1) * ITEMS_PER_PAGE}
+                indexOfLast={currentPage * ITEMS_PER_PAGE}
+                variant="numbers"
+              />
+            </div>
+          )}
         </div>
       </div>
     </>

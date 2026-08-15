@@ -25,18 +25,26 @@ import FooterTwo from "../../components/FooterTwo";
 import ChapterQuiz from "./components/ChapterQuiz";
 import { useChapterQuiz } from "./hooks/useChapterQuiz";
 
-const CourseCompletedScreen = () => {
+const CourseCompletedScreen = ({ onReview }: { onReview: () => void }) => {
   return (
     <div className="w-full h-full min-h-[500px] bg-white flex flex-col items-center justify-center absolute inset-0 z-10">
-      <h2 className="font-bold text-gray-800 text-2xl md:text-3xl mb-6">
+      <h2 className="font-bold text-gray-800 text-2xl md:text-3xl mb-6 text-center">
         Chúc mừng bạn đã hoàn thành khóa học!
       </h2>
-      <Link
-        to="/course-grid"
-        className="bg-transparent border border-purple-600 text-purple-600 rounded-md px-6 py-2 hover:bg-purple-50 transition-colors font-semibold"
-      >
-        Tìm thêm khóa học
-      </Link>
+      <div className="flex gap-4">
+        <button
+          onClick={onReview}
+          className="bg-emerald-600 text-white rounded-md px-6 py-2 hover:bg-emerald-700 transition-colors font-semibold shadow-sm"
+        >
+          Ôn tập lại
+        </button>
+        <Link
+          to="/course-grid"
+          className="bg-transparent border border-purple-600 text-purple-600 rounded-md px-6 py-2 hover:bg-purple-50 transition-colors font-semibold"
+        >
+          Tìm thêm khóa học
+        </Link>
+      </div>
     </div>
   );
 };
@@ -419,7 +427,7 @@ export default function CourseLearning() {
       parentModule.maChuong !== activeModule.maChuong,
     );
 
-    if (parentModule && isChangingChapter) {
+    if (parentModule && isChangingChapter && !lesson.completed) {
       const access = await chapterQuiz.getChapterAccess(parentModule.maChuong);
       if (!access.canAccess) {
         const openedQuiz = activeModule
@@ -460,7 +468,8 @@ export default function CourseLearning() {
     if (
       currentModule &&
       nextModule &&
-      currentModule.maChuong !== nextModule.maChuong
+      currentModule.maChuong !== nextModule.maChuong &&
+      !nextLesson.completed
     ) {
       const currentAccess = await chapterQuiz.getChapterAccess(currentModule.maChuong);
       if (!currentAccess.hasQuiz) {
@@ -614,8 +623,8 @@ export default function CourseLearning() {
             <span className="text-emerald-400 font-bold">{progress}%</span>
           </div>
 
-          {/* Trophy button – chỉ hiện khi popup sẵn sàng */}
-          {showCertificatePopup && (
+          {/* Trophy button – chỉ hiện khi popup sẵn sàng hoặc đã có chứng chỉ */}
+          {(showCertificatePopup || certificateId) && (
             <div className="relative">
               <button
                 onClick={() => setShowTrophyDropdown((p) => !p)}
@@ -709,7 +718,7 @@ export default function CourseLearning() {
                 onClose={chapterQuiz.closeQuiz}
               />
             ) : isCourseCompleted ? (
-              <CourseCompletedScreen />
+              <CourseCompletedScreen onReview={() => setIsCourseCompleted(false)} />
             ) : activeLesson?.videoUrl &&
               !activeLesson.videoUrl.includes("youtube.com") &&
               !activeLesson.videoUrl.includes("youtu.be") ? (
@@ -1006,11 +1015,23 @@ export default function CourseLearning() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
-                <div className="w-4 h-4 border-2 border-slate-500 border-t-emerald-400 rounded-full animate-spin"></div>
-                <span className="text-sm font-medium text-slate-300">
-                  Đang xử lý
-                </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
+                  <div className="w-4 h-4 border-2 border-slate-500 border-t-emerald-400 rounded-full animate-spin"></div>
+                  <span className="text-sm font-medium text-slate-300">
+                    Đang xử lý
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsGeneratingCertificate(false);
+                    setShowCertificatePopup(true);
+                  }}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
+                  title="Đóng thông báo"
+                >
+                  <X size={20} />
+                </button>
               </div>
             </div>
           </div>

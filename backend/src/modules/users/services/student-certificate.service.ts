@@ -25,6 +25,17 @@ export class StudentCertificateService {
       return { certificateId: existing[0].MaChungChi };
     }
 
+    // 1.5. Kiểm tra khóa học có phải miễn phí không
+    const courseInfo = await this.dataSource.query(
+      `SELECT GiaBan FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
+      [courseId],
+    );
+    if (courseInfo.length > 0 && Number(courseInfo[0].GiaBan) === 0) {
+      throw new BadRequestException(
+        'Chứng chỉ chỉ được cấp cho khóa học có phí khi hoàn thành đủ điều kiện.',
+      );
+    }
+
     // 2. Kiểm tra học viên đã đăng ký khóa học chưa
     const enrolled = await this.dataSource.query(
       `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE' LIMIT 1`,

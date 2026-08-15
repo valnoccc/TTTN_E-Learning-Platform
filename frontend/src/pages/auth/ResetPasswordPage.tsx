@@ -14,6 +14,7 @@ export default function ResetPasswordPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -97,15 +98,29 @@ export default function ResetPasswordPage() {
                                                 }}
                                             ></i>
                                         </p>
-                                        <p className="form-control">
+                                        <p className="form-control" style={{ position: 'relative' }}>
                                             <label style={{ display: 'block', marginBottom: '8px' }}>Xác nhận mật khẩu</label>
                                             <input
-                                                type={showPassword ? "text" : "password"}
+                                                type={showConfirmPassword ? "text" : "password"}
                                                 placeholder="*******"
                                                 required
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
+                                                style={{ paddingRight: '45px' }}
                                             />
+                                            <i 
+                                                className={`las ${showConfirmPassword ? 'la-eye-slash' : 'la-eye'}`}
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    right: '15px', 
+                                                    top: '44px', 
+                                                    cursor: 'pointer', 
+                                                    fontSize: '20px', 
+                                                    color: '#888',
+                                                    zIndex: 10
+                                                }}
+                                            ></i>
                                         </p>
                                         
                                         <button type="submit" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>

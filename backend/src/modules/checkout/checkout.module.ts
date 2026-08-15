@@ -5,8 +5,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { CouponsModule } from '../coupons/coupons.module';
 import { WithdrawalsModule } from '../withdrawals/withdrawals.module';
 
+import { CoursesModule } from '../courses/courses.module';
+
 @Module({
-  imports: [NotificationsModule, CouponsModule, WithdrawalsModule],
+  imports: [NotificationsModule, CouponsModule, WithdrawalsModule, CoursesModule],
   controllers: [CheckoutController],
   providers: [CheckoutService],
 })

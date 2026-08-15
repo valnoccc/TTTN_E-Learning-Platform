@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Container, Row, Col, Spinner } from "react-bootstrap";
 import toast from "react-hot-toast";
@@ -67,6 +67,7 @@ export default function Checkout() {
   );
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [showCouponModal, setShowCouponModal] = useState(false);
+  const autoApplyAttempted = useRef(false);
 
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [cardInfo, setCardInfo] = useState({
@@ -149,7 +150,8 @@ export default function Checkout() {
 
   useEffect(() => {
     // Handle auto-apply coupon from Cart or automatically find the best one
-    if (courses.length > 0 && !couponCode) {
+    if (courses.length > 0 && !couponCode && !autoApplyAttempted.current) {
+      autoApplyAttempted.current = true;
       if (location.state?.appliedCouponCode) {
         handleApplyCoupon(location.state.appliedCouponCode);
       } else {
@@ -202,13 +204,13 @@ export default function Checkout() {
         setAppliedCoupon(res);
         setDiscountValue(res.discountAmount);
         setCouponCode(code.trim());
-        toast.success(res.message || "Áp dụng mã giảm giá thành công!");
+        toast.success(res.message || "Áp dụng mã giảm giá thành công!", { id: "apply-coupon-toast" });
       }
     } catch (error: any) {
       setAppliedCoupon(null);
       setDiscountValue(0);
       setCouponCode("");
-      toast.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+      toast.error(error.response?.data?.message || "Mã giảm giá không hợp lệ", { id: "apply-coupon-toast" });
     } finally {
       setIsApplyingCoupon(false);
     }

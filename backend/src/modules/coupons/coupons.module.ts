@@ -8,8 +8,13 @@ import { Coupon } from './entities/coupon.entity';
 import { AdminCouponsService } from './services/admin-coupons.service';
 import { StudentCouponsService } from './services/student-coupons.service';
 
+import { CoursesModule } from '../courses/courses.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Coupon, KhoaHoc])],
+  imports: [
+    TypeOrmModule.forFeature([Coupon, KhoaHoc]),
+    CoursesModule,
+  ],
   controllers: [AdminCouponsController, PublicCouponsController],
   providers: [AdminCouponsService, StudentCouponsService],
   exports: [AdminCouponsService, StudentCouponsService],

@@ -37,9 +37,11 @@ export class ForumService {
       .leftJoinAndSelect('cauHoi.danhSachThe', 'theTu');
 
     if (tuKhoa) {
+      // Loại bỏ dấu # ở đầu nếu người dùng tìm kiếm theo hashtag
+      const cleanTuKhoa = tuKhoa.replace(/^#/, '').trim();
       queryBuilder.andWhere(
-        '(cauHoi.tieuDe LIKE :tuKhoa OR cauHoi.noiDung LIKE :tuKhoa)',
-        { tuKhoa: `%${tuKhoa}%` },
+        '(cauHoi.tieuDe COLLATE utf8mb4_unicode_ci LIKE :tuKhoa OR cauHoi.noiDung COLLATE utf8mb4_unicode_ci LIKE :tuKhoa OR theTu.tenThe COLLATE utf8mb4_unicode_ci LIKE :tuKhoa)',
+        { tuKhoa: `%${cleanTuKhoa}%` },
       );
     }
 

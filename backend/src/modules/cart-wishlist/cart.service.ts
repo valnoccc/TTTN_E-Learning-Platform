@@ -76,6 +76,16 @@ export class CartService {
       throw new BadRequestException('Đã đăng ký khóa học');
     }
 
+    // Kiểm tra xem có phải khóa học của chính mình không
+    const courseInfo = await this.dataSource.query(
+      `SELECT MaND_GiangVien FROM KhoaHoc WHERE MaKH = ? LIMIT 1`,
+      [courseId],
+    );
+    if (courseInfo.length > 0 && Number(courseInfo[0].MaND_GiangVien) === userId) {
+      const { BadRequestException } = require('@nestjs/common');
+      throw new BadRequestException('Bạn không thể thêm khóa học của chính mình vào giỏ hàng');
+    }
+
     const cartId = await this.getOrCreateCart(userId);
     await this.dataSource.query(
       `INSERT IGNORE INTO ChiTietGioHang (MaGioHang, MaKH) VALUES (?, ?)`,

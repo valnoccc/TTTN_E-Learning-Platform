@@ -13,6 +13,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { StudentCouponsService } from '../coupons/services/student-coupons.service';
 import { InstructorWalletService } from '../withdrawals/services/instructor-wallet.service';
+import { CourseStudentService } from '../courses/services/course-student.service';
 
 export interface PaymentRequest {
   courseIds: number[];
@@ -52,6 +53,7 @@ export class CheckoutService {
     private readonly notificationsService: NotificationsService,
     private readonly couponsService: StudentCouponsService,
     private readonly instructorWalletService: InstructorWalletService,
+    private readonly courseStudentService: CourseStudentService,
   ) { }
 
   private normalizeMomoResultCode(resultCode: unknown): number {
@@ -189,12 +191,17 @@ export class CheckoutService {
       // 1. Lấy thông tin khóa học
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
+      }
+
+      const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
+      if (ownCourses.length > 0) {
+        throw new BadRequestException('Giảng viên không thể đăng ký khóa học của chính mình');
       }
 
       // 2. Kiểm tra đã sở hữu chưa
@@ -703,12 +710,17 @@ export class CheckoutService {
     try {
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
+      }
+
+      const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
+      if (ownCourses.length > 0) {
+        throw new BadRequestException('Giảng viên không thể đăng ký khóa học của chính mình');
       }
 
       const totalOriginalPrice = courses.reduce(
@@ -889,12 +901,17 @@ export class CheckoutService {
     try {
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
+      }
+
+      const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
+      if (ownCourses.length > 0) {
+        throw new BadRequestException('Giảng viên không thể đăng ký khóa học của chính mình');
       }
 
       const existingEnrollments = await queryRunner.query(
@@ -1354,26 +1371,13 @@ export class CheckoutService {
       if (lastInvoices.length > 0) {
         const invoiceId = lastInvoices[0].MaHD;
         const details = await this.dataSource.query(
-          `SELECT cthd.MaKH, k.MaDM FROM ChiTietHoaDon cthd JOIN KhoaHoc k ON k.MaKH = cthd.MaKH WHERE cthd.MaHD = ? LIMIT 1`,
+          `SELECT cthd.MaKH FROM ChiTietHoaDon cthd WHERE cthd.MaHD = ?`,
           [invoiceId],
         );
         if (details.length > 0) {
-          const oldCourseId = details[0].MaKH;
-          const maDM = details[0].MaDM || 0;
-          let excludeCondition = `k.MaKH != ?`;
-          const params: any[] = [oldCourseId];
-          excludeCondition += ` AND k.MaKH NOT IN (SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND TrangThai = 'ACTIVE')`;
-          params.push(userId);
-          const recommendations = await this.dataSource.query(
-            `SELECT k.MaKH as maKH
-           FROM KhoaHoc k
-           WHERE ${excludeCondition} AND k.TrangThai = 'PUBLISHED' 
-           ORDER BY (k.MaDM = ?) DESC, k.MaKH DESC LIMIT 4`,
-            [...params, maDM],
-          );
-          validCrossSellCourseIds = recommendations.map((r: any) =>
-            Number(r.maKH),
-          );
+        const oldCourseIds = details.map((d: any) => Number(d.MaKH));
+        const recommendationsData = await this.courseStudentService.getCourseRecommendations(oldCourseIds, String(userId));
+        validCrossSellCourseIds = recommendationsData.recommendations.map((r: any) => Number(r.maKH));
         }
       }
 
