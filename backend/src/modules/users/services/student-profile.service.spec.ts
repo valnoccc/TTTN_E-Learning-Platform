@@ -29,6 +29,11 @@ describe('StudentProfileService', () => {
         progress: 75,
       },
     ]);
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining("k.TrangThai IN ('PUBLISHED', 'UNLISTED')"),
+      [7],
+    );
   });
 
   it('stores the current lesson for an active enrollment', async () => {

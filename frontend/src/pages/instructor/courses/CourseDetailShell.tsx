@@ -8,6 +8,7 @@ import {
 import { NavLink, Outlet } from "react-router-dom";
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   BadgeInfo,
   BookOpen,
@@ -89,6 +90,7 @@ export default function InstructorCourseDetail({
   const [confirmStatusModal, setConfirmStatusModal] = useState<{
     isOpen: boolean;
     actionText: string;
+    nextStatus: string;
   } | null>(null);
 
   // ─── State cho Appeal Modal ────────────────────────────────────────────────
@@ -274,11 +276,20 @@ export default function InstructorCourseDetail({
                     <ArrowLeft size={16} />
                     Quay lại
                   </button>
-                  <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
-                    {isNewCourse
-                      ? "Tạo khóa học mới"
-                      : formData.title || "Đang tải..."}
-                  </h1>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+                      {isNewCourse
+                        ? "Tạo khóa học mới"
+                        : formData.title || "Đang tải..."}
+                    </h1>
+                    {!isNewCourse ? (
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusBadgeClass(formData.trang_thai)}`}
+                      >
+                        {getStatusLabel(formData.trang_thai)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-start gap-4 xl:items-end">
@@ -311,15 +322,11 @@ export default function InstructorCourseDetail({
                   {!isNewCourse && (
                     <StatusActions
                       status={formData.trang_thai}
-                      onAction={() =>
+                      onAction={(nextStatus, actionText) =>
                         setConfirmStatusModal({
                           isOpen: true,
-                          actionText:
-                            formData.trang_thai === "PUBLISHED"
-                              ? "tạm ẩn khóa học"
-                              : formData.trang_thai === "PENDING"
-                                ? "hủy yêu cầu duyệt"
-                                : "hủy kháng cáo",
+                          actionText,
+                          nextStatus,
                         })
                       }
                     />
@@ -438,11 +445,15 @@ export default function InstructorCourseDetail({
       <ConfirmModal
         isOpen={!!confirmStatusModal?.isOpen}
         title="Xác nhận"
-        message={`Bạn có chắc chắn muốn ${confirmStatusModal?.actionText} này?`}
+        message={
+          confirmStatusModal?.nextStatus === "ARCHIVED"
+            ? "Khóa học sẽ bị ẩn hoàn toàn khỏi nền tảng, không thể bán cho học viên mới và học viên đã mua cũng không thể tiếp tục học. Dữ liệu khóa học vẫn được giữ lại. Bạn có chắc chắn muốn lưu trữ?"
+            : `Khóa học sẽ được ${confirmStatusModal?.actionText}. Bạn có chắc chắn muốn tiếp tục?`
+        }
         confirmText="Xác nhận"
         isDestructive={true}
         onConfirm={() => {
-          void handleStatusChange("DRAFT");
+          void handleStatusChange(confirmStatusModal?.nextStatus ?? "DRAFT");
           setConfirmStatusModal(null);
         }}
         onCancel={() => setConfirmStatusModal(null)}
@@ -699,12 +710,12 @@ function StatusActions({
   onAction,
 }: {
   status: string;
-  onAction: () => void;
+  onAction: (nextStatus: string, actionText: string) => void;
 }) {
   if (status === "PENDING") {
     return (
       <button
-        onClick={onAction}
+        onClick={() => onAction("DRAFT", "hủy yêu cầu duyệt")}
         className="inline-flex items-center gap-2 rounded-sm border border-yellow-500 bg-transparent px-4 py-2 text-sm font-bold text-yellow-600 transition hover:bg-yellow-50"
       >
         Hủy yêu cầu duyệt
@@ -715,7 +726,7 @@ function StatusActions({
   if (status === "PENDING_APPEAL") {
     return (
       <button
-        onClick={onAction}
+        onClick={() => onAction("DRAFT", "hủy kháng cáo")}
         className="inline-flex items-center gap-2 rounded-sm border border-orange-500 bg-transparent px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
       >
         Hủy kháng cáo
@@ -725,11 +736,32 @@ function StatusActions({
 
   if (status === "PUBLISHED") {
     return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => onAction("UNLISTED", "tạm ẩn khóa học")}
+          className="inline-flex items-center gap-2 rounded-sm border border-slate-500 bg-transparent px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+        >
+          Tạm ẩn để chỉnh sửa
+        </button>
+        <button
+          onClick={() => onAction("ARCHIVED", "lưu trữ khóa học hoàn toàn")}
+          className="inline-flex items-center gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
+        >
+          <Archive size={16} />
+          Lưu trữ
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "ARCHIVED") {
+    return (
       <button
-        onClick={onAction}
-        className="inline-flex items-center gap-2 rounded-sm border border-slate-500 bg-transparent px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+        onClick={() => onAction("DRAFT", "khôi phục khóa học về bản nháp")}
+        className="inline-flex items-center gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
       >
-        Tạm ẩn khóa học
+        <Archive size={16} />
+        Khôi phục bản nháp
       </button>
     );
   }
@@ -747,9 +779,31 @@ function getStatusLabel(status: string) {
       return "Đã xuất bản";
     case "HIDDEN":
       return "Đang ẩn";
+    case "UNLISTED":
+      return "Tạm ẩn";
+    case "ARCHIVED":
+      return "Đã lưu trữ";
     case "REJECTED":
       return "Bị từ chối";
     default:
       return "Bản nháp";
+  }
+}
+
+function getStatusBadgeClass(status: string) {
+  switch (status) {
+    case "ARCHIVED":
+    case "BANNED":
+    case "HIDDEN":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "PUBLISHED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "UNLISTED":
+      return "border-slate-300 bg-slate-100 text-slate-700";
+    case "PENDING":
+    case "PENDING_APPEAL":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }

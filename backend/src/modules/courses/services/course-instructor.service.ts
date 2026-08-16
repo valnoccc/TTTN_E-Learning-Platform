@@ -73,7 +73,7 @@ export class CoursesService implements OnModuleInit {
         // Mở rộng enum TrangThai để bao gồm PENDING_APPEAL và REJECTED
         await this.dataSource.query(
           `ALTER TABLE \`KhoaHoc\`
-           MODIFY COLUMN \`TrangThai\` ENUM('DRAFT','PUBLISHED','BANNED','PENDING','PENDING_APPEAL','REJECTED') NOT NULL DEFAULT 'DRAFT'`,
+           MODIFY COLUMN \`TrangThai\` ENUM('DRAFT','HIDDEN','UNLISTED','ARCHIVED','PUBLISHED','BANNED','PENDING','PENDING_APPEAL','REJECTED') NOT NULL DEFAULT 'DRAFT'`,
         );
       })();
     }
@@ -167,12 +167,12 @@ export class CoursesService implements OnModuleInit {
 
     if (hasBuyers[0].count > 0) {
       await this.khoaHocRepository.update(courseId, {
-        trangThai: 'DRAFT',
+        trangThai: 'ARCHIVED',
         ngayCapNhat: new Date(),
       });
       return {
         message:
-          'Khóa học đã có học viên mua, hệ thống đã chuyển sang trạng thái ẩn.',
+          'Khóa học đã có học viên mua, hệ thống đã chuyển sang lưu trữ hoàn toàn và ngừng quyền truy cập học tập.',
       };
     }
 
@@ -218,7 +218,17 @@ export class CoursesService implements OnModuleInit {
       [courseId],
     );
 
-    // 5. Lessons and chapters
+    // 5. Version lịch sử video, bài học và chương
+    await this.dataSource.query(
+      `DELETE FROM LichSuPublicVideo
+        WHERE MaBH IN (SELECT MaBH FROM BaiHoc WHERE MaKH = ?)`,
+      [courseId],
+    );
+    await this.dataSource.query(
+      `DELETE FROM VideoBaiHoc
+        WHERE MaBH IN (SELECT MaBH FROM BaiHoc WHERE MaKH = ?)`,
+      [courseId],
+    );
     await this.dataSource.query(`DELETE FROM BaiHoc WHERE MaKH = ?`, [
       courseId,
     ]);
@@ -245,10 +255,23 @@ export class CoursesService implements OnModuleInit {
       [courseId],
     );
 
+    const versionRows: Array<{ videoURL?: string | null }> =
+      await this.dataSource.query(
+        `SELECT VideoURL AS videoURL
+           FROM VideoBaiHoc
+          WHERE MaBH IN (SELECT MaBH FROM BaiHoc WHERE MaKH = ?)
+            AND VideoURL IS NOT NULL AND VideoURL <> ''`,
+        [courseId],
+      );
+
+    const videoUrls = new Set(
+      [...lessonRows, ...versionRows]
+        .map((row) => row.videoURL?.trim())
+        .filter((url): url is string => Boolean(url)),
+    );
+
     await Promise.all(
-      lessonRows.map(async (lesson) => {
-        const videoUrl = lesson.videoURL?.trim();
-        if (!videoUrl) return;
+      [...videoUrls].map(async (videoUrl) => {
         await this.deleteStoredVideo(videoUrl);
       }),
     );
@@ -413,9 +436,16 @@ export class CoursesService implements OnModuleInit {
       };
     }
 
-    // Đổi các trạng thái khác (DRAFT, v.v.)
+    const instructorStatuses = new Set(['DRAFT', 'UNLISTED', 'ARCHIVED']);
+    if (!instructorStatuses.has(trangThai)) {
+      throw new BadRequestException(
+        'Trạng thái khóa học không hợp lệ cho thao tác của giảng viên.',
+      );
+    }
+
+    // Đổi các trạng thái thao tác được bởi giảng viên.
     course.trangThai = trangThai;
-    if (trangThai === 'DRAFT') {
+    if (trangThai === 'DRAFT' || trangThai === 'ARCHIVED') {
       course.isAppealing = false;
       course.appealReason = undefined;
     }

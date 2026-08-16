@@ -262,30 +262,28 @@ describe('CourseStudentService', () => {
     );
   });
 
-  it('allows an enrolled learner to load curriculum of a temporarily hidden course', async () => {
+  it('blocks learners from loading a hidden course even when previously enrolled', async () => {
     khoaHocRepository.findOne.mockResolvedValue({
       maKH: 11,
-      trangThai: 'DRAFT',
+      trangThai: 'HIDDEN',
+    });
+
+    await expect(service.getCourseCurriculum(11, 7)).rejects.toThrow(
+      'Khóa học không tồn tại hoặc chưa được kích hoạt',
+    );
+    expect(dataSource.query).not.toHaveBeenCalled();
+  });
+
+  it('allows an enrolled learner to load an unlisted course', async () => {
+    khoaHocRepository.findOne.mockResolvedValue({
+      maKH: 11,
+      trangThai: 'UNLISTED',
     });
     dataSource.query
       .mockResolvedValueOnce([{ ok: 1 }])
-      .mockResolvedValueOnce([
-        { maChuong: 1, maKH: 11, tenChuong: 'Chuong 1', thuTu: 1 },
-      ])
-      .mockResolvedValueOnce([
-        {
-          maBH: 10,
-          maChuong: 1,
-          tenBaiHoc: 'Bai 1',
-          videoUrl: 'https://example.com/video.mp4',
-          noiDung: 'Noi dung',
-          thuTu: 1,
-          thoiLuong: 120,
-          choPhepXemTruoc: true,
-        },
-      ]);
+      .mockResolvedValueOnce([]);
 
-    await expect(service.getCourseCurriculum(11, 7)).resolves.toHaveLength(1);
+    await expect(service.getCourseCurriculum(11, 7)).resolves.toEqual([]);
     expect(dataSource.query).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining('FROM DangKyKhoaHoc'),

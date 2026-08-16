@@ -191,13 +191,15 @@ export class CheckoutService {
       // 1. Lấy thông tin khóa học
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien, TrangThai FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
       }
+
+      this.assertPurchasableCourses(courses);
 
       const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
       if (ownCourses.length > 0) {
@@ -710,13 +712,15 @@ export class CheckoutService {
     try {
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien, TrangThai FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
       }
+
+      this.assertPurchasableCourses(courses);
 
       const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
       if (ownCourses.length > 0) {
@@ -901,13 +905,15 @@ export class CheckoutService {
     try {
       const placeholders = courseIds.map(() => '?').join(',');
       const courses = await queryRunner.query(
-        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
+        `SELECT MaKH, GiaBan, TenKhoaHoc, MaND_GiangVien, TrangThai FROM KhoaHoc WHERE MaKH IN (${placeholders})`,
         courseIds,
       );
 
       if (courses.length !== courseIds.length) {
         throw new BadRequestException('Một số khóa học không tồn tại');
       }
+
+      this.assertPurchasableCourses(courses);
 
       const ownCourses = courses.filter((c: any) => Number(c.MaND_GiangVien) === userId);
       if (ownCourses.length > 0) {
@@ -1035,6 +1041,18 @@ export class CheckoutService {
       throw new InternalServerErrorException(`Lỗi tạo thanh toán VNPay: ${error.message}`);
     } finally {
       if (!queryRunner.isReleased) await queryRunner.release();
+    }
+  }
+
+  private assertPurchasableCourses(courses: Array<{ TrangThai?: string }>) {
+    const unavailableCourse = courses.find(
+      (course) => course.TrangThai !== 'PUBLISHED',
+    );
+
+    if (unavailableCourse) {
+      throw new BadRequestException(
+        'Một hoặc nhiều khóa học không còn mở bán.',
+      );
     }
   }
 

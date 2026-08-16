@@ -151,6 +151,30 @@ describe('CheckoutService', () => {
     );
   });
 
+  it('rejects checkout for a temporarily hidden course', async () => {
+    queryRunner.query.mockResolvedValueOnce([
+      {
+        MaKH: 101,
+        GiaBan: '100000',
+        TenKhoaHoc: 'React Co Ban',
+        TrangThai: 'UNLISTED',
+      },
+    ]);
+
+    await expect(
+      service.processPayment(
+        {
+          courseIds: [101],
+          paymentMethod: 'BANK',
+        },
+        7,
+      ),
+    ).rejects.toThrow('không còn mở bán');
+
+    expect(queryRunner.startTransaction).toHaveBeenCalled();
+    expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+  });
+
   it('cancels only the current user pending VNPAY or MOMO invoice', async () => {
     dataSource.query.mockResolvedValue({ affectedRows: 1 });
 
