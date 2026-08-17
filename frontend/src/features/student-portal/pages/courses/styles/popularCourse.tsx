@@ -7,21 +7,24 @@ export const Styles = styled.div`
         border : 1px solid ${colors.border1};
         padding: 15px 20px 20px;
         border-radius : 5px;
-        margin: 30px 0;
+        margin-top: -5px;
+        margin-bottom: 30px;
         h5 {
             color : ${colors.black1};
             font-weight : 600;
             padding-bottom: 10px;
             margin-bottom: 20px;
-            position : relative;
+            text-decoration: underline;
+            text-decoration-color: ${colors.green};
+            text-decoration-thickness: 2px;
+            text-underline-offset: 10px;
+            
+            i {
+                text-decoration: none;
+            }
+
             &:before {
-                position : absolute;
-                content : "";
-                background : ${colors.green};
-                width : 50px;
-                height: 2px;
-                bottom : 0;
-                left : 0;
+                display: none;
             }
 
             @media(max-width: 575px) {

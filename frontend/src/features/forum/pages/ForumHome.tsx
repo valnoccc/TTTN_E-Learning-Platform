@@ -62,7 +62,7 @@ export default function ForumHome() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 7; 
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -220,7 +220,10 @@ export default function ForumHome() {
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={(page) => setCurrentPage(page)}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 totalItems={totalCount}
                 indexOfFirst={(currentPage - 1) * ITEMS_PER_PAGE}
                 indexOfLast={currentPage * ITEMS_PER_PAGE}

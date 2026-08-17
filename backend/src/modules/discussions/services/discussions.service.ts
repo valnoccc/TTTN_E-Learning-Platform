@@ -10,6 +10,7 @@ import { KhoaHoc } from '../../courses/entities/course.entity';
 import { CreateDiscussionReplyDto } from '../dto/create-discussion-reply.dto';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
+import { containsProfanity } from '../../../utils/profanity-filter.util';
 
 @Injectable()
 export class DiscussionsService {
@@ -97,6 +98,10 @@ export class DiscussionsService {
       throw new ForbiddenException(
         'Bạn không có quyền thao tác trên khóa học này',
       );
+    }
+
+    if (containsProfanity(payload.noiDung)) {
+      throw new BadRequestException('Nội dung chứa từ ngữ không phù hợp. Vui lòng chỉnh sửa và thử lại.');
     }
 
     const parentDiscussion = await this.dataSource.query(
@@ -271,6 +276,10 @@ export class DiscussionsService {
 
     if (!course) {
       throw new BadRequestException('Khóa học không tồn tại');
+    }
+
+    if (containsProfanity(noiDung)) {
+      throw new BadRequestException('Nội dung chứa từ ngữ không phù hợp. Vui lòng chỉnh sửa và thử lại.');
     }
 
     const result = await this.dataSource.query(

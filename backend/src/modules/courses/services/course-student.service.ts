@@ -79,6 +79,19 @@ export class CourseStudentService {
       .addSelect('lessonStats.totalDurationSeconds', 'totalDurationSeconds')
       .where('khoaHoc.trangThai = :status', { status: 'PUBLISHED' });
 
+      /*       .leftJoin(
+        (qb) =>
+          qb
+            .from('DangKyKhoaHoc', 'dk')
+            .select('dk.MaKH', 'maKH')
+            .addSelect('COUNT(dk.MaND)', 'enrollmentCount')
+            .where(`dk.TrangThai = 'ACTIVE'`)
+            .groupBy('dk.MaKH'),
+        'enrollments',
+        'enrollments.maKH = khoaHoc.maKH',
+      )
+*/
+
     if (filters.search?.trim()) {
       const normalizedSearch = `%${filters.search.trim().toLowerCase()}%`;
       query.andWhere(
@@ -97,8 +110,22 @@ export class CourseStudentService {
       });
     }
 
-    if (filters.price === 'free') {
-      query.andWhere('khoaHoc.giaBan = 0');
+    if (filters.price) {
+      if (filters.price === 'free') {
+        query.andWhere('khoaHoc.giaBan = 0');
+      } else if (filters.price.includes('-')) {
+        const [minStr, maxStr] = filters.price.split('-');
+        const min = minStr ? Number(minStr) : null;
+        const max = maxStr ? Number(maxStr) : null;
+
+        if (min !== null && !isNaN(min) && max !== null && !isNaN(max)) {
+          query.andWhere('khoaHoc.giaBan >= :minPrice AND khoaHoc.giaBan <= :maxPrice', { minPrice: min, maxPrice: max });
+        } else if (min !== null && !isNaN(min)) {
+          query.andWhere('khoaHoc.giaBan >= :minPrice', { minPrice: min });
+        } else if (max !== null && !isNaN(max)) {
+          query.andWhere('khoaHoc.giaBan <= :maxPrice', { maxPrice: max });
+        }
+      }
     }
 
     if (filters.rating) {
@@ -125,6 +152,16 @@ export class CourseStudentService {
         case 'price_desc':
           query.orderBy('khoaHoc.giaBan', 'DESC');
           break;
+        case 'popular':
+          query.orderBy('ratings.avgRating', 'DESC');
+          query.addOrderBy('khoaHoc.maKH', 'DESC');
+          break;
+        
+        /* case 'popular':
+          query.orderBy('enrollments.enrollmentCount', 'DESC');
+          query.addOrderBy('ratings.avgRating', 'DESC');
+          break;
+ */ 
         default:
           query.orderBy('khoaHoc.maKH', 'DESC');
       }
@@ -261,11 +298,15 @@ export class CourseStudentService {
 
     // Tính toán TOTAL_LIMIT để chia đều danh mục
     let TOTAL_LIMIT = 4; // Mặc định 4 card
-    if (distinctMaDMs.length === 3) {
-      TOTAL_LIMIT = 3; // 3 danh mục -> 3 card (mỗi danh mục 1)
+    
+    if (distinctMaDMs.length === 2) {
+      TOTAL_LIMIT = 4; // 2 danh mục -> chia đều mỗi danh mục 2 khóa
+    } else if (distinctMaDMs.length === 3) {
+      TOTAL_LIMIT = 3; // 3 danh mục -> chia đều mỗi danh mục 1 khóa
     } else if (distinctMaDMs.length >= 4) {
-      TOTAL_LIMIT = 4; // >= 4 danh mục -> 4 card (lấy 4 danh mục đầu tiên, mỗi danh mục 1)
+      TOTAL_LIMIT = 4; // >= 4 danh mục -> 4 card (mỗi danh mục 1 khóa)
     }
+
 
     // ─── BƯỚC 1b: Lấy ứng viên theo từng danh mục trong 1 truy vấn duy nhất ─
     // Mỗi danh mục lấy tối đa `TOTAL_LIMIT` ứng viên để có đủ xoay vòng.
@@ -283,10 +324,16 @@ export class CourseStudentService {
          FROM KhoaHoc k
          WHERE k.MaKH NOT IN (${excludePlaceholders})${enrolledExclude}
            AND k.TrangThai = 'PUBLISHED'
-           AND k.MaDM IN (${catPlaceholders})
-         ORDER BY k.MaDM ASC, soNguoiHoc DESC`,
+           AND k.GiaBan > 0
+           AND k.MaDM IN (${catPlaceholders}) 
+         ORDER BY k.MaDM ASC, soNguoiHoc DESC`, 
         [...excludeParams, ...distinctMaDMs],
       );
+      //ORDER BY k.MaDM ASC, RAND()
+      //ORDER BY k.MaDM ASC, averageRating DESC
+      //ORDER BY k.MaDM ASC, (averageRating * soNguoiHoc) DESC
+
+      console.log(candidateRows)
 
       // Group theo danh mục (không tốn thêm query)
       const buckets = new Map<number, any[]>();
@@ -299,6 +346,12 @@ export class CourseStudentService {
       // BƯỚC 3: Thuật toán phân bổ rút bài vòng tròn (Round-Robin)
       const activeBuckets = distinctMaDMs.map((id) => buckets.get(id) ?? []);
       let currentIndex = 0;
+
+      // BƯỚC 3:
+      // const otherCategoryIds = Array.from(buckets.keys());
+      // const activeBuckets = otherCategoryIds.map((id) => buckets.get(id) ?? []);
+      // let currentIndex = 0;
+
 
       while (categoryRecommendations.length < TOTAL_LIMIT && activeBuckets.length > 0) {
         const currentPool = activeBuckets[currentIndex];
@@ -349,18 +402,24 @@ export class CourseStudentService {
         if (!Number.isNaN(parsedUserId)) fallbackParams.push(parsedUserId);
       }
 
+      ////
       const fallbackRows: any[] = await this.dataSource.query(
         `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
                 k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM,
                 (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH) as averageRating,
                 (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
-         FROM KhoaHoc k
+        FROM KhoaHoc k
          WHERE k.MaKH NOT IN (${fallbackExcludePlaceholders})${fallbackEnrolledExclude}
            AND k.TrangThai = 'PUBLISHED'
+           AND k.GiaBan > 0
          ORDER BY soNguoiHoc DESC
          LIMIT ?`,
         [...fallbackParams, remaining],
       );
+      //ORDER BY RAND()
+      //ORDER BY averageRating DESC
+      //ORDER BY (averageRating * soNguoiHoc) DESC
+      ////
 
       finalRecommendations = [...finalRecommendations, ...fallbackRows];
     }

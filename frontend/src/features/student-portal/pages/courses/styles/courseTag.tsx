@@ -12,15 +12,17 @@ export const Styles = styled.div`
             font-weight : 600;
             padding-bottom: 10px;
             margin-bottom: 20px;
-            position : relative;
+            text-decoration: underline;
+            text-decoration-color: ${colors.green};
+            text-decoration-thickness: 2px;
+            text-underline-offset: 10px;
+            
+            i {
+                text-decoration: none;
+            }
+
             &:before {
-                position : absolute;
-                content : "";
-                background : ${colors.green};
-                width : 50px;
-                height: 2px;
-                bottom : 0;
-                left : 0;
+                display: none;
             }
 
             @media(max-width: 575px) {

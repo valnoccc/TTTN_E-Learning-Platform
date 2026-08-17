@@ -235,7 +235,7 @@ export class PostsService {
       ...(dto.noiDung !== undefined && { noiDung: dto.noiDung }),
       ...(dto.hinhAnh !== undefined && { hinhAnh: dto.hinhAnh }),
       ...(dto.trangThai !== undefined && { trangThai: dto.trangThai }),
-      ...(dto.maDMBV !== undefined && { maDMBV: dto.maDMBV }),
+      ...(dto.maDMBV !== undefined && { maDMBV: dto.maDMBV, category: { maDMBV: dto.maDMBV } as any }),
       ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
     });
 

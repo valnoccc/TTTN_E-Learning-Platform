@@ -4,6 +4,7 @@ import { Container, Row, Col } from 'react-bootstrap';
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import CourseSidebar from './components/CourseSidebar';
 import CourseItemGrid from './components/CourseItemsGrid';
+import PopularCourse from './components/PopularCourse';
 import { Styles } from './styles/course';
 
 const CourseGrid = () => {
@@ -41,15 +42,30 @@ const CourseGrid = () => {
             <Styles>
                 {/* Course Grid */}
                 <section className="course-grid-area">
-                    <Container>
+                    <Container fluid className="px-xl-5 px-lg-4 px-3">
                         <Row>
-                            <Col lg="3" md="4" sm="5">
+                            {/* Left Sidebar - Filters */}
+                            <Col lg="3" md="4" sm="12">
                                 <CourseSidebar filters={filters} setFilters={setFilters} />
+                                
                             </Col>
-                            <Col lg="9" md="8" sm="7">
+                            
+                            {/* Main Course Grid */}
+                            <Col lg="6" md="8" sm="12">
                                 <div className="course-items">
                                     <Row>
                                         <CourseItemGrid filters={filters} />
+                                    </Row>
+                                </div>
+                            </Col>
+                            
+                            {/* Right Sidebar - Popular Courses */}
+                            <Col lg="3" md="12">
+                                <div className="course-sidebar">
+                                    <Row>
+                                        <Col md="12">
+                                            <PopularCourse />
+                                        </Col>
                                     </Row>
                                 </div>
                             </Col>

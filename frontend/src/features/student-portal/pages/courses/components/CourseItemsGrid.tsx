@@ -67,7 +67,14 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
       setLoading(true);
       // Reset trang 1 mỗi khi filter/search thay đổi
       setCurrentPage(1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      const gridArea = document.querySelector('.course-grid-area');
+      if (gridArea) {
+        const y = gridArea.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       try {
         const params = new URLSearchParams();
         if (filters?.search) params.append("search", filters.search);
@@ -399,7 +406,13 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
             totalPages={totalPages}
             onPageChange={(page) => {
               setCurrentPage(page);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              const gridArea = document.querySelector('.course-grid-area');
+              if (gridArea) {
+                const y = gridArea.getBoundingClientRect().top + window.scrollY - 80;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
             }}
           />
         </Col>

@@ -20,10 +20,10 @@ const CourseCategory = ({ filters, setFilters }: { filters: any, setFilters: any
             <div className="course-category">
                 <h5 
                     className="cursor-pointer flex items-center justify-between hover:text-emerald-500 transition-colors whitespace-nowrap"
-                    // onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => setIsOpen(!isOpen)}
                     style={{ cursor: 'pointer', marginBottom: isOpen ? '20px' : '0' }}
                 >
-                    Danh mục khóa học
+                    <span className="title-text">Danh mục khóa học</span>
                     {/* <i className={`las ${isOpen ? 'la-angle-up' : 'la-angle-down'} text-xl`}></i> */}
                 </h5>
                 

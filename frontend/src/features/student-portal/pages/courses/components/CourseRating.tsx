@@ -20,7 +20,7 @@ const CourseRating = ({ filters, setFilters }: { filters: any, setFilters: any }
                     onClick={() => setIsOpen(!isOpen)}
                     style={{ cursor: 'pointer', marginBottom: isOpen ? '20px' : '0' }}
                 >
-                    Đánh giá
+                    <span className="title-text">Đánh giá</span>
                     <i className={`las ${isOpen ? 'la-angle-up' : 'la-angle-down'} text-xl`}></i>
                 </h5>
                 

@@ -52,21 +52,7 @@ export default function Pagination({
     const pageItems = buildPageItems();
 
     return (
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 bg-transparent w-full">
-            {/* Dòng chữ thông báo bên trái */}
-            {variant === 'numbers' && totalItems !== undefined && indexOfFirst !== undefined && indexOfLast !== undefined ? (
-                <p className="text-xs font-medium text-slate-500">
-                    Hiển thị từ <span className="font-semibold text-slate-700">{indexOfFirst + 1}</span> đến{' '}
-                    <span className="font-semibold text-slate-700">
-                        {indexOfLast > totalItems ? totalItems : indexOfLast}
-                    </span>{' '}
-                    trong tổng số <span className="font-semibold text-slate-700">{totalItems}</span> mục gốc
-                </p>
-            ) : (
-                <p className="text-sm text-slate-500">
-                    Trang {currentPage} / {totalPages} {totalItems !== undefined && `- ${totalItems} mục`}
-                </p>
-            )}
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 border-t border-slate-100 bg-transparent w-full">
 
             {/* Các nút bấm bên phải */}
             <div className="inline-flex gap-1 items-center">

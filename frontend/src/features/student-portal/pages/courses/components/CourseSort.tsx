@@ -20,7 +20,7 @@ const CourseSort = ({ filters, setFilters }: { filters: any, setFilters: any }) 
                     onClick={() => setIsOpen(!isOpen)}
                     style={{ cursor: 'pointer', marginBottom: isOpen ? '20px' : '0' }}
                 >
-                    Sắp xếp theo
+                    <span className="title-text">Sắp xếp theo</span>
                     <i className={`las ${isOpen ? 'la-angle-up' : 'la-angle-down'} text-xl`}></i>
                 </h5>
                 

@@ -18,7 +18,7 @@ const PopularCourse = () => {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const response: any = await axiosClient.get('/public/courses');
+                const response: any = await axiosClient.get('/public/courses?sort=popular');
                 if (response && response.data) {
                     setCourses(response.data.slice(0, 4));
                 }

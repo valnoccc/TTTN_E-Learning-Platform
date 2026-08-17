@@ -27,12 +27,12 @@ const CourseSidebar = ({ filters, setFilters }: { filters: any, setFilters: any 
                 <Col md="12">
                     <CourseSort filters={filters} setFilters={setFilters} />
                 </Col>
-                <Col md="12">
+                {/* <Col md="12">
                     <PopularCourse />
-                </Col>
-                <Col md="12">
+                </Col> */}
+                {/* <Col md="12">
                     <CourseTag />
-                </Col>
+                </Col> */}
             </Row>
         </div>
     );

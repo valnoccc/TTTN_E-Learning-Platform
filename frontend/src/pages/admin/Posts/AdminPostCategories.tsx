@@ -14,7 +14,7 @@ export interface AdminPostCategoriesRef {
   openCreate: () => void;
 }
 
-const AdminPostCategoriesTab = forwardRef<AdminPostCategoriesRef, {}>((props, ref) => {
+const AdminPostCategoriesTab = forwardRef<AdminPostCategoriesRef, { onCategoriesChanged?: () => void }>((props, ref) => {
   const [categories, setCategories] = useState<PostCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -60,6 +60,7 @@ const AdminPostCategoriesTab = forwardRef<AdminPostCategoriesRef, {}>((props, re
       await axiosClient.delete(`/admin/post-categories/${id}`);
       toast.success("Xóa danh mục thành công");
       fetchCategories();
+      props.onCategoriesChanged?.();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi khi xóa danh mục");
     }
@@ -82,6 +83,7 @@ const AdminPostCategoriesTab = forwardRef<AdminPostCategoriesRef, {}>((props, re
       }
       setShowModal(false);
       fetchCategories();
+      props.onCategoriesChanged?.();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi khi lưu danh mục");
     }

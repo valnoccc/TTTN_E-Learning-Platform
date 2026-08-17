@@ -27,6 +27,7 @@ export default function Cart() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [selectedCouponCode, setSelectedCouponCode] = useState<string>('');
+  const [sortOption, setSortOption] = useState('default');
 
   const isLoggedIn = !!localStorage.getItem('access_token');
 
@@ -68,19 +69,31 @@ export default function Cart() {
     }
   };
 
-  const handleToggleSelectAll = () => {
-    if (selectedIds.length === cartItems.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(cartItems.map((item) => item.id));
-    }
-  };
-
   const handleToggleSelect = (id: number) => {
     if (selectedIds.includes(id)) {
       setSelectedIds((prev) => prev.filter((sid) => sid !== id));
     } else {
       setSelectedIds((prev) => [...prev, id]);
+    }
+  };
+
+  const sortedCartItems = [...cartItems].sort((a, b) => {
+    if (sortOption === 'price-asc') return a.price - b.price;
+    if (sortOption === 'price-desc') return b.price - a.price;
+    if (sortOption === 'name-asc') return a.courseName.localeCompare(b.courseName);
+    if (sortOption === 'name-desc') return b.courseName.localeCompare(a.courseName);
+    return 0;
+  });
+
+  const handleToggleSelectAll = () => {
+    const visibleIds = sortedCartItems.map((item) => item.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      const newSelected = new Set([...selectedIds, ...visibleIds]);
+      setSelectedIds(Array.from(newSelected));
     }
   };
 
@@ -104,14 +117,27 @@ export default function Cart() {
                 </div>
               ) : cartItems.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <div className="flex justify-between items-center p-4 bg-white border-b border-slate-100">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border-b border-slate-100 gap-4">
                     <h3 className="font-semibold text-lg text-slate-800">Khóa học trong giỏ</h3>
-                    <button
-                      onClick={handleClearCart}
-                      className="text-red-500 hover:text-red-600 flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={16} /> Xóa tất cả
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      {/* <select 
+                        className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 w-full sm:w-auto"
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value)}
+                      >
+                        <option value="default">Sắp xếp: Mặc định</option>
+                        <option value="price-asc">Giá: Thấp đến Cao</option>
+                        <option value="price-desc">Giá: Cao đến Thấp</option>
+                        <option value="name-asc">Tên: A-Z</option>
+                        <option value="name-desc">Tên: Z-A</option>
+                      </select> */}
+                      <button
+                        onClick={handleClearCart}
+                        className="text-red-500 hover:text-red-600 flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap"
+                      >
+                        <Trash2 size={16} /> Xóa tất cả
+                      </button>
+                    </div>
                   </div>
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -120,7 +146,7 @@ export default function Cart() {
                           <input
                             type="checkbox"
                             className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                            checked={selectedIds.length === cartItems.length && cartItems.length > 0}
+                            checked={sortedCartItems.length > 0 && sortedCartItems.every(i => selectedIds.includes(i.id))}
                             onChange={handleToggleSelectAll}
                           />
                         </th>
@@ -130,8 +156,15 @@ export default function Cart() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {cartItems.map((item) => (
-                        <tr
+                      {sortedCartItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-8 text-center text-slate-500">
+                            Giỏ hàng của bạn đang trống.
+                          </td>
+                        </tr>
+                      ) : (
+                        sortedCartItems.map((item) => (
+                          <tr
                           key={item.id}
                           className={`transition-colors ${selectedIds.includes(item.id) ? 'bg-emerald-50/30' : 'hover:bg-slate-50/50'}`}
                         >
@@ -181,7 +214,8 @@ export default function Cart() {
                             </button>
                           </td>
                         </tr>
-                      ))}
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

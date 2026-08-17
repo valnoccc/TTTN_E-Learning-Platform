@@ -19,6 +19,11 @@ interface PostItem {
     hoTen: string;
     anhDaiDien?: string;
   };
+  category?: {
+    maDMBV: number;
+    tenDMBV: string;
+    slug: string;
+  };
 }
 
 function formatDate(dateStr: string): string {
@@ -39,25 +44,41 @@ export default function AdminPosts() {
   const [deleteTarget, setDeleteTarget] = useState<PostItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'categories'>('posts');
+  const [sortBy, setSortBy] = useState('NEWEST');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [categories, setCategories] = useState<{maDMBV: number, tenDMBV: string}[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
   const categoriesRef = useRef<AdminPostCategoriesRef>(null);
 
-  const fetchPosts = async () => {
+  const fetchPostsAndCategories = async () => {
     setIsLoading(true);
     try {
-      const res: any = await axiosClient.get('/admin/posts');
-      setPosts(res?.data ?? []);
+      const [postsRes, catsRes] = await Promise.all([
+        axiosClient.get('/admin/posts'),
+        axiosClient.get('/admin/post-categories')
+      ]);
+      setPosts((postsRes as any)?.data ?? []);
+      setCategories((catsRes as any)?.data ?? []);
     } catch (err: any) {
-      console.error('Lỗi khi tải danh sách bài viết:', err);
-      toast.error('Không thể tải danh sách bài viết');
+      console.error('Lỗi khi tải dữ liệu:', err);
+      toast.error('Không thể tải dữ liệu');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const refreshCategories = async () => {
+    try {
+      const catsRes: any = await axiosClient.get('/admin/post-categories');
+      setCategories(catsRes?.data ?? []);
+    } catch (err) {
+      console.error('Lỗi khi tải lại danh mục:', err);
+    }
+  };
+
   useEffect(() => {
-    fetchPosts();
+    fetchPostsAndCategories();
   }, []);
 
   const handleDelete = async () => {
@@ -77,10 +98,30 @@ export default function AdminPosts() {
   };
 
   const filteredPosts = useMemo(() => {
-    return posts.filter((p) =>
-      p.tieuDe.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [posts, searchTerm]);
+    let result = posts.filter((p) => {
+      const matchSearch = p.tieuDe.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchCategory = selectedCategory === 'ALL' || 
+                            (p.category && p.category.maDMBV.toString() === selectedCategory) || 
+                            ((p as any).maDMBV && (p as any).maDMBV.toString() === selectedCategory);
+      return matchSearch && matchCategory;
+    });
+
+    switch (sortBy) {
+      case 'NEWEST':
+        result.sort((a, b) => new Date(b.ngayTao).getTime() - new Date(a.ngayTao).getTime());
+        break;
+      case 'OLDEST':
+        result.sort((a, b) => new Date(a.ngayTao).getTime() - new Date(b.ngayTao).getTime());
+        break;
+      case 'VIEWS_DESC':
+        result.sort((a, b) => b.luotXem - a.luotXem);
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }, [posts, searchTerm, sortBy, selectedCategory]);
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
@@ -88,10 +129,10 @@ export default function AdminPosts() {
   const indexOfFirst = indexOfLast - PAGE_SIZE;
   const currentPosts = filteredPosts.slice(indexOfFirst, indexOfLast);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or category changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedCategory]);
 
   return (
     <AdminLayout>
@@ -106,16 +147,37 @@ export default function AdminPosts() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {activeTab === 'posts' && (
-              <div className="relative w-full sm:flex-1">
-                <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tiêu đề..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-[14px] text-slate-700 shadow-sm outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]"
-                />
-              </div>
+              <>
+                <div className="relative w-full sm:flex-1">
+                  <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tiêu đề..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-[14px] text-slate-700 shadow-sm outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73]"
+                  />
+                </div>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[14px] text-slate-700 shadow-sm outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] sm:w-auto"
+                >
+                  <option value="ALL">Tất cả danh mục</option>
+                  {categories.map(cat => (
+                    <option key={cat.maDMBV} value={cat.maDMBV.toString()}>{cat.tenDMBV}</option>
+                  ))}
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[14px] text-slate-700 shadow-sm outline-none transition focus:border-[#1dbf73] focus:ring-1 focus:ring-[#1dbf73] sm:w-auto"
+                >
+                  <option value="NEWEST">Mới nhất</option>
+                  <option value="OLDEST">Cũ nhất</option>
+                  <option value="VIEWS_DESC">Lượt xem cao</option>
+                </select>
+              </>
             )}
 
             {activeTab === 'posts' ? (
@@ -293,14 +355,7 @@ export default function AdminPosts() {
 
           {/* Pagination */}
           {!isLoading && filteredPosts.length > 0 && (
-            <div className="flex items-center justify-between border-t border-slate-100 bg-white px-5 py-4">
-              <span className="text-sm text-slate-500">
-                Hiển thị <span className="font-medium text-slate-700">{indexOfFirst + 1}</span> đến{' '}
-                <span className="font-medium text-slate-700">
-                  {Math.min(indexOfLast, filteredPosts.length)}
-                </span>{' '}
-                trong tổng số <span className="font-medium text-slate-700">{filteredPosts.length}</span> bài viết
-              </span>
+            <div className="flex items-center justify-center border-t border-slate-100 bg-white px-5 py-4">
 
               <div className="flex items-center gap-2">
                 <button
@@ -374,7 +429,7 @@ export default function AdminPosts() {
         )}
           </>
         ) : (
-          <AdminPostCategoriesTab ref={categoriesRef} />
+          <AdminPostCategoriesTab ref={categoriesRef} onCategoriesChanged={refreshCategories} />
         )}
       </div>
 

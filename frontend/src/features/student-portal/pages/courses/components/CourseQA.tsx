@@ -599,7 +599,7 @@ export default function CourseQA({
       if (err.response?.status === 403) {
         toast.error("Hiện tại chỉ giảng viên mới có thể trả lời câu hỏi.");
       } else {
-        toast.error("Có lỗi xảy ra khi gửi phản hồi.");
+        toast.error(err.response?.data?.message || "Có lỗi xảy ra khi gửi phản hồi.");
       }
     } finally {
       setIsPosting(false);
