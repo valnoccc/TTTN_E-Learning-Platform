@@ -20,6 +20,7 @@ import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-vid
 
 const QUOTA_LIMIT_SECONDS = 60_000;
 const QUOTA_WARNING_SECONDS = 54_000;
+const MAX_AI_LABELS = 15;
 const SENSITIVE_VIDEO_LABELS = new Set([
   'violence',
   'adult',
@@ -463,7 +464,7 @@ export class VideoIntelligenceService implements OnModuleInit {
 
         decision.labels = [...priorityLabels, label, ...regularLabels].slice(
           0,
-          5,
+          MAX_AI_LABELS,
         );
       };
 
@@ -748,7 +749,10 @@ YÊU CẦU ĐẦU RA - CHỈ trả về JSON thuần túy, không kèm markdown:
     const regularLabels = detectedLabels.filter(
       (label) => !SENSITIVE_VIDEO_LABELS.has(label.toLowerCase()),
     );
-    const labels = [...sensitiveLabels, ...regularLabels].slice(0, 5);
+    const labels = [...sensitiveLabels, ...regularLabels].slice(
+      0,
+      MAX_AI_LABELS,
+    );
 
     this.logger.log(
       `[Video AI] explicit=${sensitiveFrames.length}, risky=${riskyFrames.length}, likely=${likelyFrames.length}, labels=${JSON.stringify(labels)}`,

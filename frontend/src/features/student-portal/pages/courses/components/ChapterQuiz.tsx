@@ -25,8 +25,6 @@ interface ChapterQuizProps {
   onClose: () => void;
 }
 
-const answerKeys = ["A", "B", "C", "D"] as const;
-
 export default function ChapterQuiz({
   attempt,
   answers,
@@ -112,15 +110,7 @@ export default function ChapterQuiz({
                   </h3>
                 </div>
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {answerKeys.map((key) => {
-                    const answer =
-                      currentQuestion[
-                        `dapAn${key}` as
-                          | "dapAnA"
-                          | "dapAnB"
-                          | "dapAnC"
-                          | "dapAnD"
-                      ];
+                  {currentQuestion.options.map(({ key, text }) => {
                     const selected = answers[currentQuestion.maCauHoi] === key;
                     return (
                       <button
@@ -134,7 +124,7 @@ export default function ChapterQuiz({
                         >
                           {key}
                         </span>
-                        <span>{answer}</span>
+                        <span>{text}</span>
                       </button>
                     );
                   })}

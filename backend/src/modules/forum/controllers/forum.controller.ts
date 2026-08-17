@@ -155,6 +155,47 @@ export class ForumController {
       data: result,
     };
   }
+
+  @Get('admin/questions/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getAdminQuestionDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const result = await this.forumAdminService.getQuestionDetail(
+      id,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+    );
+
+    return {
+      message: 'Lấy chi tiết bài đăng diễn đàn thành công',
+      data: result,
+    };
+  }
+
+  @Post('admin/questions/:id/answers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async createAdminAnswer(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { sub: number } },
+    @Body() body: CreateAnswerDto,
+  ) {
+    const result = await this.forumAdminService.createAdminAnswer(
+      id,
+      req.user.sub,
+      body,
+    );
+
+    return {
+      message: 'Tạo câu trả lời quản trị thành công',
+      data: result,
+    };
+  }
+
   @Delete('questions/:id')
   @UseGuards(JwtAuthGuard)
   async deleteQuestion(

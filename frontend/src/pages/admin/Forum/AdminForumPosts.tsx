@@ -1,5 +1,6 @@
 import { Clock3, Eye, Hash, MessageSquare, RefreshCw, Search, Tag, Trash2, UserRound, X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import AdminLayout from '../../../layouts/AdminLayout';
 import Pagination from '../../../components/Pagination';
@@ -277,14 +278,23 @@ export default function AdminForumPosts() {
 
                       <td className="px-6 py-5 align-middle">
                         <div className="flex items-center justify-center">
-                          <button
-                            onClick={() => setQuestionToDelete(question)}
-                            disabled={deletingId === question.maCH}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Trash2 size={14} />
-                            Xóa
-                          </button>
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <Link
+                              to={`/admin/forum/${question.maCH}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100"
+                            >
+                              <Eye size={14} />
+                              Xem
+                            </Link>
+                            <button
+                              onClick={() => setQuestionToDelete(question)}
+                              disabled={deletingId === question.maCH}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 size={14} />
+                              Xóa
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>

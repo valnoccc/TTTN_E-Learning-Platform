@@ -57,6 +57,12 @@ describe('NotificationsService', () => {
       { maTB: 1, thoiGian: new Date('2026-06-10T11:00:00.000Z') },
       { maTB: 2, thoiGian: new Date('2026-06-10T10:00:00.000Z') },
     ]);
+
+    expect(notificationRepository.find).toHaveBeenCalledWith({
+      where: { maND: 7 },
+      take: 50,
+      order: { thoiGian: 'DESC', maTB: 'DESC' },
+    });
   });
 
   it('marks a notification as read only if it belongs to the user', async () => {

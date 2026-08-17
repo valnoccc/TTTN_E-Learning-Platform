@@ -159,3 +159,5 @@ pointer to the current public object. Existing data can be initialized with
 - Data Integrity: Khong duoc phep xoa cung khoa hoc/bai hoc neu da co hoc vien dang ky (`enrollments > 0`). Chuyen sang trang thai an (Soft Delete/Deactivate).
 - Coupon rule: mot ma giam gia chi ap dung cho dung khoa hoc `MaKH` cua no; neu gio hang co nhieu khoa hoc thi chi giam tren khoa hoc khop ma.
 - `PATCH /admin/courses/:id/ban` (Ban khoa hoc da xuat ban, body: `{ lyDo: string }`, chuyen trang thai sang `BANNED`, tao thong bao va luu lich su kiem duyet)
+- `GET /courses/:id` (Instructor - Chi tiet khoa hoc do minh so huu; khi khoa hoc dang `BANNED`, response co them `banReason` lay tu ly do `BAN` moi nhat.)
+- Quy tac `BANNED`: giang vien duoc cap nhat noi dung khoa hoc, chuong, bai hoc/video va cau hoi; chi duoc doi trang thai sang `PENDING` de gui duyet lai. Khong duoc xoa, luu tru hoac tam an khoa hoc dang bi dinh chi.

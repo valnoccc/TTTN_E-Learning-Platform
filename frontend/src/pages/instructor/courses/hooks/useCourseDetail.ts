@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -12,6 +12,7 @@ export interface CourseForm {
     hinh_anh: string;
     trang_thai: string;
     hinh_thu_nho?: string | null;
+    ban_reason?: string | null;
     muc_tieu: string[];
     yeu_cau: string[];
 }
@@ -43,6 +44,7 @@ interface CourseDetailApiData {
     trang_thai?: string;
     muc_tieu?: string[];
     yeu_cau?: string[];
+    banReason?: string | null;
 }
 
 interface CourseDetailApiResponse {
@@ -134,6 +136,27 @@ export function useCourseDetail(
     const [isSaving, setIsSaving] = useState(false);
     const [isStatusChanging, setIsStatusChanging] = useState(false);
 
+    const loadLessons = useCallback(async (showError = true) => {
+        if (!id) return;
+
+        try {
+            const response = await axiosClient.get<LessonListApiResponse | Lesson[]>(
+                `/lessons?id_khoa_hoc=${id}`,
+            );
+            const payload = Array.isArray(response) ? response : response.data ?? [];
+
+            setLessons(
+                Array.isArray(payload)
+                    ? payload.sort((a, b) => a.thu_tu - b.thu_tu)
+                    : [],
+            );
+        } catch {
+            if (showError) {
+                toast.error('Không thể tải danh sách bài học.');
+            }
+        }
+    }, [id]);
+
     useEffect(() => {
         if (isNewCourse || !id) {
             setLessons([]);
@@ -155,6 +178,7 @@ export function useCourseDetail(
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
+                    ban_reason: courseData.banReason ?? null,
                     muc_tieu: courseData.muc_tieu?.length ? courseData.muc_tieu : ['', '', '', ''],
                     yeu_cau: courseData.yeu_cau?.length ? courseData.yeu_cau : [''],
                 });
@@ -165,26 +189,26 @@ export function useCourseDetail(
             }
         };
 
-        const fetchLessons = async () => {
-            try {
-                const response = await axiosClient.get<LessonListApiResponse | Lesson[]>(
-                    `/lessons?id_khoa_hoc=${id}`,
-                );
-                const payload = Array.isArray(response) ? response : response.data ?? [];
-
-                setLessons(
-                    Array.isArray(payload)
-                        ? payload.sort((a, b) => a.thu_tu - b.thu_tu)
-                        : [],
-                );
-            } catch {
-                toast.error('Không thể tải danh sách bài học.');
-            }
-        };
-
         void fetchCourseDetail();
-        void fetchLessons();
-    }, [id, isNewCourse]);
+        void loadLessons();
+    }, [id, isNewCourse, loadLessons]);
+
+    useEffect(() => {
+        if (isNewCourse || !id) return;
+
+        const hasPendingModeration = lessons.some((lesson) =>
+            ['PENDING', 'PROCESSING'].includes(
+                String(lesson.aiStatus ?? '').trim().toUpperCase(),
+            ),
+        );
+        if (!hasPendingModeration) return;
+
+        const intervalId = window.setInterval(() => {
+            void loadLessons(false);
+        }, 5000);
+
+        return () => window.clearInterval(intervalId);
+    }, [id, isNewCourse, lessons, loadLessons]);
 
     // ==========================================
     // LOGIC THAO TÁC MỤC TIÊU KHÓA HỌC
@@ -462,7 +486,7 @@ export function useCourseDetail(
     const handleDeleteCourse = () => setIsDeleteModalOpen(true);
     const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
-    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'BANNED', 'HIDDEN'].includes(formData.trang_thai);
+    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'HIDDEN'].includes(formData.trang_thai);
 
     return {
         id,

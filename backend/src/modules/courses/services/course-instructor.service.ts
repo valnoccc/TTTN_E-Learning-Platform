@@ -160,6 +160,12 @@ export class CoursesService implements OnModuleInit {
       throw new ForbiddenException('Bạn không có quyền xóa khóa học này');
     }
 
+    if (course.trangThai === 'BANNED') {
+      throw new BadRequestException(
+        'Khóa học đang bị đình chỉ. Bạn chỉ có thể chỉnh sửa nội dung và gửi duyệt lại.',
+      );
+    }
+
     const hasBuyers = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM ChiTietHoaDon WHERE MaKH = ?`,
       [courseId],
@@ -316,6 +322,12 @@ export class CoursesService implements OnModuleInit {
 
     if (!course) {
       throw new ForbiddenException('Bạn không có quyền sửa khóa học này');
+    }
+
+    if (course.trangThai === 'BANNED' && trangThai !== 'PENDING') {
+      throw new BadRequestException(
+        'Khóa học đang bị đình chỉ. Bạn chỉ có thể chỉnh sửa nội dung và gửi duyệt lại.',
+      );
     }
 
     if (trangThai === 'PENDING') {
@@ -554,11 +566,20 @@ export class CoursesService implements OnModuleInit {
       `SELECT NoiDung FROM YeuCauKhoaHoc WHERE MaKH = ?`,
       [courseId],
     );
+    const banHistory = await this.dataSource.query(
+      `SELECT GhiChu
+       FROM LichSuKiemDuyetKhoaHoc
+       WHERE MaKH = ? AND HanhDong = 'BAN'
+       ORDER BY ThoiGian DESC, MaLSKD DESC
+       LIMIT 1`,
+      [courseId],
+    );
 
     return {
       ...course,
       muc_tieu: mucTieuData.map((item: any) => item.NoiDung),
       yeu_cau: yeuCauData.map((item: any) => item.NoiDung),
+      banReason: banHistory[0]?.GhiChu ?? null,
     };
   }
 

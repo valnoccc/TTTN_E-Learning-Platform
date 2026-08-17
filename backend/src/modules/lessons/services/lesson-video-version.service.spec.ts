@@ -58,6 +58,21 @@ describe('LessonVideoVersionService', () => {
     expect(manager.query).toHaveBeenCalledTimes(1);
   });
 
+  it('marks only rejected or manually-review draft videos as approved for an admin-approved appeal', async () => {
+    dataSource.query.mockResolvedValue({ affectedRows: 2 });
+
+    await expect(
+      (service as any).approveAppealedDraftVideos(100),
+    ).resolves.toEqual({ affectedRows: 2 });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /UPDATE VideoBaiHoc[\s\S]*AiStatus = 'APPROVED'[\s\S]*AiStatus IN \('REJECTED', 'NEEDS_REVIEW'\)/,
+      ),
+      [100],
+    );
+  });
+
   it('publishes a moderated draft and archives the previous public version', async () => {
     const manager = { query: jest.fn() };
     dataSource.transaction.mockImplementation(async (callback) => callback(manager));

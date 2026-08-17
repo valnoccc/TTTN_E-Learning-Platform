@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
     BookOpen,
+    Archive,
     Eye,
     EyeOff,
     Plus,
@@ -15,10 +16,10 @@ import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { useState } from 'react';
 
 export default function InstructorCourses() {
-    const { courses, loading, handleDelete, handleToggleStatus } = useCourseList();
+    const { courses, loading, handleDelete, handleToggleStatus, handleArchive } = useCourseList();
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
-        type: 'toggle' | 'delete' | null;
+        type: 'toggle' | 'archive' | 'delete' | null;
         courseId: number | string | null;
         currentStatus?: string;
     }>({ isOpen: false, type: null, courseId: null });
@@ -26,6 +27,8 @@ export default function InstructorCourses() {
     const handleConfirm = () => {
         if (confirmModal.type === 'toggle' && confirmModal.courseId && confirmModal.currentStatus) {
             void handleToggleStatus(confirmModal.courseId, confirmModal.currentStatus);
+        } else if (confirmModal.type === 'archive' && confirmModal.courseId) {
+            void handleArchive(confirmModal.courseId);
         } else if (confirmModal.type === 'delete' && confirmModal.courseId) {
             void handleDelete(confirmModal.courseId);
         }
@@ -105,25 +108,36 @@ export default function InstructorCourses() {
                                                         to={`/instructor/courses/${course.id}/overview`}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#1dbf73] hover:bg-[#ebf8f2] hover:text-[#169b5c]"
                                                     >
-                                                        <Settings size={14} /> Quản lý
+                                                        <Settings size={14} /> {course.trang_thai === 'BANNED' ? 'Khắc phục' : 'Quản lý'}
                                                     </Link>
 
-                                                    {['PUBLISHED', 'UNLISTED', 'ARCHIVED'].includes(course.trang_thai) ? (
+                                                    {['PUBLISHED', 'ARCHIVED'].includes(course.trang_thai) ? (
                                                         <button
                                                             onClick={() => setConfirmModal({ isOpen: true, type: 'toggle', courseId: course.id, currentStatus: course.trang_thai })}
                                                             className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
                                                         >
                                                             {course.trang_thai === 'PUBLISHED' ? <EyeOff size={14} /> : <Eye size={14} />}
-                                                            {course.trang_thai === 'PUBLISHED' ? 'Tạm ẩn' : course.trang_thai === 'ARCHIVED' ? 'Khôi phục' : 'Mở chỉnh sửa'}
+                                                            {course.trang_thai === 'PUBLISHED' ? 'Tạm ẩn' : 'Khôi phục'}
                                                         </button>
                                                     ) : null}
 
+                                                    {['PUBLISHED', 'UNLISTED'].includes(course.trang_thai) ? (
+                                                        <button
+                                                            onClick={() => setConfirmModal({ isOpen: true, type: 'archive', courseId: course.id, currentStatus: course.trang_thai })}
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-700 transition-all hover:bg-rose-100"
+                                                        >
+                                                            <Archive size={14} /> Lưu trữ
+                                                        </button>
+                                                    ) : null}
+
+                                                    {course.trang_thai !== 'BANNED' ? (
                                                     <button
                                                         onClick={() => setConfirmModal({ isOpen: true, type: 'delete', courseId: course.id })}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                                     >
                                                         <Trash2 size={14} /> Xóa
                                                     </button>
+                                                    ) : null}
                                                 </div>
                                             </td>
                                         </tr>
@@ -158,16 +172,16 @@ export default function InstructorCourses() {
             
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
-                title={confirmModal.type === 'delete' ? 'Xóa khóa học' : (confirmModal.currentStatus === 'ARCHIVED' ? 'Khôi phục khóa học' : confirmModal.currentStatus === 'UNLISTED' ? 'Mở chỉnh sửa khóa học' : 'Tạm ẩn khóa học')}
+                title={confirmModal.type === 'delete' ? 'Xóa khóa học' : confirmModal.type === 'archive' ? 'Lưu trữ khóa học' : (confirmModal.currentStatus === 'ARCHIVED' ? 'Khôi phục khóa học' : 'Tạm ẩn khóa học')}
                 message={confirmModal.type === 'delete' 
                     ? 'Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác.' 
+                    : confirmModal.type === 'archive'
+                        ? 'Khóa học sẽ bị ẩn hoàn toàn, không thể bán cho học viên mới và học viên đã mua cũng không thể tiếp tục học. Dữ liệu khóa học vẫn được giữ lại.'
                     : (confirmModal.currentStatus === 'ARCHIVED'
                         ? 'Khóa học sẽ trở về bản nháp để bạn chỉnh sửa và gửi admin duyệt lại trước khi public.'
-                        : confirmModal.currentStatus === 'UNLISTED'
-                        ? 'Khóa học sẽ trở về bản nháp để bạn tiếp tục chỉnh sửa và gửi duyệt lại.'
                         : 'Khóa học sẽ bị ẩn khỏi việc bán mới, nhưng học viên đã mua vẫn được tiếp tục học. Bạn có chắc chắn muốn tạm ẩn?')}
-                confirmText={confirmModal.type === 'delete' ? 'Xóa khóa học' : 'Xác nhận'}
-                isDestructive={confirmModal.type === 'delete' || (confirmModal.currentStatus !== 'UNLISTED' && confirmModal.currentStatus !== 'ARCHIVED')}
+                confirmText={confirmModal.type === 'delete' ? 'Xóa khóa học' : confirmModal.type === 'archive' ? 'Lưu trữ khóa học' : 'Xác nhận'}
+                isDestructive={confirmModal.type === 'delete' || confirmModal.type === 'archive' || (confirmModal.currentStatus !== 'UNLISTED' && confirmModal.currentStatus !== 'ARCHIVED')}
                 onConfirm={handleConfirm}
                 onCancel={() => setConfirmModal({ isOpen: false, type: null, courseId: null })}
             />
@@ -207,6 +221,12 @@ function StatusBadge({ status }: { status: string }) {
             return (
                 <span className={`${baseClass} border-rose-200 bg-rose-50 text-rose-700`}>
                     Đã lưu trữ
+                </span>
+            );
+        case 'BANNED':
+            return (
+                <span className={`${baseClass} border-red-300 bg-red-50 text-red-700`}>
+                    Đã bị đình chỉ
                 </span>
             );
         default:

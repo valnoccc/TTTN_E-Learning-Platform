@@ -84,21 +84,11 @@ const CourseItemGrid = ({ filters }: { filters?: any }) => {
         if (filters?.rating) params.append("rating", filters.rating);
         if (filters?.sort) params.append("sort", filters.sort);
 
-        console.log(
-          "[CourseItemsGrid] Fetching with params:",
-          params.toString(),
-        );
         const response: any = await axiosClient.get(
           `/public/courses?${params.toString()}`,
         );
         if (response && response.data) {
           setCourses(response.data);
-          console.log(
-            "[CourseItemsGrid] Loaded",
-            response.data.length,
-            "courses for search:",
-            filters?.search || "(all)",
-          );
         }
       } catch (error) {
         console.error("[CourseItemsGrid] Error fetching courses", error);

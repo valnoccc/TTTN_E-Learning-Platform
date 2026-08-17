@@ -29,6 +29,7 @@ describe('CourseAdminService', () => {
 
   const lessonVideoVersionService = {
     publishCourseVideos: jest.fn().mockResolvedValue({ publishedCount: 0 }),
+    approveAppealedDraftVideos: jest.fn().mockResolvedValue({ affectedRows: 0 }),
   };
 
   const moderationHistoryRepository = {
@@ -53,8 +54,12 @@ describe('CourseAdminService', () => {
     moderationHistoryRepository.save.mockReset();
     notificationsService.createNotification.mockReset();
     lessonVideoVersionService.publishCourseVideos.mockReset();
+    lessonVideoVersionService.approveAppealedDraftVideos.mockReset();
     lessonVideoVersionService.publishCourseVideos.mockResolvedValue({
       publishedCount: 0,
+    });
+    lessonVideoVersionService.approveAppealedDraftVideos.mockResolvedValue({
+      affectedRows: 0,
     });
   });
 
@@ -253,6 +258,33 @@ describe('CourseAdminService', () => {
       hanhDong: 'APPROVE',
       ghiChu: null,
     });
+  });
+
+  it('overrides appealed draft-video moderation before publishing an appealed course', async () => {
+    const course = {
+      maKH: 11,
+      tenKhoaHoc: 'React Co Ban',
+      trangThai: 'PENDING_APPEAL',
+      maND_GiangVien: 7,
+    };
+    courseRepository.findOne.mockResolvedValue(course);
+    courseRepository.save.mockResolvedValue(course);
+    notificationsService.createNotification.mockResolvedValue(undefined);
+    moderationHistoryRepository.create.mockImplementation((value) => value);
+    moderationHistoryRepository.save.mockResolvedValue(undefined);
+
+    await expect(service.approveCourse(11, 99)).resolves.toEqual({
+      message: 'Đã phê duyệt khóa học thành công.',
+      data: { id: 11, trangThai: 'PUBLISHED' },
+    });
+
+    expect(
+      lessonVideoVersionService.approveAppealedDraftVideos,
+    ).toHaveBeenCalledWith(11);
+    expect(lessonVideoVersionService.publishCourseVideos).toHaveBeenCalledWith(
+      11,
+      99,
+    );
   });
 
   it('rejects pending courses, creates notification with sender, and writes moderation history', async () => {

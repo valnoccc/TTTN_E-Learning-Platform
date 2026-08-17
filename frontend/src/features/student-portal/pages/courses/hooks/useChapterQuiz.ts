@@ -6,11 +6,11 @@ export interface ChapterQuizQuestion {
   maCauHoi: number;
   maChuong: number;
   noiDung: string;
-  dapAnA: string;
-  dapAnB: string;
-  dapAnC: string;
-  dapAnD: string;
   thuTu: number;
+  options: Array<{
+    key: 'A' | 'B' | 'C' | 'D';
+    text: string;
+  }>;
 }
 
 export interface ChapterQuizAttempt {

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, Optional } from '@n
 import { DataSource } from 'typeorm';
 import { QuizAnswerDto } from '../dto/submit-quiz-attempt.dto';
 import { StudentQuizQuestionsService } from '../../quiz-questions/services/student-quiz-questions.service';
+import { randomizeQuizForAttempt } from './quiz-attempt-randomizer';
 
 @Injectable()
 export class QuizAttemptsService {
@@ -104,7 +105,7 @@ export class QuizAttemptsService {
       chapterId,
       lanThu,
       totalQuestions: questions.length,
-      questions: questions.map(({ dapAnDung: _answer, ...question }) => question),
+      questions: randomizeQuizForAttempt(questions, attemptId),
     };
   }
 
