@@ -70,6 +70,15 @@ class MobileMenu extends Component {
     }
 
     render() {
+        let canRegisterInstructor = true;
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            const role = String(user?.vaiTro || user?.role || '').toUpperCase();
+            canRegisterInstructor = role !== 'ADMIN' && role !== 'INSTRUCTOR';
+        } catch {
+            canRegisterInstructor = false;
+        }
+
         return (
             <Styles>
                 <section className="mobile-menu-area">
@@ -83,9 +92,11 @@ class MobileMenu extends Component {
                                     <div className="topbar-item">
                                         <div className="mobile-account-actions">
                                             <AuthControls />
-                                            <Link to="/instructor-registration" className="mobile-instructor-link">
-                                                Đăng ký GV
-                                            </Link>
+                                            {canRegisterInstructor && (
+                                                <Link to="/instructor-registration" className="mobile-instructor-link">
+                                                    Đăng ký GV
+                                                </Link>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthService } from '../../auth/auth.service';
@@ -22,6 +22,14 @@ export class InstructorApplicationsService {
     const user = await this.userRepository.findOne({ where: { maND: userId } });
     const { BangCaps, KinhNghiems, ...profileDto } = dto;
     if (!user) throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+
+    if (user.vaiTro === UserRole.ADMIN) {
+      throw new ForbiddenException('Tài khoản quản trị không được phép đăng ký làm giảng viên.');
+    }
+
+    if (user.vaiTro === UserRole.INSTRUCTOR) {
+      throw new ForbiddenException('Tài khoản này đã là giảng viên của nền tảng.');
+    }
 
     const existingProfile = await this.profileRepository.findOne({
       where: { MaND: userId },

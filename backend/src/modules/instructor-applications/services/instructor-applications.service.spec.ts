@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '../../users/entities/user.entity';
 import { InstructorApplicationsService } from './instructor-applications.service';
 
@@ -53,21 +53,15 @@ describe('InstructorApplicationsService', () => {
     expect(result).toEqual({ access_token: 'new-token' });
   });
 
-  it('updates an existing instructor profile instead of creating a duplicate', async () => {
-    const user = { maND: 7, vaiTro: UserRole.INSTRUCTOR };
-    const existingProfile = { ...profile };
-    userRepository.findOne.mockResolvedValue(user);
-    profileRepository.findOne.mockResolvedValue(existingProfile);
-    profileRepository.save.mockResolvedValue(existingProfile);
+  it.each([
+    [UserRole.ADMIN, 'Tài khoản quản trị không được phép đăng ký làm giảng viên.'],
+    [UserRole.INSTRUCTOR, 'Tài khoản này đã là giảng viên của nền tảng.'],
+  ])('rejects an account with role %s', async (role, message) => {
+    userRepository.findOne.mockResolvedValue({ maND: 7, vaiTro: role });
 
-    await service.apply(7, { ...dto, BangCaps: [], KinhNghiems: [] });
-
-    expect(profileRepository.create).not.toHaveBeenCalled();
-    expect(profileRepository.save).toHaveBeenCalledWith(expect.objectContaining(dto));
-    expect(profileDetailsService.replaceDetails).toHaveBeenCalledWith(4, {
-      qualifications: [],
-      experiences: [],
-    });
+    await expect(service.apply(7, dto)).rejects.toThrow(message);
+    expect(profileRepository.save).not.toHaveBeenCalled();
+    expect(userRepository.save).not.toHaveBeenCalled();
   });
 
   it('rejects an unknown user', async () => {

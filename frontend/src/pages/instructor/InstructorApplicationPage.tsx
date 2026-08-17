@@ -73,8 +73,24 @@ export default function InstructorApplicationPage() {
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem("access_token"))
+    if (!localStorage.getItem("access_token")) {
       navigate("/login", { replace: true });
+      return;
+    }
+
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      const role = String(user?.vaiTro || user?.role || "").toUpperCase();
+      if (role === "ADMIN") {
+        toast.error("Tài khoản quản trị không được phép đăng ký làm giảng viên.");
+        navigate("/", { replace: true });
+      } else if (role === "INSTRUCTOR") {
+        toast.error("Tài khoản này đã là giảng viên của nền tảng.");
+        navigate("/instructor", { replace: true });
+      }
+    } catch {
+      navigate("/", { replace: true });
+    }
   }, [navigate]);
 
   const updateField = (field: keyof ApplicationForm, value: string) => {
