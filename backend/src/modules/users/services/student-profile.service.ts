@@ -11,6 +11,8 @@ export class StudentProfileService {
         k.MaKH as id, 
         k.TenKhoaHoc as title, 
         k.HinhThuNho as image, 
+        k.GiaBan as price,
+        d.MaDangKy as enrollmentId,
         IFNULL(
           ROUND(
             (
@@ -36,6 +38,8 @@ export class StudentProfileService {
       ...c,
       id: Number(c.id),
       progress: Number(c.progress),
+      price: Number(c.price || 0),
+      enrollmentId: Number(c.enrollmentId || 0),
     }));
   }
 
