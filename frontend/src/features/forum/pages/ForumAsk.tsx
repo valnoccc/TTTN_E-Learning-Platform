@@ -31,11 +31,11 @@ export default function ForumAsk() {
     try {
       const response: any = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
       // Update local storage
-      if (response.data && response.data.data) {
+      if (response.data) {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          user.forumPolicyAcceptedAt = response.data.data.forumPolicyAcceptedAt;
+          user.forumPolicyAcceptedAt = response.data.forumPolicyAcceptedAt;
           localStorage.setItem('user', JSON.stringify(user));
         }
       }

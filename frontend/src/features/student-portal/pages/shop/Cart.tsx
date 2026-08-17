@@ -16,6 +16,7 @@ import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { CouponModal } from '../../components/checkout/CouponModal';
 import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
 import { validateCoupon } from '../../../../api/checkout';
+import { ConfirmModal } from '../../../../components/common/ConfirmModal';
 
 export default function Cart() {
   const { t } = useTranslation();
@@ -31,6 +32,7 @@ export default function Cart() {
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [sortOption, setSortOption] = useState('default');
+  const [isConfirmClearModalOpen, setIsConfirmClearModalOpen] = useState(false);
 
   const isLoggedIn = !!localStorage.getItem('access_token');
 
@@ -88,14 +90,17 @@ export default function Cart() {
   };
 
   const handleClearCart = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?')) {
-      dispatch(clearCart());
-      setSelectedIds([]);
-      if (isLoggedIn && isSynced) {
-        dispatch(clearCartThunk());
-      }
-      toast.success('Đã xóa toàn bộ giỏ hàng!');
+    setIsConfirmClearModalOpen(true);
+  };
+
+  const confirmClearCart = () => {
+    dispatch(clearCart());
+    setSelectedIds([]);
+    if (isLoggedIn && isSynced) {
+      dispatch(clearCartThunk());
     }
+    toast.success('Đã xóa toàn bộ giỏ hàng!');
+    setIsConfirmClearModalOpen(false);
   };
 
   const handleToggleSelect = (id: number) => {
@@ -330,6 +335,17 @@ export default function Cart() {
             onHide={() => setShowCouponModal(false)}
             courseIds={selectedIds}
             onSelectCoupon={(code) => setSelectedCouponCode(code)}
+          />
+
+          <ConfirmModal
+            isOpen={isConfirmClearModalOpen}
+            title="Xác nhận xóa"
+            message="Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng? Hành động này không thể hoàn tác."
+            confirmText="Xóa tất cả"
+            cancelText="Hủy"
+            onConfirm={confirmClearCart}
+            onCancel={() => setIsConfirmClearModalOpen(false)}
+            isDestructive={true}
           />
         </div>
       </div>

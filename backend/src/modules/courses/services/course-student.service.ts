@@ -291,14 +291,14 @@ export class CourseStudentService {
     const categoryInfo: { MaDM: number }[] = await this.dataSource.query(
       `SELECT DISTINCT MaDM FROM KhoaHoc WHERE MaKH IN (${excludePlaceholders})`,
       courseIds,
-    );
+    );//MaND_GiangVien
     const distinctMaDMs: number[] = categoryInfo
       .map((r) => Number(r.MaDM))
       .filter((id) => id > 0);
 
     // Tính toán TOTAL_LIMIT để chia đều danh mục
     let TOTAL_LIMIT = 4; // Mặc định 4 card
-    
+    //distinctInstructors
     if (distinctMaDMs.length === 2) {
       TOTAL_LIMIT = 4; // 2 danh mục -> chia đều mỗi danh mục 2 khóa
     } else if (distinctMaDMs.length === 3) {
@@ -319,7 +319,7 @@ export class CourseStudentService {
       const candidateRows: any[] = await this.dataSource.query(
         `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
                 k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM,
-                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH) as averageRating,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH AND dg.SoSao > 0) as averageRating,
                 (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
          FROM KhoaHoc k
          WHERE k.MaKH NOT IN (${excludePlaceholders})${enrolledExclude}
@@ -333,9 +333,28 @@ export class CourseStudentService {
       //ORDER BY k.MaDM ASC, averageRating DESC
       //ORDER BY k.MaDM ASC, (averageRating * soNguoiHoc) DESC
 
+      /*    let categoryRecommendations: any[] = [];
+
+    if (distinctInstructors.length > 0) {
+      const instructorPlaceholders = distinctInstructors.map(() => '?').join(',');
+      
+      const candidateRows: any[] = await this.dataSource.query(
+        `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
+                k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM, k.MaND_GiangVien as maGV,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH AND dg.SoSao > 0) as averageRating,
+                (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
+         FROM KhoaHoc k
+         WHERE k.MaKH NOT IN (${excludePlaceholders})${enrolledExclude}
+           AND k.TrangThai = 'PUBLISHED'
+           AND k.GiaBan > 0
+           AND k.MaND_GiangVien IN (${instructorPlaceholders}) 
+         ORDER BY k.MaND_GiangVien ASC, soNguoiHoc DESC`, 
+        [...excludeParams, ...distinctInstructors],
+      );
+ */
       console.log(candidateRows)
 
-      // Group theo danh mục (không tốn thêm query)
+      // Group theo danh mục (không tốn thêm query) / maGV
       const buckets = new Map<number, any[]>();
       for (const row of candidateRows) {
         const maDM = Number(row.maDM);
@@ -406,7 +425,7 @@ export class CourseStudentService {
       const fallbackRows: any[] = await this.dataSource.query(
         `SELECT k.MaKH as maKH, k.TenKhoaHoc as tenKhoaHoc, k.MoTa as moTa,
                 k.GiaBan as giaBan, k.HinhThuNho as hinhAnh, k.MaDM as maDM,
-                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH) as averageRating,
+                (SELECT AVG(SoSao) FROM DanhGiaKhoaHoc dg WHERE dg.MaKH = k.MaKH AND dg.SoSao > 0) as averageRating,
                 (SELECT COUNT(MaND) FROM DangKyKhoaHoc dk WHERE dk.MaKH = k.MaKH AND dk.TrangThai = 'ACTIVE') as soNguoiHoc
         FROM KhoaHoc k
          WHERE k.MaKH NOT IN (${fallbackExcludePlaceholders})${fallbackEnrolledExclude}

@@ -14,7 +14,7 @@ export class StudentCertificateService {
   async getOrIssueCertificate(
     userId: number,
     courseId: number,
-  ): Promise<{ certificateId: string }> {
+  ): Promise<{ certificateId: string | null }> {
     // 1. Kiểm tra xem đã có chứng chỉ chưa
     const existing = await this.dataSource.query(
       `SELECT MaChungChi FROM ChungChi WHERE MaND = ? AND MaKH = ? LIMIT 1`,
@@ -31,9 +31,8 @@ export class StudentCertificateService {
       [courseId],
     );
     if (courseInfo.length > 0 && Number(courseInfo[0].GiaBan) === 0) {
-      throw new BadRequestException(
-        'Chứng chỉ chỉ được cấp cho khóa học có phí khi hoàn thành đủ điều kiện.',
-      );
+      // Return null instead of throwing BadRequestException to prevent error toasts on the frontend
+      return { certificateId: null };
     }
 
     // 2. Kiểm tra học viên đã đăng ký khóa học chưa

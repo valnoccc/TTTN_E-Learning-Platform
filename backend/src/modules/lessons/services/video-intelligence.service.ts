@@ -587,6 +587,15 @@ export class VideoIntelligenceService implements OnModuleInit {
           videoVersionId,
         ],
       );
+      
+      // Đồng bộ trạng thái AI sang bảng BaiHoc để các API fetch bài học (như GET /lessons)
+      // nhận được trạng thái mới nhất của draft video, giúp frontend không bị kẹt ở "PROCESSING".
+      await this.dataSource.query(
+        `UPDATE BaiHoc
+            SET AiStatus = ?, AiRejectReason = ?
+          WHERE MaBH = ?`,
+        [values.aiStatus, values.aiRejectReason, lessonId]
+      );
       return;
     }
 
