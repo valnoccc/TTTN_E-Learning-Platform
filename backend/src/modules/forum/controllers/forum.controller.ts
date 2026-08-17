@@ -163,7 +163,7 @@ export class ForumController {
   ) {
     const result = await this.forumService.xoaCauHoi(id, req.user.sub);
     return {
-      message: 'Xóa câu hỏi thành công',
+      message: result.action === 'REVOKED' ? 'Thu hồi câu hỏi thành công' : 'Xóa câu hỏi thành công',
       data: result,
     };
   }

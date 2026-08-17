@@ -56,6 +56,7 @@ interface QuestionDetail {
   luotBinhChon: number;
   soCauTraLoi: number;
   ngayTao: string;
+  trangThai?: string;
   nguoiThich?: (string | number)[];
   tacGia: Author;
   danhSachThe: Tag[];
@@ -127,11 +128,11 @@ export default function ForumDetail() {
     try {
       const response: any = await axiosClient.patch('/users/me/policies', { policyType: 'forum' });
       // Update local storage
-      if (response.data && response.data.data) {
+      if (response.data) {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const parsedUser = JSON.parse(userStr);
-          parsedUser.forumPolicyAcceptedAt = response.data.data.forumPolicyAcceptedAt;
+          parsedUser.forumPolicyAcceptedAt = response.data.forumPolicyAcceptedAt;
           localStorage.setItem('user', JSON.stringify(parsedUser));
         }
       }
@@ -158,14 +159,19 @@ export default function ForumDetail() {
 
   const executeDelete = async () => {
     if (confirmModal.type === 'question') {
-      const toastId = toast.loading('Đang xóa câu hỏi...');
+      const toastId = toast.loading('Đang xử lý...');
       try {
-        await axiosClient.delete(`/forum/questions/${id}`);
-        toast.success('Đã xóa câu hỏi thành công', { id: toastId });
-        navigate('/forum');
+        const response: any = await axiosClient.delete(`/forum/questions/${id}`);
+        if (response.data && response.data.action === 'REVOKED') {
+          toast.success('Đã thu hồi câu hỏi thành công', { id: toastId });
+          fetchQuestion(); // reload to show revoked state
+        } else {
+          toast.success('Đã xóa câu hỏi thành công', { id: toastId });
+          navigate('/forum');
+        }
       } catch (error) {
         console.error('Error deleting question:', error);
-        toast.error('Không thể xóa câu hỏi', { id: toastId });
+        toast.error('Không thể thực hiện thao tác', { id: toastId });
       }
     } else if (confirmModal.type === 'answer' && confirmModal.targetId) {
       const toastId = toast.loading('Đang thu hồi...');
@@ -430,10 +436,20 @@ export default function ForumDetail() {
         </div>
 
         {/* Body content */}
-        <div 
-          className="text-[15px] leading-relaxed text-gray-800 forum-content mb-6"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.noiDung) }}
-        />
+        {question.trangThai === 'REVOKED' ? (
+          <div className="text-gray-500 italic text-[15px] mb-6 p-4 bg-gray-50 rounded border border-gray-200">
+            {user?.maND === question.tacGia.maND ? 'Bạn đã thu hồi câu hỏi này.' : 'Nội dung đã được thu hồi.'}
+          </div>
+        ) : question.trangThai === 'BANNED' ? (
+          <div className="text-red-500 italic text-[15px] mb-6 p-4 bg-red-50 rounded border border-red-200">
+            Câu hỏi đã bị quản trị viên gỡ bỏ.
+          </div>
+        ) : (
+          <div 
+            className="text-[15px] leading-relaxed text-gray-800 forum-content mb-6"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.noiDung) }}
+          />
+        )}
 
         {/* Actions Bar */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-6 mb-8">
@@ -453,8 +469,10 @@ export default function ForumDetail() {
             </div>
             <div className="flex items-center gap-4">
               <button onClick={handleShare} className="text-gray-500 hover:text-gray-800 text-sm font-medium">Share</button>
-              {user?.maND === question.tacGia.maND && (
-                <button onClick={handleDeleteQuestion} className="text-red-500 hover:text-red-600 text-sm font-medium">Xóa câu hỏi</button>
+              {user?.maND === question.tacGia.maND && (!question.trangThai || question.trangThai === 'ACTIVE') && (
+                <button onClick={handleDeleteQuestion} className="text-red-500 hover:text-red-600 text-sm font-medium">
+                  {question.soCauTraLoi > 0 ? 'Thu hồi' : 'Xóa câu hỏi'}
+                </button>
               )}
               {user?.maND !== question.tacGia.maND && (
                 <button 
@@ -486,28 +504,35 @@ export default function ForumDetail() {
         </div>
 
         {/* Input box */}
-        <div className="mb-8 border border-gray-300 rounded-md p-4 bg-white shadow-sm">
-          <div className="h-[180px] mb-12">
-            <ReactQuill
-              ref={quillRef}
-              theme="snow"
-              value={replyContent}
-              onChange={setReplyContent}
-              modules={modules}
-              className="h-full"
-              placeholder="Viết câu trả lời của bạn ở đây..."
-            />
+        {question.trangThai === 'REVOKED' ? (
+          <div className="mb-8 border border-gray-200 rounded-md p-4 bg-gray-50 flex items-center gap-2 text-gray-500 text-sm font-medium">
+            <span>🔒</span>
+            <span>Câu hỏi này đã được thu hồi. Không thể thêm câu trả lời mới.</span>
           </div>
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleReplySubmit}
-              disabled={isReplying}
-              className="bg-[#0a95ff] hover:bg-[#0074cc] text-white px-4 py-2 rounded text-sm font-medium shadow-sm transition disabled:opacity-50"
-            >
-              {isReplying ? 'Đang gửi...' : 'Gửi câu trả lời'}
-            </button>
+        ) : (
+          <div className="mb-8 border border-gray-300 rounded-md p-4 bg-white shadow-sm">
+            <div className="h-[180px] mb-12">
+              <ReactQuill
+                ref={quillRef}
+                theme="snow"
+                value={replyContent}
+                onChange={setReplyContent}
+                modules={modules}
+                className="h-full"
+                placeholder="Viết câu trả lời của bạn ở đây..."
+              />
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleReplySubmit}
+                disabled={isReplying}
+                className="bg-[#0a95ff] hover:bg-[#0074cc] text-white px-4 py-2 rounded text-sm font-medium shadow-sm transition disabled:opacity-50"
+              >
+                {isReplying ? 'Đang gửi...' : 'Gửi câu trả lời'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* List of answers */}
         {sortedAnswers.length > 0 ? (
@@ -555,12 +580,14 @@ export default function ForumDetail() {
                         {answer.luotBinhChon}
                       </button>
                       <button onClick={handleShare} className="hover:text-gray-800">Share</button>
-                      <button 
-                        onClick={() => setReplyingTo(replyingTo === answer.maCTL ? null : answer.maCTL)} 
-                        className="hover:text-gray-800 font-medium ml-2"
-                      >
-                        Phản hồi
-                      </button>
+                      {question.trangThai !== 'REVOKED' && (
+                        <button 
+                          onClick={() => setReplyingTo(replyingTo === answer.maCTL ? null : answer.maCTL)} 
+                          className="hover:text-gray-800 font-medium ml-2"
+                        >
+                          Phản hồi
+                        </button>
+                      )}
                       {user?.maND === answer.tacGia.maND && (
                         <button 
                           onClick={() => handleDeleteAnswer(answer.maCTL)} 
@@ -664,21 +691,23 @@ export default function ForumDetail() {
                                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
                                       {reply.luotBinhChon}
                                     </button>
-                                    <button 
-                                      onClick={() => {
-                                        setReplyingTo(answer.maCTL);
-                                        const mentionTag = `<strong>@${reply.tacGia.hoTen}</strong>&nbsp;`;
-                                        if (!nestedReplyContent.includes(`@${reply.tacGia.hoTen}`)) {
-                                          setNestedReplyContent(prev => prev ? `${prev} ${mentionTag}` : mentionTag);
-                                        }
-                                        setTimeout(() => {
-                                          nestedQuillRef.current?.focus();
-                                        }, 100);
-                                      }}
-                                      className="hover:text-gray-800 font-medium"
-                                    >
-                                      Phản hồi
-                                    </button>
+                                    {question.trangThai !== 'REVOKED' && (
+                                      <button 
+                                        onClick={() => {
+                                          setReplyingTo(answer.maCTL);
+                                          const mentionTag = `<strong>@${reply.tacGia.hoTen}</strong>&nbsp;`;
+                                          if (!nestedReplyContent.includes(`@${reply.tacGia.hoTen}`)) {
+                                            setNestedReplyContent(prev => prev ? `${prev} ${mentionTag}` : mentionTag);
+                                          }
+                                          setTimeout(() => {
+                                            nestedQuillRef.current?.focus();
+                                          }, 100);
+                                        }}
+                                        className="hover:text-gray-800 font-medium"
+                                      >
+                                        Phản hồi
+                                      </button>
+                                    )}
                                     {user?.maND === reply.tacGia.maND && (
                                       <button 
                                         onClick={() => handleDeleteAnswer(reply.maCTL)} 
@@ -722,13 +751,13 @@ export default function ForumDetail() {
         />
       <ConfirmModal
         isOpen={confirmModal.isOpen}
-        title={confirmModal.type === 'question' ? 'Xóa câu hỏi' : 'Thu hồi bình luận'}
+        title={confirmModal.type === 'question' ? (question?.soCauTraLoi && question.soCauTraLoi > 0 ? 'Thu hồi câu hỏi' : 'Xóa câu hỏi') : 'Thu hồi bình luận'}
         message={confirmModal.type === 'question' 
-          ? 'Bạn có chắc chắn muốn xóa câu hỏi này không? Toàn bộ bình luận bên trong cũng sẽ bị xóa. Thao tác này không thể hoàn tác.'
+          ? (question?.soCauTraLoi && question.soCauTraLoi > 0 ? 'Bạn có chắc chắn muốn thu hồi câu hỏi này không? Các bình luận vẫn sẽ được giữ lại.' : 'Bạn có chắc chắn muốn xóa câu hỏi này không? Toàn bộ bình luận bên trong cũng sẽ bị xóa. Thao tác này không thể hoàn tác.')
           : 'Bạn có chắc chắn muốn thu hồi bình luận này không? Các phản hồi bên trong bình luận này cũng sẽ bị xóa theo.'}
         onConfirm={executeDelete}
         onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-        confirmText="Đồng ý xóa"
+        confirmText={confirmModal.type === 'question' && question?.soCauTraLoi && question.soCauTraLoi > 0 ? 'Đồng ý thu hồi' : 'Đồng ý xóa'}
       />
       <ReportModal
         isOpen={reportModal.isOpen}

@@ -125,6 +125,8 @@ export class ForumService {
       luotBinhChon: cauHoi.luotBinhChon,
       soCauTraLoi: cauHoi.soCauTraLoi,
       ngayTao: cauHoi.ngayTao,
+      trangThai: cauHoi.trangThai,
+      nguoiThich: cauHoi.nguoiThich,
       tacGia: {
         maND: cauHoi.tacGia?.maND,
         hoTen: cauHoi.tacGia?.hoTen,
@@ -358,6 +360,12 @@ export class ForumService {
       throw new Error('Bạn không có quyền xóa câu hỏi này');
     }
 
+    if (cauHoi.soCauTraLoi > 0) {
+      cauHoi.trangThai = 'REVOKED';
+      await this.cauHoiRepository.save(cauHoi);
+      return { success: true, action: 'REVOKED' };
+    }
+
     // Xóa tất cả câu trả lời của câu hỏi này
     // (Lưu ý: Mặc dù onDelete: CASCADE có thể hoạt động, nhưng gọi delete tường minh an toàn hơn khi sync = false)
     await this.cauTraLoiRepository.delete({ maCH });
@@ -365,7 +373,7 @@ export class ForumService {
     // Xóa câu hỏi
     await this.cauHoiRepository.delete({ maCH });
     
-    return { success: true };
+    return { success: true, action: 'DELETED' };
   }
 
   async xoaTraLoi(maCTL: number, maND: number) {
