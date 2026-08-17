@@ -123,7 +123,12 @@ export class LessonsService {
     const course = await this.courseRepository.findOne({
       where: { maKH: existingLesson.maKH },
     });
-    const keepPublicVideo = course?.trangThai === 'PUBLISHED' && Boolean(videoDraft);
+    // Khi khóa học đã xuất bản hoặc lưu trữ, học viên cũ vẫn phải xem được
+    // video public hiện tại. Video mới cần đi qua bản DRAFT/AI trước khi
+    // được công bố, không được ghi đè trực tiếp video đang sử dụng.
+    const keepPublicVideo =
+      ['PUBLISHED', 'ARCHIVED'].includes(course?.trangThai ?? '') &&
+      Boolean(videoDraft);
     const nextVideoUrl = keepPublicVideo ? undefined : lessonPayload.videoURL;
 
     if (keepPublicVideo) {

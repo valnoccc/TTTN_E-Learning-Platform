@@ -31,7 +31,7 @@ describe('StudentProfileService', () => {
     ]);
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining("k.TrangThai IN ('PUBLISHED', 'UNLISTED', 'ARCHIVED')"),
+      expect.stringContaining("k.TrangThai IN ('PUBLISHED', 'ARCHIVED')"),
       [7],
     );
   });
