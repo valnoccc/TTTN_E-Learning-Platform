@@ -899,7 +899,7 @@ function CourseDetails() {
                                                     <li><i className="las la-graduation-cap"></i> Chủ đề: <span>{course?.category || 'Chung'}</span></li>
                                                     <li><i className="las la-book"></i> Bài giảng: <span>{curriculum?.reduce((acc, curr) => acc + (curr.baiHocs?.length || 0), 0) || 0}</span></li>
                                                     <li><i className="las la-bookmark"></i> Đã tham gia: <span>{course?.totalStudents ? new Intl.NumberFormat('vi-VN').format(course.totalStudents) : 0}</span></li>
-                                                    <li><i className="las la-certificate"></i> Chứng chỉ: <span>Có</span></li>
+                                                    <li><i className="las la-certificate"></i> Chứng chỉ: <span>{course?.price === 0 ? 'Không' : 'Có'}</span></li>
                                                 </ul>
 
                                                 <div className="mt-6 mb-2 border-t border-gray-100 pt-6">

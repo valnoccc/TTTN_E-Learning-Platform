@@ -274,8 +274,8 @@ export default function StudentProfile() {
     "all" | "in-progress" | "completed"
   >("all");
   const [sortOption, setSortOption] = useState<
-    "az" | "za" | "progress-desc" | "progress-asc"
-  >("az");
+    "az" | "za" | "progress-desc" | "progress-asc" | "price-desc" | "price-asc" | "newest" | "oldest"
+  >("newest");
 
   const filteredCourses = myCourses
     .filter((course) => {
@@ -283,6 +283,9 @@ export default function StudentProfile() {
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
       if (!matchSearch) return false;
+
+      if (sortOption === "price-desc" && (course.price || 0) <= 0) return false;
+      if (sortOption === "price-asc" && (course.price || 0) > 0) return false;
 
       if (courseFilter === "in-progress") {
         return course.progress > 0 && course.progress < 100;
@@ -299,6 +302,10 @@ export default function StudentProfile() {
         return (b.title || "").localeCompare(a.title || "");
       if (sortOption === "progress-desc") return b.progress - a.progress;
       if (sortOption === "progress-asc") return a.progress - b.progress;
+      if (sortOption === "price-desc") return (b.price || 0) - (a.price || 0);
+      if (sortOption === "price-asc") return (a.price || 0) - (b.price || 0);
+      if (sortOption === "newest") return (b.enrollmentId || 0) - (a.enrollmentId || 0);
+      if (sortOption === "oldest") return (a.enrollmentId || 0) - (b.enrollmentId || 0);
       return 0;
     });
   const completedCount = myCourses.filter((c) => c.progress >= 100).length;
@@ -642,6 +649,10 @@ export default function StudentProfile() {
                         <option value="progress-asc">
                           Tiến độ: Thấp đến cao
                         </option>
+                        {/* <option value="price-desc">Khóa học có phí</option>
+                        <option value="price-asc">Khóa học miễn phí</option>
+                        <option value="newest">Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option> */}
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                         <svg
