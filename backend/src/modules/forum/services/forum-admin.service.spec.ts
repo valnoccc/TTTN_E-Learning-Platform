@@ -151,4 +151,101 @@ describe('ForumAdminService', () => {
 
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
+
+  it('loads question details with tags and nested replies', async () => {
+    dataSource.query
+      .mockResolvedValueOnce([
+        {
+          maCH: 7,
+          tieuDe: 'Topic 7',
+          noiDung: '<p>Nội dung</p>',
+          trangThai: 'ACTIVE',
+          luotXem: '5',
+          luotBinhChon: '2',
+          soCauTraLoi: '2',
+          ngayTao: '2026-07-07T01:02:03.000Z',
+          ngayCapNhat: '2026-07-07T04:05:06.000Z',
+          tacGiaId: 99,
+          tacGiaHoTen: 'Nguyễn Văn A',
+          tacGiaAnhDaiDien: null,
+        },
+      ])
+      .mockResolvedValueOnce([
+        { maCH: 7, maThe: 11, tenThe: 'NestJS', duongDan: 'nestjs' },
+      ])
+      .mockResolvedValueOnce([
+        { total: '1' },
+      ])
+      .mockResolvedValueOnce([
+        {
+          maCTL: 1,
+          noiDung: 'Câu trả lời admin',
+          trangThai: 'ACTIVE',
+          luotBinhChon: '0',
+          laDapAnDung: 0,
+          ngayTao: '2026-07-07T05:00:00.000Z',
+          ngayCapNhat: '2026-07-07T05:00:00.000Z',
+          maCTLCha: null,
+          tacGiaId: 1,
+          tacGiaHoTen: 'Admin',
+          tacGiaAnhDaiDien: null,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          maCTL: 2,
+          noiDung: 'Phản hồi',
+          trangThai: 'ACTIVE',
+          luotBinhChon: '0',
+          laDapAnDung: 0,
+          ngayTao: '2026-07-07T06:00:00.000Z',
+          ngayCapNhat: '2026-07-07T06:00:00.000Z',
+          maCTLCha: 1,
+          tacGiaId: 99,
+          tacGiaHoTen: 'Nguyễn Văn A',
+          tacGiaAnhDaiDien: null,
+        },
+      ]);
+
+    const result = await service.getQuestionDetail(7);
+
+    expect(result).toMatchObject({
+      maCH: 7,
+      tieuDe: 'Topic 7',
+      trangThai: 'ACTIVE',
+      danhSachThe: [{ maThe: 11, tenThe: 'NestJS', duongDan: 'nestjs' }],
+    });
+    expect(result.danhSachTraLoi).toHaveLength(1);
+    expect(result.danhSachTraLoi[0].cacPhanHoi).toHaveLength(1);
+    expect(result.danhSachTraLoi[0].cacPhanHoi[0].maCTL).toBe(2);
+  });
+
+  it('creates an admin answer and increments reply count atomically', async () => {
+    dataSource.query.mockResolvedValueOnce([{ MaCH: 7 }]);
+    manager.query
+      .mockResolvedValueOnce({ insertId: 15 })
+      .mockResolvedValueOnce({ affectedRows: 1 });
+
+    const result = await service.createAdminAnswer(7, 1, {
+      noiDung: 'Nội dung trả lời từ admin',
+    });
+
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(manager.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('INSERT INTO CauTraLoiDienDan'),
+      ['Nội dung trả lời từ admin', 1, 7, null],
+    );
+    expect(manager.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('SoCauTraLoi = SoCauTraLoi + 1'),
+      [7],
+    );
+    expect(result).toMatchObject({
+      maCTL: 15,
+      maCH: 7,
+      maND: 1,
+      noiDung: 'Nội dung trả lời từ admin',
+    });
+  });
 });

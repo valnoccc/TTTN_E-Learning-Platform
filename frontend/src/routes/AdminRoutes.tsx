@@ -8,6 +8,7 @@ import AdminPosts from '../pages/admin/Posts/AdminPosts';
 import AdminPostForm from '../pages/admin/Posts/AdminPostForm';
 import AdminPostPreview from '../pages/admin/Posts/AdminPostPreview';
 import AdminForumPosts from '../pages/admin/Forum/AdminForumPosts';
+import AdminForumPostDetail from '../pages/admin/Forum/AdminForumPostDetail';
 import AdminUsers from '../pages/admin/Users/AdminUsers';
 import AdminCoupons from '../pages/admin/Coupons/AdminCoupons';
 import AdminInstructorDebts from '../pages/admin/Debts/AdminInstructorDebts';
@@ -34,6 +35,7 @@ export default function AdminRoutes() {
             <Route path="posts/preview/:id" element={<AdminPostPreview />} />
             <Route path="posts/:id/edit" element={<AdminPostForm />} />
             <Route path="forum" element={<AdminForumPosts />} />
+            <Route path="forum/:id" element={<AdminForumPostDetail />} />
             <Route path="moderation" element={<ModerationDashboard />} />
         </Routes>
     );
