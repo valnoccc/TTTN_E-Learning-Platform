@@ -522,7 +522,8 @@ export class CourseStudentService {
       return true;
     }
 
-    if (!viewerId) {
+    // UNLISTED chỉ tạm ẩn khỏi trang bán; học viên đã đăng ký vẫn được học.
+    if (course.trangThai !== 'UNLISTED' || !viewerId) {
       return false;
     }
 

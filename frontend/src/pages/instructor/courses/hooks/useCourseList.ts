@@ -49,7 +49,7 @@ export function useCourseList() {
     };
 
     const handleToggleStatus = async (courseId: string | number, currentStatus: string) => {
-        const nextStatus = currentStatus === 'HIDDEN' ? 'DRAFT' : 'HIDDEN';
+        const nextStatus = currentStatus === 'PUBLISHED' ? 'UNLISTED' : 'DRAFT';
 
         try {
             await axiosClient.patch(`/courses/${courseId}/status`, { trang_thai: nextStatus });

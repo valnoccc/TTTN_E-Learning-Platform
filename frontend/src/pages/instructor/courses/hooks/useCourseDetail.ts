@@ -462,7 +462,7 @@ export function useCourseDetail(
     const handleDeleteCourse = () => setIsDeleteModalOpen(true);
     const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
-    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED'].includes(formData.trang_thai);
+    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'BANNED', 'HIDDEN'].includes(formData.trang_thai);
 
     return {
         id,

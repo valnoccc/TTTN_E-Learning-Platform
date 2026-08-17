@@ -108,13 +108,15 @@ export default function InstructorCourses() {
                                                         <Settings size={14} /> Quản lý
                                                     </Link>
 
-                                                    <button
-                                                        onClick={() => setConfirmModal({ isOpen: true, type: 'toggle', courseId: course.id, currentStatus: course.trang_thai })}
-                                                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
-                                                    >
-                                                        {course.trang_thai === 'HIDDEN' ? <Eye size={14} /> : <EyeOff size={14} />}
-                                                        {course.trang_thai === 'HIDDEN' ? 'Hiện' : 'Ẩn'}
-                                                    </button>
+                                                    {['PUBLISHED', 'UNLISTED', 'ARCHIVED'].includes(course.trang_thai) ? (
+                                                        <button
+                                                            onClick={() => setConfirmModal({ isOpen: true, type: 'toggle', courseId: course.id, currentStatus: course.trang_thai })}
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
+                                                        >
+                                                            {course.trang_thai === 'PUBLISHED' ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                            {course.trang_thai === 'PUBLISHED' ? 'Tạm ẩn' : course.trang_thai === 'ARCHIVED' ? 'Khôi phục' : 'Mở chỉnh sửa'}
+                                                        </button>
+                                                    ) : null}
 
                                                     <button
                                                         onClick={() => setConfirmModal({ isOpen: true, type: 'delete', courseId: course.id })}
@@ -156,14 +158,16 @@ export default function InstructorCourses() {
             
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
-                title={confirmModal.type === 'delete' ? 'Xóa khóa học' : (confirmModal.currentStatus === 'HIDDEN' ? 'Hiển thị khóa học' : 'Ẩn khóa học')}
+                title={confirmModal.type === 'delete' ? 'Xóa khóa học' : (confirmModal.currentStatus === 'ARCHIVED' ? 'Khôi phục khóa học' : confirmModal.currentStatus === 'UNLISTED' ? 'Mở chỉnh sửa khóa học' : 'Tạm ẩn khóa học')}
                 message={confirmModal.type === 'delete' 
                     ? 'Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác.' 
-                    : (confirmModal.currentStatus === 'HIDDEN' 
-                        ? 'Khóa học sẽ hiển thị trở lại và học viên có thể tìm thấy trên hệ thống. Bạn có muốn tiếp tục?' 
-                        : 'Khóa học sẽ bị ẩn đi, học viên mới không thể nhìn thấy hay đăng ký nữa (học viên cũ vẫn có thể học bình thường). Bạn có chắc chắn muốn ẩn?')}
+                    : (confirmModal.currentStatus === 'ARCHIVED'
+                        ? 'Khóa học sẽ trở về bản nháp để bạn chỉnh sửa và gửi admin duyệt lại trước khi public.'
+                        : confirmModal.currentStatus === 'UNLISTED'
+                        ? 'Khóa học sẽ trở về bản nháp để bạn tiếp tục chỉnh sửa và gửi duyệt lại.'
+                        : 'Khóa học sẽ bị ẩn khỏi việc bán mới, nhưng học viên đã mua vẫn được tiếp tục học. Bạn có chắc chắn muốn tạm ẩn?')}
                 confirmText={confirmModal.type === 'delete' ? 'Xóa khóa học' : 'Xác nhận'}
-                isDestructive={confirmModal.type === 'delete' || confirmModal.currentStatus !== 'HIDDEN'}
+                isDestructive={confirmModal.type === 'delete' || (confirmModal.currentStatus !== 'UNLISTED' && confirmModal.currentStatus !== 'ARCHIVED')}
                 onConfirm={handleConfirm}
                 onCancel={() => setConfirmModal({ isOpen: false, type: null, courseId: null })}
             />
@@ -191,6 +195,18 @@ function StatusBadge({ status }: { status: string }) {
             return (
                 <span className={`${baseClass} border-slate-200 bg-slate-100 text-slate-600`}>
                     Đang ẩn
+                </span>
+            );
+        case 'UNLISTED':
+            return (
+                <span className={`${baseClass} border-slate-200 bg-slate-100 text-slate-600`}>
+                    Tạm ẩn
+                </span>
+            );
+        case 'ARCHIVED':
+            return (
+                <span className={`${baseClass} border-rose-200 bg-rose-50 text-rose-700`}>
+                    Đã lưu trữ
                 </span>
             );
         default:

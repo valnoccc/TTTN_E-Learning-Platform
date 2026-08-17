@@ -27,7 +27,9 @@ export class StudentProfileService {
         , 0) as progress 
        FROM DangKyKhoaHoc d
        JOIN KhoaHoc k ON d.MaKH = k.MaKH
-       WHERE d.MaND = ? AND d.TrangThai = 'ACTIVE'`,
+       WHERE d.MaND = ?
+         AND d.TrangThai = 'ACTIVE'
+         AND k.TrangThai IN ('PUBLISHED', 'UNLISTED')`,
       [userId],
     );
     return courses.map((c: any) => ({

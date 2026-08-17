@@ -41,6 +41,9 @@ export class KhoaHoc {
     type: 'enum',
     enum: [
       'DRAFT',
+      'HIDDEN',
+      'UNLISTED',
+      'ARCHIVED',
       'PUBLISHED',
       'BANNED',
       'PENDING',

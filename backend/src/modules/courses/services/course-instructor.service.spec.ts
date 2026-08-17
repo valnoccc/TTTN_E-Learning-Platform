@@ -46,6 +46,21 @@ describe('CoursesService.updateCourseStatus', () => {
     } as KhoaHoc);
   });
 
+  it('archives a purchased course instead of deleting it', async () => {
+    dataSource.query.mockResolvedValueOnce([{ count: '1' }]);
+
+    await expect(service.remove(11, 99)).resolves.toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('lưu trữ hoàn toàn'),
+      }),
+    );
+
+    expect(courseRepository.update).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({ trangThai: 'ARCHIVED' }),
+    );
+  });
+
   it('auto-publishes the course when every lesson is approved', async () => {
     dataSource.query.mockResolvedValueOnce([
       { maBH: 1, tenBaiHoc: 'B?i 1', aiStatus: 'APPROVED' },
