@@ -26,6 +26,15 @@ function w(pattern: string): RegExp {
 // Danh sách từ vi phạm – biên dịch một lần (module-level constant)
 // ─────────────────────────────────────────────────────────────────────────────
 const BAD_WORD_PATTERNS: readonly RegExp[] = Object.freeze([
+  w('vl'),
+  w('vc'),
+  w('vch'),
+  w('vãi'),
+  w('đái'),
+  w('bắc kì'),
+  w('bắc kỳ'),
+  w('backi'),
+  w('chó'),
   w('đụ'),
   w('đéo'),
   w('đcm'),

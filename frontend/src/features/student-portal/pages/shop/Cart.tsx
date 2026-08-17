@@ -15,6 +15,7 @@ import {
 import { BreadcrumbBox } from '../../components/common/Breadcrumb';
 import { CouponModal } from '../../components/checkout/CouponModal';
 import { VoucherTrigger } from '../../components/checkout/VoucherTrigger';
+import { validateCoupon } from '../../../../api/checkout';
 
 export default function Cart() {
   const { t } = useTranslation();
@@ -27,6 +28,8 @@ export default function Cart() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [selectedCouponCode, setSelectedCouponCode] = useState<string>('');
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [sortOption, setSortOption] = useState('default');
 
   const isLoggedIn = !!localStorage.getItem('access_token');
@@ -42,6 +45,32 @@ export default function Cart() {
   useEffect(() => {
     setSelectedIds(cartItems.map((item) => item.id));
   }, [cartItems]);
+
+  // Validate coupon whenever selectedCouponCode or selectedIds change
+  useEffect(() => {
+    if (selectedCouponCode && selectedIds.length > 0) {
+      setIsValidatingCoupon(true);
+      validateCoupon(selectedCouponCode, selectedIds)
+        .then((res) => {
+          if (res.valid) {
+            setDiscountAmount(res.discountAmount || 0);
+          } else {
+            setDiscountAmount(0);
+            setSelectedCouponCode('');
+            toast.error(res.message || 'Mã giảm giá không hợp lệ cho các khóa học đã chọn.');
+          }
+        })
+        .catch(() => {
+          setDiscountAmount(0);
+          setSelectedCouponCode('');
+        })
+        .finally(() => {
+          setIsValidatingCoupon(false);
+        });
+    } else {
+      setDiscountAmount(0);
+    }
+  }, [selectedCouponCode, selectedIds]);
 
   const handleRemove = (id: number, name: string) => {
     // Optimistic UI: xóa Redux trước
@@ -255,6 +284,12 @@ export default function Cart() {
                   <span>VAT (0%)</span>
                   <span className="font-medium">0 đ</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-orange-500 font-medium">
+                    <span>Giảm giá (Voucher)</span>
+                    <span>- {discountAmount.toLocaleString('vi-VN')} đ</span>
+                  </div>
+                )}
                 <div className="border-t border-slate-100 pt-4 pb-2">
                   <VoucherTrigger
                     couponCode={selectedCouponCode}
@@ -264,14 +299,14 @@ export default function Cart() {
                 <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
                   <span className="text-lg font-bold text-slate-800">{t('Grand Total')}</span>
                   <span className="text-2xl font-bold text-emerald-600">
-                    {totalSelectedAmount.toLocaleString('vi-VN')} đ
+                    {Math.max(0, totalSelectedAmount - discountAmount).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
 
               <button
-                className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl shadow-md hover:bg-emerald-600 hover:shadow-lg transition-all disabled:opacity-50 disabled:hover:bg-slate-900 disabled:cursor-not-allowed"
-                disabled={selectedIds.length === 0}
+                className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl shadow-md hover:bg-emerald-600 hover:shadow-lg transition-all disabled:opacity-50 disabled:hover:bg-slate-900 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={selectedIds.length === 0 || isValidatingCoupon}
                 onClick={() => {
                   if (selectedItems.length > 0) {
                     navigate('/checkout', {
@@ -283,6 +318,7 @@ export default function Cart() {
                   }
                 }}
               >
+                {isValidatingCoupon ? <Loader2 size={20} className="animate-spin" /> : null}
                 {t('Proceed to checkout')}
               </button>
             </div>
