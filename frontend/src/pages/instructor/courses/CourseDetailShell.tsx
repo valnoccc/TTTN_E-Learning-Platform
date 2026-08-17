@@ -377,7 +377,9 @@ export default function InstructorCourseDetail({
                   )}
 
                   <div className="mt-1 flex flex-wrap justify-end gap-2">
-                    {!isLocked && !isNewCourse && formData.trang_thai !== "BANNED" ? (
+                    {!isLocked &&
+                    !isNewCourse &&
+                    formData.trang_thai !== "BANNED" ? (
                       <button
                         onClick={handleDeleteCourse}
                         className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
@@ -402,7 +404,9 @@ export default function InstructorCourseDetail({
                       </button>
                     ) : null}
 
-                    {!isLocked && !isNewCourse && formData.trang_thai !== "BANNED" ? (
+                    {!isLocked &&
+                    !isNewCourse &&
+                    formData.trang_thai !== "BANNED" ? (
                       <button
                         onClick={() => {
                           if (isAiChecking) {
@@ -426,7 +430,9 @@ export default function InstructorCourseDetail({
                       </button>
                     ) : null}
 
-                    {!isLocked && !isNewCourse && formData.trang_thai === "BANNED" ? (
+                    {!isLocked &&
+                    !isNewCourse &&
+                    formData.trang_thai === "BANNED" ? (
                       <button
                         onClick={() => void handleResubmitForReview()}
                         disabled={disablePublish}
@@ -798,13 +804,15 @@ function StatusActions({
     return (
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => onAction("UNLISTED", "tạm ẩn khóa học")}
+          onClick={() => onAction("UNLISTED", "ẩn hoàn toàn khóa học")}
           className="inline-flex items-center gap-2 rounded-sm border border-slate-500 bg-transparent px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
         >
-          Tạm ẩn để chỉnh sửa
+          Ẩn khóa học
         </button>
         <button
-          onClick={() => onAction("ARCHIVED", "lưu trữ khóa học")}
+          onClick={() =>
+            onAction("ARCHIVED", "lưu trữ, vẫn cho học viên cũ học")
+          }
           className="inline-flex items-center gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
         >
           <Archive size={16} />
