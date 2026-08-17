@@ -1,9 +1,14 @@
+jest.mock('../lesson-video-storage/lesson-video-storage.service', () => ({
+  LessonVideoStorageService: class LessonVideoStorageService {},
+}));
+
 import { CheckoutService } from './checkout.service';
 import * as crypto from 'crypto';
 import axios from 'axios';
 
 describe('CheckoutService', () => {
   const queryRunner = {
+    isTransactionActive: true,
     connect: jest.fn(),
     startTransaction: jest.fn(),
     query: jest.fn(),
@@ -151,6 +156,19 @@ describe('CheckoutService', () => {
     );
   });
 
+  it.each([
+    ['direct payment', () => service.processPayment({ courseIds: [101], paymentMethod: 'BANK' }, 1)],
+    ['MoMo payment', () => service.createMomoPayment(1, { courseIds: [101], customerDetails: { fullName: 'Admin', email: 'admin@example.com', phone: '0900000000' } })],
+    ['VNPay payment', () => service.createVnpayPayment(1, { courseIds: [101], customerDetails: { fullName: 'Admin', email: 'admin@example.com', phone: '0900000000' } })],
+  ])('rejects an admin before creating a %s', async (_name, createPayment) => {
+    dataSource.query.mockResolvedValueOnce([{ VaiTro: 'ADMIN' }]);
+
+    await expect(createPayment()).rejects.toThrow(
+      'Tài khoản quản trị không được phép mua khóa học',
+    );
+    expect(queryRunner.startTransaction).not.toHaveBeenCalled();
+  });
+
   it('rejects checkout for a temporarily hidden course', async () => {
     queryRunner.query.mockResolvedValueOnce([
       {
@@ -248,6 +266,33 @@ describe('CheckoutService', () => {
       expect.stringContaining('INSERT INTO DangKyKhoaHoc'),
       [7, 101, 99, 'ACTIVE'],
     );
+  });
+
+  it('cancels an admin invoice during MoMo IPN without enrolling or crediting revenue', async () => {
+    queryRunner.query.mockResolvedValueOnce([
+      {
+        MaHD: 99,
+        TrangThaiThanhToan: 'PENDING',
+        VaiTro: 'ADMIN',
+      },
+    ]);
+
+    const result = await service.handleMomoIPN(createMomoBody('0'));
+
+    expect(queryRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining("SET TrangThaiThanhToan = 'CANCELLED'"),
+      [99],
+    );
+    expect(queryRunner.query).not.toHaveBeenCalledWith(
+      expect.stringContaining("SET TrangThaiThanhToan = 'PAID'"),
+      expect.any(Array),
+    );
+    expect(queryRunner.query).not.toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO DangKyKhoaHoc'),
+      expect.any(Array),
+    );
+    expect(instructorWalletService.creditPaidInvoice).not.toHaveBeenCalled();
+    expect(result).toEqual({ message: 'Admin payment cancelled', invoiceId: 99 });
   });
 
   it('records coupon redemption history for successful MoMo payments', async () => {

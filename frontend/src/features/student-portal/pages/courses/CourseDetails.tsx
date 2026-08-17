@@ -96,6 +96,34 @@ function CourseDetails() {
     } catch(e) {}
     const isInstructorOrAdmin = userRole === 'INSTRUCTOR' || userRole === 'ADMIN';
 
+    const handlePurchaseNow = () => {
+        if (!isLoggedIn) {
+            toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
+            navigate('/login', { state: { from: `/checkout/${course?.id}` } });
+            return;
+        }
+
+        if (userRole === 'ADMIN') {
+            toast.error('Tài khoản quản trị không được phép mua khóa học');
+            return;
+        }
+
+        try {
+            const userStr = localStorage.getItem('user');
+            const currentUser = userStr ? JSON.parse(userStr) : null;
+            const currentUserId = currentUser?.id || currentUser?.maND || currentUser?.sub;
+            if (course?.giangVien?.maND === currentUserId) {
+                toast.error('Giảng viên không thể mua khóa học của chính mình');
+                return;
+            }
+        } catch {
+            toast.error('Không thể xác định tài khoản hiện tại');
+            return;
+        }
+
+        navigate(`/checkout/${course?.id}`, { state: { selectedCourses: [course] } });
+    };
+
     const [reviewStats, setReviewStats] = useState({ avgRating: 0, totalReviews: 0, bars: [
         { stars: 5, pct: '0%' },
         { stars: 4, pct: '0%' },
@@ -843,7 +871,7 @@ function CourseDetails() {
                                                     <div className="text-center py-8">
                                                         <p className="text-slate-600 mb-4">{t('reviews.enroll_required', 'Vui lòng đăng ký khóa học để chia sẻ cảm nhận của bạn.')}</p>
                                                         <button 
-                                                            onClick={() => navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } })}
+                                                            onClick={handlePurchaseNow}
                                                             className="inline-block bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-8 rounded-lg transition-colors border-0"
                                                         >
                                                             {t('reviews.enroll_btn', 'Đăng ký ngay')}
@@ -939,25 +967,7 @@ function CourseDetails() {
                                                                 type="button" 
                                                                 className="w-100 bg-white hover:bg-purple-50 text-[#5a31a8] font-bold border border-[#5a31a8] transition-colors" 
                                                                 style={{ height: '48px', borderRadius: '8px' }}
-                                                                onClick={() => {
-                                                                    const userStr = localStorage.getItem('user');
-                                                                    if (!userStr) {
-                                                                        toast.error('Vui lòng đăng nhập để tiếp tục thanh toán');
-                                                                        navigate('/login', { state: { from: `/checkout/${course.id}` } });
-                                                                    } else {
-                                                                        try {
-                                                                            const u = JSON.parse(userStr);
-                                                                            const userId = u.id || u.maND || u.sub;
-                                                                            if (course?.giangVien?.maND === userId) {
-                                                                                toast.error('Giảng viên không thể mua khóa học của chính mình');
-                                                                                return;
-                                                                            }
-                                                                        } catch (e) {
-                                                                            console.error(e);
-                                                                        }
-                                                                        navigate(`/checkout/${course.id}`, { state: { selectedCourses: [course] } });
-                                                                    }
-                                                                }}
+                                                                onClick={handlePurchaseNow}
                                                             >
                                                                 Mua ngay
                                                             </button>
