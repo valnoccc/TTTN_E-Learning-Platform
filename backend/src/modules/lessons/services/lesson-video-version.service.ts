@@ -72,7 +72,7 @@ export class LessonVideoVersionService {
       const drafts = await manager.query(
         `SELECT v.MaVideo AS maVideo, v.MaBH AS maBH, v.VideoURL AS videoUrl,
                 v.DurationSeconds AS durationSeconds, v.Resolution AS resolution,
-                v.AiStatus AS aiStatus
+                v.AiStatus AS aiStatus, v.AiLabels AS aiLabels
            FROM VideoBaiHoc v
            INNER JOIN BaiHoc bh ON bh.MaBH = v.MaBH
           WHERE bh.MaKH = ? AND v.TrangThai = 'DRAFT'
@@ -90,6 +90,10 @@ export class LessonVideoVersionService {
       }
 
       for (const draft of drafts) {
+        const aiLabels = Array.isArray(draft.aiLabels)
+          ? JSON.stringify(draft.aiLabels)
+          : draft.aiLabels ?? null;
+
         await manager.query(
           `UPDATE VideoBaiHoc
               SET TrangThai = 'ARCHIVED', NgayLuuTru = CURRENT_TIMESTAMP
@@ -105,12 +109,13 @@ export class LessonVideoVersionService {
         await manager.query(
           `UPDATE BaiHoc
               SET VideoURL = ?, DurationSeconds = ?, Resolution = ?,
-                  AiStatus = 'APPROVED', AiRejectReason = NULL
+                  AiStatus = 'APPROVED', AiLabels = ?, AiRejectReason = NULL
             WHERE MaBH = ?`,
           [
             draft.videoUrl,
             Number(draft.durationSeconds ?? 0),
             draft.resolution ?? null,
+            aiLabels,
             draft.maBH,
           ],
         );

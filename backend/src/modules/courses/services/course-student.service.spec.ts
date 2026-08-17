@@ -302,4 +302,21 @@ describe('CourseStudentService', () => {
     );
     expect(dataSource.query).not.toHaveBeenCalled();
   });
+
+  it('allows an enrolled learner to continue during course review', async () => {
+    khoaHocRepository.findOne.mockResolvedValue({
+      maKH: 11,
+      trangThai: 'PENDING',
+    });
+    dataSource.query
+      .mockResolvedValueOnce([{ ok: 1 }])
+      .mockResolvedValueOnce([]);
+
+    await expect(service.getCourseCurriculum(11, 7)).resolves.toEqual([]);
+    expect(dataSource.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('FROM DangKyKhoaHoc'),
+      [7, 11],
+    );
+  });
 });

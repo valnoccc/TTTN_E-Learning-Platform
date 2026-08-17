@@ -17,6 +17,8 @@ describe('StudentProfileService', () => {
         id: '4',
         title: 'React Basics',
         image: 'https://example.com/react.png',
+        price: '499000',
+        enrollmentId: '12',
         progress: '75',
       },
     ]);
@@ -26,12 +28,14 @@ describe('StudentProfileService', () => {
         id: 4,
         title: 'React Basics',
         image: 'https://example.com/react.png',
+        price: 499000,
+        enrollmentId: 12,
         progress: 75,
       },
     ]);
 
     expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining("k.TrangThai IN ('PUBLISHED', 'ARCHIVED')"),
+      expect.stringContaining("k.TrangThai IN ('PUBLISHED', 'ARCHIVED', 'PENDING', 'PENDING_APPEAL')"),
       [7],
     );
   });

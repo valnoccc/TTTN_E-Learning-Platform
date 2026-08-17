@@ -189,11 +189,11 @@ export class CourseAdminService {
           bh.TenBaiHoc as tenBaiHoc,
           bh.ThuTu as thuTuBaiHoc,
           bh.NoiDung as noiDungBaiHoc,
-          COALESCE(vd.VideoURL, bh.VideoURL) as videoURL,
+          COALESCE(vd.VideoURL, vpv.VideoURL, bh.VideoURL) as videoURL,
           bh.TrangThai as trangThaiBaiHoc,
-          COALESCE(vd.AiStatus, bh.AiStatus) as aiStatus,
-          COALESCE(vd.AiLabels, bh.AiLabels) as aiLabels,
-          COALESCE(vd.AiRejectReason, bh.AiRejectReason) as aiRejectReason,
+          COALESCE(vd.AiStatus, vpv.AiStatus, bh.AiStatus) as aiStatus,
+          COALESCE(vd.AiLabels, vpv.AiLabels, bh.AiLabels) as aiLabels,
+          COALESCE(vd.AiRejectReason, vpv.AiRejectReason, bh.AiRejectReason) as aiRejectReason,
           CASE
             WHEN vd.MaVideo IS NULL THEN NULL
             WHEN vp.MaBH IS NULL THEN 'NEW'
@@ -212,6 +212,17 @@ export class CourseAdminService {
           ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
           WHERE vd1.TrangThai = 'DRAFT'
         ) vd ON vd.MaBH = bh.MaBH
+        LEFT JOIN (
+          SELECT vp1.*
+          FROM VideoBaiHoc vp1
+          INNER JOIN (
+            SELECT MaBH, MAX(MaVideo) AS MaVideo
+            FROM VideoBaiHoc
+            WHERE TrangThai = 'PUBLIC'
+            GROUP BY MaBH
+          ) latest ON latest.MaBH = vp1.MaBH AND latest.MaVideo = vp1.MaVideo
+          WHERE vp1.TrangThai = 'PUBLIC'
+        ) vpv ON vpv.MaBH = bh.MaBH
         LEFT JOIN (
           SELECT DISTINCT MaBH
           FROM VideoBaiHoc

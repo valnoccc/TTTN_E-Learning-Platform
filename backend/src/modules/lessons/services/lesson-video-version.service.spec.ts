@@ -82,6 +82,7 @@ describe('LessonVideoVersionService', () => {
           maVideo: 22,
           maBH: 840001,
           aiStatus: 'APPROVED',
+          aiLabels: JSON.stringify(['conversation', 'learning']),
           videoUrl: 'gs://bucket/new.mp4',
           durationSeconds: 180,
           resolution: 720,
@@ -103,7 +104,38 @@ describe('LessonVideoVersionService', () => {
     );
     expect(manager.query).toHaveBeenCalledWith(
       expect.stringMatching(/UPDATE BaiHoc[\s\S]*SET VideoURL = \?/),
-      expect.arrayContaining(['gs://bucket/new.mp4', 840001]),
+      expect.arrayContaining([
+        'gs://bucket/new.mp4',
+        JSON.stringify(['conversation', 'learning']),
+        840001,
+      ]),
+    );
+  });
+
+  it('serializes array AI labels before updating the lesson JSON column', async () => {
+    const manager = { query: jest.fn() };
+    dataSource.transaction.mockImplementation(async (callback) => callback(manager));
+    manager.query
+      .mockResolvedValueOnce([
+        {
+          maVideo: 23,
+          maBH: 840002,
+          aiStatus: 'APPROVED',
+          aiLabels: ['Gemini: Ngôn từ phù hợp', 'diagram'],
+          videoUrl: 'gs://bucket/new-2.mp4',
+          durationSeconds: 206,
+          resolution: null,
+        },
+      ])
+      .mockResolvedValue({ affectedRows: 1 });
+
+    await service.publishCourseVideos(100, 7);
+
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringMatching(/UPDATE BaiHoc[\s\S]*AiLabels = \?/),
+      expect.arrayContaining([
+        JSON.stringify(['Gemini: Ngôn từ phù hợp', 'diagram']),
+      ]),
     );
   });
 });

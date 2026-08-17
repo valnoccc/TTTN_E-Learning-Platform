@@ -541,9 +541,10 @@ export class CourseStudentService {
       return true;
     }
 
-    // ARCHIVED không còn bán mới nhưng học viên đã đăng ký vẫn được học.
-    // UNLISTED ẩn hoàn toàn, không cho cả học viên đã đăng ký truy cập.
-    if (course.trangThai !== 'ARCHIVED' || !viewerId) {
+    // ARCHIVED/PENDING không còn bán mới nhưng học viên đã đăng ký vẫn
+    // tiếp tục học phiên bản đang được công bố trong lúc chờ duyệt bản mới.
+    // UNLISTED, HIDDEN và BANNED ẩn hoàn toàn với học viên.
+    if (!['ARCHIVED', 'PENDING', 'PENDING_APPEAL'].includes(course.trangThai) || !viewerId) {
       return false;
     }
 

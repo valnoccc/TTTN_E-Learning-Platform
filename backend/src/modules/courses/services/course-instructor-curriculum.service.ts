@@ -86,10 +86,10 @@ export class CourseInstructorCurriculumService {
 
     const lessons = await this.dataSource.query(
       `SELECT bh.MaBH AS maBH, bh.MaChuong AS maChuong, bh.TenBaiHoc AS tenBaiHoc,
-              COALESCE(vd.VideoURL, bh.VideoURL) AS videoUrl, bh.NoiDung AS noiDung, bh.ThuTu AS thuTu, bh.ThoiLuong AS thoiLuong, bh.choPhepXemTruoc,
-              COALESCE(vd.AiStatus, bh.AiStatus) AS aiStatus, COALESCE(vd.AiLabels, bh.AiLabels) AS aiLabels,
-              COALESCE(vd.VideoSourceType, bh.VideoSourceType) AS videoSourceType,
-              COALESCE(vd.AiRejectReason, bh.AiRejectReason) AS aiRejectReason
+              COALESCE(vd.VideoURL, vpv.VideoURL, bh.VideoURL) AS videoUrl, bh.NoiDung AS noiDung, bh.ThuTu AS thuTu, bh.ThoiLuong AS thoiLuong, bh.choPhepXemTruoc,
+              COALESCE(vd.AiStatus, vpv.AiStatus, bh.AiStatus) AS aiStatus, COALESCE(vd.AiLabels, vpv.AiLabels, bh.AiLabels) AS aiLabels,
+              COALESCE(vd.VideoSourceType, vpv.VideoSourceType, bh.VideoSourceType) AS videoSourceType,
+              COALESCE(vd.AiRejectReason, vpv.AiRejectReason, bh.AiRejectReason) AS aiRejectReason
        FROM BaiHoc bh
        LEFT JOIN (
          SELECT vd1.*
@@ -102,6 +102,17 @@ export class CourseInstructorCurriculumService {
          ) latest ON latest.MaBH = vd1.MaBH AND latest.MaVideo = vd1.MaVideo
          WHERE vd1.TrangThai = 'DRAFT'
        ) vd ON vd.MaBH = bh.MaBH
+       LEFT JOIN (
+         SELECT vp1.*
+         FROM VideoBaiHoc vp1
+         INNER JOIN (
+           SELECT MaBH, MAX(MaVideo) AS MaVideo
+           FROM VideoBaiHoc
+           WHERE TrangThai = 'PUBLIC'
+           GROUP BY MaBH
+         ) latest ON latest.MaBH = vp1.MaBH AND latest.MaVideo = vp1.MaVideo
+         WHERE vp1.TrangThai = 'PUBLIC'
+       ) vpv ON vpv.MaBH = bh.MaBH
        WHERE bh.MaChuong IN (${placeholders}) AND bh.TrangThai = 'ACTIVE'
        ORDER BY bh.ThuTu ASC`,
       [...chapterIds],

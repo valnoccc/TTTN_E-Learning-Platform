@@ -31,7 +31,7 @@ export class StudentProfileService {
        JOIN KhoaHoc k ON d.MaKH = k.MaKH
        WHERE d.MaND = ?
          AND d.TrangThai = 'ACTIVE'
-         AND k.TrangThai IN ('PUBLISHED', 'ARCHIVED')`,
+         AND k.TrangThai IN ('PUBLISHED', 'ARCHIVED', 'PENDING', 'PENDING_APPEAL')`,
       [userId],
     );
     return courses.map((c: any) => ({
