@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Layers3,
   ShoppingCart,
+  Star,
   TrendingDown,
   TrendingUp,
   Users,
@@ -23,14 +24,13 @@ import {
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import AdminLayout from "../../../layouts/AdminLayout";
+import Pagination from "../../../components/Pagination";
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
 import * as XLSX from "xlsx";
 
@@ -146,7 +146,13 @@ function KpiCard({
     </div>
   );
 
-  return to ? <Link to={to} className="block h-full">{content}</Link> : content;
+  return to ? (
+    <Link to={to} className="block h-full">
+      {content}
+    </Link>
+  ) : (
+    content
+  );
 }
 
 function Panel({
@@ -331,10 +337,10 @@ function QuotaStackCard({
 import { type DashboardFilter } from "./hooks/useAdminDashboard";
 
 const DAY_OPTIONS: { label: string; filter: DashboardFilter }[] = [
-  { label: "7 ngày gần nhất",  filter: { type: 'days', days: 7   } },
-  { label: "30 ngày gần nhất", filter: { type: 'days', days: 30  } },
-  { label: "90 ngày gần nhất", filter: { type: 'days', days: 90  } },
-  { label: "1 năm gần nhất",   filter: { type: 'days', days: 365 } },
+  { label: "7 ngày gần nhất", filter: { type: "days", days: 7 } },
+  { label: "30 ngày gần nhất", filter: { type: "days", days: 30 } },
+  { label: "90 ngày gần nhất", filter: { type: "days", days: 90 } },
+  { label: "1 năm gần nhất", filter: { type: "days", days: 365 } },
 ];
 
 function buildMonthOptions(): { label: string; filter: DashboardFilter }[] {
@@ -343,10 +349,10 @@ function buildMonthOptions(): { label: string; filter: DashboardFilter }[] {
   for (let i = 1; i <= 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const month = d.getMonth() + 1;
-    const year  = d.getFullYear();
+    const year = d.getFullYear();
     opts.push({
-      label: `Tháng ${String(month).padStart(2,'0')}/${year}`,
-      filter: { type: 'month', month, year },
+      label: `Tháng ${String(month).padStart(2, "0")}/${year}`,
+      filter: { type: "month", month, year },
     });
   }
   return opts;
@@ -355,17 +361,22 @@ function buildMonthOptions(): { label: string; filter: DashboardFilter }[] {
 const MONTH_OPTIONS = buildMonthOptions();
 
 function filterLabel(f: DashboardFilter) {
-  if (f.type === 'month') return `Tháng ${String(f.month).padStart(2,'0')}/${f.year}`;
-  return DAY_OPTIONS.find((o) => o.filter.type === 'days' && (o.filter as any).days === f.days)?.label ?? 'Chọn kỳ';
+  if (f.type === "month")
+    return `Tháng ${String(f.month).padStart(2, "0")}/${f.year}`;
+  return (
+    DAY_OPTIONS.find(
+      (o) => o.filter.type === "days" && (o.filter as any).days === f.days,
+    )?.label ?? "Chọn kỳ"
+  );
 }
 
 function filterKey(f: DashboardFilter) {
-  return f.type === 'month' ? `month-${f.month}-${f.year}` : `days-${f.days}`;
+  return f.type === "month" ? `month-${f.month}-${f.year}` : `days-${f.days}`;
 }
 
 function exportDashboardXLSX(
   stats: NonNullable<ReturnType<typeof useAdminDashboard>["stats"]>,
-  filter: DashboardFilter
+  filter: DashboardFilter,
 ) {
   const wb = XLSX.utils.book_new();
   const dateTxt = new Date().toLocaleString("vi-VN");
@@ -375,7 +386,7 @@ function exportDashboardXLSX(
   function makeSheet(
     headers: string[],
     rows: (string | number)[][],
-    title?: string
+    title?: string,
   ): XLSX.WorkSheet {
     const aoa: (string | number)[][] = [];
     if (title) {
@@ -390,7 +401,10 @@ function exportDashboardXLSX(
 
     // Auto column width
     const colWidths = headers.map((h, ci) => {
-      const maxLen = Math.max(h.length, ...rows.map((r) => String(r[ci] ?? "").length));
+      const maxLen = Math.max(
+        h.length,
+        ...rows.map((r) => String(r[ci] ?? "").length),
+      );
       return { wch: Math.min(maxLen + 4, 50) };
     });
     ws["!cols"] = colWidths;
@@ -438,76 +452,155 @@ function exportDashboardXLSX(
   }
 
   // ── Sheet 1: KPI ──────────────────────────────────────────────────────────
-  XLSX.utils.book_append_sheet(wb, makeSheet(
-    ["Chỉ tiêu", "Giá trị (VNĐ)"],
-    [
-      ["Dòng tiền hệ thống", stats.grossRevenue],
-      ["Lợi nhuận Admin",       stats.adminRevenue],
-      ["Công nợ giảng viên",  stats.instructorPayout],
-      ["Lượt ghi danh mới",   stats.newEnrollments],
-      ["Hàng chờ kiểm duyệt", stats.pendingCourses],
-    ],
-    `📊 Tóm tắt KPI — ${periodTxt}`
-  ), "Tổng quan");
+  XLSX.utils.book_append_sheet(
+    wb,
+    makeSheet(
+      ["Chỉ tiêu", "Giá trị (VNĐ)"],
+      [
+        ["Dòng tiền hệ thống", stats.grossRevenue],
+        ["Lợi nhuận Admin", stats.adminRevenue],
+        ["Công nợ giảng viên", stats.instructorPayout],
+        ["Lượt ghi danh mới", stats.newEnrollments],
+        ["Hàng chờ kiểm duyệt", stats.pendingCourses],
+      ],
+      `📊 Tóm tắt KPI — ${periodTxt}`,
+    ),
+    "Tổng quan",
+  );
 
   // ── Sheet 2: Recent orders ────────────────────────────────────────────────
   if (stats.recentOrders?.length) {
-    XLSX.utils.book_append_sheet(wb, makeSheet(
-      ["Mã đơn", "Khách hàng", "Khóa học", "Số tiền (VNĐ)", "Ngày giao dịch", "Phương thức", "Trạng thái"],
-      stats.recentOrders.map((o) => [
-        o.orderId, o.customerName, o.courseName, o.totalAmount,
-        o.paidAt ? new Date(o.paidAt).toLocaleString("vi-VN") : "",
-        o.paymentMethod, o.paymentStatus,
-      ]),
-      `🧾 Giao dịch — ${periodTxt}`
-    ), "Giao dịch");
+    XLSX.utils.book_append_sheet(
+      wb,
+      makeSheet(
+        [
+          "Mã đơn",
+          "Khách hàng",
+          "Khóa học",
+          "Số tiền (VNĐ)",
+          "Ngày giao dịch",
+          "Phương thức",
+          "Trạng thái",
+        ],
+        stats.recentOrders.map((o) => [
+          o.orderId,
+          o.customerName,
+          o.courseName,
+          o.totalAmount,
+          o.paidAt ? new Date(o.paidAt).toLocaleString("vi-VN") : "",
+          o.paymentMethod,
+          o.paymentStatus,
+        ]),
+        `🧾 Giao dịch — ${periodTxt}`,
+      ),
+      "Giao dịch",
+    );
   }
 
   // ── Sheet 3: Revenue trend ────────────────────────────────────────────────
   if (stats.salesChart?.length) {
-    XLSX.utils.book_append_sheet(wb, makeSheet(
-      ["Tháng", "Lượt ghi danh", "Tổng doanh thu (VNĐ)", "Admin (VNĐ)", "Giảng viên (VNĐ)"],
-      stats.salesChart.map((s) => [s.label, s.orders, s.grossRevenue, s.adminRevenue, s.instructorPayout]),
-      "📈 Xu hướng doanh thu 12 tháng"
-    ), "Doanh thu tháng");
+    XLSX.utils.book_append_sheet(
+      wb,
+      makeSheet(
+        [
+          "Tháng",
+          "Lượt ghi danh",
+          "Tổng doanh thu (VNĐ)",
+          "Admin (VNĐ)",
+          "Giảng viên (VNĐ)",
+        ],
+        stats.salesChart.map((s) => [
+          s.label,
+          s.orders,
+          s.grossRevenue,
+          s.adminRevenue,
+          s.instructorPayout,
+        ]),
+        "📈 Xu hướng doanh thu 12 tháng",
+      ),
+      "Doanh thu tháng",
+    );
   }
 
   // ── Sheet 4: Category revenue ─────────────────────────────────────────────
   if (stats.categoryRevenue?.length) {
-    XLSX.utils.book_append_sheet(wb, makeSheet(
-      ["Danh mục", "Doanh thu (VNĐ)", "Admin (VNĐ)", "Giảng viên (VNĐ)"],
-      stats.categoryRevenue.map((c) => [c.name, c.revenue, c.adminRevenue, c.instructorPayout]),
-      `🗂️ Doanh thu danh mục — ${periodTxt}`
-    ), "Danh mục");
+    XLSX.utils.book_append_sheet(
+      wb,
+      makeSheet(
+        ["Danh mục", "Doanh thu (VNĐ)", "Admin (VNĐ)", "Giảng viên (VNĐ)"],
+        stats.categoryRevenue.map((c) => [
+          c.name,
+          c.revenue,
+          c.adminRevenue,
+          c.instructorPayout,
+        ]),
+        `🗂️ Doanh thu danh mục — ${periodTxt}`,
+      ),
+      "Danh mục",
+    );
   }
 
   // ── Sheet 5: Top courses ──────────────────────────────────────────────────
   if (stats.topCourses?.length) {
-    XLSX.utils.book_append_sheet(wb, makeSheet(
-      ["Tên khóa học", "Lượt mua", "Doanh thu (VNĐ)", "Admin (VNĐ)", "GV (VNĐ)"],
-      stats.topCourses.map((c) => [c.name, c.orders, c.revenue, c.adminRevenue, c.instructorRevenue]),
-      `🏆 Top khóa học — ${periodTxt}`
-    ), "Top khóa học");
+    XLSX.utils.book_append_sheet(
+      wb,
+      makeSheet(
+        [
+          "Tên khóa học",
+          "Lượt mua",
+          "Doanh thu (VNĐ)",
+          "Admin (VNĐ)",
+          "GV (VNĐ)",
+        ],
+        stats.topCourses.map((c) => [
+          c.name,
+          c.orders,
+          c.revenue,
+          c.adminRevenue,
+          c.instructorRevenue,
+        ]),
+        `🏆 Top khóa học — ${periodTxt}`,
+      ),
+      "Top khóa học",
+    );
   }
 
   // ── Sheet 6: Top instructors ──────────────────────────────────────────────
   if (stats.topInstructors?.length) {
-    XLSX.utils.book_append_sheet(wb, makeSheet(
-      ["Giảng viên", "Danh mục", "Học viên", "Doanh thu (VNĐ)", "Tỉ lệ (%)"],
-      stats.topInstructors.map((i) => [i.name, i.category, i.students, i.revenue, i.percentage]),
-      `👨‍🏫 Top giảng viên — ${periodTxt}`
-    ), "Top giảng viên");
+    XLSX.utils.book_append_sheet(
+      wb,
+      makeSheet(
+        ["Giảng viên", "Danh mục", "Học viên", "Doanh thu (VNĐ)", "Tỉ lệ (%)"],
+        stats.topInstructors.map((i) => [
+          i.name,
+          i.category,
+          i.students,
+          i.revenue,
+          i.percentage,
+        ]),
+        `👨‍🏫 Top giảng viên — ${periodTxt}`,
+      ),
+      "Top giảng viên",
+    );
   }
 
   // File name
-  const slug = filter.type === 'month'
-    ? `thang${String(filter.month).padStart(2,'0')}-${filter.year}`
-    : `${(filter as any).days}ngay`;
-  XLSX.writeFile(wb, `bao-cao-${slug}-${new Date().toISOString().slice(0,10)}.xlsx`);
+  const slug =
+    filter.type === "month"
+      ? `thang${String(filter.month).padStart(2, "0")}-${filter.year}`
+      : `${(filter as any).days}ngay`;
+  XLSX.writeFile(
+    wb,
+    `bao-cao-${slug}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
 }
 
 export default function AdminDashboard() {
-  const [filter, setFilter] = useState<DashboardFilter>({ type: 'days', days: 30 });
+  const [filter, setFilter] = useState<DashboardFilter>({
+    type: "days",
+    days: 30,
+  });
+  const [lowestRatedPage, setLowestRatedPage] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { stats, loading } = useAdminDashboard(filter);
@@ -515,7 +608,10 @@ export default function AdminDashboard() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     }
@@ -537,24 +633,24 @@ export default function AdminDashboard() {
     ],
   } as const;
 
-  const revenueSplit = stats
-    ? [
-        {
-          name: "Admin",
-          value: stats.adminRevenue,
-          color: chartPalette.admin,
-        },
-        {
-          name: "Giảng viên",
-          value: stats.instructorPayout,
-          color: chartPalette.instructor,
-        },
-      ]
-    : [];
-
   const revenueTrend = stats?.salesChart ?? [];
   const categoryRevenue = stats?.categoryRevenue ?? [];
   const topCourses = stats?.topCourses ?? [];
+  const lowestRatedCourses = stats?.lowestRatedCourses ?? [];
+  const lowestRatedPageSize = 3;
+  const lowestRatedTotalPages = Math.ceil(
+    lowestRatedCourses.length / lowestRatedPageSize,
+  );
+  const lowestRatedPageItems = lowestRatedCourses.slice(
+    (lowestRatedPage - 1) * lowestRatedPageSize,
+    lowestRatedPage * lowestRatedPageSize,
+  );
+
+  useEffect(() => {
+    setLowestRatedPage((page) =>
+      Math.min(Math.max(page, 1), Math.max(lowestRatedTotalPages, 1)),
+    );
+  }, [lowestRatedTotalPages]);
   const topInstructors = stats?.topInstructors ?? [];
   const recentTransactions = stats?.recentOrders ?? [];
   const aiQuota = stats?.aiQuota;
@@ -597,9 +693,14 @@ export default function AdminDashboard() {
                     return (
                       <button
                         key={filterKey(opt.filter)}
-                        onClick={() => { setFilter(opt.filter); setDropdownOpen(false); }}
+                        onClick={() => {
+                          setFilter(opt.filter);
+                          setDropdownOpen(false);
+                        }}
                         className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50 ${
-                          active ? "bg-slate-900 text-white hover:bg-slate-800" : "text-slate-700"
+                          active
+                            ? "bg-slate-900 text-white hover:bg-slate-800"
+                            : "text-slate-700"
                         }`}
                       >
                         {opt.label}
@@ -617,9 +718,14 @@ export default function AdminDashboard() {
                     return (
                       <button
                         key={filterKey(opt.filter)}
-                        onClick={() => { setFilter(opt.filter); setDropdownOpen(false); }}
+                        onClick={() => {
+                          setFilter(opt.filter);
+                          setDropdownOpen(false);
+                        }}
                         className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50 ${
-                          active ? "bg-slate-900 text-white hover:bg-slate-800" : "text-slate-700"
+                          active
+                            ? "bg-slate-900 text-white hover:bg-slate-800"
+                            : "text-slate-700"
                         }`}
                       >
                         {opt.label}
@@ -842,73 +948,57 @@ export default function AdminDashboard() {
 
               <div className="contents">
                 <Panel
-                  title="Cơ cấu chia doanh thu"
+                  title="Khóa học có đánh giá thấp"
                   subtitle=""
                   className="order-2 h-full"
                 >
-                  <div className="px-4 pb-2 pt-4 sm:px-6">
-                    <div className="relative h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={revenueSplit}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={72}
-                            outerRadius={100}
-                            paddingAngle={4}
-                            stroke="#ffffff"
-                            strokeWidth={4}
-                          >
-                            {revenueSplit.map((entry) => (
-                              <Cell key={entry.name} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number, name: string) => [
-                              formatCurrency(value),
-                              name,
-                            ]}
-                            contentStyle={{
-                              borderRadius: 16,
-                              border: "1px solid #e2e8f0",
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                            Gross
-                          </p>
-                          <p className="mt-2 text-3xl font-black tracking-tight text-slate-900">
-                            {formatCompactCurrency(stats.grossRevenue)}
-                          </p>
-                        </div>
+                  <div className="space-y-3 px-4 pb-5 pt-4 sm:px-6">
+                    {lowestRatedCourses.length === 0 ? (
+                      <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                        Chưa có dữ liệu đánh giá cho các khóa học đã xuất bản.
                       </div>
-                    </div>
-
-                    <div className="mt-4 space-y-3">
-                      {revenueSplit.map((item) => (
+                    ) : (
+                      lowestRatedPageItems.map((course, index) => (
                         <div
-                          key={item.name}
-                          className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3"
+                          key={course.courseId}
+                          className="rounded-2xl border border-slate-100 px-4 py-3"
                         >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className="h-3.5 w-3.5 rounded-full"
-                              style={{ backgroundColor: item.color }}
-                            />
-                            <span className="text-sm font-semibold text-slate-600">
-                              {item.name}
-                            </span>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-50 text-xs font-bold text-rose-700">
+                                {(lowestRatedPage - 1) * lowestRatedPageSize +
+                                  index +
+                                  1}
+                              </span>
+                              <p className="line-clamp-2 text-sm font-semibold text-slate-800">
+                                {course.name}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1 text-sm font-bold text-rose-600">
+                              <Star size={14} fill="currentColor" />
+                              {course.rating.toFixed(1)}/5
+                            </div>
                           </div>
-                          <span className="text-sm font-bold text-slate-900">
-                            {formatCurrency(item.value)}
-                          </span>
+                          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
+                            <span>{course.reviewCount} đánh giá</span>
+                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className="h-full rounded-full bg-rose-400"
+                                style={{
+                                  width: `${Math.max(0, Math.min(course.rating / 5, 1) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    )}
+                    <Pagination
+                      currentPage={lowestRatedPage}
+                      totalPages={lowestRatedTotalPages}
+                      onPageChange={setLowestRatedPage}
+                      variant="numbers"
+                    />
                   </div>
                 </Panel>
 

@@ -76,6 +76,12 @@ export class DashboardStatsDto {
     instructorRevenue: number;
     image: string;
   }[];
+  lowestRatedCourses!: {
+    courseId: number;
+    name: string;
+    rating: number;
+    reviewCount: number;
+  }[];
   topInstructors!: {
     id: number;
     name: string;

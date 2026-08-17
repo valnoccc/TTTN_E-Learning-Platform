@@ -57,6 +57,13 @@ export interface TopCourse {
     image: string;
 }
 
+export interface LowestRatedCourse {
+    courseId: number;
+    name: string;
+    rating: number;
+    reviewCount: number;
+}
+
 export interface TopInstructor {
     id: number | string;
     name: string;
@@ -110,6 +117,7 @@ export interface DashboardStats {
     salesOverview: SalesOverview;
     salesChart: SalesChartData[];
     topCourses: TopCourse[];
+    lowestRatedCourses: LowestRatedCourse[];
     topInstructors: TopInstructor[];
     categoryRevenue: RevenueCategory[];
 }

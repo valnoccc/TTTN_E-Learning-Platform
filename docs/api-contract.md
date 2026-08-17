@@ -16,7 +16,7 @@ Source of truth:
 - `POST /auth/forgot-password` (Khoi phuc mat khau)
 
 ## Users (Admin - Quan ly nguoi dung)
-- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; `adminRevenue` va `instructorPayout` duoc tinh theo `ADMIN_REVENUE_PERCENT` va `INSTRUCTOR_REVENUE_PERCENT` trong backend `.env`)
+- `GET /admin/dashboard/stats` (Admin - Lay thong ke dashboard; `adminRevenue` va `instructorPayout` duoc tinh theo `ADMIN_REVENUE_PERCENT` va `INSTRUCTOR_REVENUE_PERCENT` trong backend `.env`; `lowestRatedCourses` tra ve toi da 50 khoa hoc PUBLISHED co diem danh gia goc thap nhat, kem so luong danh gia de frontend phan trang 3 khoa hoc/trang)
 - `GET /admin/dashboard/debts?month=MM&year=YYYY` (Admin - Lay cong no giang vien theo thang; `debtAmount` duoc tinh theo ty le hoa hong dang cau hinh)
 - `GET /admin/users` (Admin - Xem danh sach tai khoan, ho tro `search`, `role`, `status`; tra ve them `summary`)
 - `PATCH /admin/users/:id/status` (Admin - Khoa/Mo/An tai khoan, body: `{ status: 'ACTIVE' | 'INACTIVE' | 'DELETED' }`)

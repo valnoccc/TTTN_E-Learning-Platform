@@ -51,6 +51,12 @@ type TopCourseRow = {
   instructorRevenue?: string | number;
   image?: string | null;
 };
+type LowestRatedCourseRow = {
+  courseId?: string | number;
+  name?: string;
+  rating?: string | number;
+  reviewCount?: string | number;
+};
 
 type TopInstructorRow = {
   id?: string | number;
@@ -616,6 +622,27 @@ export class AdminDashboardService {
       ),
     ]);
 
+    const lowestRatedCourseRows =
+      (await this.queryWithFallback<LowestRatedCourseRow[]>(
+        `
+          SELECT
+            kh.MaKH AS courseId,
+            kh.TenKhoaHoc AS name,
+            ROUND(AVG(dg.SoSao), 2) AS rating,
+            COUNT(dg.MaDanhGia) AS reviewCount
+          FROM KhoaHoc kh
+          INNER JOIN DanhGiaKhoaHoc dg
+            ON dg.MaKH = kh.MaKH
+           AND dg.MaDanhGiaCha IS NULL
+           AND dg.SoSao > 0
+          WHERE kh.TrangThai = 'PUBLISHED'
+          GROUP BY kh.MaKH, kh.TenKhoaHoc
+          ORDER BY AVG(dg.SoSao) ASC, COUNT(dg.MaDanhGia) DESC, kh.MaKH DESC
+          LIMIT 6
+        `,
+        [],
+      )) ?? [];
+
     const salesChart = this.buildSalesChart(salesChartRows);
     const aiQuotaUsedSeconds = Number(aiQuotaRows[0]?.usedSeconds ?? 0);
     const aiQuotaUsedMinutes = Math.floor(aiQuotaUsedSeconds / 60);
@@ -730,6 +757,12 @@ export class AdminDashboardService {
         adminRevenue: Number(row.adminRevenue ?? 0),
         instructorRevenue: Number(row.instructorRevenue ?? 0),
         image: row.image ?? '',
+      })),
+      lowestRatedCourses: lowestRatedCourseRows.map((row) => ({
+        courseId: Number(row.courseId ?? 0),
+        name: row.name ?? '',
+        rating: Number(row.rating ?? 0),
+        reviewCount: Number(row.reviewCount ?? 0),
       })),
       topInstructors: topInstructorRows.map((row) => ({
         id: Number(row.id ?? 0),

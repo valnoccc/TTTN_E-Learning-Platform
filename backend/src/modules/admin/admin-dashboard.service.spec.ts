@@ -136,7 +136,15 @@ describe('AdminDashboardService', () => {
           instructorPayout: '720000',
         },
       ])
-      .mockResolvedValueOnce([{ outstandingDebt: '800000' }]);
+      .mockResolvedValueOnce([{ outstandingDebt: '800000' }])
+      .mockResolvedValueOnce([
+        {
+          courseId: '101',
+          name: 'React Co Ban',
+          rating: '2.75',
+          reviewCount: '4',
+        },
+      ]);
 
     await expect(service.getOverviewStats()).resolves.toEqual({
       totalStudents: 10,
@@ -153,6 +161,14 @@ describe('AdminDashboardService', () => {
       grossRevenue: 1250000,
       adminRevenue: 250000,
       instructorPayout: 800000,
+      lowestRatedCourses: [
+        {
+          courseId: 101,
+          name: 'React Co Ban',
+          rating: 2.75,
+          reviewCount: 4,
+        },
+      ],
       revenueGrowth: 100,
       aiQuota: {
         monthYear: '06-2026',
