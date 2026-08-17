@@ -24,6 +24,7 @@ export interface AdminInstructorDebtSummary {
   grossRevenue: number;
   adminRevenue: number;
   instructorPayout: number;
+  outstandingDebt: number;
   topDebtAmount: number;
 }
 
