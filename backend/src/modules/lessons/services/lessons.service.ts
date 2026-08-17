@@ -4,13 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { KhoaHoc } from '../../courses/entities/course.entity';
 import { LessonVideoStorageService } from '../../lesson-video-storage/lesson-video-storage.service';
 import { Lesson } from '../entities/lesson.entity';
 import { LessonVideoVersionService } from './lesson-video-version.service';
+import {
+  VideoBaiHoc,
+  VideoVersionStatus,
+} from '../entities/video-bai-hoc.entity';
 
 @Injectable()
 export class LessonsService {
@@ -19,6 +23,8 @@ export class LessonsService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(KhoaHoc)
     private readonly courseRepository: Repository<KhoaHoc>,
+    @InjectRepository(VideoBaiHoc)
+    private readonly videoVersionRepository: Repository<VideoBaiHoc>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly lessonVideoStorageService: LessonVideoStorageService,
     private readonly lessonVideoVersionService: LessonVideoVersionService,
@@ -52,11 +58,47 @@ export class LessonsService {
   }
 
   async findAllByCourse(courseId: number): Promise<Lesson[]> {
-    return await this.lessonRepository.find({
+    const lessons = await this.lessonRepository.find({
       where: { maKH: courseId },
       order: {
         thuTu: 'ASC',
       },
+    });
+
+    if (lessons.length === 0) {
+      return lessons;
+    }
+
+    const draftVideos = await this.videoVersionRepository.find({
+      where: {
+        maBH: In(lessons.map((lesson) => lesson.maBH)),
+        trangThai: VideoVersionStatus.DRAFT,
+      },
+      order: { maVideo: 'DESC' },
+    });
+    const draftByLessonId = new Map<number, VideoBaiHoc>();
+
+    for (const draftVideo of draftVideos) {
+      if (!draftByLessonId.has(draftVideo.maBH)) {
+        draftByLessonId.set(draftVideo.maBH, draftVideo);
+      }
+    }
+
+    return lessons.map((lesson) => {
+      const draftVideo = draftByLessonId.get(lesson.maBH);
+      if (!draftVideo) {
+        return lesson;
+      }
+
+      return Object.assign(lesson, {
+        videoURL: draftVideo.videoURL ?? lesson.videoURL,
+        videoSourceType: draftVideo.videoSourceType ?? lesson.videoSourceType,
+        aiStatus: draftVideo.aiStatus ?? null,
+        aiLabels: draftVideo.aiLabels ?? null,
+        aiRejectReason: draftVideo.aiRejectReason ?? null,
+        durationSeconds: draftVideo.durationSeconds ?? lesson.durationSeconds,
+        resolution: draftVideo.resolution ?? lesson.resolution,
+      });
     });
   }
 

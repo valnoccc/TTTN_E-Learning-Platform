@@ -106,7 +106,9 @@ export default function InstructorCourseDetail({
     Boolean(lesson.video_url || lesson.videoUrl),
   );
   const getAiStatus = (lesson: any) =>
-    String(lesson.aiStatus ?? "").trim().toUpperCase();
+    String(lesson.aiStatus ?? "")
+      .trim()
+      .toUpperCase();
   const processingLessons = videoLessons.filter((lesson: any) =>
     ["PROCESSING", "PENDING"].includes(getAiStatus(lesson)),
   );
@@ -136,14 +138,11 @@ export default function InstructorCourseDetail({
   } else if (isAiChecking) {
     publishBtnTitle = "Có video đang được AI xử lý";
   } else if (rejectedVideoLessons.length > 0) {
-    publishBtnTitle =
-      `Có ${rejectedVideoLessons.length} video bị AI từ chối. Hãy chỉnh sửa hoặc gửi kháng cáo.`;
+    publishBtnTitle = `Có ${rejectedVideoLessons.length} video bị AI từ chối. Hãy chỉnh sửa hoặc gửi kháng cáo.`;
   } else if (needsReviewLessons.length > 0) {
-    publishBtnTitle =
-      `Có ${needsReviewLessons.length} video cần admin xem xét thêm.`;
+    publishBtnTitle = `Có ${needsReviewLessons.length} video cần admin xem xét thêm.`;
   } else if (unmoderatedLessons.length > 0) {
-    publishBtnTitle =
-      `Có ${unmoderatedLessons.length} video chưa có kết quả kiểm duyệt AI.`;
+    publishBtnTitle = `Có ${unmoderatedLessons.length} video chưa có kết quả kiểm duyệt AI.`;
   } else {
     publishBtnTitle = "Tất cả video đã được AI kiểm duyệt.";
   }
@@ -159,9 +158,8 @@ export default function InstructorCourseDetail({
     if (isAiChecking) {
       return {
         tone: "amber",
-        title: `AI đang kiểm duyệt ${processingLessons.length}/${videoLessons.length} video`,
-        description:
-          "Vui lòng đợi kết quả kiểm duyệt trước khi gửi yêu cầu duyệt khóa học.",
+        title: `Đang xử lý kiểm duyệt AI: ${processingLessons.length}/${videoLessons.length} video`,
+        description: "",
       };
     }
 

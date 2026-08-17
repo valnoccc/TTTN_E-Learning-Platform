@@ -175,6 +175,27 @@ describe('VideoIntelligenceService', () => {
     });
   });
 
+  it('keeps up to 15 labels returned by frame moderation', () => {
+    const analysisService = service as unknown as {
+      evaluateAnnotation: (annotation: unknown) => { labels: string[] };
+    };
+    const frameLabels = Array.from({ length: 18 }, (_, index) => ({
+      entity: { description: `frame-label-${index + 1}` },
+    }));
+
+    const result = analysisService.evaluateAnnotation({
+      segment: { endTimeOffset: { seconds: 60 } },
+      explicitAnnotation: { frames: [] },
+      shotLabelAnnotations: frameLabels,
+      segmentLabelAnnotations: [],
+    });
+
+    expect(result.labels).toHaveLength(15);
+    expect(result.labels).toEqual(
+      frameLabels.slice(0, 15).map((label) => label.entity.description),
+    );
+  });
+
   it('uploads the GCS video through Gemini Files API and deletes it afterwards', async () => {
     generateContentMock.mockResolvedValue({
       response: {
@@ -469,6 +490,9 @@ describe('VideoIntelligenceService', () => {
       'Gemini: Ngôn từ phù hợp',
       'road',
       'parking',
+      'car',
+      'driving',
+      'visual effects',
     ]);
     expect(lessonRepository.update).toHaveBeenCalledWith(
       1,
@@ -479,6 +503,9 @@ describe('VideoIntelligenceService', () => {
           'Gemini: Ngôn từ phù hợp',
           'road',
           'parking',
+          'car',
+          'driving',
+          'visual effects',
         ],
       }),
     );

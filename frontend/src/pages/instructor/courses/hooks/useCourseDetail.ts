@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -134,6 +134,27 @@ export function useCourseDetail(
     const [isSaving, setIsSaving] = useState(false);
     const [isStatusChanging, setIsStatusChanging] = useState(false);
 
+    const loadLessons = useCallback(async (showError = true) => {
+        if (!id) return;
+
+        try {
+            const response = await axiosClient.get<LessonListApiResponse | Lesson[]>(
+                `/lessons?id_khoa_hoc=${id}`,
+            );
+            const payload = Array.isArray(response) ? response : response.data ?? [];
+
+            setLessons(
+                Array.isArray(payload)
+                    ? payload.sort((a, b) => a.thu_tu - b.thu_tu)
+                    : [],
+            );
+        } catch {
+            if (showError) {
+                toast.error('Không thể tải danh sách bài học.');
+            }
+        }
+    }, [id]);
+
     useEffect(() => {
         if (isNewCourse || !id) {
             setLessons([]);
@@ -165,26 +186,26 @@ export function useCourseDetail(
             }
         };
 
-        const fetchLessons = async () => {
-            try {
-                const response = await axiosClient.get<LessonListApiResponse | Lesson[]>(
-                    `/lessons?id_khoa_hoc=${id}`,
-                );
-                const payload = Array.isArray(response) ? response : response.data ?? [];
-
-                setLessons(
-                    Array.isArray(payload)
-                        ? payload.sort((a, b) => a.thu_tu - b.thu_tu)
-                        : [],
-                );
-            } catch {
-                toast.error('Không thể tải danh sách bài học.');
-            }
-        };
-
         void fetchCourseDetail();
-        void fetchLessons();
-    }, [id, isNewCourse]);
+        void loadLessons();
+    }, [id, isNewCourse, loadLessons]);
+
+    useEffect(() => {
+        if (isNewCourse || !id) return;
+
+        const hasPendingModeration = lessons.some((lesson) =>
+            ['PENDING', 'PROCESSING'].includes(
+                String(lesson.aiStatus ?? '').trim().toUpperCase(),
+            ),
+        );
+        if (!hasPendingModeration) return;
+
+        const intervalId = window.setInterval(() => {
+            void loadLessons(false);
+        }, 5000);
+
+        return () => window.clearInterval(intervalId);
+    }, [id, isNewCourse, lessons, loadLessons]);
 
     // ==========================================
     // LOGIC THAO TÁC MỤC TIÊU KHÓA HỌC
