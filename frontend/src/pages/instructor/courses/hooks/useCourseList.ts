@@ -64,10 +64,25 @@ export function useCourseList() {
         }
     };
 
+    const handleArchive = async (courseId: string | number) => {
+        try {
+            await axiosClient.patch(`/courses/${courseId}/status`, { trang_thai: 'ARCHIVED' });
+            setCourses((current) =>
+                current.map((course) =>
+                    course.id === courseId ? { ...course, trang_thai: 'ARCHIVED' } : course,
+                ),
+            );
+            toast.success('Đã lưu trữ khóa học. Khóa học đã bị ẩn hoàn toàn.');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Lỗi khi lưu trữ khóa học');
+        }
+    };
+
     return {
         courses,
         loading,
         handleDelete,
         handleToggleStatus,
+        handleArchive,
     };
 }
