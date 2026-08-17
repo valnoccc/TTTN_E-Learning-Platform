@@ -541,8 +541,9 @@ export class CourseStudentService {
       return true;
     }
 
-    // UNLISTED chỉ tạm ẩn khỏi trang bán; học viên đã đăng ký vẫn được học.
-    if (course.trangThai !== 'UNLISTED' || !viewerId) {
+    // ARCHIVED không còn bán mới nhưng học viên đã đăng ký vẫn được học.
+    // UNLISTED ẩn hoàn toàn, không cho cả học viên đã đăng ký truy cập.
+    if (course.trangThai !== 'ARCHIVED' || !viewerId) {
       return false;
     }
 

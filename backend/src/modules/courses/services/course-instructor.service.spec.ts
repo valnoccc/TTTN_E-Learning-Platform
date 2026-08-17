@@ -113,6 +113,21 @@ describe('CoursesService.updateCourseStatus', () => {
     );
   });
 
+  it('allows a rejected course to be resubmitted for review after editing', async () => {
+    courseRepository.findOne.mockResolvedValueOnce({
+      maKH: 11,
+      maND_GiangVien: 99,
+      trangThai: 'REJECTED',
+    } as KhoaHoc);
+    dataSource.query.mockResolvedValueOnce([
+      { maBH: 1, tenBaiHoc: 'Bai 1', aiStatus: 'APPROVED' },
+    ]);
+
+    await expect(
+      service.updateCourseStatus(11, 99, 'PENDING'),
+    ).resolves.toEqual(expect.objectContaining({ trangThai: 'PENDING' }));
+  });
+
   it('blocks deletion of a banned course', async () => {
     courseRepository.findOne.mockResolvedValueOnce({
       maKH: 11,
@@ -134,6 +149,8 @@ describe('CoursesService.updateCourseStatus', () => {
       .mockResolvedValueOnce([{ NoiDung: 'Mục tiêu 1' }])
       .mockResolvedValueOnce([{ NoiDung: 'Yêu cầu 1' }])
       .mockResolvedValueOnce([{ GhiChu: 'Video bài 3 vi phạm bản quyền.' }]);
+
+    dataSource.query.mockResolvedValueOnce([]);
 
     await expect(service.getCourseById(11, 99)).resolves.toEqual(
       expect.objectContaining({

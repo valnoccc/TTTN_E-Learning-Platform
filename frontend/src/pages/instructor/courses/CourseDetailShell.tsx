@@ -322,6 +322,21 @@ export default function InstructorCourseDetail({
                     </div>
                   ) : null}
 
+                  {formData.trang_thai === "REJECTED" ? (
+                    <div className="max-w-xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
+                      <div className="flex items-start gap-2">
+                        <ShieldAlert size={16} className="mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-bold">Khóa học bị từ chối</p>
+                          <p className="mt-1 leading-5">
+                            {formData.rejection_reason ||
+                              "Admin đã từ chối khóa học. Vui lòng chỉnh sửa nội dung và gửi duyệt lại."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
                   {courseReviewBanner ? (
                     <div
                       className={`max-w-xl rounded-xl border px-4 py-3 text-sm shadow-sm ${
@@ -492,7 +507,7 @@ export default function InstructorCourseDetail({
         title="Xác nhận"
         message={
           confirmStatusModal?.nextStatus === "ARCHIVED"
-            ? "Khóa học sẽ bị ẩn hoàn toàn khỏi nền tảng, không thể bán cho học viên mới và học viên đã mua cũng không thể tiếp tục học. Dữ liệu khóa học vẫn được giữ lại. Bạn có chắc chắn muốn lưu trữ?"
+            ? "Khóa học sẽ không bán cho học viên mới, nhưng học viên đã mua vẫn tiếp tục học. Bạn vẫn có thể chỉnh sửa và gửi duyệt lại sau. Dữ liệu khóa học vẫn được giữ lại. Bạn có chắc chắn muốn lưu trữ?"
             : `Khóa học sẽ được ${confirmStatusModal?.actionText}. Bạn có chắc chắn muốn tiếp tục?`
         }
         confirmText="Xác nhận"
@@ -789,25 +804,13 @@ function StatusActions({
           Tạm ẩn để chỉnh sửa
         </button>
         <button
-          onClick={() => onAction("ARCHIVED", "lưu trữ khóa học hoàn toàn")}
+          onClick={() => onAction("ARCHIVED", "lưu trữ khóa học")}
           className="inline-flex items-center gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
         >
           <Archive size={16} />
           Lưu trữ
         </button>
       </div>
-    );
-  }
-
-  if (status === "ARCHIVED") {
-    return (
-      <button
-        onClick={() => onAction("DRAFT", "khôi phục khóa học về bản nháp")}
-        className="inline-flex items-center gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
-      >
-        <Archive size={16} />
-        Khôi phục bản nháp
-      </button>
     );
   }
 
@@ -842,6 +845,7 @@ function getStatusBadgeClass(status: string) {
     case "ARCHIVED":
     case "BANNED":
     case "HIDDEN":
+    case "REJECTED":
       return "border-rose-200 bg-rose-50 text-rose-700";
     case "PUBLISHED":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";

@@ -274,10 +274,10 @@ describe('CourseStudentService', () => {
     expect(dataSource.query).not.toHaveBeenCalled();
   });
 
-  it('allows an enrolled learner to load an unlisted course', async () => {
+  it('allows an enrolled learner to load an archived course', async () => {
     khoaHocRepository.findOne.mockResolvedValue({
       maKH: 11,
-      trangThai: 'UNLISTED',
+      trangThai: 'ARCHIVED',
     });
     dataSource.query
       .mockResolvedValueOnce([{ ok: 1 }])
@@ -289,5 +289,17 @@ describe('CourseStudentService', () => {
       expect.stringContaining('FROM DangKyKhoaHoc'),
       [7, 11],
     );
+  });
+
+  it('blocks learners from loading an unlisted course', async () => {
+    khoaHocRepository.findOne.mockResolvedValue({
+      maKH: 11,
+      trangThai: 'UNLISTED',
+    });
+
+    await expect(service.getCourseCurriculum(11, 7)).rejects.toThrow(
+      'Khóa học không tồn tại hoặc chưa được kích hoạt',
+    );
+    expect(dataSource.query).not.toHaveBeenCalled();
   });
 });

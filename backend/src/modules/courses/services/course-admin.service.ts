@@ -378,7 +378,9 @@ export class CourseAdminService {
       );
     }
 
-    course.trangThai = 'DRAFT';
+    course.trangThai = 'REJECTED';
+    course.isAppealing = false;
+    course.appealReason = null;
     await this.courseRepository.save(course);
     await this.notificationsService.createNotification({
       maND: course.maND_GiangVien,
@@ -401,7 +403,7 @@ export class CourseAdminService {
     );
 
     return {
-      message: 'Đã từ chối khóa học và chuyển về bản nháp.',
+      message: 'Đã từ chối khóa học. Giảng viên có thể chỉnh sửa và gửi duyệt lại.',
       data: {
         id: course.maKH,
         trangThai: course.trangThai,

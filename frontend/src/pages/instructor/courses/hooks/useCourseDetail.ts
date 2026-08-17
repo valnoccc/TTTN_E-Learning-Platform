@@ -13,6 +13,7 @@ export interface CourseForm {
     trang_thai: string;
     hinh_thu_nho?: string | null;
     ban_reason?: string | null;
+    rejection_reason?: string | null;
     muc_tieu: string[];
     yeu_cau: string[];
 }
@@ -45,6 +46,7 @@ interface CourseDetailApiData {
     muc_tieu?: string[];
     yeu_cau?: string[];
     banReason?: string | null;
+    rejectionReason?: string | null;
 }
 
 interface CourseDetailApiResponse {
@@ -179,6 +181,7 @@ export function useCourseDetail(
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
                     ban_reason: courseData.banReason ?? null,
+                    rejection_reason: courseData.rejectionReason ?? null,
                     muc_tieu: courseData.muc_tieu?.length ? courseData.muc_tieu : ['', '', '', ''],
                     yeu_cau: courseData.yeu_cau?.length ? courseData.yeu_cau : [''],
                 });
@@ -349,7 +352,7 @@ export function useCourseDetail(
         if (!id) return;
         setIsDeleteModalOpen(false);
         try {
-            await axiosClient.delete(`/courses/${id}`);
+            await axiosClient.delete<{ action?: string; message?: string }>(`/courses/${id}`);
             toast.success('Đã xử lý thành công!');
             navigate('/instructor/courses');
         } catch {
@@ -486,7 +489,7 @@ export function useCourseDetail(
     const handleDeleteCourse = () => setIsDeleteModalOpen(true);
     const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
-    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'HIDDEN'].includes(formData.trang_thai);
+    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'HIDDEN'].includes(formData.trang_thai);
 
     return {
         id,

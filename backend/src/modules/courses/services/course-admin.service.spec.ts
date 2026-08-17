@@ -309,10 +309,10 @@ describe('CourseAdminService', () => {
     await expect(
       service.rejectCourse(11, 99, 'Thieu noi dung bai hoc thuc hanh.'),
     ).resolves.toEqual({
-      message: 'Đã từ chối khóa học và chuyển về bản nháp.',
+      message: 'Đã từ chối khóa học. Giảng viên có thể chỉnh sửa và gửi duyệt lại.',
       data: {
         id: 11,
-        trangThai: 'DRAFT',
+        trangThai: 'REJECTED',
         lyDo: 'Thieu noi dung bai hoc thuc hanh.',
       },
     });

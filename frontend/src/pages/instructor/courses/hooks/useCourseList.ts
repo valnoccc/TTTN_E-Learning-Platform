@@ -40,7 +40,14 @@ export function useCourseList() {
     }, []);
 
     const handleDelete = async (courseId: string | number) => {        try {
-            await axiosClient.delete(`/courses/${courseId}`);
+            const response = await axiosClient.delete<{ action?: string; message?: string }>(`/courses/${courseId}`);
+            if (response?.action === 'ARCHIVED') {
+                setCourses((current) => current.map((course) =>
+                    course.id === courseId ? { ...course, trang_thai: 'ARCHIVED' } : course,
+                ));
+                toast.success(response.message || 'Khóa học đã được lưu trữ vì đã có học viên mua.');
+                return;
+            }
             setCourses((current) => current.filter((course) => course.id !== courseId));
             toast.success('Đã xử lý thành công!');
         } catch {
@@ -72,7 +79,7 @@ export function useCourseList() {
                     course.id === courseId ? { ...course, trang_thai: 'ARCHIVED' } : course,
                 ),
             );
-            toast.success('Đã lưu trữ khóa học. Khóa học đã bị ẩn hoàn toàn.');
+            toast.success('Đã lưu trữ: khóa học không bán mới, học viên đã mua vẫn được học và giảng viên có thể chỉnh sửa.');
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Lỗi khi lưu trữ khóa học');
         }

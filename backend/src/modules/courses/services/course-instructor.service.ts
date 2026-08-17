@@ -167,16 +167,20 @@ export class CoursesService implements OnModuleInit {
     }
 
     const hasBuyers = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM ChiTietHoaDon WHERE MaKH = ?`,
-      [courseId],
+      `SELECT
+         (SELECT COUNT(*) FROM ChiTietHoaDon WHERE MaKH = ?) +
+         (SELECT COUNT(*) FROM DangKyKhoaHoc WHERE MaKH = ?) AS count`,
+      [courseId, courseId],
     );
 
-    if (hasBuyers[0].count > 0) {
+    if (Number(hasBuyers[0]?.count ?? 0) > 0) {
       await this.khoaHocRepository.update(courseId, {
         trangThai: 'ARCHIVED',
         ngayCapNhat: new Date(),
       });
       return {
+        action: 'ARCHIVED',
+        courseId,
         message:
           'Khóa học đã có học viên mua, hệ thống đã chuyển sang lưu trữ hoàn toàn và ngừng quyền truy cập học tập.',
       };
@@ -574,12 +578,21 @@ export class CoursesService implements OnModuleInit {
        LIMIT 1`,
       [courseId],
     );
+    const rejectionHistory = await this.dataSource.query(
+      `SELECT GhiChu
+       FROM LichSuKiemDuyetKhoaHoc
+       WHERE MaKH = ? AND HanhDong = 'REJECT'
+       ORDER BY ThoiGian DESC, MaLSKD DESC
+       LIMIT 1`,
+      [courseId],
+    );
 
     return {
       ...course,
       muc_tieu: mucTieuData.map((item: any) => item.NoiDung),
       yeu_cau: yeuCauData.map((item: any) => item.NoiDung),
       banReason: banHistory[0]?.GhiChu ?? null,
+      rejectionReason: rejectionHistory[0]?.GhiChu ?? null,
     };
   }
 
