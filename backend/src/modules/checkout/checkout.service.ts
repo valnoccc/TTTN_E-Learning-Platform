@@ -1275,7 +1275,7 @@ export class CheckoutService {
         await this.notificationsService.createNotification({
           maND: userId,
           loaiThongBao: NotificationType.PAYMENT,
-          tieuDe: 'Thanh toán VNPay thành công! 🎉',
+          tieuDe: 'Thanh toán VNPay thành công!',
           noiDung: `Bạn đã thanh toán thành công qua VNPay cho khóa học: ${courseNames}. Chúc bạn học tập vui vẻ!`,
         });
         for (const course of courses) {

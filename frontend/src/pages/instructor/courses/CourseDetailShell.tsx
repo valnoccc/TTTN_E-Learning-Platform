@@ -242,6 +242,22 @@ export default function InstructorCourseDetail({
     }
   };
 
+  const handleResubmitForReview = async () => {
+    if (isAiChecking) {
+      toast.error(
+        "Khóa học có video đang được AI xử lý. Vui lòng đợi hoàn tất.",
+      );
+      return;
+    }
+
+    const result = await handleStatusChange("PENDING");
+    if (result?.violatingLessons && result.violatingLessons.length > 0) {
+      setViolatingLessons(result.violatingLessons);
+      setAppealReason("");
+      setIsAppealModalOpen(true);
+    }
+  };
+
   /** Xử lý click "Gửi Kháng Cáo" trong Appeal Modal */
   const handleConfirmAppeal = async () => {
     if (!appealReason.trim()) {
@@ -291,6 +307,21 @@ export default function InstructorCourseDetail({
                 </div>
 
                 <div className="flex flex-col items-start gap-4 xl:items-end">
+                  {formData.trang_thai === "BANNED" ? (
+                    <div className="max-w-xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
+                      <div className="flex items-start gap-2">
+                        <ShieldAlert size={16} className="mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-bold">Khóa học bị đình chỉ</p>
+                          <p className="mt-1 leading-5">
+                            {formData.ban_reason ||
+                              "Admin đã đình chỉ khóa học. Vui lòng chỉnh sửa nội dung vi phạm và gửi duyệt lại."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
                   {courseReviewBanner ? (
                     <div
                       className={`max-w-xl rounded-xl border px-4 py-3 text-sm shadow-sm ${
@@ -331,7 +362,7 @@ export default function InstructorCourseDetail({
                   )}
 
                   <div className="mt-1 flex flex-wrap justify-end gap-2">
-                    {!isLocked && !isNewCourse ? (
+                    {!isLocked && !isNewCourse && formData.trang_thai !== "BANNED" ? (
                       <button
                         onClick={handleDeleteCourse}
                         className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
@@ -356,7 +387,7 @@ export default function InstructorCourseDetail({
                       </button>
                     ) : null}
 
-                    {!isLocked && !isNewCourse ? (
+                    {!isLocked && !isNewCourse && formData.trang_thai !== "BANNED" ? (
                       <button
                         onClick={() => {
                           if (isAiChecking) {
@@ -377,6 +408,22 @@ export default function InstructorCourseDetail({
                           <BadgeInfo size={16} />
                         )}
                         Gửi yêu cầu duyệt
+                      </button>
+                    ) : null}
+
+                    {!isLocked && !isNewCourse && formData.trang_thai === "BANNED" ? (
+                      <button
+                        onClick={() => void handleResubmitForReview()}
+                        disabled={disablePublish}
+                        title={publishBtnTitle}
+                        className="inline-flex items-center gap-2 rounded-md bg-[#1dbf73] px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#169b5c] hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isStatusChanging ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          <BadgeInfo size={16} />
+                        )}
+                        Gửi duyệt lại
                       </button>
                     ) : null}
                   </div>
@@ -781,6 +828,8 @@ function getStatusLabel(status: string) {
       return "Tạm ẩn";
     case "ARCHIVED":
       return "Đã lưu trữ";
+    case "BANNED":
+      return "Đã bị đình chỉ";
     case "REJECTED":
       return "Bị từ chối";
     default:

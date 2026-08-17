@@ -12,6 +12,7 @@ export interface CourseForm {
     hinh_anh: string;
     trang_thai: string;
     hinh_thu_nho?: string | null;
+    ban_reason?: string | null;
     muc_tieu: string[];
     yeu_cau: string[];
 }
@@ -43,6 +44,7 @@ interface CourseDetailApiData {
     trang_thai?: string;
     muc_tieu?: string[];
     yeu_cau?: string[];
+    banReason?: string | null;
 }
 
 interface CourseDetailApiResponse {
@@ -176,6 +178,7 @@ export function useCourseDetail(
                     hinh_anh: courseData.hinh_thu_nho || courseData.hinh_anh || '',
                     trang_thai: courseData.trang_thai || 'DRAFT',
                     hinh_thu_nho: courseData.hinh_thu_nho || null,
+                    ban_reason: courseData.banReason ?? null,
                     muc_tieu: courseData.muc_tieu?.length ? courseData.muc_tieu : ['', '', '', ''],
                     yeu_cau: courseData.yeu_cau?.length ? courseData.yeu_cau : [''],
                 });
@@ -483,7 +486,7 @@ export function useCourseDetail(
     const handleDeleteCourse = () => setIsDeleteModalOpen(true);
     const handleImagePickerOpen = () => document.getElementById('course-image-input')?.click();
 
-    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'BANNED', 'HIDDEN'].includes(formData.trang_thai);
+    const isLocked = ['PENDING', 'PENDING_APPEAL', 'PUBLISHED', 'ARCHIVED', 'HIDDEN'].includes(formData.trang_thai);
 
     return {
         id,

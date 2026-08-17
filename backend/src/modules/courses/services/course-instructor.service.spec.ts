@@ -10,6 +10,7 @@ describe('CoursesService.updateCourseStatus', () => {
   const courseRepository = {
     findOne: jest.fn(),
     update: jest.fn(),
+    save: jest.fn(),
   };
 
   const dataSource = {
@@ -38,12 +39,13 @@ describe('CoursesService.updateCourseStatus', () => {
   );
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     courseRepository.findOne.mockResolvedValue({
       maKH: 11,
       maND_GiangVien: 99,
       trangThai: 'PENDING',
     } as KhoaHoc);
+    courseRepository.save.mockImplementation(async (course) => course);
   });
 
   it('archives a purchased course instead of deleting it', async () => {
@@ -61,43 +63,10 @@ describe('CoursesService.updateCourseStatus', () => {
     );
   });
 
-  it('auto-publishes the course when every lesson is approved', async () => {
+  it('submits the course for manual admin review when every lesson is approved', async () => {
     dataSource.query.mockResolvedValueOnce([
       { maBH: 1, tenBaiHoc: 'B?i 1', aiStatus: 'APPROVED' },
       { maBH: 2, tenBaiHoc: 'B?i 2', aiStatus: 'APPROVED' },
-    ]);
-
-    await expect(
-      service.updateCourseStatus(11, 99, 'PENDING'),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        id: 11,
-        trangThai: 'PUBLISHED',
-        reviewRatio: 0,
-        reviewCount: 0,
-        totalVideoLessons: 2,
-      }),
-    );
-
-    expect(courseRepository.update).toHaveBeenCalledWith(
-      11,
-      expect.objectContaining({ trangThai: 'PUBLISHED' }),
-    );
-    expect(notificationsService.createNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        maND: 99,
-        tieuDe: expect.any(String),
-      }),
-    );
-  });
-
-  it('sends the course to admin review when the review ratio is between 20 and 40 percent', async () => {
-    dataSource.query.mockResolvedValueOnce([
-      { maBH: 1, tenBaiHoc: 'B?i 1', aiStatus: 'APPROVED' },
-      { maBH: 2, tenBaiHoc: 'B?i 2', aiStatus: 'APPROVED' },
-      { maBH: 3, tenBaiHoc: 'B?i 3', aiStatus: 'APPROVED' },
-      { maBH: 4, tenBaiHoc: 'B?i 4', aiStatus: 'NEEDS_REVIEW' },
-      { maBH: 5, tenBaiHoc: 'B?i 5', aiStatus: 'REJECTED' },
     ]);
 
     await expect(
@@ -106,20 +75,92 @@ describe('CoursesService.updateCourseStatus', () => {
       expect.objectContaining({
         id: 11,
         trangThai: 'PENDING',
-        reviewRatio: 0.4,
-        reviewCount: 2,
-        totalVideoLessons: 5,
+        reviewCount: 0,
+        totalVideoLessons: 2,
       }),
     );
 
-    expect(courseRepository.update).toHaveBeenCalledWith(
-      11,
+    expect(courseRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({ trangThai: 'PENDING' }),
     );
     expect(notificationsService.createNotification).not.toHaveBeenCalled();
   });
 
-  it('auto-rejects submission when the review ratio is above 40 percent and sends a notification', async () => {
+  it('blocks a banned course from being moved to an instructor-managed status other than review', async () => {
+    courseRepository.findOne.mockResolvedValueOnce({
+      maKH: 11,
+      maND_GiangVien: 99,
+      trangThai: 'BANNED',
+    } as KhoaHoc);
+
+    await expect(service.updateCourseStatus(11, 99, 'ARCHIVED')).rejects.toThrow(
+      'đình chỉ',
+    );
+  });
+
+  it('allows a banned course to be resubmitted for review after remediation', async () => {
+    courseRepository.findOne.mockResolvedValueOnce({
+      maKH: 11,
+      maND_GiangVien: 99,
+      trangThai: 'BANNED',
+    } as KhoaHoc);
+    dataSource.query.mockResolvedValueOnce([
+      { maBH: 1, tenBaiHoc: 'Bài 1', aiStatus: 'APPROVED' },
+    ]);
+
+    await expect(service.updateCourseStatus(11, 99, 'PENDING')).resolves.toEqual(
+      expect.objectContaining({ trangThai: 'PENDING' }),
+    );
+  });
+
+  it('blocks deletion of a banned course', async () => {
+    courseRepository.findOne.mockResolvedValueOnce({
+      maKH: 11,
+      maND_GiangVien: 99,
+      trangThai: 'BANNED',
+    } as KhoaHoc);
+
+    await expect(service.remove(11, 99)).rejects.toThrow('đình chỉ');
+    expect(courseRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('returns the latest ban reason with the instructor course detail', async () => {
+    courseRepository.findOne.mockResolvedValueOnce({
+      maKH: 11,
+      maND_GiangVien: 99,
+      trangThai: 'BANNED',
+    } as KhoaHoc);
+    dataSource.query
+      .mockResolvedValueOnce([{ NoiDung: 'Mục tiêu 1' }])
+      .mockResolvedValueOnce([{ NoiDung: 'Yêu cầu 1' }])
+      .mockResolvedValueOnce([{ GhiChu: 'Video bài 3 vi phạm bản quyền.' }]);
+
+    await expect(service.getCourseById(11, 99)).resolves.toEqual(
+      expect.objectContaining({
+        banReason: 'Video bài 3 vi phạm bản quyền.',
+        muc_tieu: ['Mục tiêu 1'],
+        yeu_cau: ['Yêu cầu 1'],
+      }),
+    );
+  });
+
+  it('requires an appeal when a lesson video was rejected by AI', async () => {
+    dataSource.query.mockResolvedValueOnce([
+      { maBH: 1, tenBaiHoc: 'B?i 1', aiStatus: 'APPROVED' },
+      { maBH: 2, tenBaiHoc: 'B?i 2', aiStatus: 'APPROVED' },
+      { maBH: 3, tenBaiHoc: 'B?i 3', aiStatus: 'APPROVED' },
+      { maBH: 4, tenBaiHoc: 'B?i 4', aiStatus: 'NEEDS_REVIEW' },
+      { maBH: 5, tenBaiHoc: 'B?i 5', aiStatus: 'REJECTED' },
+    ]);
+
+    await expect(service.updateCourseStatus(11, 99, 'PENDING')).rejects.toMatchObject({
+      response: expect.objectContaining({
+        errorCode: 'HAS_AI_REJECTED_LESSONS',
+      }),
+    });
+  });
+
+  it('records a pending appeal when rejected lessons are appealed with a reason', async () => {
     dataSource.query.mockResolvedValueOnce([
       { maBH: 1, tenBaiHoc: 'B?i 1', aiStatus: 'APPROVED' },
       { maBH: 2, tenBaiHoc: 'B?i 2', aiStatus: 'NEEDS_REVIEW' },
@@ -128,26 +169,22 @@ describe('CoursesService.updateCourseStatus', () => {
       { maBH: 5, tenBaiHoc: 'B?i 5', aiStatus: 'REJECTED' },
     ]);
 
-    await expect(
-      service.updateCourseStatus(11, 99, 'PENDING'),
-    ).resolves.toEqual(
+    await expect(service.updateCourseStatus(11, 99, 'PENDING', {
+      isAppealing: true,
+      appealReason: 'Video la noi dung giang day hop le',
+    })).resolves.toEqual(
       expect.objectContaining({
         id: 11,
-        trangThai: 'DRAFT',
-        reviewRatio: 0.8,
-        reviewCount: 4,
+        trangThai: 'PENDING_APPEAL',
+        reviewCount: 2,
         totalVideoLessons: 5,
       }),
     );
 
-    expect(courseRepository.update).toHaveBeenCalledWith(
-      11,
-      expect.objectContaining({ trangThai: 'DRAFT' }),
-    );
-    expect(notificationsService.createNotification).toHaveBeenCalledWith(
+    expect(courseRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        maND: 99,
-        tieuDe: expect.any(String),
+        trangThai: 'PENDING_APPEAL',
+        isAppealing: true,
       }),
     );
   });

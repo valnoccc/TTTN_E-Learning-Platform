@@ -33,6 +33,7 @@ export class NotificationsService {
     const notifications = await this.notificationRepository.find({
       where: { maND: userId },
       take: limit,
+      order: { thoiGian: 'DESC', maTB: 'DESC' },
     });
 
     return [...notifications].sort((left, right) => {

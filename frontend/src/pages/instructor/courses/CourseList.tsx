@@ -108,7 +108,7 @@ export default function InstructorCourses() {
                                                         to={`/instructor/courses/${course.id}/overview`}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#1dbf73] hover:bg-[#ebf8f2] hover:text-[#169b5c]"
                                                     >
-                                                        <Settings size={14} /> Quản lý
+                                                        <Settings size={14} /> {course.trang_thai === 'BANNED' ? 'Khắc phục' : 'Quản lý'}
                                                     </Link>
 
                                                     {['PUBLISHED', 'ARCHIVED'].includes(course.trang_thai) ? (
@@ -130,12 +130,14 @@ export default function InstructorCourses() {
                                                         </button>
                                                     ) : null}
 
+                                                    {course.trang_thai !== 'BANNED' ? (
                                                     <button
                                                         onClick={() => setConfirmModal({ isOpen: true, type: 'delete', courseId: course.id })}
                                                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                                     >
                                                         <Trash2 size={14} /> Xóa
                                                     </button>
+                                                    ) : null}
                                                 </div>
                                             </td>
                                         </tr>
@@ -219,6 +221,12 @@ function StatusBadge({ status }: { status: string }) {
             return (
                 <span className={`${baseClass} border-rose-200 bg-rose-50 text-rose-700`}>
                     Đã lưu trữ
+                </span>
+            );
+        case 'BANNED':
+            return (
+                <span className={`${baseClass} border-red-300 bg-red-50 text-red-700`}>
+                    Đã bị đình chỉ
                 </span>
             );
         default:

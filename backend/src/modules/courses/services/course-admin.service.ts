@@ -321,6 +321,9 @@ export class CourseAdminService {
       );
     }
 
+    if (course.trangThai === 'PENDING_APPEAL') {
+      await this.lessonVideoVersionService.approveAppealedDraftVideos(courseId);
+    }
     await this.lessonVideoVersionService.publishCourseVideos(courseId, adminId);
 
     course.trangThai = 'PUBLISHED';

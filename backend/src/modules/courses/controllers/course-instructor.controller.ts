@@ -88,6 +88,7 @@ export class CoursesController {
         ...serializeCourse(course),
         muc_tieu: course.muc_tieu,
         yeu_cau: course.yeu_cau,
+        banReason: course.banReason,
       },
     };
   }
@@ -253,10 +254,6 @@ export class CoursesController {
       typeof statusData.appealReason === 'string'
         ? statusData.appealReason
         : undefined;
-
-    if (trangThai === 'PENDING_REVIEW' && statusData.isPolicyAgreed !== true && statusData.isPolicyAgreed !== 'true') {
-      throw new BadRequestException('Bạn phải đồng ý với Chính sách nền tảng để gửi duyệt.');
-    }
 
     const updatedCourse = await this.coursesService.updateCourseStatus(
       Number(id),

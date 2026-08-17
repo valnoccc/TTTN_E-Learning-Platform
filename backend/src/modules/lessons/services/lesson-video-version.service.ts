@@ -53,6 +53,20 @@ export class LessonVideoVersionService {
     return { id: Number(insertId ?? 0), status: 'DRAFT' as const };
   }
 
+  async approveAppealedDraftVideos(courseId: number) {
+    const result = await this.dataSource.query(
+      `UPDATE VideoBaiHoc v
+       INNER JOIN BaiHoc bh ON bh.MaBH = v.MaBH
+          SET v.AiStatus = 'APPROVED', v.AiRejectReason = NULL
+        WHERE bh.MaKH = ?
+          AND v.TrangThai = 'DRAFT'
+          AND v.AiStatus IN ('REJECTED', 'NEEDS_REVIEW')`,
+      [courseId],
+    );
+
+    return { affectedRows: Number(result?.affectedRows ?? 0) };
+  }
+
   async publishCourseVideos(courseId: number, adminId: number) {
     return this.dataSource.transaction(async (manager) => {
       const drafts = await manager.query(
