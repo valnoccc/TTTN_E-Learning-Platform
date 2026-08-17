@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -177,6 +178,8 @@ export class CheckoutService {
   // MOMO: Tạo thanh toán QR động
   // ────────────────────────────────────────────────────────────────────────────────
   async createMomoPayment(userId: number, orderData: MomoOrderData) {
+    await this.assertCanPurchase(userId);
+
     const { courseIds, couponCode, customerDetails } = orderData;
 
     if (!courseIds || courseIds.length === 0) {
@@ -525,7 +528,10 @@ export class CheckoutService {
     try {
       // 4a. Kiểm tra hoá đơn tồn tại & còn PENDING
       const invoices = await queryRunner.query(
-        `SELECT MaHD, TrangThaiThanhToan FROM HoaDon WHERE MaHD = ?`,
+        `SELECT hd.MaHD, hd.TrangThaiThanhToan, nd.VaiTro
+         FROM HoaDon hd
+         JOIN NguoiDung nd ON nd.MaND = hd.MaND
+         WHERE hd.MaHD = ?`,
         [invoiceId],
       );
 
@@ -536,6 +542,17 @@ export class CheckoutService {
       if (invoices[0].TrangThaiThanhToan === 'PAID') {
         await queryRunner.rollbackTransaction();
         return { message: 'IPN already processed' };
+      }
+
+      if (String(invoices[0].VaiTro ?? '').toUpperCase() === 'ADMIN') {
+        await queryRunner.query(
+          `UPDATE HoaDon
+           SET TrangThaiThanhToan = 'CANCELLED'
+           WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
+          [invoiceId],
+        );
+        await queryRunner.commitTransaction();
+        return { message: 'Admin payment cancelled', invoiceId };
       }
 
       const paymentUpdateResult = await queryRunner.query(
@@ -699,6 +716,8 @@ export class CheckoutService {
   }
 
   async processPayment(payload: PaymentRequest, userId: number) {
+    await this.assertCanPurchase(userId);
+
     const { courseIds, paymentMethod, couponCode } = payload;
 
     if (!courseIds || courseIds.length === 0) {
@@ -896,6 +915,8 @@ export class CheckoutService {
   // VNPAY: Tạo URL thanh toán
   // ────────────────────────────────────────────────────────────────────────────────
   async createVnpayPayment(userId: number, orderData: VnpayOrderData) {
+    await this.assertCanPurchase(userId);
+
     const { courseIds, couponCode } = orderData;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -1046,13 +1067,24 @@ export class CheckoutService {
 
   private assertPurchasableCourses(courses: Array<{ TrangThai?: string }>) {
     const unavailableCourse = courses.find(
-      (course) => course.TrangThai !== 'PUBLISHED',
+      (course) => Boolean(course.TrangThai) && course.TrangThai !== 'PUBLISHED',
     );
 
     if (unavailableCourse) {
       throw new BadRequestException(
         'Một hoặc nhiều khóa học không còn mở bán.',
       );
+    }
+  }
+
+  private async assertCanPurchase(userId: number): Promise<void> {
+    const users = await this.dataSource.query(
+      `SELECT VaiTro FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+      [userId],
+    );
+
+    if (String(users[0]?.VaiTro ?? '').toUpperCase() === 'ADMIN') {
+      throw new ForbiddenException('Tài khoản quản trị không được phép mua khóa học');
     }
   }
 
@@ -1173,7 +1205,10 @@ export class CheckoutService {
     try {
       // Kiểm tra hóa đơn
       const invoices = await queryRunner.query(
-        `SELECT MaHD, TrangThaiThanhToan, MaND FROM HoaDon WHERE MaHD = ?`,
+        `SELECT hd.MaHD, hd.TrangThaiThanhToan, hd.MaND, nd.VaiTro
+         FROM HoaDon hd
+         JOIN NguoiDung nd ON nd.MaND = hd.MaND
+         WHERE hd.MaHD = ?`,
         [invoiceId],
       );
       if (invoices.length === 0) {
@@ -1195,6 +1230,22 @@ export class CheckoutService {
           message: 'Giao dịch đã được xác nhận thành công', 
           userId: invoices[0].MaND, 
           courseIds: validCourseIds 
+        };
+      }
+
+      if (String(invoices[0].VaiTro ?? '').toUpperCase() === 'ADMIN') {
+        await queryRunner.query(
+          `UPDATE HoaDon
+           SET TrangThaiThanhToan = 'CANCELLED'
+           WHERE MaHD = ? AND TrangThaiThanhToan = 'PENDING'`,
+          [invoiceId],
+        );
+        await queryRunner.commitTransaction();
+        if (source === 'ipn') return { RspCode: '00', Message: 'Admin payment cancelled' };
+        return {
+          success: false,
+          invoiceId,
+          message: 'Tài khoản quản trị không được phép mua khóa học',
         };
       }
 

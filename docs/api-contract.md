@@ -99,6 +99,9 @@ pointer to the current public object. Existing data can be initialized with
 - `DELETE /forum/admin/questions/:id` (Admin - Xoa topic cap 1 va cac tra loi lien quan theo cascade)
 
 ## Enrollments & Progress (Giao dich & Tien do)
+- `POST /cart/add` va `POST /cart/sync` (Student/Instructor - Them hoac dong bo gio hang; ADMIN bi chan)
+- `POST /checkout/process-payment`, `POST /checkout/momo/create-payment`, `POST /checkout/vnpay/create-payment` (Student/Instructor - Tao giao dich; ADMIN bi chan)
+- Cac callback/IPN thanh toan van la public de cong thanh toan goi duoc; backend kiem tra role tu hoa don va chuyen hoa don PENDING cua ADMIN sang `CANCELLED`, khong ghi danh va khong cong doanh thu.
 - `POST /enrollments` (Dang ky mua/Thanh toan khoa hoc)
 - `GET /enrollments/me` (Xem danh sach khoa hoc da mua & lich su giao dich)
 - `GET /enrollments/:courseId/status` (Kiem tra trang thai mua khoa hoc)

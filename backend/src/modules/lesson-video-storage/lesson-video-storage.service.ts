@@ -114,10 +114,10 @@ export class LessonVideoStorageService implements OnModuleInit {
     }
   }
 
-  async deleteVideo(videoUrl: string | null | undefined): Promise<void> {
+  async deleteVideo(videoUrl: string | null | undefined): Promise<boolean> {
     const objectName = this.extractObjectName(videoUrl);
     if (!objectName) {
-      return;
+      return true;
     }
 
     try {
@@ -126,11 +126,13 @@ export class LessonVideoStorageService implements OnModuleInit {
         .file(objectName)
         .delete({ ignoreNotFound: true });
       this.logger.log(`Da xoa video tren GCS: ${objectName}`);
+      return true;
     } catch (error) {
       this.logger.warn(
         `Khong the xoa video GCS ${objectName}. URL goc: ${videoUrl}`,
       );
       this.logger.debug(error);
+      return false;
     }
   }
 

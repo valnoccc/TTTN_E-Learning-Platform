@@ -31,9 +31,11 @@ import { QuizQuestionsModule } from './modules/quiz-questions/quiz-questions.mod
 import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module';
 import { InstructorApplicationsModule } from './modules/instructor-applications/instructor-applications.module';
 import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig],

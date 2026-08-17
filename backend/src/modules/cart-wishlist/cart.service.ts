@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 @Injectable()
@@ -65,6 +65,8 @@ export class CartService {
 
   /** Thêm một khóa học vào giỏ (bỏ qua nếu đã tồn tại) */
   async addToCart(userId: number, courseId: number) {
+    await this.assertCanPurchase(userId);
+
     // Kiểm tra xem đã sở hữu chưa
     const existingEnrollments = await this.dataSource.query(
       `SELECT MaKH FROM DangKyKhoaHoc WHERE MaND = ? AND MaKH = ? AND TrangThai = 'ACTIVE'`,
@@ -72,7 +74,6 @@ export class CartService {
     );
 
     if (existingEnrollments.length > 0) {
-      const { BadRequestException } = require('@nestjs/common');
       throw new BadRequestException('Đã đăng ký khóa học');
     }
 
@@ -82,7 +83,6 @@ export class CartService {
       [courseId],
     );
     if (courseInfo.length > 0 && Number(courseInfo[0].MaND_GiangVien) === userId) {
-      const { BadRequestException } = require('@nestjs/common');
       throw new BadRequestException('Bạn không thể thêm khóa học của chính mình vào giỏ hàng');
     }
 
@@ -118,6 +118,8 @@ export class CartService {
 
   /** Sync: nhận danh sách courseIds từ client (localStorage cũ) và insert vào DB */
   async syncCartFromClient(userId: number, courseIds: number[]) {
+    await this.assertCanPurchase(userId);
+
     if (!courseIds || courseIds.length === 0) return { success: true };
     const cartId = await this.getOrCreateCart(userId);
     for (const courseId of courseIds) {
@@ -127,5 +129,16 @@ export class CartService {
       );
     }
     return { success: true };
+  }
+
+  private async assertCanPurchase(userId: number): Promise<void> {
+    const users = await this.dataSource.query(
+      `SELECT VaiTro FROM NguoiDung WHERE MaND = ? LIMIT 1`,
+      [userId],
+    );
+
+    if (String(users[0]?.VaiTro ?? '').toUpperCase() === 'ADMIN') {
+      throw new ForbiddenException('Tài khoản quản trị không được phép mua khóa học');
+    }
   }
 }

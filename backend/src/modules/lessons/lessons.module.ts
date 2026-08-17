@@ -13,6 +13,8 @@ import { AiModerationController } from './controllers/ai-moderation.controller';
 import { LessonsService } from './services/lessons.service';
 import { VideoIntelligenceService } from './services/video-intelligence.service';
 import { LessonVideoVersionService } from './services/lesson-video-version.service';
+import { VideoCleanupService } from './services/video-cleanup.service';
+import { VideoCleanupJob } from './jobs/video-cleanup.job';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { LessonVideoVersionService } from './services/lesson-video-version.servi
     LessonsService,
     VideoIntelligenceService,
     LessonVideoVersionService,
+    VideoCleanupService,
+    VideoCleanupJob,
   ],
   exports: [VideoIntelligenceService, LessonVideoVersionService],
 })
