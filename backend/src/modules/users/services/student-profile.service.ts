@@ -29,7 +29,7 @@ export class StudentProfileService {
        JOIN KhoaHoc k ON d.MaKH = k.MaKH
        WHERE d.MaND = ?
          AND d.TrangThai = 'ACTIVE'
-         AND k.TrangThai IN ('PUBLISHED', 'UNLISTED')`,
+         AND k.TrangThai IN ('PUBLISHED', 'UNLISTED', 'ARCHIVED')`,
       [userId],
     );
     return courses.map((c: any) => ({
